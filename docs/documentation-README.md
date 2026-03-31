@@ -18,7 +18,6 @@ This documentation set provides everything you need to learn, implement, and mas
 | [best-practices.md](./best-practices.md) | ✅ Guidelines for best code | All levels | 1 hour |
 | [implementation-patterns.md](./implementation-patterns.md) | 🏗️ Architecture patterns | Architects | 2 hours |
 | [troubleshooting.md](./troubleshooting.md) | 🐛 Problem-solving guide | Developers | Reference |
-| [changelog.md](./changelog.md) | 📝 Version history | All | 5 min |
 
 **Total**: 9 files, ~200KB of comprehensive documentation
 
@@ -196,8 +195,6 @@ For these, see external resources in [index.md](./index.md).
 - **Java Version**: 11+ (17+ recommended)
 - **Last Updated**: 2024
 
-See [changelog.md](./changelog.md) for version history and updates.
-
 ---
 
 ## 🤝 Contributing
@@ -216,8 +213,6 @@ See [changelog.md](./changelog.md) for version history and updates.
 2. Make your changes
 3. Submit a pull request
 4. Reference this documentation
-
-See [changelog.md](./changelog.md) for contribution guidelines.
 
 ---
 
@@ -304,7 +299,6 @@ documentation/
 ├── best-practices.md           # Guidelines
 ├── implementation-patterns.md  # Architecture
 ├── troubleshooting.md          # Problem-solving
-└── changelog.md                # Version history
 ```
 
 ---
@@ -354,8 +348,6 @@ open troubleshooting.md
 - Examples tested against latest version
 - Broken links fixed promptly
 - Community contributions welcomed
-
-Check [changelog.md](./changelog.md) for update history.
 
 ---
 

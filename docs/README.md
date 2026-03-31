@@ -9,7 +9,7 @@ description: Welcome to the comprehensive documentation for Activiti API - A pow
 
 Welcome to the comprehensive documentation for **Activiti API** - A powerful workflow and Business Process Management (BPM) engine API layer.
 
-## 📚 Table of Contents
+## Table of Contents
 
 - [Introduction](#introduction)
 - [Architecture Overview](#architecture-overview)
@@ -26,7 +26,7 @@ Welcome to the comprehensive documentation for **Activiti API** - A powerful wor
 
 ---
 
-## 🎯 Introduction
+## Introduction
 
 Activiti is an open-source BPM (Business Process Management) and workflow engine that helps organizations automate their business processes. The **Activiti API** provides a clean, type-safe interface for interacting with the workflow engine, abstracting away the complexity of the underlying implementation.
 
@@ -48,7 +48,7 @@ Activiti is an open-source BPM (Business Process Management) and workflow engine
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ### High-Level Architecture
 
@@ -97,7 +97,7 @@ activiti-api/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -191,7 +191,7 @@ public class TaskService {
 
 ---
 
-## 📖 Core Concepts
+## Core Concepts
 
 ### 1. Process Definition
 
@@ -1901,7 +1901,7 @@ Page<Task> tasks = taskRuntime.tasks(
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 ### Learning Path
 
@@ -1953,7 +1953,7 @@ Visit the [Activiti GitHub](https://github.com/Activiti/Activiti) for:
 
 #### Process Builders
 - `ProcessPayloadBuilder.start()` - Start process
-- `ProcessPayloadBuilder.create()` - Create process instance
+- `ProcessPayloadBuilder.create()` - Create p## rocess instance
 - `ProcessPayloadBuilder.delete()` - Delete process
 - `ProcessPayloadBuilder.suspend()` - Suspend process
 - `ProcessPayloadBuilder.resume()` - Resume process
@@ -2038,15 +2038,9 @@ Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
 
 | API Version | Java Version | Engine Version |
 |-------------|--------------|----------------|
-| 8.7.2+ | 11+ | 8.7.2+ |
-| 8.6.0+ | 11+ | 8.6.0+ |
-| 8.5.0+ | 11+ | 8.5.0+ |
-
----
-
-## 📄 License
-
-This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE.txt) file for details.
+| 8.7.2+      | 11+          | 8.7.2+         |
+| 8.6.0+      | 11+          | 8.6.0+         |
+| 8.5.0+      | 11+          | 8.5.0+         |
 
 ---
 

@@ -77,12 +77,7 @@ const sidebars: SidebarsConfig = {
       type: 'doc',
       id: 'troubleshooting',
       label: '🐛 Troubleshooting',
-    },
-    {
-      type: 'doc',
-      id: 'changelog',
-      label: '📝 Changelog',
-    },
+    }
   ],
 };
 

@@ -14,7 +14,6 @@ documentation/
 ├── implementation-patterns.md        # Architecture patterns
 ├── troubleshooting.md                # Troubleshooting guide
 ├── summary.md                        # Visual summary
-├── changelog.md                      # Version history
 └── activiti-api/                     # Module-specific documentation
     ├── README.md                     # API overview
     ├── activiti-api-model-shared/

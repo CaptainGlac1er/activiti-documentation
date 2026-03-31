@@ -63,7 +63,6 @@
 | **best-practices.md** | 30KB | Guide | All | ⭐⭐ Recommended |
 | **implementation-patterns.md** | 26KB | Patterns | Architects | ⭐ Advanced |
 | **troubleshooting.md** | 18KB | Guide | Developers | ⭐⭐ Reference |
-| **changelog.md** | 6KB | History | All | Info |
 
 **Total**: 181KB of comprehensive documentation
 
@@ -378,7 +377,6 @@ Need Help?
 
 ## 🔄 Keep Updated
 
-- Check **changelog.md** for updates
 - Star the GitHub repository
 - Contribute improvements
 
