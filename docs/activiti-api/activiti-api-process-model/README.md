@@ -1,0 +1,1049 @@
+# Activiti API Process Model Module
+
+## Overview
+
+The `activiti-api-process-model` module defines all domain models, events, and payloads related to process execution. This module provides the type-safe contracts for process management operations.
+
+## Module Structure
+
+```
+activiti-api-process-model/
+└── src/main/java/org/activiti/api/process/
+    ├── model/
+    │   ├── events/
+    │   │   ├── ProcessRuntimeEvent.java
+    │   │   ├── BPMNActivityEvent.java
+    │   │   ├── BPMNTimerEvent.java
+    │   │   ├── BPMNMessageEvent.java
+    │   │   ├── BPMNSignalEvent.java
+    │   │   ├── IntegrationEvent.java
+    │   │   ├── SequenceFlowEvent.java
+    │   │   ├── ApplicationEvent.java
+    │   │   └── [Specific Event Implementations]
+    │   ├── results/
+    │   │   └── ProcessInstanceResult.java
+    │   ├── builders/
+    │   │   ├── ProcessPayloadBuilder.java
+    │   │   ├── StartProcessPayloadBuilder.java
+    │   │   ├── MessagePayloadBuilder.java
+    │   │   └── [Other Builders]
+    │   ├── payloads/
+    │   │   ├── StartProcessPayload.java
+    │   │   ├── CreateProcessInstancePayload.java
+    │   │   ├── DeleteProcessPayload.java
+    │   │   └── [Other Payloads]
+    │   ├── ProcessInstance.java
+    │   ├── ProcessDefinition.java
+    │   ├── BPMNActivity.java
+    │   ├── BPMNElement.java
+    │   └── [Other Models]
+    └── runtime/
+        └── events/
+            ├── ProcessCreatedEvent.java
+            ├── ProcessStartedEvent.java
+            └── [Other Runtime Events]
+```
+
+## Dependencies
+
+```
+activiti-api-process-model
+    └── activiti-api-model-shared
+```
+
+---
+
+## Core Domain Models
+
+### ProcessInstance Interface
+
+**File**: `ProcessInstance.java`
+
+```java
+public interface ProcessInstance extends ApplicationElement {
+    enum ProcessInstanceStatus {
+        CREATED,
+        RUNNING,
+        SUSPENDED,
+        CANCELLED,
+        COMPLETED
+    }
+    
+    String getId();
+    String getName();
+    Date getStartDate();
+    Date getCompletedDate();
+    String getInitiator();
+    String getBusinessKey();
+    ProcessInstanceStatus getStatus();
+    String getProcessDefinitionId();
+    String getProcessDefinitionKey();
+    String getParentId();
+    Integer getProcessDefinitionVersion();
+    String getProcessDefinitionName();
+}
+```
+
+**Purpose**: Represents a running instance of a process definition.
+
+**Lifecycle States**:
+```
+CREATED → RUNNING → SUSPENDED ↔ RUNNING → COMPLETED
+                      ↓
+                 CANCELLED
+```
+
+**Key Attributes**:
+
+1. **Identity**
+   - `id`: Unique instance identifier
+   - `businessKey`: Business-specific identifier
+   - `initiator`: User who started the process
+
+2. **Status**
+   - `status`: Current lifecycle state
+   - `startDate`: When instance was created
+   - `completedDate`: When instance finished (if completed)
+
+3. **Definition Reference**
+   - `processDefinitionId`: Full definition ID (e.g., "order:1:abc123")
+   - `processDefinitionKey`: Logical key (e.g., "order")
+   - `processDefinitionVersion`: Version number
+
+4. **Hierarchy**
+   - `parentId`: Parent process instance (for sub-processes)
+
+**Usage Example**:
+```java
+ProcessInstance instance = processRuntime.processInstance("instance-id");
+
+System.out.println("Status: " + instance.getStatus());
+System.out.println("Business Key: " + instance.getBusinessKey());
+System.out.println("Definition: " + instance.getProcessDefinitionKey());
+```
+
+### ProcessDefinition Interface
+
+**File**: `ProcessDefinition.java`
+
+```java
+public interface ProcessDefinition extends ApplicationElement {
+    String getId();
+    String getName();
+    String getKey();
+    String getDescription();
+    int getVersion();
+    String getFormKey();
+    String getCategory();
+}
+```
+
+**Purpose**: Represents a deployed process definition (BPMN model).
+
+**Key Attributes**:
+
+1. **Identity**
+   - `id`: Unique identifier (key:version:id)
+   - `key`: Logical process key
+   - `version`: Version number (auto-incremented on redeploy)
+
+2. **Metadata**
+   - `name`: Human-readable name
+   - `description`: Process description
+   - `category`: Classification
+
+3. **Configuration**
+   - `formKey`: Associated form identifier
+
+**Versioning Strategy**:
+```
+First deployment:  order:1:abc123
+Second deployment: order:2:def456
+```
+
+**Usage Example**:
+```java
+ProcessDefinition definition = 
+    processRuntime.processDefinition("order:1:abc123");
+
+System.out.println("Key: " + definition.getKey());
+System.out.println("Version: " + definition.getVersion());
+```
+
+### BPMNElement Interface
+
+**File**: `BPMNElement.java`
+
+```java
+public interface BPMNElement {
+    String getElementId();
+    String getProcessInstanceId();
+    String getProcessDefinitionId();
+}
+```
+
+**Purpose**: Base interface for all BPMN elements (activities, events, etc.).
+
+**Extends**:
+- `BPMNActivity`
+- `BPMNTimer`
+- `BPMNMessage`
+- `BPMNSignal`
+- `BPMNError`
+- `BPMNSequenceFlow`
+
+### BPMNActivity Interface
+
+**File**: `BPMNActivity.java`
+
+```java
+public interface BPMNActivity extends BPMNElement {
+    String getActivityName();
+    String getActivityType();
+    String getExecutionId();
+}
+```
+
+**Purpose**: Represents executable BPMN activities (tasks, sub-processes, etc.).
+
+**Activity Types**:
+- `userTask`: User task
+- `serviceTask`: Service task
+- `scriptTask`: Script task
+- `sendTask`: Send task
+- `receiveTask`: Receive task
+- `businessRuleTask`: Business rule task
+- `manualTask`: Manual task
+- `subProcess`: Sub-process
+
+**Usage Example**:
+```java
+BPMNActivity activity = event.getEntity();
+
+if ("userTask".equals(activity.getActivityType())) {
+    // Handle user task
+}
+```
+
+---
+
+## Event System
+
+### ProcessRuntimeEvent Interface
+
+**File**: `ProcessRuntimeEvent.java`
+
+```java
+public interface ProcessRuntimeEvent<T extends ProcessInstance> 
+    extends RuntimeEvent<T, ProcessRuntimeEvent.ProcessEvents> {
+    
+    enum ProcessEvents {
+        PROCESS_CREATED,
+        PROCESS_STARTED,
+        PROCESS_COMPLETED,
+        PROCESS_CANCELLED,
+        PROCESS_SUSPENDED,
+        PROCESS_RESUMED,
+        PROCESS_UPDATED,
+        PROCESS_DELETED
+    }
+}
+```
+
+**Purpose**: Base interface for process lifecycle events.
+
+**Event Types**:
+
+1. **PROCESS_CREATED**: Process instance created but not started
+2. **PROCESS_STARTED**: Process instance execution began
+3. **PROCESS_COMPLETED**: Process instance finished successfully
+4. **PROCESS_CANCELLED**: Process instance was cancelled
+5. **PROCESS_SUSPENDED**: Process instance paused
+6. **PROCESS_RESUMED**: Process instance resumed from suspension
+7. **PROCESS_UPDATED**: Process instance metadata updated
+8. **PROCESS_DELETED**: Process instance removed
+
+**Extended Process Runtime Event**:
+
+```java
+public interface ExtendedProcessRuntimeEvent<T extends ProcessInstance> 
+    extends ProcessRuntimeEvent<T> {
+    String getNestedProcessInstanceId();
+    String getNestedProcessDefinitionId();
+}
+```
+
+**Purpose**: Provides context for nested/sub-process events.
+
+### Specific Process Events
+
+#### ProcessCreatedEvent
+
+```java
+public interface ProcessCreatedEvent extends ProcessRuntimeEvent<ProcessInstance> {
+}
+```
+
+**Triggered When**: Process instance is created via `create()` operation.
+
+#### ProcessStartedEvent
+
+```java
+public interface ProcessStartedEvent extends ExtendedProcessRuntimeEvent<ProcessInstance> {
+}
+```
+
+**Triggered When**: Process instance execution starts.
+
+**Special**: Extends `ExtendedProcessRuntimeEvent` for nested process support.
+
+#### ProcessCompletedEvent
+
+```java
+public interface ProcessCompletedEvent extends ProcessRuntimeEvent<ProcessInstance> {
+}
+```
+
+**Triggered When**: Process instance reaches end event.
+
+#### ProcessCancelledEvent
+
+```java
+public interface ProcessCancelledEvent extends ProcessRuntimeEvent<ProcessInstance> {
+    String getCause();
+}
+```
+
+**Triggered When**: Process instance is cancelled.
+
+**Additional Data**: Cancellation cause/reason.
+
+### BPMN Activity Events
+
+**File**: `BPMNActivityEvent.java`
+
+```java
+public interface BPMNActivityEvent extends 
+    RuntimeEvent<BPMNActivity, BPMNActivityEvent.ActivityEvents> {
+    
+    enum ActivityEvents {
+        ACTIVITY_STARTED,
+        ACTIVITY_CANCELLED,
+        ACTIVITY_COMPLETED
+    }
+}
+```
+
+**Purpose**: Events for BPMN activity lifecycle.
+
+**Specific Events**:
+- `BPMNActivityStartedEvent`
+- `BPMNActivityCompletedEvent`
+- `BPMNActivityCancelledEvent`
+
+### BPMN Timer Events
+
+**File**: `BPMNTimerEvent.java`
+
+```java
+public interface BPMNTimerEvent extends 
+    RuntimeEvent<BPMNTimer, BPMNTimerEvent.TimerEvents> {
+    
+    enum TimerEvents {
+        TIMER_SCHEDULED,
+        TIMER_FIRED,
+        TIMER_CANCELLED,
+        TIMER_EXECUTED,
+        TIMER_FAILED,
+        TIMER_RETRIES_DECREMENTED
+    }
+}
+```
+
+**Purpose**: Events for timer intermediate/boundary events.
+
+**Timer Lifecycle**:
+```
+SCHEDULED → FIRED → EXECUTED
+     ↓
+  FAILED → RETRIES_DECREMENTED
+     ↓
+  CANCELLED
+```
+
+### BPMN Message Events
+
+**File**: `BPMNMessageEvent.java`
+
+```java
+public interface BPMNMessageEvent extends 
+    RuntimeEvent<BPMNMessage, BPMNMessageEvent.MessageEvents> {
+    
+    enum MessageEvents {
+        MESSAGE_WAITING,
+        MESSAGE_RECEIVED,
+        MESSAGE_SENT
+    }
+}
+```
+
+**Purpose**: Events for message-based interactions.
+
+**Message Flow**:
+```
+MESSAGE_WAITING → MESSAGE_RECEIVED
+                    ↓
+              MESSAGE_SENT (for send tasks)
+```
+
+### BPMN Signal Events
+
+**File**: `BPMNSignalEvent.java`
+
+```java
+public interface BPMNSignalEvent extends 
+    RuntimeEvent<BPMNSignal, BPMNSignalEvent.SignalEvents> {
+    
+    enum SignalEvents {
+        SIGNAL_RECEIVED
+    }
+}
+```
+
+**Purpose**: Events for signal broadcast/receive.
+
+### Integration Events
+
+**File**: `IntegrationEvent.java`
+
+```java
+public interface IntegrationEvent extends 
+    RuntimeEvent<IntegrationContext, IntegrationEvent.IntegrationEvents> {
+    
+    enum IntegrationEvents {
+        INTEGRATION_REQUESTED,
+        INTEGRATION_RESULT_RECEIVED,
+        INTEGRATION_ERROR_RECEIVED
+    }
+}
+```
+
+**Purpose**: Events for external system integrations (connectors).
+
+**Integration Flow**:
+```
+INTEGRATION_REQUESTED
+        ↓
+INTEGRATION_RESULT_RECEIVED / INTEGRATION_ERROR_RECEIVED
+```
+
+---
+
+## Payload System
+
+### ProcessPayloadBuilder
+
+**File**: `ProcessPayloadBuilder.java`
+
+```java
+public class ProcessPayloadBuilder {
+    public static StartProcessPayloadBuilder start();
+    public static CreateProcessPayloadBuilder create();
+    public static DeleteProcessPayloadBuilder delete();
+    public static SuspendProcessPayloadBuilder suspend();
+    public static ResumeProcessPayloadBuilder resume();
+    public static UpdateProcessPayloadBuilder update();
+    public static GetVariablesPayloadBuilder variables();
+    public static SetVariablesPayloadBuilder setVariables();
+    public static RemoveVariablesPayloadBuilder removeVariables();
+    public static SignalPayloadBuilder signal();
+    public static GetProcessDefinitionsPayloadBuilder processDefinitions();
+    public static GetProcessInstancesPayloadBuilder processInstances();
+}
+```
+
+**Purpose**: Factory for creating process-related payloads.
+
+**Design Pattern**: Static factory with fluent builders.
+
+### StartProcessPayload
+
+**File**: `StartProcessPayload.java`
+
+```java
+public class StartProcessPayload implements Payload {
+    private String processDefinitionId;
+    private String processDefinitionKey;
+    private String name;
+    private String businessKey;
+    private Map<String, Object> variables;
+}
+```
+
+**Purpose**: Payload for starting a process instance.
+
+**Key Fields**:
+
+1. **Process Identification**
+   - `processDefinitionId`: Full ID (e.g., "order:1:abc123")
+   - `processDefinitionKey`: Logical key (e.g., "order")
+   - Either one must be provided
+
+2. **Instance Metadata**
+   - `name`: Custom instance name
+   - `businessKey`: Business identifier
+
+3. **Initial Variables**
+   - `variables`: Map of initial process variables
+
+**Usage Example**:
+```java
+StartProcessPayload payload = ProcessPayloadBuilder.start()
+    .withProcessDefinitionKey("orderProcess")
+    .withBusinessKey("ORDER-123")
+    .withVariable("amount", 1000)
+    .withVariable("customer", "John Doe")
+    .build();
+
+ProcessInstance instance = processRuntime.start(payload);
+```
+
+### StartMessagePayload
+
+**File**: `StartMessagePayload.java`
+
+```java
+public class StartMessagePayload implements Payload {
+    private String name;
+    private String businessKey;
+    private Map<String, Object> variables;
+}
+```
+
+**Purpose**: Payload for starting a process via start message.
+
+**Key Characteristics**:
+- Starts process by message name
+- Supports business key for correlation
+- Includes initial variables
+
+**Usage Example**:
+```java
+StartMessagePayload payload = MessagePayloadBuilder.start("startOrder")
+    .withBusinessKey("ORDER-123")
+    .withVariable("items", List.of("item1", "item2"))
+    .build();
+
+ProcessInstance instance = processRuntime.start(payload);
+```
+
+### MessageEventPayload
+
+**File**: `MessageEventPayload.java`
+
+```java
+public class MessageEventPayload implements Payload {
+    private String name;
+    private String correlationKey;
+    private String businessKey;
+    private Map<String, Object> variables;
+}
+```
+
+**Purpose**: Payload for sending messages to running processes.
+
+**Key Fields**:
+
+1. **Message Identification**
+   - `name`: Message name (must match BPMN message)
+
+2. **Correlation**
+   - `correlationKey`: For message correlation
+   - `businessKey`: Process business key
+
+3. **Message Data**
+   - `variables`: Message payload variables
+
+**Usage Example**:
+```java
+MessageEventPayload payload = MessagePayloadBuilder.event("paymentReceived")
+    .withCorrelationKey("ORDER-123")
+    .withVariable("amount", 500.00)
+    .withVariable("paymentId", "PAY-456")
+    .build();
+
+processRuntime.receive(payload);
+```
+
+### SignalPayload
+
+**File**: `SignalPayload.java`
+
+```java
+public class SignalPayload implements Payload {
+    private String name;
+    private Map<String, Object> variables;
+}
+```
+
+**Purpose**: Payload for broadcasting signals.
+
+**Key Characteristics**:
+- Signals are broadcast to all waiting processes
+- No correlation needed
+- Can carry variables
+
+**Usage Example**:
+```java
+SignalPayload payload = SignalPayloadBuilder.signal()
+    .withName("approvalSignal")
+    .withVariable("approvedBy", "manager")
+    .build();
+
+processRuntime.signal(payload);
+```
+
+### Variable Management Payloads
+
+#### SetProcessVariablesPayload
+
+```java
+public class SetProcessVariablesPayload implements Payload {
+    private String processInstanceId;
+    private Map<String, Object> variables;
+}
+```
+
+**Purpose**: Set or update process variables.
+
+**Usage**:
+```java
+processRuntime.setVariables(
+    ProcessPayloadBuilder.setVariables()
+        .withProcessInstanceId(instanceId)
+        .withVariable("status", "approved")
+        .withVariable("reviewer", "john.doe")
+        .build()
+);
+```
+
+#### RemoveProcessVariablesPayload
+
+```java
+public class RemoveProcessVariablesPayload implements Payload {
+    private String processInstanceId;
+    private List<String> variableNames;
+}
+```
+
+**Purpose**: Remove specific process variables.
+
+**Usage**:
+```java
+processRuntime.removeVariables(
+    ProcessPayloadBuilder.removeVariables()
+        .withProcessInstanceId(instanceId)
+        .withVariableNames("tempVar", "oldData")
+        .build()
+);
+```
+
+### Lifecycle Management Payloads
+
+#### SuspendProcessPayload
+
+```java
+public class SuspendProcessPayload implements Payload {
+    private String processInstanceId;
+}
+```
+
+**Purpose**: Suspend a running process instance.
+
+#### ResumeProcessPayload
+
+```java
+public class ResumeProcessPayload implements Payload {
+    private String processInstanceId;
+}
+```
+
+**Purpose**: Resume a suspended process instance.
+
+#### DeleteProcessPayload
+
+```java
+public class DeleteProcessPayload implements Payload {
+    private String processInstanceId;
+    private String reason;
+}
+```
+
+**Purpose**: Delete/cancel a process instance.
+
+**Key Fields**:
+- `processInstanceId`: Target instance
+- `reason`: Optional cancellation reason
+
+---
+
+## Query Payloads
+
+### GetProcessInstancesPayload
+
+**File**: `GetProcessInstancesPayload.java`
+
+```java
+public class GetProcessInstancesPayload implements Payload {
+    private Set<String> processDefinitionKeys;
+    private String businessKey;
+    private boolean suspendedOnly;
+    private boolean activeOnly;
+    private String parentProcessInstanceId;
+}
+```
+
+**Purpose**: Filter process instances for queries.
+
+**Filter Options**:
+
+1. **By Definition**
+   - `processDefinitionKeys`: Multiple definition keys
+
+2. **By Business Key**
+   - `businessKey`: Exact or pattern match
+
+3. **By Status**
+   - `suspendedOnly`: Only suspended instances
+   - `activeOnly`: Only active instances
+
+4. **By Hierarchy**
+   - `parentProcessInstanceId`: Sub-processes only
+
+**Usage Example**:
+```java
+Page<ProcessInstance> instances = processRuntime.processInstances(
+    Pageable.of(0, 20),
+    ProcessPayloadBuilder.processInstances()
+        .withProcessDefinitionKey("orderProcess")
+        .withBusinessKey("ORDER-2024")
+        .active()
+        .build()
+);
+```
+
+### GetProcessDefinitionsPayload
+
+**File**: `GetProcessDefinitionsPayload.java`
+
+```java
+public class GetProcessDefinitionsPayload implements Payload {
+    private String processDefinitionId;
+    private Set<String> processDefinitionKeys;
+}
+```
+
+**Purpose**: Filter process definitions for queries.
+
+**Usage Example**:
+```java
+Page<ProcessDefinition> definitions = 
+    processRuntime.processDefinitions(
+        Pageable.of(0, 20),
+        ProcessPayloadBuilder.processDefinitions()
+            .withProcessDefinitionKey("order")
+            .build()
+    );
+```
+
+---
+
+## Specialized Models
+
+### IntegrationContext Interface
+
+**File**: `IntegrationContext.java`
+
+```java
+public interface IntegrationContext {
+    String getId();
+    String getProcessInstanceId();
+    String getRootProcessInstanceId();
+    String getParentProcessInstanceId();
+    String getExecutionId();
+    String getProcessDefinitionId();
+    String getProcessDefinitionKey();
+    Integer getProcessDefinitionVersion();
+    String getBusinessKey();
+    String getConnectorType();
+    String getAppVersion();
+    String getClientId();
+    String getClientName();
+    String getClientType();
+    
+    Map<String, Object> getInBoundVariables();
+    Map<String, Object> getOutBoundVariables();
+    
+    void addOutBoundVariable(String name, Object value);
+    void addOutBoundVariables(Map<String, Object> variables);
+    
+    <T> T getInBoundVariable(String name);
+    <T> T getInBoundVariable(String name, Class<T> type);
+    <T> T getOutBoundVariable(String name);
+    <T> T getOutBoundVariable(String name, Class<T> type);
+}
+```
+
+**Purpose**: Context for external system integrations (connectors).
+
+**Key Features**:
+
+1. **Process Context**
+   - Full process hierarchy information
+   - Execution context
+
+2. **Connector Information**
+   - Connector type
+   - Client details
+
+3. **Variable Mapping**
+   - In-bound variables (from process)
+   - Out-bound variables (to process)
+   - Type-safe access
+
+**Usage in Connector**:
+```java
+public class EmailConnector implements Connector {
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        // Get input
+        String recipient = context.getInBoundVariable("recipient");
+        String subject = context.getInBoundVariable("subject");
+        
+        // Execute
+        EmailResult result = emailService.send(recipient, subject);
+        
+        // Set output
+        context.addOutBoundVariable("sent", result.isSent());
+        context.addOutBoundVariable("messageId", result.getId());
+        
+        return context;
+    }
+}
+```
+
+### Deployment Interface
+
+**File**: `Deployment.java`
+
+```java
+public interface Deployment {
+    String getId();
+    String getName();
+    Integer getVersion();
+    String getProjectReleaseVersion();
+}
+```
+
+**Purpose**: Represents a deployment of process definitions.
+
+### MessageSubscription Interface
+
+**File**: `MessageSubscription.java`
+
+```java
+public interface MessageSubscription {
+    String getId();
+    String getEventName();
+    String getExecutionId();
+    String getProcessInstanceId();
+    String getBusinessKey();
+    String getConfiguration();
+    String getActivityId();
+    Date getCreated();
+    String getProcessDefinitionId();
+}
+```
+
+**Purpose**: Represents a message subscription (process waiting for message).
+
+---
+
+## Design Patterns
+
+### 1. Builder Pattern
+
+All complex payloads use builders:
+```java
+StartProcessPayload payload = ProcessPayloadBuilder.start()
+    .withProcessDefinitionKey("key")
+    .withVariable("name", "value")
+    .build();
+```
+
+### 2. Strategy Pattern
+
+Different payload types for different operations:
+```java
+// Start by definition
+StartProcessPayload
+
+// Start by message
+StartMessagePayload
+
+// Send message
+MessageEventPayload
+```
+
+### 3. Template Method Pattern
+
+Event hierarchy provides template:
+```java
+public interface ProcessRuntimeEvent<T extends ProcessInstance> 
+    extends RuntimeEvent<T, ProcessEvents> {
+    // Template for all process events
+}
+```
+
+### 4. Factory Pattern
+
+Payload builders act as factories:
+```java
+public class ProcessPayloadBuilder {
+    public static StartProcessPayloadBuilder start() { ... }
+    public static DeleteProcessPayloadBuilder delete() { ... }
+}
+```
+
+---
+
+## Performance Considerations
+
+### 1. Payload Size
+
+Keep payloads minimal:
+```java
+// Bad - large variable values
+.withVariable("document", largeByteArray)
+
+// Good - references
+.withVariable("documentId", "doc-123")
+```
+
+### 2. Event Data
+
+Events should carry only essential data:
+```java
+// Event entity should be lightweight
+ProcessInstance instance = event.getEntity();
+// Don't include full variable map in event
+```
+
+### 3. Query Optimization
+
+Use specific filters:
+```java
+// Good - specific query
+.withProcessDefinitionKey("order")
+.withBusinessKey("ORDER-123")
+
+// Bad - broad query, filter in code
+processInstances(Pageable.of(0, 1000))
+```
+
+---
+
+## Testing Guidelines
+
+### Payload Testing
+
+```java
+@Test
+void startProcessPayloadShouldHaveUniqueId() {
+    StartProcessPayload payload1 = new StartProcessPayload();
+    StartProcessPayload payload2 = new StartProcessPayload();
+    
+    assertNotEquals(payload1.getId(), payload2.getId());
+}
+
+@Test
+void payloadShouldValidateRequiredFields() {
+    assertThrows(IllegalArgumentException.class, () -> {
+        ProcessPayloadBuilder.start()
+            .build(); // Missing process definition
+    });
+}
+```
+
+### Event Testing
+
+```java
+@Test
+void processStartedEventShouldHaveContext() {
+    ProcessStartedEvent event = createEvent();
+    
+    assertNotNull(event.getProcessInstanceId());
+    assertNotNull(event.getProcessDefinitionId());
+    assertNotNull(event.getTimestamp());
+    assertEquals(ProcessEvents.PROCESS_STARTED, event.getEventType());
+}
+```
+
+---
+
+## Common Pitfalls
+
+### 1. Confusing Process Definition ID vs Key
+
+```java
+// Bad - mixing ID and key
+.withProcessDefinitionId("order") // This is a key, not ID!
+
+// Good - use correct field
+.withProcessDefinitionKey("order")
+// or
+.withProcessDefinitionId("order:1:abc123")
+```
+
+### 2. Variable Scope Confusion
+
+```java
+// Process variable
+processRuntime.setVariables(...);
+
+// Task variable
+taskRuntime.createVariable(...);
+
+// Different scopes!
+```
+
+### 3. Event Ordering Assumptions
+
+```java
+// Don't assume event order
+@EventListener
+public void onProcessStarted(ProcessStartedEvent event) {
+    // This may not fire before variable events
+}
+```
+
+---
+
+## Version Information
+
+- **Module Version**: 8.7.2-SNAPSHOT
+- **Java Version**: 11+
+- **Dependencies**: activiti-api-model-shared
+
+---
+
+## Related Documentation
+
+- [Model Shared Module](../activiti-api-model-shared/README.md)
+- [Process Runtime Module](../activiti-api-process-runtime/README.md)
+- [Main Module Docs](../README.md)
+
+---
+
+**Last Updated**: 2024  
+**Maintained by**: Activiti Community

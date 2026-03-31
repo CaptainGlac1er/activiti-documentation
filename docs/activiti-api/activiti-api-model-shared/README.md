@@ -1,0 +1,593 @@
+# Activiti API Model Shared Module
+
+## Overview
+
+The `activiti-api-model-shared` module provides the foundational interfaces and base classes used across all Activiti API modules. This is the core dependency that defines the contract for payloads, events, results, and shared models.
+
+## Module Structure
+
+```
+activiti-api-model-shared/
+└── src/main/java/org/activiti/api/model/shared/
+    ├── event/
+    │   ├── RuntimeEvent.java
+    │   ├── VariableEvent.java
+    │   ├── VariableCreatedEvent.java
+    │   ├── VariableUpdatedEvent.java
+    │   └── VariableDeletedEvent.java
+    ├── model/
+    │   ├── VariableInstance.java
+    │   ├── ApplicationElement.java
+    │   └── ActivitiErrorMessage.java
+    ├── Payload.java
+    ├── Result.java
+    └── EmptyResult.java
+```
+
+## Core Interfaces
+
+### Payload Interface
+
+**File**: `Payload.java`
+
+```java
+public interface Payload extends Serializable {
+    String getId();
+}
+```
+
+**Purpose**: Base interface for all request payloads. Every operation request implements this interface.
+
+**Key Points**:
+- Generates unique ID via UUID
+- Serializable for distributed systems
+- Used as the contract for all API operations
+
+**Implementation Pattern**:
+```java
+public class StartProcessPayload implements Payload {
+    private String id = UUID.randomUUID().toString();
+    
+    @Override
+    public String getId() {
+        return id;
+    }
+    
+    // Additional fields...
+}
+```
+
+### Result Class
+
+**File**: `Result.java`
+
+```java
+public abstract class Result<T> implements Serializable {
+    private Payload payload;
+    private T entity;
+    
+    public Result(Payload payload, T entity) {
+        this.payload = payload;
+        this.entity = entity;
+    }
+    
+    public Payload getPayload() { return payload; }
+    public T getEntity() { return entity; }
+}
+```
+
+**Purpose**: Generic wrapper for operation results, maintaining the relationship between the request payload and the resulting entity.
+
+**Use Cases**:
+- Return values from runtime operations
+- Maintain audit trail (payload ID)
+- Type-safe result handling
+
+**Example**:
+```java
+public class TaskResult extends Result<Task> {
+    public TaskResult(Payload payload, Task entity) {
+        super(payload, entity);
+    }
+}
+```
+
+### EmptyResult Class
+
+**File**: `EmptyResult.java`
+
+```java
+public class EmptyResult extends Result<Void> {
+    public EmptyResult(Payload payload) {
+        super(payload, null);
+    }
+}
+```
+
+**Purpose**: Result wrapper for operations that don't return an entity (e.g., void operations).
+
+**When to Use**:
+- Variable updates
+- Task completions without return
+- Administrative operations
+
+---
+
+## Event System
+
+### RuntimeEvent Interface
+
+**File**: `RuntimeEvent.java`
+
+```java
+public interface RuntimeEvent<ENTITY_TYPE, EVENT_TYPE extends Enum<?>> 
+    extends Serializable {
+    
+    String getId();
+    ENTITY_TYPE getEntity();
+    Long getTimestamp();
+    EVENT_TYPE getEventType();
+    
+    // Process context
+    String getProcessInstanceId();
+    String getParentProcessInstanceId();
+    String getProcessDefinitionId();
+    String getProcessDefinitionKey();
+    Integer getProcessDefinitionVersion();
+    String getBusinessKey();
+}
+```
+
+**Purpose**: Base interface for all runtime events in the system.
+
+**Design Decisions**:
+- **Generic ENTITY_TYPE**: Type-safe event handling
+- **Enum EVENT_TYPE**: Compile-time event type safety
+- **Process Context**: All events carry process metadata
+- **Serializable**: Events can be transmitted across boundaries
+
+**Event Flow**:
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│  Action     │────►│  Event       │────►│  Listener   │
+│             │     │  Created     │     │             │
+└─────────────┘     └──────────────┘     └─────────────┘
+                         │
+                         ▼
+                   ┌──────────────┐
+                   │  Context     │
+                   │  Data        │
+                   └──────────────┘
+```
+
+### VariableEvent Interface
+
+**File**: `VariableEvent.java`
+
+```java
+public interface VariableEvent extends 
+    RuntimeEvent<VariableInstance, VariableEvent.VariableEvents> {
+    
+    enum VariableEvents {
+        VARIABLE_CREATED,
+        VARIABLE_UPDATED,
+        VARIABLE_DELETED
+    }
+}
+```
+
+**Purpose**: Specialized event interface for variable lifecycle events.
+
+**Event Types**:
+- `VARIABLE_CREATED`: New variable added to process/task
+- `VARIABLE_UPDATED`: Existing variable modified
+- `VARIABLE_DELETED`: Variable removed from scope
+
+**Implementation Example**:
+```java
+public interface VariableCreatedEvent extends VariableEvent {
+    // No additional methods - uses base interface
+}
+
+public interface VariableUpdatedEvent extends VariableEvent {
+    <T> T getPreviousValue();  // Additional context for updates
+}
+```
+
+---
+
+## Domain Models
+
+### VariableInstance Interface
+
+**File**: `VariableInstance.java`
+
+```java
+public interface VariableInstance {
+    String getName();
+    String getType();
+    String getProcessInstanceId();
+    String getTaskId();
+    boolean isTaskVariable();
+    <T> T getValue();
+}
+```
+
+**Purpose**: Represents a variable in either process or task scope.
+
+**Key Characteristics**:
+- **Scoped**: Either process-level or task-level
+- **Typed**: Variables have explicit types
+- **Generic Value**: Type-safe value retrieval
+- **Context-Aware**: Knows its parent process/task
+
+**Variable Scope**:
+```
+┌─────────────────────────────────┐
+│      Process Instance           │
+│  ┌───────────────────────────┐  │
+│  │  Process Variables        │  │
+│  │  - isTaskVariable() = false│  │
+│  └───────────────────────────┘  │
+│                                  │
+│  ┌───────────────────────────┐  │
+│  │         Task              │  │
+│  │  ┌─────────────────────┐  │  │
+│  │  │  Task Variables     │  │  │
+│  │  │  - isTaskVariable() │  │  │
+│  │  │    = true           │  │  │
+│  │  └─────────────────────┘  │  │
+│  └───────────────────────────┘  │
+└─────────────────────────────────┘
+```
+
+### ApplicationElement Interface
+
+**File**: `ApplicationElement.java`
+
+```java
+public interface ApplicationElement {
+    String getAppVersion();
+}
+```
+
+**Purpose**: Marker interface for elements that belong to a specific application version.
+
+**Use Cases**:
+- Multi-tenant environments
+- Version tracking
+- Application isolation
+
+### ActivitiErrorMessage Interface
+
+**File**: `ActivitiErrorMessage.java`
+
+```java
+public interface ActivitiErrorMessage {
+    int getCode();
+    String getMessage();
+}
+```
+
+**Purpose**: Standardized error messaging across the API.
+
+**Error Code Convention**:
+- 400-499: Client errors
+- 500-599: Server errors
+- Custom codes for specific errors
+
+---
+
+## Implementation Details
+
+### Serialization Strategy
+
+All interfaces extend `Serializable` for:
+- Distributed event processing
+- Message queue integration
+- Remote procedure calls
+- Caching mechanisms
+
+**Example**:
+```java
+public class StartProcessPayload implements Payload {
+    private static final long serialVersionUID = 1L;
+    
+    // Fields must be serializable
+    private transient Object nonSerializableField;
+}
+```
+
+### UUID Generation
+
+Payload IDs use UUID v4 for:
+- Global uniqueness
+- No central coordination needed
+- Security (unpredictable)
+
+**Implementation**:
+```java
+private String id = UUID.randomUUID().toString();
+```
+
+### Type Safety
+
+Generic types ensure compile-time safety:
+```java
+// Type-safe event handling
+public void handle(ProcessCompletedEvent event) {
+    ProcessInstance process = event.getEntity();  // No casting needed
+}
+
+// Type-safe variable access
+String value = variable.getValue();  // Automatic type conversion
+```
+
+---
+
+## Design Patterns
+
+### 1. Template Method Pattern
+
+Result class provides template for operation results:
+```java
+public abstract class Result<T> {
+    // Template for all results
+    protected final Payload payload;
+    protected final T entity;
+}
+```
+
+### 2. Marker Interface Pattern
+
+ApplicationElement marks versioned elements:
+```java
+public interface ApplicationElement {
+    String getAppVersion();
+}
+```
+
+### 3. Generic Interface Pattern
+
+RuntimeEvent uses generics for type safety:
+```java
+public interface RuntimeEvent<ENTITY_TYPE, EVENT_TYPE extends Enum<?>> {
+    ENTITY_TYPE getEntity();
+    EVENT_TYPE getEventType();
+}
+```
+
+---
+
+## Performance Considerations
+
+### 1. Payload Size
+
+Keep payloads small:
+- Use references instead of full objects
+- Avoid large binary data
+- Compress when necessary
+
+**Bad**:
+```java
+.withVariable("document", largeByteArray)
+```
+
+**Good**:
+```java
+.withVariable("documentId", "doc-123")
+.withVariable("documentUrl", "https://storage/doc/123")
+```
+
+### 2. Event Processing
+
+Events should be lightweight:
+- Include only essential data
+- Process asynchronously
+- Batch when possible
+
+### 3. Serialization Overhead
+
+Minimize serialization:
+- Use efficient serialization formats
+- Avoid deep object graphs
+- Cache serialized forms
+
+---
+
+## Testing Guidelines
+
+### Unit Testing Payloads
+
+```java
+@Test
+void payloadShouldHaveUniqueId() {
+    StartProcessPayload payload1 = new StartProcessPayload();
+    StartProcessPayload payload2 = new StartProcessPayload();
+    
+    assertNotEquals(payload1.getId(), payload2.getId());
+}
+
+@Test
+void payloadShouldBeSerializable() throws Exception {
+    Payload payload = new StartProcessPayload();
+    
+    byte[] bytes = serialize(payload);
+    Payload deserialized = deserialize(bytes);
+    
+    assertEquals(payload.getId(), deserialized.getId());
+}
+```
+
+### Testing Events
+
+```java
+@Test
+void eventShouldContainProcessContext() {
+    ProcessCompletedEvent event = createEvent();
+    
+    assertNotNull(event.getProcessInstanceId());
+    assertNotNull(event.getProcessDefinitionId());
+    assertNotNull(event.getTimestamp());
+}
+```
+
+---
+
+## Common Pitfalls
+
+### 1. Null Payload IDs
+
+Always initialize ID in constructor:
+```java
+// Bad
+public class MyPayload implements Payload {
+    private String id;  // Can be null!
+}
+
+// Good
+public class MyPayload implements Payload {
+    private String id = UUID.randomUUID().toString();
+}
+```
+
+### 2. Non-Serializable Fields
+
+Mark transient fields:
+```java
+public class MyPayload implements Payload {
+    private transient Object nonSerializable;
+}
+```
+
+### 3. Event Data Bloat
+
+Include only necessary data:
+```java
+// Bad - includes full entity graph
+event.setEntity(largeObjectWithReferences);
+
+// Good - includes only needed data
+event.setEntity(slimEntity);
+```
+
+---
+
+## Migration Notes
+
+### From Previous Versions
+
+- `Payload` interface now requires `getId()`
+- Events now include process context methods
+- `Result` class is now abstract
+
+### Breaking Changes
+
+- Removed concrete event implementations
+- Changed variable value access to generic method
+- Updated serialization requirements
+
+---
+
+## Best Practices
+
+### 1. Payload Design
+
+- Keep payloads immutable where possible
+- Use builders for complex payloads
+- Validate in constructor
+
+```java
+public class StartProcessPayload implements Payload {
+    private final String id;
+    private final String processDefinitionKey;
+    
+    public StartProcessPayload(String processDefinitionKey) {
+        this.id = UUID.randomUUID().toString();
+        this.processDefinitionKey = 
+            Objects.requireNonNull(processDefinitionKey);
+    }
+}
+```
+
+### 2. Event Handling
+
+- Handle events asynchronously
+- Implement proper error handling
+- Log event processing
+
+```java
+@EventListener
+public void onEvent(ProcessCompletedEvent event) {
+    try {
+        asyncExecutor.execute(() -> processEvent(event));
+    } catch (Exception e) {
+        log.error("Event processing failed", e);
+    }
+}
+```
+
+### 3. Variable Access
+
+- Use type-safe access
+- Check variable existence
+- Handle null values
+
+```java
+if (variable != null) {
+    String value = variable.getValue();
+    // Process value
+}
+```
+
+---
+
+## API Surface
+
+### Public Interfaces
+
+- `Payload` - Request contract
+- `Result<T>` - Response wrapper
+- `RuntimeEvent<E, T>` - Event contract
+- `VariableInstance` - Variable representation
+- `ApplicationElement` - Version marker
+- `ActivitiErrorMessage` - Error contract
+
+### Public Classes
+
+- `EmptyResult` - Void result wrapper
+
+### Public Enums
+
+- `VariableEvent.VariableEvents` - Variable event types
+
+---
+
+## Dependencies
+
+This module has **no internal dependencies** - it's the foundation of the API.
+
+External dependencies:
+- Java SE (for Serializable, UUID, etc.)
+- No third-party libraries
+
+---
+
+## Version Information
+
+- **Module Version**: 8.7.2-SNAPSHOT
+- **Java Version**: 11+
+- **Dependencies**: None (foundation module)
+
+---
+
+## Related Documentation
+
+- [API Reference](../../api-reference.md)
+- [Main Module Docs](../README.md)
+- [Runtime Shared Module](../activiti-api-runtime-shared/README.md)
+
+---
+
+**Last Updated**: 2024  
+**Maintained by**: Activiti Community
