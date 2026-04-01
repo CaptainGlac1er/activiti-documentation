@@ -5,10 +5,12 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
 import Heading from '@theme/Heading';
+import { useBaseUrlUtils } from '@docusaurus/useBaseUrl';
 
 import styles from './index.module.scss';
 
 function HomepageHeader() {
+  const { withBaseUrl } = useBaseUrlUtils();
   const {siteConfig} = useDocusaurusContext();
   return (
     <header className={clsx('hero hero--primary', styles.heroBanner)}>
@@ -26,7 +28,7 @@ function HomepageHeader() {
           </div>
           <div className={styles.heroImage}>
             <img 
-              src="/img/logo.svg" 
+              src={withBaseUrl('img/logo.svg')}
               alt="Activiti Logo" 
               className={styles.heroLogo}
             />
