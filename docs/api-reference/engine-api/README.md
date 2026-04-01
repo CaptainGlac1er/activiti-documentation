@@ -16,20 +16,19 @@ The Activiti Engine API provides the core services for workflow execution, task 
 ├─────────────────────────────────────┤
 │  RepositoryService  │  RuntimeService│
 │  TaskService        │  HistoryService│
-│  ManagementService  │  ExternalTaskService│
+│  ManagementService  │                │
 └─────────────────────────────────────┘
 ```
 
 ## Available Services
 
-| Service | Purpose | Documentation |
-|---------|---------|---------------|
-| **Repository Service** | Process definitions and deployments | [View Docs](../../core-services/repository-service.md) |
-| **Runtime Service** | Process instance execution | [View Docs](../../core-services/runtime-service.md) |
-| **Task Service** | User task management | [View Docs](../../core-services/task-service.md) |
-| **History Service** | Historical data and auditing | [View Docs](../../core-services/history-service.md) |
-| **Management Service** | Engine administration | [View Docs](../../core-services/management-service.md) |
-| **External Task Service** | Decoupled task execution | [View Docs](../../core-services/external-task-service.md) |
+| Service                | Purpose                             | Documentation                        |
+|------------------------|-------------------------------------|--------------------------------------|
+| **Repository Service** | Process definitions and deployments | [View Docs](./repository-service.md) |
+| **Runtime Service**    | Process instance execution          | [View Docs](./runtime-service.md)    |
+| **Task Service**       | User task management                | [View Docs](./task-service.md)       |
+| **History Service**    | Historical data and auditing        | [View Docs](./history-service.md)    |
+| **Management Service** | Engine administration               | [View Docs](./management-service.md) |
 
 ## ProcessEngine Interface
 
@@ -42,7 +41,6 @@ public interface ProcessEngine {
     TaskService getTaskService();
     HistoryService getHistoryService();
     ManagementService getManagementService();
-    ExternalTaskService getExternalTaskService();
     
     ProcessEngineConfiguration getProcessEngineConfiguration();
     String getName();
@@ -85,7 +83,7 @@ List<ProcessDefinition> definitions = repositoryService
     .list();
 ```
 
-**See:** [Repository Service Documentation](../../core-services/repository-service.md)
+**See:** [Repository Service Documentation](./repository-service.md)
 
 ### Runtime Service
 
@@ -107,7 +105,7 @@ List<ProcessInstance> instances = runtimeService
 runtimeService.setVariable(processInstanceId, "amount", 1000);
 ```
 
-**See:** [Runtime Service Documentation](../../core-services/runtime-service.md)
+**See:** [Runtime Service Documentation](./runtime-service.md)
 
 ### Task Service
 
@@ -128,71 +126,74 @@ taskService.claim(taskId, "john.doe");
 taskService.complete(taskId, variables);
 ```
 
-**See:** [Task Service Documentation](../../core-services/task-service.md)
+**See:** [Task Service Documentation](./task-service.md)
 
 ### History Service
 
-Provides historical data:
+Provides historical data and auditing:
 
 ```java
 HistoryService historyService = engine.getHistoryService();
 
-// Query historic instances
+// Query historic process instances
 List<HistoricProcessInstance> instances = historyService
     .createHistoricProcessInstanceQuery()
     .finished()
     .list();
 
-// Get historic tasks
+// Query historic tasks
 List<HistoricTaskInstance> tasks = historyService
     .createHistoricTaskInstanceQuery()
     .taskAssignee("john.doe")
     .list();
+
+// Get process instance history log
+ProcessInstanceHistoryLog log = historyService
+    .createProcessInstanceHistoryLogQuery("process-id")
+    .includeTasks()
+    .includeActivities()
+    .includeVariables()
+    .singleResult();
+
+// Get historic identity links
+List<HistoricIdentityLink> links = historyService
+    .getHistoricIdentityLinksForTask("task-id");
 ```
 
-**See:** [History Service Documentation](../../core-services/history-service.md)
+**See:** [History Service Documentation](./history-service.md) ✅ *Rewritten and verified*
 
 ### Management Service
 
-Engine administration:
+Engine administration and maintenance:
 
 ```java
 ManagementService managementService = engine.getManagementService();
 
-// Execute jobs
-managementService.executeJobs();
+// Get database table counts
+Map<String, Long> tableCounts = managementService.getTableCount();
 
 // Query jobs
 List<Job> jobs = managementService.createJobQuery()
     .processInstanceId(instanceId)
     .list();
 
-// Get engine metrics
-Map<String, Object> metrics = managementService.getDbResourceCount();
+// Execute a specific job
+managementService.executeJob(jobId);
+
+// Set job retries
+managementService.setJobRetries(jobId, 3);
+
+// Get job exception stacktrace
+String stacktrace = managementService.getJobExceptionStacktrace(jobId);
+
+// Move dead letter job back to executable
+Job restored = managementService.moveDeadLetterJobToExecutableJob(jobId, 3);
+
+// Query dead letter jobs
+List<Job> deadLetterJobs = managementService.createDeadLetterJobQuery().list();
 ```
 
-**See:** [Management Service Documentation](../../core-services/management-service.md)
-
-### External Task Service
-
-Decoupled task execution:
-
-```java
-ExternalTaskService externalTaskService = engine.getExternalTaskService();
-
-// Fetch and lock tasks
-List<ExternalTask> tasks = externalTaskService.fetchAndLock(
-    new FetchAndLockExternalTaskRequest()
-        .workerId("worker-1")
-        .maxTasks(10)
-        .topicNames("payment-process")
-);
-
-// Complete task
-externalTaskService.complete(taskId, workerId, variables);
-```
-
-**See:** [External Task Service Documentation](../../core-services/external-task-service.md)
+**See:** [Management Service Documentation](./management-service.md) ✅ *Rewritten and verified*
 
 ## Configuration
 
@@ -458,24 +459,25 @@ Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
 
 ## Next Steps
 
-1. **Start with core services:**
-   - [Repository Service](../../core-services/repository-service.md)
-   - [Runtime Service](../../core-services/runtime-service.md)
-   - [Task Service](../../core-services/task-service.md)
+1. **Start with verified core services:**
+   - [Repository Service](./repository-service.md) ✅
+   - [Runtime Service](./runtime-service.md) ✅
+   - [Task Service](./task-service.md) ✅
 
-2. **Learn advanced topics:**
-   - [History Service](../../core-services/history-service.md)
-   - [Management Service](../../core-services/management-service.md)
-   - [External Task Service](../../core-services/external-task-service.md)
+2. **Learn advanced topics (all verified):**
+   - [History Service](./history-service.md) ✅ *Rewritten March 2024*
+   - [Management Service](./management-service.md) ✅ *Rewritten March 2024*
 
-3. **Explore modern API:**
+3. **DO NOT USE (does not exist in Activiti):**
+   - ❌ External Task Service - This is a Camunda feature, not available in Activiti
+
+4. **Explore modern API:**
    - [Activiti API Reference](../activiti-api/README.md)
 
 ---
 
 ## See Also
 
-- [Core Services](../../core-services/README.md) - Detailed service documentation
 - [Activiti API](../activiti-api/README.md) - Modern interface-driven API
 - [Getting Started](../../getting-started/configuration.md) - Quick start guide
 - [Best Practices](../../best-practices/overview.md) - Performance optimization

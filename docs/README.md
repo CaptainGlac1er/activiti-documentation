@@ -92,7 +92,6 @@ Upgrade from older versions:
 
 ## 🚀 Quick Links
 
-- [Introduction](./intro.md) - Start here
 - [Quick Start](./quickstart.md) - Get running in 5 minutes
 - [Architecture Overview](./architecture/overview.md) - How it works
 - [Core Services](./core-services/) - Main APIs
@@ -101,10 +100,9 @@ Upgrade from older versions:
 ## 📖 How to Use This Documentation
 
 ### For New Users
-1. Start with [Introduction](./intro.md)
-2. Follow the [Quick Start](./quickstart.md)
-3. Read [Getting Started](./getting-started/) guides
-4. Explore [Core Services](./core-services/)
+1. Follow the [Quick Start](./quickstart.md)
+2. Read [Getting Started](./getting-started/) guides
+3. Explore [Core Services](./core-services/)
 
 ### For Experienced Users
 1. Jump to specific [Core Services](./core-services/)
@@ -135,13 +133,13 @@ npm run clear
 
 1. Create file in appropriate section
 2. Add front matter:
-```yaml
----
-sidebar_label: Your Title
-slug: /section/your-page
-description: Brief description
----
-```
+    ```yaml
+    ---
+    sidebar_label: Your Title
+    slug: /section/your-page
+    description: Brief description
+    ---
+    ```
 3. Update `sidebars.ts` if needed
 4. Test locally
 5. Submit PR
@@ -154,7 +152,7 @@ description: Brief description
 - `sidebar_class_name` - Custom CSS class (optional)
 - `keywords` - SEO keywords (optional)
 
-## 🤝 Contributing
+## Contributing
 
 ### Documentation Guidelines
 
@@ -185,14 +183,14 @@ description: Brief description
 
 If you're coming from the old documentation structure:
 
-| Old Path | New Path |
-|----------|----------|
-| `activiti-core/activiti-engine/01-engine-architecture.md` | `architecture/overview.md` |
-| `activiti-core/activiti-engine/02-engine-configuration.md` | `getting-started/configuration.md` |
-| `activiti-core/activiti-engine/04-repository-service.md` | `core-services/repository-service.md` |
-| `activiti-core/activiti-engine/05-runtime-service.md` | `core-services/runtime-service.md` |
-| `activiti-core/activiti-engine/06-task-service.md` | `core-services/task-service.md` |
-| `activiti-core/activiti-engine/07-history-service.md` | `core-services/history-service.md` |
+| Old Path                                                   | New Path                              |
+|------------------------------------------------------------|---------------------------------------|
+| `activiti-core/activiti-engine/01-engine-architecture.md`  | `architecture/overview.md`            |
+| `activiti-core/activiti-engine/02-engine-configuration.md` | `getting-started/configuration.md`    |
+| `activiti-core/activiti-engine/04-repository-service.md`   | `core-services/repository-service.md` |
+| `activiti-core/activiti-engine/05-runtime-service.md`      | `core-services/runtime-service.md`    |
+| `activiti-core/activiti-engine/06-task-service.md`         | `core-services/task-service.md`       |
+| `activiti-core/activiti-engine/07-history-service.md`      | `core-services/history-service.md`    |
 
 All old links will automatically redirect to new locations.
 

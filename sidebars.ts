@@ -10,12 +10,6 @@ const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     {
       type: 'doc',
-      id: 'intro',
-      label: '👋 Introduction',
-      className: 'hero-intro',
-    },
-    {
-      type: 'doc',
       id: 'quickstart',
       label: '🚀 Quick Start',
       className: 'hero-quickstart',
@@ -41,12 +35,11 @@ const sidebars: SidebarsConfig = {
       label: '⚙️ Core Services',
       link: {type: 'generated-index', title: 'Engine Services Overview'},
       items: [
-        'core-services/repository-service',
-        'core-services/runtime-service',
-        'core-services/task-service',
-        'core-services/history-service',
-        'core-services/management-service',
-        'core-services/external-task-service',
+        'api-reference/engine-api/repository-service',
+        'api-reference/engine-api/runtime-service',
+        'api-reference/engine-api/task-service',
+        'api-reference/engine-api/history-service',
+        'api-reference/engine-api/management-service',
       ],
     },
     {
