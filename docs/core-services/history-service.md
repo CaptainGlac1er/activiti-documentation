@@ -783,14 +783,6 @@ List<HistoricIdentityLink> getHistoricIdentityLinksForProcessInstance(String pro
 
 // Process Instance History Log - convenience method for debugging
 ProcessInstanceHistoryLogQuery createProcessInstanceHistoryLog(String processInstanceId);
-
-/**
- * ⚠️ REMOVED/MISLEADING METHODS:
- * - createHistoricIdentityLinkLogQuery() - DOES NOT EXIST
- * - createHistoricProcessInstance(String id) - DOES NOT EXIST
- * - createHistoricTaskInstance() - DOES NOT EXIST
- * - createHistoricProcessDefinitionQuery() - DOES NOT EXIST
- */
 ```
 
 ### HistoricProcessInstanceQuery
@@ -838,17 +830,6 @@ HistoricProcessInstanceQuery createHistoricProcessInstanceQuery();
 .listPage(int firstResult, int maxResults)
 .count()
 .singleResult()
-
-/**
- * ⚠️ REMOVED/MISLEADING METHODS:
- * - active() - use unfinished() instead
- * - durationGreaterThanOrEqual(long) - DOES NOT EXIST
- * - durationLessThanOrEqual(long) - DOES NOT EXIST
- * - processInstanceSubProcessInstanceId() - DOES NOT EXIST
- * - orderByStartTime() - use orderByProcessInstanceStartTime()
- * - orderByEndTime() - use orderByProcessInstanceEndTime()
- * - orderByDuration() - DOES NOT EXIST
- */
 ```
 
 ### HistoricTaskInstanceQuery
@@ -946,12 +927,6 @@ HistoricActivityInstanceQuery createHistoricActivityInstanceQuery();
 .listPage(int firstResult, int maxResults)
 .count()
 .singleResult()
-
-/**
- * ⚠️ REMOVED/MISLEADING METHODS:
- * - orderByActivityInstanceId() - use orderByHistoricActivityInstanceId()
- * - durationGreaterThanOrEqual(long) - DOES NOT EXIST
- */
 ```
 
 ### HistoricVariableInstanceQuery
@@ -990,11 +965,6 @@ HistoricVariableInstanceQuery createHistoricVariableInstanceQuery();
 .listPage(int firstResult, int maxResults)
 .count()
 .singleResult()
-
-/**
- * ⚠️ REMOVED/MISLEADING METHODS:
- * - orderByTime() - use orderByVariableCreateTime() or orderByVariableLastUpdateTime()
- */
 ```
 
 ### HistoricDetailQuery
@@ -1812,7 +1782,7 @@ public void investigateFailedProcess(String processInstanceId) {
 - [Management Service](./management-service.md)
 - [Runtime Service](./runtime-service.md)
 - [Task Service](./task-service.md)
-- [Best Practices](../../best-practices/overview.md)
+- [Best Practices](../best-practices/overview.md)
 - [History Level Configuration](../getting-started/configuration.md#history-level)
 
 ---

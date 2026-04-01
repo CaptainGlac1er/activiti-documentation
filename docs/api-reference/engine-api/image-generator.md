@@ -1194,4 +1194,4 @@ void setHighlightManager(HighlightManager highlight)
 
 - [Parent Module Documentation](../overview.md)
 - [BPMN Model](../engine-api/bpmn-model.md)
-- [BPMN Layout](../activiti-bpmn-layout/README.md)
+- [BPMN Layout](../engine-api/bpmn-layout.md)

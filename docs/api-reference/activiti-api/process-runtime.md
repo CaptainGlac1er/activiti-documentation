@@ -983,9 +983,9 @@ Pageable.of(0, 1000)
 
 ## Related Documentation
 
-- [Process Model Module](../activiti-api/process-model.md)
-- [Runtime Shared Module](../activiti-api/runtime-shared.md)
-- [Main Module Docs](../README.md)
+- [Process Model Module](./process-model.md)
+- [Runtime Shared Module](runtime-shared.md)
+- [Main Module Docs](../overview.md)
 
 ---
 

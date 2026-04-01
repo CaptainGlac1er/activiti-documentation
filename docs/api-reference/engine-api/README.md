@@ -469,13 +469,13 @@ Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
    - [External Task Service](../../core-services/external-task-service.md)
 
 3. **Explore modern API:**
-   - [Activiti API Reference](./activiti-api/README.md)
+   - [Activiti API Reference](../activiti-api/README.md)
 
 ---
 
 ## See Also
 
 - [Core Services](../../core-services/README.md) - Detailed service documentation
-- [Activiti API](./activiti-api/README.md) - Modern interface-driven API
-- [Getting Started](../../getting-started/quickstart.md) - Quick start guide
+- [Activiti API](../activiti-api/README.md) - Modern interface-driven API
+- [Getting Started](../../getting-started/configuration.md) - Quick start guide
 - [Best Practices](../../best-practices/overview.md) - Performance optimization

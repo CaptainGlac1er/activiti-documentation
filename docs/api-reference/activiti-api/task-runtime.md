@@ -1059,9 +1059,9 @@ taskAdminRuntime.assignMultiple(...);
 
 ## Related Documentation
 
-- [Task Model Module](../activiti-api/task-model.md)
-- [Runtime Shared Module](../activiti-api/runtime-shared.md)
-- [Main Module Docs](../README.md)
+- [Task Model Module](task-model.md)
+- [Runtime Shared Module](runtime-shared.md)
+- [Main Module Docs](../overview.md)
 
 ---
 

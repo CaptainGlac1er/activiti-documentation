@@ -1167,5 +1167,5 @@ public void startProcess() {
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Engine Documentation](../engine-api/README.md)
-- [API Module Documentation](../../activiti-api/README.md)
+- [Engine Documentation](README.md)
+- [API Module Documentation](../activiti-api/README.md)

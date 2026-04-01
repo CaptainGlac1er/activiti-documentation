@@ -318,11 +318,6 @@ For these topics, refer to:
 | 8.6.0+ | 11+ | 3.0+ | 8.6.0+ |
 | 8.5.0+ | 11+ | 2.7+ | 8.5.0+ |
 
-### Migration Guides
-
-- **From 8.6.x to 8.7.x**: See [Main Guide - Migration](./README.md#e-version-compatibility)
-- **From Legacy API**: See [Appendix - Migration Guide](./README.md#d-migration-guide)
-
 ---
 
 ## 🎓 Additional Resources

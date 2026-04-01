@@ -743,10 +743,10 @@ public class CustomSecurityProvider implements SecurityManager {
 
 ## Related Documentation
 
-- [Model Shared Module](../activiti-api/model-shared.md)
-- [Process Runtime Module](../activiti-api/process-runtime.md)
-- [Task Runtime Module](../activiti-api/task-runtime.md)
-- [Main Module Docs](../README.md)
+- [Model Shared Module](model-shared.md)
+- [Process Runtime Module](process-runtime.md)
+- [Task Runtime Module](task-runtime.md)
+- [Main Module Docs](../overview.md)
 
 ---
 

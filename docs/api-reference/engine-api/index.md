@@ -251,7 +251,7 @@ Each documentation file includes:
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Activiti Core Common](../../core-common/README.md)
+- [Activiti Core Common](../core-common/README.md)
 - [Spring Boot Starter](../engine-api/spring-boot-starter.md)
 
 ---

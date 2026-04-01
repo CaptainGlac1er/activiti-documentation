@@ -1045,9 +1045,9 @@ public void onProcessStarted(ProcessStartedEvent event) {
 
 ## Related Documentation
 
-- [Model Shared Module](../activiti-api/model-shared.md)
-- [Process Runtime Module](../activiti-api/process-runtime.md)
-- [Main Module Docs](../README.md)
+- [Model Shared Module](model-shared.md)
+- [Process Runtime Module](process-runtime.md)
+- [Main Module Docs](../overview.md)
 
 ---
 

@@ -972,9 +972,9 @@ taskRuntime.addCandidateUsers(payload);
 
 ## Related Documentation
 
-- [Task Runtime Module](../activiti-api/task-runtime.md)
-- [Process Model Module](../activiti-api/process-model.md)
-- [Main Module Docs](../README.md)
+- [Task Runtime Module](task-runtime.md)
+- [Process Model Module](process-model.md)
+- [Main Module Docs](../overview.md)
 
 ---
 

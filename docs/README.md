@@ -112,11 +112,6 @@ Upgrade from older versions:
 3. Check [Advanced Topics](./advanced/)
 4. Review [Best Practices](./best-practices/)
 
-### For Migration
-1. Read [Migration Guides](./migration/)
-2. Check [Upgrade Notes](./migration/README.md)
-3. Review breaking changes
-4. Follow migration checklist
 
 ## 🛠️ Development
 
