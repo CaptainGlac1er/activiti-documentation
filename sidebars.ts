@@ -32,6 +32,88 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: '📋 BPMN Elements',
+      link: {type: 'doc', id: 'bpmn/index'},
+      items: [
+        {
+          type: 'category',
+          label: 'Elements',
+          link: {type: 'generated-index'},
+          items: [
+            'bpmn/elements/user-task',
+            'bpmn/elements/service-task',
+            'bpmn/elements/script-task',
+            'bpmn/elements/business-rule-task',
+            'bpmn/elements/call-activity',
+            'bpmn/elements/manual-task',
+            'bpmn/elements/sequence-flows',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Events',
+          link: {type: 'doc', id: 'bpmn/events/index'},
+          items: [
+            'bpmn/events/index',
+            'bpmn/events/start-event',
+            'bpmn/events/intermediate-events',
+            'bpmn/events/end-event',
+            'bpmn/events/boundary-event',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Gateways',
+          link: {type: 'doc', id: 'bpmn/gateways/index'},
+          items: [
+            'bpmn/gateways/index',
+            'bpmn/gateways/exclusive-gateway',
+            'bpmn/gateways/parallel-gateway',
+            'bpmn/gateways/inclusive-gateway',
+            'bpmn/gateways/event-gateway',
+            'bpmn/gateways/complex-gateway',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'SubProcesses',
+          link: {type: 'doc', id: 'bpmn/subprocesses/index'},
+          items: [
+            'bpmn/subprocesses/index',
+            'bpmn/subprocesses/regular-subprocess',
+            'bpmn/subprocesses/event-subprocess',
+            'bpmn/subprocesses/adhoc-subprocess',
+            'bpmn/subprocesses/transaction',
+          ],
+        },
+        'bpmn/common-features',
+        {
+          type: 'category',
+          label: 'Advanced Topics',
+          link: {type: 'generated-index'},
+          items: [
+            'bpmn/advanced/async-execution',
+            'bpmn/advanced/multi-instance',
+            'bpmn/advanced/task-listeners',
+            'bpmn/advanced/execution-listeners',
+            'bpmn/advanced/variables',
+            'bpmn/advanced/error-handling',
+            'bpmn/advanced/process-extensions',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Integration',
+          link: {type: 'doc', id: 'bpmn/integration/index'},
+          items: [
+            'bpmn/integration/index',
+            'bpmn/integration/connectors',
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
       label: '⚙️ Core Services',
       link: {type: 'generated-index', title: 'Engine Services Overview'},
       items: [

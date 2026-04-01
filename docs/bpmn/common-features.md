@@ -1,0 +1,367 @@
+---
+sidebar_label: Common Features
+slug: /bpmn/common-features
+description: Features available across all BPMN elements in Activiti
+---
+
+# Common BPMN Features
+
+This document describes **features available across all BPMN elements** in Activiti, including multi-instance, listeners, async execution, and extension mechanisms.
+
+## Overview
+
+Activiti provides powerful extensions that can be applied to most BPMN elements:
+
+- **Multi-Instance** - Execute activities multiple times
+- **Execution Listeners** - Hook into lifecycle events
+- **Task Listeners** - Hook into task lifecycle
+- **Async Execution** - Background processing
+- **Boundary Events** - Exception handling
+- **Extension Elements** - Custom metadata
+- **Skip Expressions** - Conditional execution
+- **Field Injection** - Dependency injection
+
+## 🔔 Execution Listeners
+
+Execute activities in the **background** using job executor.
+
+### Basic Configuration
+
+```xml
+<serviceTask id="asyncTask" 
+             name="Async Task" 
+             activiti:async="true"
+             activiti:class="com.example.AsyncService"/>
+```
+
+### Async After Duration
+
+Delay async activation:
+
+```xml
+<serviceTask id="delayedAsync" 
+             activiti:async="true">
+  
+  <!-- Note: Job expiry is configured via Management Service or job executor settings,
+       not through BPMN attributes -->
+</serviceTask>
+```
+
+### Job Priority
+
+Set execution priority via Management Service (not through BPMN properties):
+
+```xml
+<serviceTask id="priorityTask" 
+             activiti:async="true"/>
+```
+
+**Runtime Configuration:**
+```java
+// Set job priority via Management Service
+managementService.setJobPriority(jobId, 10);
+
+// Higher number = higher priority (default: 0)
+```
+
+**Note:** Job priority is configured at runtime through the Management Service, not via `activiti:property` in the BPMN definition. Properties are for custom metadata only.
+
+### Failed Job Retry
+
+Configure retry policy using `failedJobRetryTimeCycle` property:
+
+```xml
+<serviceTask id="retryTask" 
+             activiti:async="true">
+  
+  <!-- Retry 5 times -->
+  <activiti:property name="failedJobRetryTimeCycle" value="R/5"/>
+  
+  <!-- Retry with intervals -->
+  <activiti:property name="failedJobRetryTimeCycle" 
+                     value="R3/PT1M;R2/PT5M"/>
+  
+</serviceTask>
+```
+
+**Retry Cycle Syntax:**
+- `R/5` - Retry 5 times immediately
+- `R3/PT1M` - Retry 3 times with 1 minute interval
+- `R3/PT1M;R2/PT5M` - Retry 3 times (1min), then 2 times (5min)
+
+**Note:** This is one of the few properties that affects engine behavior. Most other `activiti:property` elements are for custom metadata only.
+
+## 🛡️ Boundary Events
+
+Handle **exceptions and interruptions** at activity level.
+
+### Error Boundary Event
+
+```xml
+<serviceTask id="riskyTask" name="Risky Operation">
+  
+  <boundaryEvent id="errorHandler" cancelActivity="true">
+    <errorEventDefinition errorRef="MyError"/>
+  </boundaryEvent>
+  
+</serviceTask>
+
+<error id="MyError" name="My Error" errorCode="ERR001"/>
+```
+
+### Timer Boundary Event
+
+```xml
+<userTask id="timeLimitedTask" name="Time Limited Task">
+  
+  <boundaryEvent id="timeout" cancelActivity="true">
+    <timerEventDefinition>
+      <timeDuration>PT1H</timeDuration>
+    </timerEventDefinition>
+  </boundaryEvent>
+  
+</userTask>
+```
+
+### Message Boundary Event (Non-Interrupting)
+
+```xml
+<serviceTask id="cancellableTask" name="Cancellable Task">
+  
+  <boundaryEvent id="cancel" cancelActivity="false">
+    <messageEventDefinition messageRef="cancelMessage"/>
+  </boundaryEvent>
+  
+</serviceTask>
+```
+
+### Multiple Boundary Events
+
+```xml
+<serviceTask id="complexTask" name="Complex Task">
+  
+  <!-- Error boundary -->
+  <boundaryEvent id="errorBoundary" cancelActivity="true">
+    <errorEventDefinition errorRef="TaskError"/>
+  </boundaryEvent>
+  
+  <!-- Timer boundary -->
+  <boundaryEvent id="timerBoundary" cancelActivity="true">
+    <timerEventDefinition>
+      <timeDuration>PT30M</timeDuration>
+    </timerEventDefinition>
+  </boundaryEvent>
+  
+  <!-- Message boundary (non-interrupting) -->
+  <boundaryEvent id="messageBoundary" cancelActivity="false">
+    <messageEventDefinition messageRef="updateMessage"/>
+  </boundaryEvent>
+  
+</serviceTask>
+```
+
+## 🔧 Extension Elements
+
+Add **custom metadata** to any BPMN element.
+
+### Custom Properties
+
+```xml
+<userTask id="task1" name="Task">
+  
+  <extensionElements>
+    <activiti:property name="department" value="finance"/>
+    <activiti:property name="sla" value="PT4H"/>
+    <activiti:property name="version" value="2.0"/>
+  </extensionElements>
+  
+</userTask>
+```
+
+**Note:** Most `activiti:property` elements are for **custom metadata only** and don't affect engine behavior. Exceptions include:
+- `failedJobRetryTimeCycle` - Configures job retry policy
+- Other engine-specific properties documented in their respective sections
+
+### Custom XML Elements
+
+```xml
+<serviceTask id="task1" name="Task">
+  
+  <extensionElements>
+    <custom:myExtension>
+      <custom:property name="key" value="value"/>
+      <custom:nestedElement>content</custom:nestedElement>
+    </custom:myExtension>
+  </extensionElements>
+  
+</serviceTask>
+```
+
+## ⏭️ Skip Expression
+
+**Conditionally skip** activity execution.
+
+### Configuration
+
+```xml
+<userTask id="optionalTask" 
+          name="Optional Task"
+          activiti:skipExpression="${skipOptionalTasks}"/>
+
+<serviceTask id="conditionalService" 
+             activiti:skipExpression="${!executeService}"/>
+```
+
+### Use Cases
+
+- Optional approval steps
+- Conditional validations
+- Feature flags
+- A/B testing
+
+## 💉 Field Injection
+
+**Inject dependencies** into delegates (Service Tasks).
+
+### Configuration
+
+```xml
+<serviceTask id="task1" 
+             name="Task" 
+             activiti:class="com.example.MyDelegate">
+  
+  <!-- Inject Spring bean -->
+  <activiti:field name="service">
+    <activiti:inject>#{myService}</activiti:inject>
+  </activiti:field>
+  
+  <!-- String value -->
+  <activiti:field name="config">
+    <activiti:string>configuration value</activiti:string>
+  </activiti:field>
+  
+  <!-- Integer value -->
+  <activiti:field name="timeout">
+    <activiti:integer>30</activiti:integer>
+  </activiti:field>
+  
+  <!-- Boolean value -->
+  <activiti:field name="enabled">
+    <activiti:boolean>true</activiti:boolean>
+  </activiti:field>
+  
+  <!-- Expression -->
+  <activiti:field name="dynamicValue">
+    <activiti:expression>${calculateValue()}</activiti:expression>
+  </activiti:field>
+  
+</serviceTask>
+```
+
+### Implementation
+
+```java
+public class MyDelegate implements JavaDelegate {
+    
+    private MyService service;
+    private String config;
+    private int timeout;
+    
+    // Setter injection (called by Activiti)
+    public void setService(MyService service) {
+        this.service = service;
+    }
+    
+    public void execute(DelegateExecution execution) {
+        // Use injected dependencies
+        service.doSomething(config, timeout);
+    }
+}
+```
+
+## 📊 Feature Availability Matrix
+
+| Feature | User Task | Service Task | Script Task | Gateway | Event | SubProcess |
+|---------|-----------|--------------|-------------|---------|-------|------------|
+| Multi-Instance | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Execution Listeners | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Task Listeners | ✅ (see [Task Listeners](./advanced/task-listeners.md)) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Async Execution | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Boundary Events | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Skip Expression | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Field Injection | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Extension Elements | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+## Complete Example
+
+```xml
+<userTask id="complexTask" 
+          name="Complex Review Task"
+          activiti:assignee="${reviewer}"
+          activiti:candidateGroups="reviewers"
+          activiti:dueDate="${addDays(3)}"
+          activiti:skipExpression="${skipReview}"
+          activiti:formKey="review-form.html">
+  
+  <!-- Multi-instance with collection -->
+  <multiInstanceLoopCharacteristics 
+    isSequential="false"
+    activiti:collection="${reviewers}"
+    activiti:elementVariable="reviewer">
+    <completionCondition>${approvedCount >= 2}</completionCondition>
+  </multiInstanceLoopCharacteristics>
+  
+  <!-- Task listeners -->
+  <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
+  <activiti:taskListener event="complete" delegateExpression="${completionListener}"/>
+  
+  <!-- Execution listeners -->
+  <activiti:executionListener event="start" class="com.example.StartListener"/>
+  <activiti:executionListener event="end" class="com.example.EndListener"/>
+  
+  <!-- Boundary events -->
+  <boundaryEvent id="timeout" cancelActivity="true">
+    <timerEventDefinition>
+      <timeDuration>PT24H</timeDuration>
+    </timerEventDefinition>
+  </boundaryEvent>
+  
+  <!-- Extension elements -->
+  <extensionElements>
+    <activiti:property name="department" value="finance"/>
+    <activiti:property name="priority" value="high"/>
+  </extensionElements>
+  
+  <!-- Form properties -->
+  <activiti:formProperty name="comment" type="string"/>
+  <activiti:formProperty name="approved" type="bool"/>
+  
+</userTask>
+```
+
+## Best Practices
+
+1. **Use Listeners Sparingly:** Too many listeners impact performance
+2. **Async for Long Operations:** Prevent blocking
+3. **Boundary Events for Errors:** Handle exceptions locally
+4. **Multi-Instance for Collections:** Process lists efficiently
+5. **Task Listeners for User Tasks:** See [Task Listeners](./advanced/task-listeners.md)
+6. **Skip Expressions for Options:** Implement conditional logic
+7. **Field Injection for Dependencies:** Use DI properly
+8. **Extension Elements for Metadata:** Store custom info
+9. **Document Complex Configurations:** Explain why features are used
+
+## 🔗 Related Documentation
+
+- [User Task](./elements/user-task.md)
+- [Service Task](./elements/service-task.md)
+- [Events](./events/index.md)
+- [Async Execution](./advanced/async-execution.md)
+- [Multi-Instance](./advanced/multi-instance.md)
+- [Task Listeners](./advanced/task-listeners.md)
+- [Variables](./advanced/variables.md)
+
+---
+
+**Version:** 8.7.2-SNAPSHOT  
+**Last Updated:** 2024

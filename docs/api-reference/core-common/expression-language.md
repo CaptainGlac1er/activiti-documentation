@@ -405,35 +405,70 @@ public class VariableManager {
 ### BPMN Expression Examples
 
 ```xml
-<!-- Variable Assignment -->
-<serviceTask id="calculateTotal" name="Calculate Total">
-    <extensionElements>
-        <activiti:expression>
-            ${math:multiply(quantity, unitPrice)}
-        </activiti:expression>
-    </extensionElements>
+<!-- Service Task with Expression (as attribute) -->
+<serviceTask id="calculateTotal" 
+             name="Calculate Total" 
+             activiti:expression="${math:multiply(quantity, unitPrice)}" />
+
+<!-- Service Task with Class and Field Expressions -->
+<serviceTask id="processOrder" 
+             name="Process Order" 
+             activiti:class="com.example.OrderProcessor">
+  <extensionElements>
+    <activiti:field name="orderId">
+      <activiti:expression>${orderId}</activiti:expression>
+    </activiti:field>
+    <activiti:field name="orderAmount">
+      <activiti:expression>${order.totalAmount}</activiti:expression>
+    </activiti:field>
+  </extensionElements>
 </serviceTask>
 
-<!-- Condition -->
-<exclusiveGateway id="approveGateway" name="Approval Required">
-    <extensionElements>
-        <activiti:condition>
-            ${order.totalAmount > 1000}
-        </activiti:condition>
-    </extensionElements>
-</exclusiveGateway>
+<!-- Condition on Sequence Flow (standard BPMN) -->
+<exclusiveGateway id="approveGateway" name="Approval Required"/>
 
-<!-- Message Expression -->
+<sequenceFlow id="approveFlow" 
+              sourceRef="approveGateway" 
+              targetRef="approveTask">
+  <conditionExpression>${order.totalAmount > 1000}</conditionExpression>
+</sequenceFlow>
+
+<sequenceFlow id="rejectFlow" 
+              sourceRef="approveGateway" 
+              targetRef="rejectTask">
+  <conditionExpression>${order.totalAmount <= 1000}</conditionExpression>
+</sequenceFlow>
+
+<!-- Message Event with Field Expressions -->
 <intermediateMessageThrowEvent id="sendNotification">
-    <message name="orderCreated">
-        <extensionElements>
-            <activiti:variable name="messageBody">
-                ${str:concat('Order ', orderId, ' created for ', customerName)}
-            </activiti:variable>
-        </extensionElements>
-    </message>
+  <messageEventDefinition messageRef="orderCreated">
+    <extensionElements>
+      <activiti:field name="messageBody">
+        <activiti:expression>${str:concat('Order ', orderId, ' created for ', customerName)}</activiti:expression>
+      </activiti:field>
+    </extensionElements>
+  </messageEventDefinition>
 </intermediateMessageThrowEvent>
+
+<!-- User Task with Expression -->
+<userTask id="notifyUser" 
+          name="Notify User" 
+          activiti:assignee="${str:upperCase(customer.username)}" />
+
+<!-- Script Task with Expression -->
+<scriptTask id="calculateScript" 
+            name="Calculate with Script" 
+            activiti:scriptFormat="javascript">
+  <script>${math:add(order.total, tax.amount)}</script>
+</scriptTask>
 ```
+
+**Key Points:**
+- `activiti:expression` is used as an **attribute** on elements like `serviceTask`, `userTask`, etc.
+- `activiti:expression` can be a **child element** inside `<activiti:field>` for field injection
+- Conditions use standard BPMN `<conditionExpression>` as a child of `sequenceFlow`
+- There is **no** standalone `<activiti:condition>` element
+- Expressions use Jakarta EL syntax: `${...}` or `#{...}`
 
 ### Java Code Examples
 

@@ -38,13 +38,14 @@ Main engine services for process management:
 - **External Task Service** - Worker pattern integration
 
 ### 🎨 Process Design
-BPMN 2.0 design guide:
-- **BPMN Basics** - Fundamentals of BPMN
-- **User Tasks** - Human interaction patterns
-- **Service Tasks** - Automated processing
-- **Gateways** - Decision points and branching
-- **Events** - Triggers and responses
-- **Variables** - Data management
+Comprehensive BPMN 2.0 element reference:
+- **BPMN Overview** - Complete guide to all elements
+- **Task Elements** - User, Service, Script, and more
+- **Gateway Elements** - Flow control and decisions
+- **Event Elements** - Triggers and exceptions
+- **SubProcess Elements** - Process composition
+- **Activiti Extensions** - Custom properties and behaviors
+- **Element Summary** - Quick reference guide
 
 ### 🔌 API Reference
 Complete API documentation:
@@ -93,6 +94,7 @@ Upgrade from older versions:
 ## 🚀 Quick Links
 
 - [Quick Start](./quickstart.md) - Get running in 5 minutes
+- [BPMN Elements](./bpmn/) - Complete BPMN 2.0 reference
 - [Architecture Overview](./architecture/overview.md) - How it works
 - [Core Services](./core-services/) - Main APIs
 - [Best Practices](./best-practices/) - Production guidelines
@@ -102,13 +104,15 @@ Upgrade from older versions:
 ### For New Users
 1. Follow the [Quick Start](./quickstart.md)
 2. Read [Getting Started](./getting-started/) guides
-3. Explore [Core Services](./core-services/)
+3. Explore [BPMN Elements](./bpmn/) for process design
+4. Learn [Core Services](./core-services/) for implementation
 
 ### For Experienced Users
-1. Jump to specific [Core Services](./core-services/)
-2. Reference [API Documentation](./api-reference/)
-3. Check [Advanced Topics](./advanced/)
-4. Review [Best Practices](./best-practices/)
+1. Reference [BPMN Summary](./bpmn/summary.md) for quick lookup
+2. Jump to specific [Core Services](./core-services/)
+3. Check [API Documentation](./api-reference/)
+4. Review [Advanced Topics](./advanced/)
+5. Follow [Best Practices](./best-practices/)
 
 
 ## 🛠️ Development
@@ -209,15 +213,6 @@ The documentation includes full-text search:
 - **GitHub Issues** - Report bugs or request features
 - **Stack Overflow** - Ask questions (tag: `activiti`)
 - **Community** - Join the Activiti community
-- **Devoxx Genie** - Follow us on Bluesky @devoxxgenie.bsky.social
-
-## 📄 License
-
-This documentation is part of the Activiti project and licensed under the Apache License 2.0.
-
-## 🎉 Thank You
-
-Thank you for using Activiti! We hope this documentation helps you build amazing workflow applications.
 
 ---
 
