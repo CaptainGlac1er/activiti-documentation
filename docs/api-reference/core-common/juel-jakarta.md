@@ -1,0 +1,718 @@
+---
+sidebar_label: Juel Jakarta
+slug: /api-reference/core-common/juel-jakarta
+description: Core common utilities and shared modules.
+---
+
+# Activiti JUEL Jakarta Module - Technical Documentation
+
+**Module:** `activiti-core-common/activiti-juel-jakarta`
+
+**Target Audience:** Senior Software Engineers, Expression Language Developers
+
+**Version:** 8.7.2-SNAPSHOT
+
+---
+
+## Overview
+
+The **activiti-juel-jakarta** module provides a Jakarta Expression Language (JUEL) implementation for Activiti. It's a fork and adaptation of the JUEL library to work with Jakarta EE namespaces, enabling expression evaluation in BPMN processes, rules, and business logic.
+
+### Key Features
+
+- **Jakarta EL Implementation**: Full JUEL support with Jakarta namespaces
+- **Expression Parsing**: AST-based expression tree building
+- **Method Invocations**: Support for `${foo.bar(baz)}` syntax
+- **Variable Arguments**: Varargs support in expressions
+- **Null Properties**: Handle null property access
+- **Caching**: Expression tree caching for performance
+- **Type Conversion**: Automatic type conversion
+- **Profiles**: JEE5 and JEE6 compatibility profiles
+
+### Module Structure
+
+```
+activiti-juel-jakarta/
+└── src/main/java/org/activiti/core/el/juel/
+    ├── ExpressionFactoryImpl.java      # Main expression factory
+    ├── ObjectValueExpression.java      # Value expression
+    ├── TreeMethodExpression.java       # Method expression
+    ├── TreeValueExpression.java        # Tree-based value expression
+    ├── misc/
+    │   ├── BooleanOperations.java      # Boolean operations
+    │   ├── NumberOperations.java       # Number operations
+    │   ├── TypeConverter.java          # Type conversion
+    │   ├── TypeConverterImpl.java      # Type converter impl
+    │   └── LocalMessages.java          # Error messages
+    ├── tree/
+    │   ├── Node.java                   # Tree node interface
+    │   ├── Tree.java                   # Expression tree
+    │   ├── TreeBuilder.java            # Tree builder
+    │   ├── TreeCache.java              # Tree caching
+    │   ├── TreeStore.java              # Tree storage
+    │   └── impl/ast/                   # AST implementations
+    │       ├── AstBinary.java          # Binary operations
+    │       ├── AstFunction.java        # Function calls
+    │       ├── AstMethod.java          # Method calls
+    │       ├── AstProperty.java        # Property access
+    │       └── ...                     # More AST nodes
+    └── util/
+        ├── SimpleContext.java          # Simple EL context
+        ├── SimpleResolver.java         # Simple property resolver
+        └── RootPropertyResolver.java   # Root property resolver
+```
+
+---
+
+## Architecture
+
+### Component Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   JUEL Implementation                        │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │          ExpressionFactoryImpl                       │   │
+│  │        (Jakarta ExpressionFactory)                   │   │
+│  │                                                      │   │
+│  │  - createValueExpression()                          │   │
+│  │  - createMethodExpression()                         │   │
+│  │  - Expression caching                               │   │
+│  │  - Profile configuration                            │   │
+│  └────────────────────┬────────────────────────────────┘   │
+│                       │                                     │
+│                       │ uses                                │
+│                       ▼                                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              TreeBuilder                             │   │
+│  │         (Expression Parser)                          │   │
+│  │                                                      │   │
+│  │  - Parse expression string                          │   │
+│  │  - Build AST tree                                   │   │
+│  │  - Support method invocations                       │   │
+│  │  - Support varargs                                  │   │
+│  └────────────────────┬────────────────────────────────┘   │
+│                       │                                     │
+│                       │ creates                             │
+│                       ▼                                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                 AST Tree                             │   │
+│  │                                                      │   │
+│  │  AstBinary (operators)                              │   │
+│  │  AstFunction (functions)                            │   │
+│  │  AstMethod (method calls)                           │   │
+│  │  AstProperty (property access)                      │   │
+│  │  AstIdentifier (variables)                          │   │
+│  │  AstLiteral (literals)                              │   │
+│  └────────────────────┬────────────────────────────────┘   │
+│                       │                                     │
+│                       │ evaluated by                        │
+│                       ▼                                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │          TreeValueExpression                         │   │
+│  │        (Expression Evaluation)                       │   │
+│  │                                                      │   │
+│  │  - getValue(ELContext)                              │   │
+│  │  - setValue(ELContext, Object)                      │   │
+│  │  - Type conversion                                  │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Expression Evaluation Flow
+
+```
+Expression String
+    │
+    ▼
+"${order.totalAmount > 1000}"
+    │
+    ▼
+┌─────────────────────────────┐
+│  ExpressionFactoryImpl      │
+│  createValueExpression()    │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│  TreeBuilder                │
+│  Parse expression           │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│  AST Tree                   │
+│  AstBinary(>               │
+│    AstProperty(totalAmount)│
+│    AstNumber(1000)         │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│  TreeValueExpression        │
+│  Evaluate tree              │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│  Result: true/false         │
+└─────────────────────────────┘
+```
+
+---
+
+## Key Classes and Their Responsibilities
+
+### ExpressionFactoryImpl
+
+**Purpose:** Jakarta ExpressionFactory implementation for creating expressions.
+
+**Responsibilities:**
+- Create value expressions
+- Create method expressions
+- Cache compiled expressions
+- Manage expression profiles
+- Configure language features
+
+**Key Methods:**
+- `createValueExpression(ELContext, String, Class)` - Create value expression
+- `createMethodExpression(ELContext, String, Class, List)` - Create method expression
+- `getExpression(String)` - Get cached expression
+
+**Profiles:**
+- `JEE5`: Basic EL support (no method invocations)
+- `JEE6`: Full EL support (method invocations, varargs)
+
+**Configuration Properties:**
+- `jakarta.el.cacheSize`: Cache size (default: 1000)
+- `activiti.juel.methodInvocations`: Allow method calls (default: false)
+- `activiti.juel.nullProperties`: Allow null properties (default: false)
+- `activiti.juel.varArgs`: Support varargs (default: false)
+
+**Example:**
+```java
+ExpressionFactory factory = ExpressionFactoryImpl.newInstance();
+ValueExpression expr = factory.createValueExpression(
+    context, 
+    "${order.totalAmount}", 
+    Double.class
+);
+```
+
+---
+
+### TreeBuilder
+
+**Purpose:** Parses expression strings and builds AST trees.
+
+**Responsibilities:**
+- Tokenize expression strings
+- Build abstract syntax trees
+- Support language features (methods, varargs)
+- Handle operator precedence
+- Generate parse errors
+
+**Features:**
+- `METHOD_INVOCATIONS`: Support `${foo.bar()}`
+- `VARARGS`: Support variable arguments
+- `NULL_PROPERTIES`: Support `${foo[null]}`
+
+**Example:**
+```java
+TreeBuilder builder = new TreeBuilder();
+builder.setFeature(TreeBuilder.Feature.METHOD_INVOCATIONS, true);
+Tree tree = builder.build("${math:add(1, 2)}");
+```
+
+---
+
+### TreeValueExpression
+
+**Purpose:** Evaluates expression trees and returns values.
+
+**Responsibilities:**
+- Traverse AST tree
+- Evaluate expressions
+- Perform type conversion
+- Handle null values
+- Support property access
+
+**Example:**
+```java
+TreeValueExpression expr = new TreeValueExpression(tree);
+Object result = expr.getValue(context);
+```
+
+---
+
+### TypeConverterImpl
+
+**Purpose:** Converts between types in expressions.
+
+**Responsibilities:**
+- Convert String to Number
+- Convert Number to String
+- Convert between primitive types
+- Handle null conversions
+- Support custom converters
+
+**Example:**
+```java
+TypeConverter converter = TypeConverterImpl.getInstance();
+Double value = converter.convertType(context, "123.45", Double.class);
+```
+
+---
+
+### AST Nodes
+
+**AstBinary:** Binary operations (`+`, `-`, `*`, `/`, `>`, `<`, `==`, etc.)
+**AstFunction:** Function calls (`${fn:toUpperCase(str)}`)
+**AstMethod:** Method invocations (`${obj.method()}`)
+**AstProperty:** Property access (`${obj.property}`)
+**AstIdentifier:** Variable references (`${variable}`)
+**AstLiteral:** Literal values (`${123}`, `${"text"}`, `${true}`)
+**AstBracket:** Array/map access (`${list[0]}`, `${map['key']}`)
+
+---
+
+## Expression Profiles
+
+### JEE5 Profile
+
+Basic EL support without advanced features:
+
+```java
+ExpressionFactory factory = new ExpressionFactoryImpl(
+    ExpressionFactoryImpl.Profile.JEE5
+);
+
+// Supported
+"${user.name}"           // Property access
+"${1 + 2}"              // Arithmetic
+"${true && false}"      // Boolean
+
+// NOT Supported
+"${user.getName()}"     // Method invocation
+"${fn:toUpperCase(x)}"  // Functions
+```
+
+### JEE6 Profile (Default)
+
+Full EL support with advanced features:
+
+```java
+ExpressionFactory factory = new ExpressionFactoryImpl(
+    ExpressionFactoryImpl.Profile.JEE6
+);
+
+// All JEE5 features PLUS:
+"${user.getName()}"     // Method invocation ✓
+"${math:add(1, 2)}"     // Functions ✓
+"${list[0]}"            // Bracket notation ✓
+"${map['key']}"         // Map access ✓
+```
+
+---
+
+## Usage Examples
+
+### Basic Expression Evaluation
+
+```java
+public class ExpressionEvaluator {
+    
+    private final ExpressionFactory factory;
+    private final ELContext context;
+    
+    public ExpressionEvaluator() {
+        this.factory = ExpressionFactoryImpl.newInstance();
+        this.context = new ActivitiElContext();
+    }
+    
+    public Object evaluate(String expression, Map<String, Object> variables) {
+        // Set variables in context
+        variables.forEach((name, value) -> {
+            ValueExpression varExpr = factory.createValueExpression(
+                context, 
+                "'" + value + "'", 
+                Object.class
+            );
+            context.setVariable(name, varExpr);
+        });
+        
+        // Create and evaluate expression
+        ValueExpression expr = factory.createValueExpression(
+            context,
+            expression,
+            Object.class
+        );
+        
+        return expr.getValue(context);
+    }
+}
+
+// Usage
+ExpressionEvaluator evaluator = new ExpressionEvaluator();
+Map<String, Object> vars = Map.of("x", 10, "y", 20);
+Object result = evaluator.evaluate("${x + y}", vars);  // 30
+```
+
+### Method Invocation
+
+```java
+// Enable method invocations
+Properties props = new Properties();
+props.setProperty("activiti.juel.methodInvocations", "true");
+ExpressionFactory factory = new ExpressionFactoryImpl(props);
+
+// Define object with method
+class Calculator {
+    public int add(int a, int b) {
+        return a + b;
+    }
+}
+
+Calculator calc = new Calculator();
+context.setVariable("calc", calc);
+
+// Evaluate expression with method call
+ValueExpression expr = factory.createValueExpression(
+    context,
+    "${calc.add(5, 3)}",
+    Integer.class
+);
+Integer result = (Integer) expr.getValue(context);  // 8
+```
+
+### Function Calls
+
+```java
+// Register function
+context.setFunction("math", "multiply", 
+    MathUtils.class.getMethod("multiply", double.class, double.class));
+
+// Use in expression
+ValueExpression expr = factory.createValueExpression(
+    context,
+    "${math:multiply(10, 5)}",
+    Double.class
+);
+Double result = (Double) expr.getValue(context);  // 50.0
+```
+
+### Property Access
+
+```java
+class Order {
+    private String orderId;
+    private double totalAmount;
+    
+    public String getOrderId() { return orderId; }
+    public double getTotalAmount() { return totalAmount; }
+}
+
+Order order = new Order();
+order.setOrderId("ORD-001");
+order.setTotalAmount(150.00);
+
+context.setVariable("order", order);
+
+// Access properties
+String id = (String) factory.createValueExpression(
+    context, "${order.orderId}", String.class
+).getValue(context);  // "ORD-001"
+
+double amount = (double) factory.createValueExpression(
+    context, "${order.totalAmount}", Double.class
+).getValue(context);  // 150.0
+```
+
+### Complex Expressions
+
+```java
+// Boolean expressions
+"${order.totalAmount > 100 && order.status == 'PENDING'}"
+
+// Ternary operator
+"${order.totalAmount > 1000 ? 'HIGH_VALUE' : 'NORMAL'}"
+
+// String concatenation
+"${'Order: ' + order.orderId + ' - $' + order.totalAmount}"
+
+// Collection access
+"${orders[0].orderId}"
+"${customers.size()}"
+
+// Nested properties
+"${order.customer.address.city}"
+```
+
+---
+
+## Configuration
+
+### System Properties
+
+```java
+// Set before creating ExpressionFactory
+System.setProperty("activiti.juel.methodInvocations", "true");
+System.setProperty("activiti.juel.varArgs", "true");
+System.setProperty("jakarta.el.cacheSize", "2000");
+
+ExpressionFactory factory = ExpressionFactoryImpl.newInstance();
+```
+
+### Programmatic Configuration
+
+```java
+Properties props = new Properties();
+props.setProperty("activiti.juel.methodInvocations", "true");
+props.setProperty("activiti.juel.nullProperties", "true");
+props.setProperty("activiti.juel.varArgs", "true");
+props.setProperty("jakarta.el.cacheSize", "1000");
+
+ExpressionFactory factory = new ExpressionFactoryImpl(props);
+```
+
+### Profile-Based Configuration
+
+```java
+// Use JEE6 profile (recommended)
+ExpressionFactory factory = new ExpressionFactoryImpl(
+    ExpressionFactoryImpl.Profile.JEE6
+);
+
+// Or JEE5 profile (legacy)
+ExpressionFactory factory = new ExpressionFactoryImpl(
+    ExpressionFactoryImpl.Profile.JEE5
+);
+```
+
+---
+
+## Best Practices
+
+### 1. Use JEE6 Profile
+
+```java
+// GOOD - Full feature support
+ExpressionFactory factory = new ExpressionFactoryImpl(
+    ExpressionFactoryImpl.Profile.JEE6
+);
+
+// BAD - Limited features
+ExpressionFactory factory = new ExpressionFactoryImpl(
+    ExpressionFactoryImpl.Profile.JEE5
+);
+```
+
+### 2. Cache Expressions
+
+```java
+// GOOD - Cache compiled expressions
+private final Map<String, ValueExpression> expressionCache = new ConcurrentHashMap<>();
+
+public ValueExpression getCachedExpression(String exprStr, Class<?> type) {
+    return expressionCache.computeIfAbsent(exprStr, key -> 
+        factory.createValueExpression(context, key, type)
+    );
+}
+
+// BAD - Compile on every evaluation
+ValueExpression expr = factory.createValueExpression(context, expression, type);
+```
+
+### 3. Handle Exceptions
+
+```java
+// GOOD - Catch EL exceptions
+try {
+    Object result = expr.getValue(context);
+} catch (ELException e) {
+    log.error("Expression evaluation failed: {}", expression, e);
+    throw new RuntimeException(e);
+}
+
+// BAD - No error handling
+Object result = expr.getValue(context);
+```
+
+### 4. Use Type-Safe Expressions
+
+```java
+// GOOD - Specify expected type
+ValueExpression expr = factory.createValueExpression(
+    context, 
+    "${order.totalAmount}", 
+    Double.class
+);
+Double amount = (Double) expr.getValue(context);
+
+// BAD - Use Object and cast
+ValueExpression expr = factory.createValueExpression(
+    context, 
+    "${order.totalAmount}", 
+    Object.class
+);
+Double amount = (Double) expr.getValue(context);  // Risky cast
+```
+
+### 5. Validate Expressions
+
+```java
+// GOOD - Validate before use
+public void validateExpression(String expression) {
+    try {
+        ValueExpression expr = factory.createValueExpression(
+            context, expression, Object.class
+        );
+        // Expression is valid
+    } catch (Exception e) {
+        throw new InvalidExpressionException(expression, e);
+    }
+}
+
+// BAD - No validation
+// Expression may fail at runtime
+```
+
+---
+
+## API Reference
+
+### ExpressionFactoryImpl
+
+**Constructors:**
+
+```java
+public ExpressionFactoryImpl()
+public ExpressionFactoryImpl(Properties properties)
+public ExpressionFactoryImpl(Profile profile)
+public ExpressionFactoryImpl(Profile profile, Properties properties)
+```
+
+**Static Methods:**
+
+```java
+public static ExpressionFactory newInstance()
+public static ExpressionFactory newInstance(Properties properties)
+```
+
+**Methods:**
+
+```java
+@Override
+public ValueExpression createValueExpression(
+    ELContext context, 
+    String expression, 
+    Class<?> expectedType
+)
+
+@Override
+public MethodExpression createMethodExpression(
+    ELContext context, 
+    String expression, 
+    Class<?> expectedReturnType, 
+    List<Class<?>> expectedParamTypes
+)
+
+@Override
+public Object coerceToType(ELContext context, Object obj, Class<?> typeToCoerceTo)
+
+@Override
+public TypeConverter getTypeConverter()
+```
+
+---
+
+### TreeBuilder
+
+**Features:**
+
+```java
+public enum Feature {
+    METHOD_INVOCATIONS,
+    VARARGS,
+    NULL_PROPERTIES
+}
+```
+
+**Methods:**
+
+```java
+public void setFeature(Feature feature, boolean enabled)
+public Tree build(String expression)
+public boolean isFeatureEnabled(Feature feature)
+```
+
+---
+
+### TypeConverter
+
+**Methods:**
+
+```java
+Object convertType(ELContext context, Object obj, Class<?> targetType)
+boolean isConvertible(ELContext context, Class<?> srcType, Class<?> targetType)
+```
+
+---
+
+## Troubleshooting
+
+### Method Invocation Not Working
+
+**Problem:** `${obj.method()}` throws exception
+
+**Solution:**
+1. Enable method invocations in profile
+2. Use JEE6 profile
+3. Set property `activiti.juel.methodInvocations=true`
+
+```java
+// Fix
+Properties props = new Properties();
+props.setProperty("activiti.juel.methodInvocations", "true");
+ExpressionFactory factory = new ExpressionFactoryImpl(props);
+```
+
+### Cache Size Issues
+
+**Problem:** OutOfMemoryError with many expressions
+
+**Solution:**
+1. Reduce cache size
+2. Implement expression cleanup
+3. Monitor cache usage
+
+```java
+// Fix
+props.setProperty("jakarta.el.cacheSize", "500");
+```
+
+### Type Conversion Fails
+
+**Problem:** Cannot convert expression result
+
+**Solution:**
+1. Check expected type matches actual type
+2. Use TypeConverter for manual conversion
+3. Handle null values
+
+```java
+// Fix
+Object result = expr.getValue(context);
+if (result != null) {
+    Double amount = typeConverter.convertType(context, result, Double.class);
+}
+```
+
+---
+
+## See Also
+
+- [Parent Module Documentation](../overview.md)
+- [Expression Language](../core-common/expression-language.md)
+- [Common Utilities](../core-common/common-util.md)

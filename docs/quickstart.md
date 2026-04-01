@@ -418,8 +418,8 @@ taskRuntime.complete(
 ## 📚 Additional Resources
 
 - [Full Documentation](./README.md)
-- [API Reference](./api-reference.md)
-- [Best Practices](./best-practices.md)
+- [API Reference](./api-reference/overview.md)
+- [Best Practices](./best-practices/overview.md)
 - [Examples Repository](https://github.com/Activiti/Activiti)
 
 ## 💡 Tips

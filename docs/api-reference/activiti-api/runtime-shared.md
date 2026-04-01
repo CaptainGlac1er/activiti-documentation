@@ -1,0 +1,754 @@
+---
+sidebar_label: Runtime Shared
+slug: /api-reference/activiti-api/runtime-shared
+description: Activiti API module documentation.
+---
+
+# Activiti API Runtime Shared Module
+
+## Overview
+
+The `activiti-api-runtime-shared` module provides shared runtime infrastructure including security management, query utilities, and common event handling capabilities used across process and task runtimes.
+
+## Module Structure
+
+```
+activiti-api-runtime-shared/
+└── src/main/java/org/activiti/api/runtime/shared/
+    ├── query/
+    │   ├── Page.java
+    │   ├── Pageable.java
+    │   └── Order.java
+    ├── events/
+    │   └── VariableEventListener.java
+    ├── identity/
+    │   └── UserGroupManager.java
+    ├── security/
+    │   ├── SecurityManager.java
+    │   ├── AbstractSecurityManager.java
+    │   ├── SecurityContextPrincipalProvider.java
+    │   ├── SecurityContextTokenProvider.java
+    │   ├── PrincipalIdentityProvider.java
+    │   ├── PrincipalGroupsProvider.java
+    │   └── PrincipalRolesProvider.java
+    ├── NotFoundException.java
+    └── UnprocessableEntityException.java
+```
+
+## Dependencies
+
+```
+activiti-api-runtime-shared
+    └── activiti-api-model-shared
+```
+
+---
+
+## Security Architecture
+
+### SecurityManager Interface
+
+**File**: `SecurityManager.java`
+
+```java
+public interface SecurityManager {
+    String getAuthenticatedUserId();
+    List<String> getAuthenticatedUserGroups() throws SecurityException;
+    List<String> getAuthenticatedUserRoles() throws SecurityException;
+}
+```
+
+**Purpose**: Central security interface for obtaining authenticated user information.
+
+**Key Methods**:
+
+1. **getAuthenticatedUserId()**
+   - Returns the current user's ID
+   - Throws exception if not authenticated
+   - Used for task assignment and authorization
+
+2. **getAuthenticatedUserGroups()**
+   - Returns groups the user belongs to
+   - Used for candidate group evaluation
+   - May throw SecurityException
+
+3. **getAuthenticatedUserRoles()**
+   - Returns user's roles
+   - Used for permission checks
+   - Empty list for anonymous users
+
+**Security Flow**:
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────┐
+│  Request    │────►│ SecurityManager  │────►│  Principal   │
+│             │     │                  │     │  Providers   │
+└─────────────┘     └──────────────────┘     └──────────────┘
+                          │
+                          ▼
+                   ┌──────────────────┐
+                   │  Authorization   │
+                   │  Decision        │
+                   └──────────────────┘
+```
+
+### AbstractSecurityManager
+
+**File**: `AbstractSecurityManager.java`
+
+```java
+public abstract class AbstractSecurityManager implements SecurityManager {
+    private final SecurityContextPrincipalProvider securityContextPrincipalProvider;
+    private final PrincipalIdentityProvider principalIdentityProvider;
+    private final PrincipalGroupsProvider principalGroupsProvider;
+    private final PrincipalRolesProvider principalRolesProvider;
+    
+    @Override
+    public String getAuthenticatedUserId() {
+        return securityContextPrincipalProvider.getCurrentPrincipal()
+            .map(principalIdentityProvider::getUserId)
+            .orElseThrow(this::securityException);
+    }
+    
+    // Similar for groups and roles...
+}
+```
+
+**Purpose**: Base implementation providing common security logic.
+
+**Design Benefits**:
+- Separates security context from identity extraction
+- Enables multiple security framework integrations
+- Provides consistent error handling
+- Simplifies custom implementations
+
+**Implementation Example** (Spring Security):
+```java
+@Component
+public class SpringSecurityManager extends AbstractSecurityManager {
+    public SpringSecurityManager() {
+        super(
+            new SpringSecurityContextProvider(),
+            new SpringPrincipalIdentityProvider(),
+            new SpringPrincipalGroupsProvider(),
+            new SpringPrincipalRolesProvider()
+        );
+    }
+}
+```
+
+### Principal Providers
+
+#### SecurityContextPrincipalProvider
+
+```java
+public interface SecurityContextPrincipalProvider {
+    Optional<Principal> getCurrentPrincipal();
+}
+```
+
+**Purpose**: Abstracts security context access across different frameworks.
+
+**Implementations**:
+- Spring Security: Uses `SecurityContextHolder`
+- Custom: Framework-specific implementations
+
+#### PrincipalIdentityProvider
+
+```java
+public interface PrincipalIdentityProvider {
+    default String getUserId(Principal principal) {
+        return Optional.of(principal)
+            .map(Principal::getName)
+            .orElseThrow(() -> new SecurityException("Invalid principal"));
+    }
+}
+```
+
+**Purpose**: Extracts user identity from principal.
+
+**Custom Implementation**:
+```java
+@Component
+public class CustomPrincipalIdentityProvider implements PrincipalIdentityProvider {
+    @Override
+    public String getUserId(Principal principal) {
+        if (principal instanceof CustomUser) {
+            return ((CustomUser) principal).getUserId();
+        }
+        return principal.getName();
+    }
+}
+```
+
+#### PrincipalGroupsProvider
+
+```java
+public interface PrincipalGroupsProvider {
+    List<String> getGroups(Principal principal);
+}
+```
+
+**Purpose**: Extracts group memberships from principal.
+
+**Use Cases**:
+- Task candidate group evaluation
+- Role-based access control
+- Multi-tenancy support
+
+#### PrincipalRolesProvider
+
+```java
+public interface PrincipalRolesProvider {
+    List<String> getRoles(Principal principal);
+}
+```
+
+**Purpose**: Extracts user roles from principal.
+
+**Role Hierarchy**:
+```
+ADMIN
+  ├── PROCESS_ADMIN
+  ├── TASK_ADMIN
+  └── SYSTEM_ADMIN
+
+USER
+  ├── PROCESS_STARTER
+  └── TASK_HANDLER
+```
+
+### SecurityContextTokenProvider
+
+**File**: `SecurityContextTokenProvider.java`
+
+```java
+public interface SecurityContextTokenProvider {
+    Optional<String> getCurrentToken();
+}
+```
+
+**Purpose**: Provides authentication tokens for distributed systems.
+
+**Use Cases**:
+- Microservices authentication
+- API gateway integration
+- Token propagation
+
+---
+
+## Query System
+
+### Page Interface
+
+**File**: `Page.java`
+
+```java
+public interface Page<T> {
+    List<T> getContent();
+    int getTotalItems();
+}
+```
+
+**Purpose**: Standardized pagination result.
+
+**Implementation Pattern**:
+```java
+public class DefaultPage<T> implements Page<T> {
+    private final List<T> content;
+    private final int totalItems;
+    
+    public List<T> getContent() { return content; }
+    public int getTotalItems() { return totalItems; }
+}
+```
+
+### Pageable Class
+
+**File**: `Pageable.java`
+
+```java
+public class Pageable {
+    private int startIndex;
+    private int maxItems;
+    private Order order;
+    
+    public static Pageable of(int startIndex, int maxItems) {
+        return new Pageable(startIndex, maxItems, null);
+    }
+    
+    public static Pageable of(int startIndex, int maxItems, Order order) {
+        return new Pageable(startIndex, maxItems, order);
+    }
+}
+```
+
+**Purpose**: Configures pagination parameters.
+
+**Usage**:
+```java
+// Simple pagination
+Pageable pageable = Pageable.of(0, 20);
+
+// With sorting
+Pageable pageable = Pageable.of(0, 20, 
+    Order.by("createdDate", Order.Direction.DESC));
+```
+
+**Design Decisions**:
+- Zero-based indexing
+- Configurable page size
+- Optional ordering
+- Immutable after creation
+
+### Order Class
+
+**File**: `Order.java`
+
+```java
+public class Order {
+    public enum Direction {
+        ASC, DESC
+    }
+    
+    private String property;
+    private Direction direction;
+    
+    public static Order by(String property, Direction direction) {
+        return new Order(property, direction);
+    }
+}
+```
+
+**Purpose**: Defines sorting criteria.
+
+**Supported Properties**:
+- Process: `startDate`, `name`, `businessKey`
+- Task: `createdDate`, `dueDate`, `assignee`, `name`
+
+**Multiple Ordering**:
+```java
+// Primary: createdDate DESC, Secondary: name ASC
+// Note: Only single order supported in current API
+```
+
+---
+
+## Event System
+
+### VariableEventListener Interface
+
+**File**: `VariableEventListener.java`
+
+```java
+public interface VariableEventListener<E extends RuntimeEvent<?, ?>> {
+    void onEvent(E event);
+}
+```
+
+**Purpose**: Base interface for variable event listeners.
+
+**Event Types**:
+- `VariableCreatedEvent`
+- `VariableUpdatedEvent`
+- `VariableDeletedEvent`
+
+**Implementation Example**:
+```java
+@Component
+public class AuditVariableListener 
+    implements VariableEventListener<VariableUpdatedEvent> {
+    
+    @Override
+    public void onEvent(VariableUpdatedEvent event) {
+        VariableInstance variable = event.getEntity();
+        Object previousValue = event.getPreviousValue();
+        Object currentValue = variable.getValue();
+        
+        auditLog.logVariableChange(
+            variable.getProcessInstanceId(),
+            variable.getName(),
+            previousValue,
+            currentValue
+        );
+    }
+}
+```
+
+**Registration**:
+```java
+@Configuration
+public class EventConfig {
+    @Bean
+    public List<VariableEventListener<?>> variableEventListeners() {
+        return Arrays.asList(
+            new AuditVariableListener(),
+            new NotificationVariableListener()
+        );
+    }
+}
+```
+
+---
+
+## Identity Management
+
+### UserGroupManager Interface
+
+**File**: `UserGroupManager.java`
+
+```java
+public interface UserGroupManager {
+    List<String> getUserGroups(String username);
+    List<String> getUserRoles(String username);
+    List<String> getGroups();
+    List<String> getUsers();
+}
+```
+
+**Purpose**: Manages user-group relationships for the system.
+
+**Use Cases**:
+- Task candidate group resolution
+- User lookup for assignment
+- Group-based authorization
+
+**Implementation Example**:
+```java
+@Component
+public class LDAPUserGroupManager implements UserGroupManager {
+    @Autowired
+    private LdapTemplate ldapTemplate;
+    
+    @Override
+    public List<String> getUserGroups(String username) {
+        return ldapTemplate.find(
+            new Filter("(&(uid={0})(objectClass=groupOfNames))", username),
+            Group.class
+        ).stream()
+        .map(Group::getGroupName)
+        .collect(Collectors.toList());
+    }
+    
+    // Other methods...
+}
+```
+
+---
+
+## Exception Hierarchy
+
+### NotFoundException
+
+**File**: `NotFoundException.java`
+
+```java
+public class NotFoundException extends RuntimeException {
+    public NotFoundException(String message) {
+        super(message);
+    }
+}
+```
+
+**Purpose**: Indicates a requested resource was not found.
+
+**When Thrown**:
+- Process instance doesn't exist
+- Task not found
+- Process definition missing
+
+**Handling**:
+```java
+try {
+    ProcessInstance instance = processRuntime.processInstance(id);
+} catch (NotFoundException e) {
+    log.warn("Process instance not found: {}", id);
+    // Return 404 or handle gracefully
+}
+```
+
+### UnprocessableEntityException
+
+**File**: `UnprocessableEntityException.java`
+
+```java
+public class UnprocessableEntityException extends IllegalArgumentException {
+    public UnprocessableEntityException(String message) {
+        super(message);
+    }
+}
+```
+
+**Purpose**: Indicates invalid request data.
+
+**When Thrown**:
+- Invalid variable type
+- Missing required field
+- Invalid business rule
+
+**Handling**:
+```java
+try {
+    processRuntime.start(invalidPayload);
+} catch (UnprocessableEntityException e) {
+    log.error("Invalid request: {}", e.getMessage());
+    // Return 422 Bad Request
+}
+```
+
+**Exception Hierarchy**:
+```
+RuntimeException
+├── NotFoundException
+└── IllegalArgumentException
+    └── UnprocessableEntityException
+```
+
+---
+
+## Performance Considerations
+
+### 1. Security Context Access
+
+Minimize security context lookups:
+```java
+// Bad - multiple lookups
+String userId = securityManager.getAuthenticatedUserId();
+List<String> groups = securityManager.getAuthenticatedUserGroups();
+List<String> roles = securityManager.getAuthenticatedUserRoles();
+
+// Good - cache in request scope
+SecurityContext context = securityContextProvider.getContext();
+String userId = context.getUserId();
+```
+
+### 2. Pagination
+
+Use appropriate page sizes:
+```java
+// Small pages for UI
+Pageable uiPageable = Pageable.of(0, 20);
+
+// Larger pages for batch processing
+Pageable batchPageable = Pageable.of(0, 100);
+```
+
+### 3. Event Processing
+
+Process events asynchronously:
+```java
+@Async
+public void onEvent(VariableUpdatedEvent event) {
+    // Non-blocking processing
+}
+```
+
+---
+
+## Testing Guidelines
+
+### Security Testing
+
+```java
+@Test
+void shouldGetAuthenticatedUserId() {
+    SecurityContextHolder.setAuthentication(mockAuth);
+    
+    String userId = securityManager.getAuthenticatedUserId();
+    
+    assertNotNull(userId);
+    assertEquals("testuser", userId);
+}
+
+@Test
+void shouldThrowExceptionWhenNotAuthenticated() {
+    SecurityContextHolder.clearContext();
+    
+    assertThrows(SecurityException.class, 
+        securityManager::getAuthenticatedUserId);
+}
+```
+
+### Pagination Testing
+
+```java
+@Test
+void shouldReturnCorrectPage() {
+    Page<Task> page = taskRuntime.tasks(Pageable.of(0, 10));
+    
+    assertTrue(page.getContent().size() <= 10);
+    assertEquals(100, page.getTotalItems());
+}
+```
+
+---
+
+## Common Pitfalls
+
+### 1. Security Context Loss
+
+In async operations, security context may be lost:
+```java
+// Bad - context lost in async
+@Async
+public void processTask() {
+    String userId = securityManager.getAuthenticatedUserId(); // Fails!
+}
+
+// Good - capture context early
+public void processTask() {
+    String userId = securityManager.getAuthenticatedUserId();
+    asyncExecutor.execute(() -> processWithUserId(userId));
+}
+```
+
+### 2. Null Principal Handling
+
+Always check for null principals:
+```java
+Optional<Principal> principal = provider.getCurrentPrincipal();
+if (principal.isEmpty()) {
+    throw new SecurityException("No authenticated user");
+}
+```
+
+### 3. Page Size Limits
+
+Respect system limits:
+```java
+int maxPageSize = 1000;
+int requestedSize = Math.min(requested, maxPageSize);
+Pageable pageable = Pageable.of(0, requestedSize);
+```
+
+---
+
+## Integration Patterns
+
+### Spring Security Integration
+
+```java
+@Configuration
+public class SecurityConfig {
+    @Bean
+    public SecurityManager securityManager() {
+        return new AbstractSecurityManager(
+            new SecurityContextPrincipalProvider() {
+                @Override
+                public Optional<Principal> getCurrentPrincipal() {
+                    Authentication auth = 
+                        SecurityContextHolder.getContext().getAuthentication();
+                    return auth != null && auth.getPrincipal() != null
+                        ? Optional.of(auth.getPrincipal())
+                        : Optional.empty();
+                }
+            },
+            new PrincipalIdentityProvider() {
+                @Override
+                public String getUserId(Principal principal) {
+                    return principal instanceof UserDetails
+                        ? ((UserDetails) principal).getUsername()
+                        : principal.getName();
+                }
+            },
+            // Groups and roles providers...
+        );
+    }
+}
+```
+
+### Custom Security Provider
+
+```java
+@Component
+public class CustomSecurityProvider implements SecurityManager {
+    @Override
+    public String getAuthenticatedUserId() {
+        return CustomSecurityContext.getCurrentUserId();
+    }
+    
+    @Override
+    public List<String> getAuthenticatedUserGroups() {
+        return CustomSecurityContext.getCurrentUserGroups();
+    }
+    
+    @Override
+    public List<String> getAuthenticatedUserRoles() {
+        return CustomSecurityContext.getCurrentUserRoles();
+    }
+}
+```
+
+---
+
+## Best Practices
+
+### 1. Security
+
+- Always validate authentication before operations
+- Use principle of least privilege
+- Log security-related events
+- Handle security exceptions gracefully
+
+### 2. Pagination
+
+- Implement server-side sorting
+- Cache total counts when expensive
+- Use cursor-based pagination for large datasets
+- Validate page parameters
+
+### 3. Event Handling
+
+- Keep event handlers lightweight
+- Implement retry logic for failures
+- Use dead letter queues for poison pills
+- Monitor event processing latency
+
+---
+
+## API Surface
+
+### Public Interfaces
+
+- `SecurityManager` - Security operations
+- `Page<T>` - Pagination results
+- `VariableEventListener<E>` - Event handling
+- `UserGroupManager` - Identity management
+- `SecurityContextPrincipalProvider` - Principal access
+- `PrincipalIdentityProvider` - Identity extraction
+- `PrincipalGroupsProvider` - Group extraction
+- `PrincipalRolesProvider` - Role extraction
+- `SecurityContextTokenProvider` - Token access
+
+### Public Classes
+
+- `AbstractSecurityManager` - Security base implementation
+- `Pageable` - Pagination configuration
+- `Order` - Sorting configuration
+- `NotFoundException` - Resource not found
+- `UnprocessableEntityException` - Invalid request
+
+### Public Enums
+
+- `Order.Direction` - Sort direction
+
+---
+
+## Version Information
+
+- **Module Version**: 8.7.2-SNAPSHOT
+- **Java Version**: 11+
+- **Dependencies**: activiti-api-model-shared
+
+---
+
+## Related Documentation
+
+- [Model Shared Module](../activiti-api/model-shared.md)
+- [Process Runtime Module](../activiti-api/process-runtime.md)
+- [Task Runtime Module](../activiti-api/task-runtime.md)
+- [Main Module Docs](../README.md)
+
+---
+
+**Last Updated**: 2024  
+**Maintained by**: Activiti Community

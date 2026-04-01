@@ -31,13 +31,13 @@ This documentation is organized into several guides to help you learn and use Ac
 
 ### For Experienced Developers
 
-1. **[API Reference](./api-reference.md)** - Complete API documentation
+1. **[API Reference](./api-reference/overview.md)** - Complete API documentation
    - All interfaces and methods
    - Parameter details
    - Return types
    - Examples
 
-2. **[Implementation Patterns](./implementation-patterns.md)** - Architecture choices
+2. **[Implementation Patterns](./advanced/implementation-patterns.md)** - Architecture choices
    - Monolithic vs Microservices
    - Integration patterns
    - Event handling strategies
@@ -54,15 +54,15 @@ This documentation is organized into several guides to help you learn and use Ac
 |----------|----------|---------|------|
 | [Quick Start](./quickstart.md) | Everyone | Get started quickly | 15 min |
 | [Main Guide](./README.md) | Beginners | Learn fundamentals | 1-2 hours |
-| [API Reference](./api-reference.md) | Developers | Look up APIs | Reference |
-| [Best Practices](./best-practices.md) | All | Write better code | 1 hour |
+| [API Reference](./api-reference/overview.md) | Developers | Look up APIs | Reference |
+| [Best Practices](./best-practices/overview.md) | All | Write better code | 1 hour |
 
 ### Advanced Topics
 
 | Document | Audience | Purpose | Time |
 |----------|----------|---------|------|
-| [Implementation Patterns](./implementation-patterns.md) | Architects | Design systems | 2 hours |
-| [Troubleshooting](./troubleshooting.md) | Developers | Fix issues | Reference |
+| [Implementation Patterns](./advanced/implementation-patterns.md) | Architects | Design systems | 2 hours |
+| [Troubleshooting](./troubleshooting/overview.md) | Developers | Fix issues | Reference |
 | [Main Guide - Advanced](./README.md#advanced-topics) | Experts | Deep dive | 2-3 hours |
 
 ---
@@ -158,35 +158,35 @@ Day 5:
 
 #### Process Management
 - **Basics**: [Main Guide - Process Management](./README.md#process-management)
-- **API**: [API Reference - ProcessRuntime](./api-reference.md#process-runtime-api)
+- **API**: [API Reference - ProcessRuntime](./api-reference/overview.md#process-runtime-api)
 - **Examples**: [Quick Start - Processes](./quickstart.md#your-first-process)
 - **Advanced**: [Main Guide - Advanced Topics](./README.md#advanced-topics)
 
 #### Task Management
 - **Basics**: [Main Guide - Task Management](./README.md#task-management)
-- **API**: [API Reference - TaskRuntime](./api-reference.md#task-runtime-api)
+- **API**: [API Reference - TaskRuntime](./api-reference/overview.md#task-runtime-api)
 - **Examples**: [Quick Start - Tasks](./quickstart.md#step-4-query-and-complete-tasks)
-- **Patterns**: [Implementation Patterns - Task Assignment](./implementation-patterns.md)
+- **Patterns**: [Implementation Patterns - Task Assignment](./advanced/implementation-patterns.md)
 
 #### Events
 - **Basics**: [Main Guide - Event Handling](./README.md#event-handling)
-- **API**: [API Reference - Event Interfaces](./api-reference.md#event-interfaces)
-- **Patterns**: [Implementation Patterns - Event Handling](./implementation-patterns.md#event-handling-patterns)
-- **Best Practices**: [Best Practices - Event Listeners](./best-practices.md#2-implement-async-for-long-operations)
+- **API**: [API Reference - Event Interfaces](./api-reference/overview.md#event-interfaces)
+- **Patterns**: [Implementation Patterns - Event Handling](./advanced/implementation-patterns.md#event-handling-patterns)
+- **Best Practices**: [Best Practices - Event Listeners](./best-practices/overview.md#2-implement-async-for-long-operations)
 
 #### Security
 - **Basics**: [Main Guide - Security](./README.md#security--authentication)
-- **API**: [API Reference - Security API](./api-reference.md#security-api)
-- **Patterns**: [Implementation Patterns - Security](./implementation-patterns.md#security-patterns)
-- **Best Practices**: [Best Practices - Security](./best-practices.md#security-best-practices)
+- **API**: [API Reference - Security API](./api-reference/overview.md#security-api)
+- **Patterns**: [Implementation Patterns - Security](./advanced/implementation-patterns.md#security-patterns)
+- **Best Practices**: [Best Practices - Security](./best-practices/overview.md#security-best-practices)
 
 #### Performance
-- **Guides**: [Best Practices - Performance](./best-practices.md#performance-optimization)
-- **Troubleshooting**: [Troubleshooting - Performance](./troubleshooting.md#performance-problems)
-- **Patterns**: [Implementation Patterns - Async](./implementation-patterns.md#2-asynchronous-integration)
+- **Guides**: [Best Practices - Performance](./best-practices/overview.md#performance-optimization)
+- **Troubleshooting**: [Troubleshooting - Performance](./troubleshooting/overview.md#performance-problems)
+- **Patterns**: [Implementation Patterns - Async](./advanced/implementation-patterns.md#2-asynchronous-integration)
 
 #### Integration
-- **Patterns**: [Implementation Patterns - Integration](./implementation-patterns.md#integration-patterns)
+- **Patterns**: [Implementation Patterns - Integration](./advanced/implementation-patterns.md#integration-patterns)
 - **Connectors**: [Main Guide - Custom Connectors](./README.md#custom-connectors)
 - **Examples**: [Quick Start - Complete Example](./quickstart.md#complete-example-application)
 
@@ -197,29 +197,29 @@ Day 5:
 
 #### "I need to understand the architecture"
 → [Main Documentation - Architecture](./README.md#architecture-overview)
-→ [Implementation Patterns](./implementation-patterns.md)
+→ [Implementation Patterns](./advanced/implementation-patterns.md)
 
 #### "I need to look up an API method"
-→ [API Reference](./api-reference.md)
+→ [API Reference](./api-reference/overview.md)
 
 #### "My process isn't working"
-→ [Troubleshooting Guide](./troubleshooting.md)
-→ [Common Issues](./troubleshooting.md#common-issues)
+→ [Troubleshooting Guide](./troubleshooting/overview.md)
+→ [Common Issues](./troubleshooting/overview.md#common-issues)
 
 #### "I want to write better code"
-→ [Best Practices](./best-practices.md)
+→ [Best Practices](./best-practices/overview.md)
 
 #### "I need to choose an architecture"
-→ [Implementation Patterns - Comparison](./implementation-patterns.md#comparison-matrix)
-→ [Decision Framework](./implementation-patterns.md#decision-framework)
+→ [Implementation Patterns - Comparison](./advanced/implementation-patterns.md#comparison-matrix)
+→ [Decision Framework](./advanced/implementation-patterns.md#decision-framework)
 
 #### "I'm having performance issues"
-→ [Troubleshooting - Performance](./troubleshooting.md#performance-problems)
-→ [Best Practices - Performance](./best-practices.md#performance-optimization)
+→ [Troubleshooting - Performance](./troubleshooting/overview.md#performance-problems)
+→ [Best Practices - Performance](./best-practices/overview.md#performance-optimization)
 
 #### "I need to secure my application"
-→ [Best Practices - Security](./best-practices.md#security-best-practices)
-→ [Implementation Patterns - Security](./implementation-patterns.md#security-patterns)
+→ [Best Practices - Security](./best-practices/overview.md#security-best-practices)
+→ [Implementation Patterns - Security](./advanced/implementation-patterns.md#security-patterns)
 
 ### By Experience Level
 
@@ -227,18 +227,18 @@ Day 5:
 1. Start with [Quick Start](./quickstart.md)
 2. Read [Main Guide - Core Concepts](./README.md#core-concepts)
 3. Practice with examples
-4. Review [Best Practices - Design](./best-practices.md#design-principles)
+4. Review [Best Practices - Design](./best-practices/overview.md#design-principles)
 
 #### Intermediate (6 months - 2 years)
-1. Study [API Reference](./api-reference.md)
-2. Read [Implementation Patterns](./implementation-patterns.md)
+1. Study [API Reference](./api-reference/overview.md)
+2. Read [Implementation Patterns](./advanced/implementation-patterns.md)
 3. Master [Event Handling](./README.md#event-handling)
-4. Apply [Best Practices](./best-practices.md)
+4. Apply [Best Practices](./best-practices/overview.md)
 
 #### Advanced (2+ years)
-1. Deep dive [Implementation Patterns](./implementation-patterns.md)
+1. Deep dive [Implementation Patterns](./advanced/implementation-patterns.md)
 2. Master [Advanced Topics](./README.md#advanced-topics)
-3. Review [Troubleshooting](./troubleshooting.md)
+3. Review [Troubleshooting](./troubleshooting/overview.md)
 4. Contribute to community
 
 ---
@@ -365,7 +365,7 @@ We're always looking to improve:
 ## 🆘 Getting Help
 
 ### Quick Help
-1. **Check Troubleshooting Guide**: [Common Issues](./troubleshooting.md#common-issues)
+1. **Check Troubleshooting Guide**: [Common Issues](./troubleshooting/overview.md#common-issues)
 2. **Review Examples**: [Quick Start](./quickstart.md)
 3. **Search Documentation**: Use Ctrl+F in your browser
 
@@ -409,10 +409,10 @@ We're always looking to improve:
 |------|-------------|------|--------------|
 | [README.md](./README.md) | Main documentation | ~52KB | 2024 |
 | [quickstart.md](./quickstart.md) | Quick start guide | ~11KB | 2024 |
-| [api-reference.md](./api-reference.md) | Complete API reference | ~29KB | 2024 |
-| [best-practices.md](./best-practices.md) | Best practices guide | ~30KB | 2024 |
-| [implementation-patterns.md](./implementation-patterns.md) | Architecture patterns | ~26KB | 2024 |
-| [troubleshooting.md](./troubleshooting.md) | Troubleshooting guide | ~18KB | 2024 |
+| [api-reference.md](./api-reference/overview.md) | Complete API reference | ~29KB | 2024 |
+| [best-practices.md](./best-practices/overview.md) | Best practices guide | ~30KB | 2024 |
+| [implementation-patterns.md](./advanced/implementation-patterns.md) | Architecture patterns | ~26KB | 2024 |
+| [troubleshooting.md](./troubleshooting/overview.md) | Troubleshooting guide | ~18KB | 2024 |
 | [index.md](./index.md) | This file | ~15KB | 2024 |
 
 **Total Documentation**: ~181KB
@@ -422,10 +422,10 @@ We're always looking to improve:
 ## 🎯 Quick Links
 
 - **Start Here**: [Quick Start Guide](./quickstart.md)
-- **API Lookup**: [API Reference](./api-reference.md)
-- **Architecture**: [Implementation Patterns](./implementation-patterns.md)
-- **Best Code**: [Best Practices](./best-practices.md)
-- **Fix Issues**: [Troubleshooting](./troubleshooting.md)
+- **API Lookup**: [API Reference](./api-reference/overview.md)
+- **Architecture**: [Implementation Patterns](./advanced/implementation-patterns.md)
+- **Best Code**: [Best Practices](./best-practices/overview.md)
+- **Fix Issues**: [Troubleshooting](./troubleshooting/overview.md)
 - **Full Guide**: [Main Documentation](./README.md)
 
 ---
