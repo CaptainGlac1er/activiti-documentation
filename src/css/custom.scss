@@ -1,0 +1,200 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* Light Theme */
+:root {
+  /* Primary Colors */
+  --ifm-color-primary: #26BD73;
+  --ifm-color-primary-dark: #21a865;
+  --ifm-color-primary-darker: #1f9e5e;
+  --ifm-color-primary-darkest: #18844e;
+  --ifm-color-primary-light: #2bd081;
+  --ifm-color-primary-lighter: #2ed688;
+  --ifm-color-primary-lightest: #3be09a;
+
+  /* Secondary Colors */
+  --ifm-color-secondary: #94DBB2;
+  --ifm-color-secondary-dark: #7cc9a0;
+  --ifm-color-secondary-light: #a4e5c2;
+
+  /* Background Colors */
+  --ifm-background-color: #F1FAF4;
+  --ifm-background-surface-color: #ffffff;
+
+  /* Text Colors */
+  --ifm-font-color-base: #1a1a1a;
+  --ifm-heading-color: #26BD73;
+
+  /* Code */
+  --ifm-code-font-size: 95%;
+  --ifm-code-color: #26BD73;
+  --docusaurus-highlighted-code-line-bg: rgba(38, 189, 115, 0.1);
+
+  /* Links */
+  --ifm-link-color: #26BD73;
+  --ifm-link-hover-color: #21a865;
+
+  /* Cards and Components */
+  --ifm-card-background-color: #ffffff;
+  --ifm-menu-color: #333333;
+  --ifm-menu-color-active: #26BD73;
+
+  /* Buttons */
+  --ifm-button-color: #ffffff;
+  --ifm-button-bg-color: #26BD73;
+  --ifm-button-hover-color: #ffffff;
+  --ifm-button-hover-bg-color: #21a865;
+}
+
+/* Dark Theme - Using Activiti Colors */
+[data-theme='dark'] {
+  /* Primary Colors - Brighter for dark mode */
+  --ifm-color-primary: #94DBB2;
+  --ifm-color-primary-dark: #7cc9a0;
+  --ifm-color-primary-darker: #6fc096;
+  --ifm-color-primary-darkest: #5aa87d;
+  --ifm-color-primary-light: #a4e5c2;
+  --ifm-color-primary-lighter: #afebd6;
+  --ifm-color-primary-lightest: #c5f0e0;
+
+  /* Secondary Colors */
+  --ifm-color-secondary: #26BD73;
+  --ifm-color-secondary-dark: #21a865;
+  --ifm-color-secondary-light: #2bd081;
+
+  /* Background Colors - Dark with mint tint */
+  --ifm-background-color: #0d1511;
+  --ifm-background-surface-color: #15201a;
+
+  /* Text Colors */
+  --ifm-font-color-base: #F1FAF4;
+  --ifm-heading-color: #94DBB2;
+
+  /* Code */
+  --ifm-code-color: #94DBB2;
+  --ifm-code-background: rgba(38, 189, 115, 0.15);
+  --docusaurus-highlighted-code-line-bg: rgba(148, 219, 178, 0.2);
+
+  /* Links */
+  --ifm-link-color: #94DBB2;
+  --ifm-link-hover-color: #a4e5c2;
+
+  /* Cards and Components */
+  --ifm-card-background-color: #15201a;
+  --ifm-menu-color: #F1FAF4;
+  --ifm-menu-color-active: #94DBB2;
+  --ifm-menu-link-sublist-bg: rgba(38, 189, 115, 0.1);
+
+  /* Buttons */
+  --ifm-button-color: #0d1511;
+  --ifm-button-bg-color: #94DBB2;
+  --ifm-button-hover-color: #0d1511;
+  --ifm-button-hover-bg-color: #a4e5c2;
+
+  /* Navbar */
+  --ifm-navbar-background-color: #15201a;
+  --ifm-navbar-item-color: #F1FAF4;
+  --ifm-navbar-item-hover-color: #94DBB2;
+
+  /* Footer */
+  --ifm-footer-background-color: #0d1511;
+  --ifm-footer-color: #F1FAF4;
+
+  /* Tables */
+  --ifm-table-background-color: #15201a;
+  --ifm-table-stripe-background: rgba(38, 189, 115, 0.05);
+  --ifm-table-border-color: rgba(148, 219, 178, 0.2);
+
+  /* Admonitions */
+  --ifm-alert-background-color: rgba(38, 189, 115, 0.15);
+  --ifm-alert-background-color-highlight: rgba(38, 189, 115, 0.25);
+
+  /* Search */
+  --ifm-color-emphasis-300: rgba(148, 219, 178, 0.3);
+}
+
+/* Custom gradient backgrounds for hero sections */
+.hero--primary {
+  background: linear-gradient(135deg, #26BD73 0%, #94DBB2 100%);
+}
+
+[data-theme='dark'] .hero--primary {
+  background: linear-gradient(135deg, #15201a 0%, #0d1511 100%);
+}
+
+/* Smooth theme transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Custom scrollbar for dark theme */
+[data-theme='dark'] ::-webkit-scrollbar {
+  width: 10px;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-track {
+  background: #0d1511;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #26BD73;
+  border-radius: 5px;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #94DBB2;
+}
+
+/* Enhanced dark theme components */
+[data-theme='dark'] .navbar {
+  box-shadow: 0 2px 8px rgba(38, 189, 115, 0.2);
+}
+
+[data-theme='dark'] .theme-doc-sidebar-menu {
+  background-color: #15201a;
+}
+
+[data-theme='dark'] .table-of-contents__link--active {
+  color: #94DBB2;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .card {
+  border: 1px solid rgba(148, 219, 178, 0.2);
+}
+
+[data-theme='dark'] .card:hover {
+  border-color: #26BD73;
+  box-shadow: 0 4px 12px rgba(38, 189, 115, 0.3);
+}
+
+/* Breadcrumb styling */
+[data-theme='dark'] .theme-doc-breadcrumbs a {
+  color: #94DBB2;
+}
+
+[data-theme='dark'] .theme-doc-breadcrumbs a:hover {
+  color: #a4e5c2;
+}
+
+/* Tag/Label styling */
+[data-theme='dark'] .badge {
+  background-color: rgba(38, 189, 115, 0.2);
+  color: #94DBB2;
+  border: 1px solid #26BD73;
+}
+
+/* Search box enhancement - Algolia DocSearch requires !important */
+[data-theme='dark'] .DocSearch_Input {
+  background-color: var(--ifm-background-surface-color) !important;
+  color: var(--ifm-font-color-base) !important;
+  border: 1px solid var(--ifm-color-emphasis-300) !important;
+}
+
+[data-theme='dark'] .DocSearch_Input:focus {
+  border-color: var(--ifm-color-primary) !important;
+  box-shadow: 0 0 0 2px rgba(var(--ifm-color-primary), 0.2) !important;
+}

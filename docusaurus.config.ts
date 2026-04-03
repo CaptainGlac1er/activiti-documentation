@@ -60,7 +60,7 @@ const config: Config = {
           onUntruncatedBlogPosts: 'warn',
         },
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: './src/css/custom.scss',
         },
       } satisfies Preset.Options,
     ],
@@ -68,7 +68,8 @@ const config: Config = {
 
   themeConfig: {
     colorMode: {
-      defaultMode: 'light',
+      defaultMode: 'dark',
+      disableSwitch: false,
       respectPrefersColorScheme: true,
     },
     navbar: {
@@ -92,7 +93,6 @@ const config: Config = {
       ],
     },
     footer: {
-      style: 'dark',
       links: [
         {
           title: 'Community',
@@ -107,7 +107,7 @@ const config: Config = {
     },
     prism: {
       theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      darkTheme: prismThemes.vsDark,
       additionalLanguages: ['java', 'markup', 'bash', 'yaml', 'json'],
     },
   } satisfies Preset.ThemeConfig,
