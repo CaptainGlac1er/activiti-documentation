@@ -76,16 +76,12 @@ Set the task owner (useful for delegation):
 
 ### 3. Candidate Users
 
-Specify users who can claim the task:
+Specify users who can claim the task (comma-separated list):
 
 ```xml
-<UserTask id="reviewTask" name="Review Document">
-  <activiti:candidateUsers>
-    <activiti:user>alice</activiti:user>
-    <activiti:user>bob</activiti:user>
-    <activiti:user>charlie</activiti:user>
-  </activiti:candidateUsers>
-</UserTask>
+<UserTask id="reviewTask" 
+          name="Review Document" 
+          activiti:candidateUsers="alice,bob,charlie"/>
 ```
 
 **Or using expression:**
@@ -100,15 +96,12 @@ Specify users who can claim the task:
 
 ### 4. Candidate Groups
 
-Assign task to groups/roles:
+Assign task to groups/roles (comma-separated list):
 
 ```xml
-<UserTask id="approvalTask" name="Manager Approval">
-  <activiti:candidateGroups>
-    <activiti:group>managers</activiti:group>
-    <activiti:group>admins</activiti:group>
-  </activiti:candidateGroups>
-</UserTask>
+<UserTask id="approvalTask" 
+          name="Manager Approval" 
+          activiti:candidateGroups="managers,admins"/>
 ```
 
 **Or using expression:**

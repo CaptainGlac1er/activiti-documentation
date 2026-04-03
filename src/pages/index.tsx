@@ -37,16 +37,11 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--primary button--lg"
-            to="/docs/introduction">
-            📖 Start Learning
-          </Link>
-          <Link
-            className="button button--secondary button--lg"
             to="/docs/quickstart">
             🚀 Quick Start
           </Link>
           <Link
-            className="button button--outline button--lg"
+            className="button button--secondary button--lg"
             to="https://github.com/Activiti/Activiti"
             target="_blank"
             rel="noopener noreferrer">

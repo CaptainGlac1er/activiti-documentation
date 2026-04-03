@@ -339,7 +339,9 @@ Collect results **from** each instance:
     </outputDataItem>
     
   </multiInstanceLoopCharacteristics>
-  <activiti:formProperty name="approved" type="bool"/>
+  <extensionElements>
+    <activiti:formProperty name="approved" type="bool"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -366,8 +368,9 @@ Collect results **from** each instance:
     </inputDataItem>
     
   </multiInstanceLoopCharacteristics>
-
-  <activiti:formProperty name="approved" type="bool"/>
+  <extensionElements>
+    <activiti:formProperty name="approved" type="bool"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -482,7 +485,7 @@ Collect results **from** each instance:
 ### Example 5: Voting/Consensus
 
 ```xml
-<userTask id="votingTask" name="Vote on Proposal" activiti:assignee="${voter.email}">>
+<userTask id="votingTask" name="Vote on Proposal" activiti:assignee="${voter.email}">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${voters}"
@@ -512,9 +515,10 @@ Collect results **from** each instance:
     </outputDataItem>
     
   </multiInstanceLoopCharacteristics>
-
-  <activiti:formProperty name="vote" type="string"/>
-  <activiti:formProperty name="comment" type="string"/>
+  <extensionElements>
+    <activiti:formProperty name="vote" type="string"/>
+    <activiti:formProperty name="comment" type="string"/>
+  </extensionElements>
 </userTask>
 ```
 

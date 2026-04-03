@@ -156,8 +156,10 @@ Hook into script execution:
 ```xml
 <scriptTask id="trackedScript" 
             activiti:scriptFormat="javascript">
-  <activiti:executionListener event="start" class="com.example.ScriptStartListener"/>
-  <activiti:executionListener event="end" class="com.example.ScriptEndListener"/>
+  <extensionElements>
+    <activiti:executionListener event="start" class="com.example.ScriptStartListener"/>
+    <activiti:executionListener event="end" class="com.example.ScriptEndListener"/>
+  </extensionElements>
 </scriptTask>
 ```
 

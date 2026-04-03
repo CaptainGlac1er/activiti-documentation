@@ -12,11 +12,11 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 
 ```xml
 <userTask id="approvalTask" name="Approval">
-  
-  <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
-  <activiti:taskListener event="assignment" delegateExpression="${assignmentListener}"/>
-  <activiti:taskListener event="complete" class="com.example.TaskCompletedListener"/>
-  
+  <extensionElements>
+    <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
+    <activiti:taskListener event="assignment" delegateExpression="${assignmentListener}"/>
+    <activiti:taskListener event="complete" class="com.example.TaskCompletedListener"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -74,7 +74,9 @@ Specify a fully qualified class name implementing `TaskListener`:
 
 ```xml
 <userTask id="task1" name="Task">
-  <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
+  <extensionElements>
+    <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -89,7 +91,9 @@ Reference a Spring bean or expression:
 
 ```xml
 <userTask id="task1" name="Task">
-  <activiti:taskListener event="complete" delegateExpression="${taskCompletionListener}"/>
+  <extensionElements>
+    <activiti:taskListener event="complete" delegateExpression="${taskCompletionListener}"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -104,7 +108,9 @@ Execute a method call directly:
 
 ```xml
 <userTask id="task1" name="Task">
-  <activiti:taskListener event="create" expression="${sendTaskNotification()}"/>
+  <extensionElements>
+    <activiti:taskListener event="create" expression="${sendTaskNotification()}"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -230,7 +236,9 @@ public class TaskCreatedNotificationListener implements TaskListener {
 **BPMN Configuration:**
 ```xml
 <userTask id="approvalTask" name="Approval Task" activiti:assignee="${manager}">
-  <activiti:taskListener event="create" class="com.example.TaskCreatedNotificationListener"/>
+  <extensionElements>
+    <activiti:taskListener event="create" class="com.example.TaskCreatedNotificationListener"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -284,7 +292,9 @@ public class AssignmentChangeTracker implements TaskListener {
 **BPMN Configuration:**
 ```xml
 <userTask id="reassignableTask" name="Reassignable Task">
-  <activiti:taskListener event="assignment" class="com.example.AssignmentChangeTracker"/>
+  <extensionElements>
+    <activiti:taskListener event="assignment" class="com.example.AssignmentChangeTracker"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -342,7 +352,9 @@ public class TaskCompletionAuditor implements TaskListener {
 **BPMN Configuration:**
 ```xml
 <userTask id="auditedTask" name="Audited Task">
-  <activiti:taskListener event="complete" class="com.example.TaskCompletionAuditor"/>
+  <extensionElements>
+    <activiti:taskListener event="complete" class="com.example.TaskCompletionAuditor"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -400,7 +412,9 @@ public class DynamicTaskConfigurer implements TaskListener {
 **BPMN Configuration:**
 ```xml
 <userTask id="dynamicTask" name="Dynamic Task">
-  <activiti:taskListener event="create" class="com.example.DynamicTaskConfigurer"/>
+  <extensionElements>
+    <activiti:taskListener event="create" class="com.example.DynamicTaskConfigurer"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -460,7 +474,9 @@ public class UniversalTaskHandler implements TaskListener {
 **BPMN Configuration:**
 ```xml
 <userTask id="multiEventTask" name="Multi-Event Task">
-  <activiti:taskListener event="all" class="com.example.UniversalTaskHandler"/>
+  <extensionElements>
+    <activiti:taskListener event="all" class="com.example.UniversalTaskHandler"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -653,14 +669,18 @@ public class SafeTaskListener implements TaskListener {
 ```xml
 <!-- GOOD: Right event for right action -->
 <userTask id="task1">
-  <activiti:taskListener event="create" class="NotificationListener"/>
-  <activiti:taskListener event="complete" class="AuditListener"/>
+  <extensionElements>
+    <activiti:taskListener event="create" class="NotificationListener"/>
+    <activiti:taskListener event="complete" class="AuditListener"/>
+  </extensionElements>
 </userTask>
 
 <!-- BAD: Wrong event -->
 <userTask id="task2">
-  <activiti:taskListener event="complete" class="NotificationListener"/>
-  <!-- Notification sent too late! -->
+  <extensionElements>
+    <activiti:taskListener event="complete" class="NotificationListener"/>
+    <!-- Notification sent too late! -->
+  </extensionElements>
 </userTask>
 ```
 

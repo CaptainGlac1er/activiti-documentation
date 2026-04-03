@@ -288,9 +288,11 @@ Hook into execution lifecycle:
              name="Tracked Service"
              activiti:class="com.example.TrackedService">
   
-  <activiti:executionListener event="start" class="com.example.StartTracker"/>
-  <activiti:executionListener event="end" delegateExpression="${endTracker}"/>
-  <activiti:executionListener event="take" class="com.example.FlowTracker"/>
+  <extensionElements>
+    <activiti:executionListener event="start" class="com.example.StartTracker"/>
+    <activiti:executionListener event="end" delegateExpression="${endTracker}"/>
+    <activiti:executionListener event="take" class="com.example.FlowTracker"/>
+  </extensionElements>
 </serviceTask>
 ```
 
