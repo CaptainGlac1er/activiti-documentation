@@ -198,3 +198,48 @@
   border-color: var(--ifm-color-primary) !important;
   box-shadow: 0 0 0 2px rgba(var(--ifm-color-primary), 0.2) !important;
 }
+
+/* Hero section variables */
+:root {
+  --hero-title-color: var(--ifm-heading-color);
+  --hero-subtitle-color: var(--ifm-font-color-base);
+  --hero-description-color: rgba(255, 255, 255, 0.9);
+  --hero-subtitle-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  --hero-description-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='dark'] {
+  --hero-subtitle-color: #F1FAF4;
+  --hero-description-color: #F1FAF4;
+  --hero-subtitle-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+  --hero-description-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Tagline styling for better visibility */
+.hero__title {
+  color: var(--hero-title-color);
+  font-weight: 700;
+}
+
+.hero__subtitle {
+  color: var(--hero-subtitle-color);
+  font-size: 1.25rem;
+  line-height: 1.6;
+  text-shadow: var(--hero-subtitle-shadow);
+  opacity: 0.95;
+}
+
+/* Hero section text improvements */
+.hero {
+  padding: 4rem 0;
+}
+
+.hero__container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-description {
+  color: var(--hero-description-color);
+  text-shadow: var(--hero-description-shadow);
+}

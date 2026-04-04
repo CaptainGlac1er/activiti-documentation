@@ -32,41 +32,38 @@
 }
 
 .heroText .hero__title {
-  color: white;
+  color: var(--hero-title-color);
   font-size: 3.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Dark theme */
+/* Dark theme - uses CSS variable automatically */
 [data-theme='dark'] .heroText .hero__title {
-  color: var(--ifm-font-color-base);
+  color: var(--hero-title-color);
 }
 
 .heroText .hero__subtitle {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--hero-subtitle-color);
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
   font-weight: 300;
+  text-shadow: var(--hero-subtitle-shadow);
+  opacity: 0.95;
 }
 
-/* Dark theme */
-[data-theme='dark'] .heroText .hero__subtitle {
-  color: var(--ifm-link-color);
-}
+/* Dark theme - uses CSS variable automatically, no override needed */
 
 .heroDescription {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--hero-description-color);
   font-size: 1.1rem;
   line-height: 1.6;
   max-width: 600px;
+  text-shadow: var(--hero-description-shadow);
 }
 
-/* Dark theme */
-[data-theme='dark'] .heroDescription {
-  color: var(--ifm-font-color-base);
-}
+/* Dark theme - uses CSS variable automatically, no override needed */
 
 .heroImage {
   flex-shrink: 0;
