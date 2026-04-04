@@ -617,4 +617,4 @@ ProcessEngine engine = configuration.buildProcessEngine();
 ---
 
 **Source:** `org.activiti.engine.ManagementService`  
-**Last Updated:** 2024
+**Last Updated: 2026

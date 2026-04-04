@@ -595,5 +595,5 @@ External dependencies:
 
 ---
 
-**Last Updated**: 2024  
+**Last Updated: 2026  
 **Maintained by**: Activiti Community

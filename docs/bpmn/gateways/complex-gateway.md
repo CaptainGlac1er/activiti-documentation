@@ -500,4 +500,4 @@ for (String activityId : runtimeService.getActiveActivityIds(processInstanceId))
 ---
 
 **Version:** 8.7.2-SNAPSHOT  
-**Last Updated:** 2024
+**Last Updated: 2026

@@ -10,7 +10,7 @@ description: Complete index of Activiti Engine documentation with navigation gui
 
 **Status:** ✅ **COMPLETE** - Core documentation created
 
-**Last Updated:** 2024
+**Last Updated: 2026
 
 ---
 
@@ -258,6 +258,6 @@ Each documentation file includes:
 
 **Documentation Status:** 🚧 **In Progress** - Core documentation complete, advanced topics pending
 
-**Last Updated:** 2024
+**Last Updated: 2026
 
 **Maintained By:** Activiti Development Team

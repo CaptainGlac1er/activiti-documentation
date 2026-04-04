@@ -1107,5 +1107,5 @@ For more complete examples, see:
 ---
 
 **Version:** 8.7.2-SNAPSHOT  
-**Last Updated:** 2024  
+**Last Updated: 2026  
 **Feature Status:** ✅ Production Ready

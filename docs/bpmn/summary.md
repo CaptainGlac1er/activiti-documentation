@@ -260,4 +260,4 @@ This page provides a **quick reference** to all BPMN 2.0 elements supported by A
 ---
 
 **Version:** 8.7.2-SNAPSHOT  
-**Last Updated:** 2024
+**Last Updated: 2026

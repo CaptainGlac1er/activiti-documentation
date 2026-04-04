@@ -114,12 +114,6 @@ public interface ProcessAdminRuntime {
 
 Starts a new process instance.
 
-**Parameters:**
-- `startProcessPayload`: Configuration for starting the process
-
-**Returns:**
-- `ProcessInstance`: The started process instance
-
 **Example:**
 ```java
 ProcessInstance instance = processRuntime.start(
@@ -133,16 +127,7 @@ ProcessInstance instance = processRuntime.start(
 
 #### processInstance(String processInstanceId)
 
-Retrieves a process instance by ID.
-
-**Parameters:**
-- `processInstanceId`: The unique identifier of the process instance
-
-**Returns:**
-- `ProcessInstance`: The process instance details
-
-**Throws:**
-- `NotFoundException`: If process instance doesn't exist
+Retrieves a process instance by ID. Throws `NotFoundException` if not found.
 
 **Example:**
 ```java
@@ -153,12 +138,6 @@ System.out.println("Status: " + instance.getStatus());
 #### suspend(SuspendProcessPayload)
 
 Suspends a running process instance.
-
-**Parameters:**
-- `suspendProcessPayload`: Contains the process instance ID to suspend
-
-**Returns:**
-- `ProcessInstance`: The suspended process instance
 
 **Example:**
 ```java
@@ -171,12 +150,6 @@ ProcessInstance suspended = processRuntime.suspend(
 
 Resumes a suspended process instance.
 
-**Parameters:**
-- `resumeProcessPayload`: Contains the process instance ID to resume
-
-**Returns:**
-- `ProcessInstance`: The resumed process instance
-
 **Example:**
 ```java
 ProcessInstance resumed = processRuntime.resume(
@@ -187,12 +160,6 @@ ProcessInstance resumed = processRuntime.resume(
 #### delete(DeleteProcessPayload)
 
 Deletes a process instance.
-
-**Parameters:**
-- `deleteProcessPayload`: Contains the process instance ID and optional reason
-
-**Returns:**
-- `ProcessInstance`: The deleted process instance
 
 **Example:**
 ```java
@@ -207,9 +174,6 @@ ProcessInstance deleted = processRuntime.delete(
 #### setVariables(SetProcessVariablesPayload)
 
 Sets or updates process variables.
-
-**Parameters:**
-- `setProcessVariablesPayload`: Contains process instance ID and variables map
 
 **Example:**
 ```java
@@ -226,12 +190,6 @@ processRuntime.setVariables(
 
 Retrieves process variables.
 
-**Parameters:**
-- `getVariablesPayload`: Contains the process instance ID
-
-**Returns:**
-- `List<VariableInstance>`: List of variable instances
-
 **Example:**
 ```java
 List<VariableInstance> variables = processRuntime.variables(
@@ -244,9 +202,6 @@ List<VariableInstance> variables = processRuntime.variables(
 #### signal(SignalPayload)
 
 Sends a signal event to running processes.
-
-**Parameters:**
-- `signalPayload`: Contains signal name and optional variables
 
 **Example:**
 ```java
@@ -261,9 +216,6 @@ processRuntime.signal(
 #### receive(ReceiveMessagePayload)
 
 Sends a message to a process instance.
-
-**Parameters:**
-- `messagePayload`: Contains message name, correlation key, and variables
 
 **Example:**
 ```java
@@ -385,12 +337,6 @@ System.out.println("Assignee: " + task.getAssignee());
 
 Retrieves tasks for the current user.
 
-**Parameters:**
-- `pageable`: Pagination and sorting configuration
-
-**Returns:**
-- `Page<Task>`: Paginated list of tasks
-
 **Example:**
 ```java
 Page<Task> tasks = taskRuntime.tasks(
@@ -401,13 +347,6 @@ Page<Task> tasks = taskRuntime.tasks(
 #### tasks(Pageable, GetTasksPayload)
 
 Retrieves tasks with filters.
-
-**Parameters:**
-- `pageable`: Pagination configuration
-- `getTasksPayload`: Filter criteria (assignee, groups, process instance, etc.)
-
-**Returns:**
-- `Page<Task>`: Filtered and paginated list of tasks
 
 **Example:**
 ```java
@@ -422,16 +361,7 @@ Page<Task> tasks = taskRuntime.tasks(
 
 #### claim(ClaimTaskPayload)
 
-Claims a task for the current user.
-
-**Parameters:**
-- `claimTaskPayload`: Contains task ID and optional assignee
-
-**Returns:**
-- `Task`: The claimed task
-
-**Throws:**
-- `IllegalStateException`: If user is not authenticated or not a candidate
+Claims a task for the current user. Throws `IllegalStateException` if user is not authenticated or not a candidate.
 
 **Example:**
 ```java
@@ -444,16 +374,7 @@ Task claimed = taskRuntime.claim(
 
 #### complete(CompleteTaskPayload)
 
-Completes a task.
-
-**Parameters:**
-- `completeTaskPayload`: Contains task ID and completion variables
-
-**Returns:**
-- `Task`: The completed task
-
-**Throws:**
-- `IllegalStateException`: If task is not assigned to current user
+Completes a task. Throws `IllegalStateException` if task is not assigned to current user.
 
 **Example:**
 ```java
@@ -470,12 +391,6 @@ Task completed = taskRuntime.complete(
 
 Updates task details.
 
-**Parameters:**
-- `updateTaskPayload`: Contains task ID and fields to update
-
-**Returns:**
-- `Task`: The updated task
-
 **Example:**
 ```java
 Task updated = taskRuntime.update(
@@ -491,16 +406,7 @@ Task updated = taskRuntime.update(
 
 #### release(ReleaseTaskPayload)
 
-Releases a claimed task.
-
-**Parameters:**
-- `releaseTaskPayload`: Contains task ID
-
-**Returns:**
-- `Task`: The released task
-
-**Throws:**
-- `IllegalStateException`: If current user is not the assignee
+Releases a claimed task. Throws `IllegalStateException` if current user is not the assignee.
 
 **Example:**
 ```java
@@ -513,16 +419,7 @@ Task released = taskRuntime.release(
 
 #### assign(AssignTaskPayload)
 
-Assigns a task to another user.
-
-**Parameters:**
-- `assignTaskPayload`: Contains task ID and new assignee
-
-**Returns:**
-- `Task`: The assigned task
-
-**Throws:**
-- `IllegalStateException`: If current user is not the assignee or new assignee is not a candidate
+Assigns a task to another user. Throws `IllegalStateException` if current user is not the assignee or new assignee is not a candidate.
 
 **Example:**
 ```java
@@ -537,12 +434,6 @@ Task assigned = taskRuntime.assign(
 #### create(CreateTaskPayload)
 
 Creates a standalone task (not part of a process).
-
-**Parameters:**
-- `createTaskPayload`: Contains task details
-
-**Returns:**
-- `Task`: The created task
 
 **Example:**
 ```java
@@ -561,9 +452,6 @@ Task created = taskRuntime.create(
 
 Adds candidate users to a task.
 
-**Parameters:**
-- `candidateUsersPayload`: Contains task ID and list of users
-
 **Example:**
 ```java
 taskRuntime.addCandidateUsers(
@@ -578,9 +466,6 @@ taskRuntime.addCandidateUsers(
 #### addCandidateGroups(CandidateGroupsPayload)
 
 Adds candidate groups to a task.
-
-**Parameters:**
-- `candidateGroupsPayload`: Contains task ID and list of groups
 
 **Example:**
 ```java

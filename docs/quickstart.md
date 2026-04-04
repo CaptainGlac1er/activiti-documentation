@@ -8,13 +8,13 @@ description: Get up and running with Activiti API in minutes! Installation, firs
 
 Get up and running with Activiti API in minutes!
 
-## 🚀 Prerequisites
+## Prerequisites
 
 - Java 11 or higher
 - Maven 3.6+ or Gradle 7+
 - Basic understanding of workflows and BPMN
 
-## 📦 Installation
+## Installation
 
 ### Maven
 
@@ -22,14 +22,12 @@ Add the following dependencies to your `pom.xml`:
 
 ```xml
 <dependencies>
-    <!-- Process Runtime -->
     <dependency>
         <groupId>org.activiti</groupId>
         <artifactId>activiti-api-process-runtime</artifactId>
         <version>8.7.2-SNAPSHOT</version>
     </dependency>
     
-    <!-- Task Runtime -->
     <dependency>
         <groupId>org.activiti</groupId>
         <artifactId>activiti-api-task-runtime</artifactId>
@@ -49,7 +47,7 @@ dependencies {
 }
 ```
 
-## 🎯 Your First Process
+## Your First Process
 
 ### Step 1: Create a Simple BPMN Process
 
@@ -78,8 +76,6 @@ public class ProcessDeploymentService {
     private ProcessRuntime processRuntime;
     
     public void deployProcess() {
-        // Process is deployed via Spring Boot auto-configuration
-        // or through your deployment mechanism
         System.out.println("Process deployed successfully!");
     }
 }
@@ -119,7 +115,6 @@ public class TaskCompletionService {
     private TaskRuntime taskRuntime;
     
     public void completeUserTasks() {
-        // Get all tasks for current user
         Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 10));
         
         System.out.println("Found " + tasks.getTotalItems() + " tasks");
@@ -128,7 +123,6 @@ public class TaskCompletionService {
             System.out.println("Task: " + task.getName());
             System.out.println("ID: " + task.getId());
             
-            // Complete the task
             Task completed = taskRuntime.complete(
                 TaskPayloadBuilder.complete()
                     .withTaskId(task.getId())
@@ -143,7 +137,7 @@ public class TaskCompletionService {
 }
 ```
 
-## 📊 Complete Example Application
+## Complete Example Application
 
 ### Application Controller
 
@@ -245,26 +239,19 @@ public class WorkflowEventListener {
 }
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### application.properties
 
 ```properties
-# Database Configuration
 spring.datasource.url=jdbc:h2:mem:activiti
 spring.datasource.driverClassName=org.h2.Driver
 spring.datasource.username=sa
 spring.datasource.password=
-
-# H2 Console (for development)
 spring.h2.console.enabled=true
-
-# Activiti Configuration
 spring.activiti.bpmn-enable-history-level=full
 spring.activiti.db-schema-update=true
 spring.activiti.async-executor-activate=true
-
-# Logging
 logging.level.org.activiti=INFO
 logging.level.org.flowable=INFO
 ```
@@ -292,7 +279,7 @@ logging:
     org.flowable: INFO
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Unit Test Example
 
@@ -365,7 +352,7 @@ class WorkflowIntegrationTest {
 }
 ```
 
-## 📈 Next Steps
+## Next Steps
 
 1. **Learn BPMN**: Understand BPMN 2.0 notation and concepts
 2. **Explore Events**: Implement event listeners for business logic
@@ -373,14 +360,13 @@ class WorkflowIntegrationTest {
 4. **Build Connectors**: Integrate with external systems
 5. **Optimize Performance**: Implement caching and async processing
 
-## 🆘 Common Issues
+## Common Issues
 
 ### Issue: Process Definition Not Found
 
 **Solution**: Ensure the process is deployed before starting instances.
 
 ```java
-// Check deployed processes
 Page<ProcessDefinition> definitions = processRuntime.processDefinitions(Pageable.of(0, 10));
 definitions.getContent().forEach(def -> 
     System.out.println("Deployed: " + def.getKey())
@@ -392,7 +378,6 @@ definitions.getContent().forEach(def ->
 **Solution**: Verify user authentication and task assignment.
 
 ```java
-// Debug task visibility
 String userId = securityManager.getAuthenticatedUserId();
 System.out.println("Current user: " + userId);
 
@@ -406,23 +391,21 @@ System.out.println("Candidate users: " + task.getCandidateUsers());
 **Solution**: Set variables before completing tasks.
 
 ```java
-// Correct approach
 taskRuntime.complete(
     TaskPayloadBuilder.complete()
         .withTaskId(taskId)
-        .withVariable("myVar", "value")  // Set here
+        .withVariable("myVar", "value")
         .build()
 );
 ```
 
-## 📚 Additional Resources
+## Additional Resources
 
-- [Full Documentation](./README.md)
 - [API Reference](./api-reference/overview.md)
 - [Best Practices](./best-practices/overview.md)
 - [Examples Repository](https://github.com/Activiti/Activiti)
 
-## 💡 Tips
+## Tips
 
 1. **Start Simple**: Begin with basic processes before adding complexity
 2. **Use Pagination**: Always paginate queries for better performance
@@ -432,4 +415,4 @@ taskRuntime.complete(
 
 ---
 
-**Happy Workflow Automation! 🎉**
+**Happy Workflow Automation!**

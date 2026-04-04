@@ -1082,4 +1082,4 @@ ProcessEngine engine = configuration.buildProcessEngine();
 ---
 
 **Source:** `org.activiti.engine.HistoryService`  
-**Last Updated:** 2024
+**Last Updated: 2026

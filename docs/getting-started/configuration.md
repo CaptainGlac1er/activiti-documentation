@@ -1422,7 +1422,6 @@ log.info("Engine configured: history={}, async={}, query-limit={}",
 
 ## See Also
 
-- [Parent Documentation](../README.md)
 - [Engine Architecture](../api-reference/engine-api/engine-architecture.md)
 - [BPMN Execution](../getting-started/configuration.md)
 - [Best Practices](../best-practices/overview.md)

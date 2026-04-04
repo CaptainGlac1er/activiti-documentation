@@ -7,13 +7,13 @@ slug: /documentation-index
 
 Welcome to the comprehensive documentation for **Activiti API** - Version 8.7.2-SNAPSHOT
 
-## 📚 Documentation Structure
+## Documentation Structure
 
 This documentation is organized into several guides to help you learn and use Activiti API effectively.
 
 ---
 
-## 🎯 Getting Started
+## Getting Started
 
 ### For Complete Beginners
 
@@ -22,12 +22,6 @@ This documentation is organized into several guides to help you learn and use Ac
    - Your first process
    - Basic examples
    - Common pitfalls
-
-2. **[Main Documentation](./README.md)** - Complete introduction
-   - Architecture overview
-   - Core concepts
-   - API modules
-   - Learning path
 
 ### For Experienced Developers
 
@@ -46,14 +40,13 @@ This documentation is organized into several guides to help you learn and use Ac
 
 ---
 
-## 📖 Core Documentation
+## Core Documentation
 
 ### Essential Reading
 
 | Document | Audience | Purpose | Time |
 |----------|----------|---------|------|
 | [Quick Start](./quickstart.md) | Everyone | Get started quickly | 15 min |
-| [Main Guide](./README.md) | Beginners | Learn fundamentals | 1-2 hours |
 | [API Reference](./api-reference/overview.md) | Developers | Look up APIs | Reference |
 | [Best Practices](./best-practices/overview.md) | All | Write better code | 1 hour |
 
@@ -63,11 +56,10 @@ This documentation is organized into several guides to help you learn and use Ac
 |----------|----------|---------|------|
 | [Implementation Patterns](./advanced/implementation-patterns.md) | Architects | Design systems | 2 hours |
 | [Troubleshooting](./troubleshooting/overview.md) | Developers | Fix issues | Reference |
-| [Main Guide - Advanced](./README.md#advanced-topics) | Experts | Deep dive | 2-3 hours |
 
 ---
 
-## 🗺️ Learning Paths
+## Learning Paths
 
 ### Path 1: Beginner to Proficient (2-4 weeks)
 
@@ -152,163 +144,36 @@ Day 5:
 
 ---
 
-## 🔍 Find What You Need
+## Quick Navigation
 
 ### By Topic
+- **Process Management**: [API Reference](./api-reference/overview.md#process-runtime-api)
+- **Task Management**: [API Reference](./api-reference/overview.md#task-runtime-api)
+- **Events**: [Implementation Patterns](./advanced/implementation-patterns.md#event-handling-patterns)
+- **Security**: [Best Practices](./best-practices/overview.md#security-best-practices)
+- **Performance**: [Best Practices](./best-practices/overview.md#performance-optimization), [Troubleshooting](./troubleshooting/overview.md#performance-problems)
+- **Integration**: [Implementation Patterns](./advanced/implementation-patterns.md#integration-patterns)
 
-#### Process Management
-- **Basics**: [Main Guide - Process Management](./README.md#process-management)
-- **API**: [API Reference - ProcessRuntime](./api-reference/overview.md#process-runtime-api)
-- **Examples**: [Quick Start - Processes](./quickstart.md#your-first-process)
-- **Advanced**: [Main Guide - Advanced Topics](./README.md#advanced-topics)
-
-#### Task Management
-- **Basics**: [Main Guide - Task Management](./README.md#task-management)
-- **API**: [API Reference - TaskRuntime](./api-reference/overview.md#task-runtime-api)
-- **Examples**: [Quick Start - Tasks](./quickstart.md#step-4-query-and-complete-tasks)
-- **Patterns**: [Implementation Patterns - Task Assignment](./advanced/implementation-patterns.md)
-
-#### Events
-- **Basics**: [Main Guide - Event Handling](./README.md#event-handling)
-- **API**: [API Reference - Event Interfaces](./api-reference/overview.md#event-interfaces)
-- **Patterns**: [Implementation Patterns - Event Handling](./advanced/implementation-patterns.md#event-handling-patterns)
-- **Best Practices**: [Best Practices - Event Listeners](./best-practices/overview.md#2-implement-async-for-long-operations)
-
-#### Security
-- **Basics**: [Main Guide - Security](./README.md#security--authentication)
-- **API**: [API Reference - Security API](./api-reference/overview.md#security-api)
-- **Patterns**: [Implementation Patterns - Security](./advanced/implementation-patterns.md#security-patterns)
-- **Best Practices**: [Best Practices - Security](./best-practices/overview.md#security-best-practices)
-
-#### Performance
-- **Guides**: [Best Practices - Performance](./best-practices/overview.md#performance-optimization)
-- **Troubleshooting**: [Troubleshooting - Performance](./troubleshooting/overview.md#performance-problems)
-- **Patterns**: [Implementation Patterns - Async](./advanced/implementation-patterns.md#2-asynchronous-integration)
-
-#### Integration
-- **Patterns**: [Implementation Patterns - Integration](./advanced/implementation-patterns.md#integration-patterns)
-- **Connectors**: [Main Guide - Custom Connectors](./README.md#custom-connectors)
-- **Examples**: [Quick Start - Complete Example](./quickstart.md#complete-example-application)
-
-### By Problem
-
-#### "I need to get started quickly"
-→ [Quick Start Guide](./quickstart.md)
-
-#### "I need to understand the architecture"
-→ [Main Documentation - Architecture](./README.md#architecture-overview)
-→ [Implementation Patterns](./advanced/implementation-patterns.md)
-
-#### "I need to look up an API method"
-→ [API Reference](./api-reference/overview.md)
-
-#### "My process isn't working"
-→ [Troubleshooting Guide](./troubleshooting/overview.md)
-→ [Common Issues](./troubleshooting/overview.md#common-issues)
-
-#### "I want to write better code"
-→ [Best Practices](./best-practices/overview.md)
-
-#### "I need to choose an architecture"
-→ [Implementation Patterns - Comparison](./advanced/implementation-patterns.md#comparison-matrix)
-→ [Decision Framework](./advanced/implementation-patterns.md#decision-framework)
-
-#### "I'm having performance issues"
-→ [Troubleshooting - Performance](./troubleshooting/overview.md#performance-problems)
-→ [Best Practices - Performance](./best-practices/overview.md#performance-optimization)
-
-#### "I need to secure my application"
-→ [Best Practices - Security](./best-practices/overview.md#security-best-practices)
-→ [Implementation Patterns - Security](./advanced/implementation-patterns.md#security-patterns)
+### By Goal
+- **Get started quickly**: [Quick Start Guide](./quickstart.md)
+- **Look up an API method**: [API Reference](./api-reference/overview.md)
+- **Fix a problem**: [Troubleshooting Guide](./troubleshooting/overview.md)
+- **Write better code**: [Best Practices](./best-practices/overview.md)
+- **Choose an architecture**: [Implementation Patterns](./advanced/implementation-patterns.md)
 
 ### By Experience Level
-
-#### Beginner (0-6 months with workflows)
-1. Start with [Quick Start](./quickstart.md)
-2. Read [Main Guide - Core Concepts](./README.md#core-concepts)
-3. Practice with examples
-4. Review [Best Practices - Design](./best-practices/overview.md#design-principles)
-
-#### Intermediate (6 months - 2 years)
-1. Study [API Reference](./api-reference/overview.md)
-2. Read [Implementation Patterns](./advanced/implementation-patterns.md)
-3. Master [Event Handling](./README.md#event-handling)
-4. Apply [Best Practices](./best-practices/overview.md)
-
-#### Advanced (2+ years)
-1. Deep dive [Implementation Patterns](./advanced/implementation-patterns.md)
-2. Master [Advanced Topics](./README.md#advanced-topics)
-3. Review [Troubleshooting](./troubleshooting/overview.md)
-4. Contribute to community
+- **Beginner**: Start with [Quick Start](./quickstart.md)
+- **Intermediate**: Study [API Reference](./api-reference/overview.md) and [Best Practices](./best-practices/overview.md)
+- **Advanced**: Deep dive [Implementation Patterns](./advanced/implementation-patterns.md)
 
 ---
 
-## 📊 Documentation Coverage
-
-### Topics Covered
-
-✅ **Core Concepts**
-- Process definitions and instances
-- Tasks and assignments
-- Variables and data flow
-- Events and listeners
-- Security and authorization
-
-✅ **API Documentation**
-- ProcessRuntime API
-- TaskRuntime API
-- Payload builders
-- Event interfaces
-- Model interfaces
-
-✅ **Implementation**
-- Architecture patterns
-- Integration strategies
-- Event handling approaches
-- Security models
-- Deployment options
-
-✅ **Best Practices**
-- Code organization
-- Performance optimization
-- Security guidelines
-- Error handling
-- Testing strategies
-
-✅ **Troubleshooting**
-- Common issues
-- Performance problems
-- Configuration issues
-- Runtime errors
-- Diagnostic tools
-
-### What's Not Covered
-
-❌ **Out of Scope**
-- BPMN 2.0 specification details (see BPMN.org)
-- Database administration
-- Infrastructure setup
-- Specific cloud provider configurations
-- Third-party tool integrations
-
-❌ **Advanced Engine Features**
-- Custom task listeners (engine level)
-- Job executor configuration details
-- Database schema customization
-- Advanced query optimization
-
-For these topics, refer to:
-- [Activiti Engine Documentation](https://docs.activiti.org)
-- [BPMN 2.0 Specification](https://www.omg.org/spec/BPMN/)
-
----
-
-## 🔄 Version Information
+## Version Information
 
 ### Current Version
 - **API Version**: 8.7.2-SNAPSHOT
 - **Java Version**: 11+ (17+ recommended)
-- **Last Updated**: 2024
+- **Last Updated**: 2026
 
 ### Compatibility Matrix
 
@@ -320,7 +185,7 @@ For these topics, refer to:
 
 ---
 
-## 🎓 Additional Resources
+## Additional Resources
 
 ### Official Resources
 - **GitHub Repository**: https://github.com/Activiti/Activiti
@@ -337,7 +202,7 @@ For these topics, refer to:
 
 ---
 
-## 📝 Contributing
+## Contributing
 
 ### Documentation Feedback
 
@@ -357,7 +222,7 @@ We're always looking to improve:
 
 ---
 
-## 🆘 Getting Help
+## Getting Help
 
 ### Quick Help
 1. **Check Troubleshooting Guide**: [Common Issues](./troubleshooting/overview.md#common-issues)
@@ -369,63 +234,40 @@ We're always looking to improve:
 2. **Stack Overflow**: Ask with `activiti` tag
 
 ### Before Asking
-- ✅ Enable debug logging
-- ✅ Create minimal reproduction
-- ✅ Check version compatibility
-- ✅ Review relevant documentation
-- ✅ Gather error messages and logs
+- Enable debug logging
+- Create minimal reproduction
+- Check version compatibility
+- Review relevant documentation
+- Gather error messages and logs
 
 ---
 
-## 📈 Documentation Roadmap
-
-### Planned Updates
-
-**Q1 2024:**
-- More integration examples
-- Performance benchmarking guide
-- Security deep-dive
-
-**Q2 2024:**
-- Multi-tenancy patterns
-- Cloud deployment guides
-- Advanced event handling
-
-**Q3 2024:**
-- Migration guides for major versions
-- Best practices updates
-- New API features documentation
-
----
-
-## 📄 Document List
+## Document List
 
 | File | Description | Size | Last Updated |
 |------|-------------|------|--------------|
-| [README.md](./README.md) | Main documentation | ~52KB | 2024 |
-| [quickstart.md](./quickstart.md) | Quick start guide | ~11KB | 2024 |
-| [api-reference.md](./api-reference/overview.md) | Complete API reference | ~29KB | 2024 |
-| [best-practices.md](./best-practices/overview.md) | Best practices guide | ~30KB | 2024 |
-| [implementation-patterns.md](./advanced/implementation-patterns.md) | Architecture patterns | ~26KB | 2024 |
-| [troubleshooting.md](./troubleshooting/overview.md) | Troubleshooting guide | ~18KB | 2024 |
-| [index.md](./index.md) | This file | ~15KB | 2024 |
+| [quickstart.md](./quickstart.md) | Quick start guide | ~11KB | 2026 |
+| [api-reference.md](./api-reference/overview.md) | Complete API reference | ~29KB | 2026 |
+| [best-practices.md](./best-practices/overview.md) | Best practices guide | ~30KB | 2026 |
+| [implementation-patterns.md](./advanced/implementation-patterns.md) | Architecture patterns | ~26KB | 2026 |
+| [troubleshooting.md](./troubleshooting/overview.md) | Troubleshooting guide | ~18KB | 2026 |
+| [index.md](./index.md) | This file | ~15KB | 2026 |
 
 **Total Documentation**: ~181KB
 
 ---
 
-## 🎯 Quick Links
+## Quick Links
 
 - **Start Here**: [Quick Start Guide](./quickstart.md)
 - **API Lookup**: [API Reference](./api-reference/overview.md)
 - **Architecture**: [Implementation Patterns](./advanced/implementation-patterns.md)
 - **Best Code**: [Best Practices](./best-practices/overview.md)
 - **Fix Issues**: [Troubleshooting](./troubleshooting/overview.md)
-- **Full Guide**: [Main Documentation](./README.md)
 
 ---
 
-**Happy Learning! 🚀**
+**Happy Learning!**
 
-*Last updated: 2024*
+*Last updated: 2026*
 *Version: 8.7.2-SNAPSHOT*
