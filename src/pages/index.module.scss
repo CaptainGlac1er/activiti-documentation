@@ -1,8 +1,11 @@
 /**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
+ * Homepage Styles - Activiti Documentation
+ * Uses CSS variables from custom.scss for theming
  */
 
+/* ============================================
+   HERO SECTION
+   ============================================ */
 .heroBanner {
   padding: 6rem 0;
   text-align: center;
@@ -11,7 +14,6 @@
   background: linear-gradient(135deg, var(--ifm-color-primary) 0%, var(--ifm-color-secondary) 100%);
 }
 
-/* Dark theme override */
 [data-theme='dark'] .heroBanner {
   background: linear-gradient(135deg, var(--ifm-background-surface-color) 0%, var(--ifm-background-color) 100%);
 }
@@ -39,11 +41,6 @@
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Dark theme - uses CSS variable automatically */
-[data-theme='dark'] .heroText .hero__title {
-  color: var(--hero-title-color);
-}
-
 .heroText .hero__subtitle {
   color: var(--hero-subtitle-color);
   font-size: 1.5rem;
@@ -53,8 +50,6 @@
   opacity: 0.95;
 }
 
-/* Dark theme - uses CSS variable automatically, no override needed */
-
 .heroDescription {
   color: var(--hero-description-color);
   font-size: 1.1rem;
@@ -62,8 +57,6 @@
   max-width: 600px;
   text-shadow: var(--hero-description-shadow);
 }
-
-/* Dark theme - uses CSS variable automatically, no override needed */
 
 .heroImage {
   flex-shrink: 0;
@@ -85,6 +78,9 @@
   }
 }
 
+/* ============================================
+   BUTTONS
+   ============================================ */
 .buttons {
   display: flex;
   align-items: center;
@@ -116,7 +112,6 @@
   transition: all 0.3s ease;
 }
 
-/* Dark theme */
 [data-theme='dark'] .buttons .button--secondary {
   background-color: var(--ifm-color-primary);
   color: var(--ifm-button-color);
@@ -129,36 +124,14 @@
   transform: translateY(-2px);
 }
 
-/* Dark theme */
 [data-theme='dark'] .buttons .button--secondary:hover {
   background-color: var(--ifm-color-primary-light);
   border-color: var(--ifm-color-primary-light);
 }
 
-.buttons .button--outline {
-  background-color: transparent;
-  color: white;
-  border: 2px solid white;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-/* Dark theme */
-[data-theme='dark'] .buttons .button--outline {
-  color: var(--ifm-link-color);
-  border-color: var(--ifm-link-color);
-}
-
-.buttons .button--outline:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-/* Dark theme */
-[data-theme='dark'] .buttons .button--outline:hover {
-  background-color: rgba(var(--ifm-link-color), 0.1);
-}
-
+/* ============================================
+   VERSION BADGE
+   ============================================ */
 .versionBadge {
   margin-top: 2rem;
   padding: 0.5rem 1.5rem;
@@ -168,7 +141,6 @@
   backdrop-filter: blur(10px);
 }
 
-/* Dark theme */
 [data-theme='dark'] .versionBadge {
   background-color: var(--ifm-color-primary);
 }
@@ -179,55 +151,13 @@
   font-weight: 500;
 }
 
-/* Dark theme */
 [data-theme='dark'] .versionText {
   color: var(--ifm-button-color);
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 3rem 1rem;
-  }
-  
-  .heroContent {
-    flex-direction: column;
-    text-align: center;
-    gap: 2rem;
-  }
-  
-  .heroText {
-    text-align: center;
-  }
-  
-  .heroText .hero__title {
-    font-size: 2.5rem;
-  }
-  
-  .heroText .hero__subtitle {
-    font-size: 1.2rem;
-  }
-  
-  .heroDescription {
-    margin: 0 auto;
-  }
-  
-  .heroLogo {
-    width: 150px;
-    height: 150px;
-  }
-  
-  .buttons {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .buttons .button {
-    width: 100%;
-    max-width: 300px;
-  }
-}
-
-/* Feature Highlight Section */
+/* ============================================
+   FEATURE HIGHLIGHT
+   ============================================ */
 .featureHighlight {
   padding: 4rem 0;
   background-color: var(--ifm-background-surface-color);
@@ -272,7 +202,9 @@
   line-height: 1.6;
 }
 
-/* Code Preview Section */
+/* ============================================
+   CODE PREVIEW
+   ============================================ */
 .codePreview {
   padding: 4rem 0;
   background-color: var(--ifm-background-color);
@@ -340,7 +272,9 @@
   color: var(--ifm-font-color-base);
 }
 
-/* Quick Links Section */
+/* ============================================
+   QUICK LINKS
+   ============================================ */
 .quickLinks {
   padding: 5rem 0;
   background-color: var(--ifm-background-surface-color);
@@ -391,14 +325,15 @@
   line-height: 1.5;
 }
 
-/* Community Section */
+/* ============================================
+   COMMUNITY SECTION
+   ============================================ */
 .community {
   padding: 5rem 0;
   background: linear-gradient(135deg, var(--ifm-color-primary) 0%, var(--ifm-color-secondary) 100%);
   color: white;
 }
 
-/* Dark theme */
 [data-theme='dark'] .community {
   background: linear-gradient(135deg, var(--ifm-background-color) 0%, var(--ifm-background-surface-color) 100%);
   color: var(--ifm-font-color-base);
@@ -424,7 +359,6 @@
   font-weight: 700;
 }
 
-/* Dark theme */
 [data-theme='dark'] .community h2 {
   color: var(--ifm-heading-color);
 }
@@ -447,7 +381,6 @@
   border-color: white;
 }
 
-/* Dark theme */
 [data-theme='dark'] .communityLinks .button {
   color: var(--ifm-link-color);
   border-color: var(--ifm-link-color);
@@ -458,7 +391,6 @@
   color: var(--ifm-color-primary);
 }
 
-/* Dark theme */
 [data-theme='dark'] .communityLinks .button--secondary {
   background-color: var(--ifm-color-primary);
   color: var(--ifm-button-color);
@@ -468,18 +400,8 @@
   background-color: rgba(255, 255, 255, 0.9);
 }
 
-/* Dark theme */
 [data-theme='dark'] .communityLinks .button--secondary:hover {
   background-color: var(--ifm-color-primary-light);
-}
-
-.communityLinks .button--outline:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Dark theme */
-[data-theme='dark'] .communityLinks .button--outline:hover {
-  background-color: rgba(var(--ifm-link-color), 0.1);
 }
 
 .communityStats {
@@ -497,7 +419,6 @@
   min-width: 120px;
 }
 
-/* Dark theme */
 [data-theme='dark'] .statItem {
   background: var(--ifm-menu-link-sublist-bg);
 }
@@ -512,6 +433,52 @@
 .statLabel {
   font-size: 0.9rem;
   opacity: 0.9;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 3rem 1rem;
+  }
+  
+  .heroContent {
+    flex-direction: column;
+    text-align: center;
+    gap: 2rem;
+  }
+  
+  .heroText {
+    text-align: center;
+  }
+  
+  .heroText .hero__title {
+    font-size: 2.5rem;
+  }
+  
+  .heroText .hero__subtitle {
+    font-size: 1.2rem;
+  }
+  
+  .heroDescription {
+    margin: 0 auto;
+  }
+  
+  .heroLogo {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .buttons .button {
+    width: 100%;
+    max-width: 300px;
+  }
 }
 
 @media screen and (max-width: 768px) {
