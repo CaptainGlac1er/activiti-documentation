@@ -13,7 +13,7 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 ```xml
 <userTask id="task1" name="Process Order">
   <!-- Boundary event attached to task -->
-  <boundaryEvent id="timeout" cancelActivity="true">
+  <boundaryEvent id="timeout" attachedToRef="task1" cancelActivity="true">
     <timerEventDefinition>
       <timeDuration>PT1H</timeDuration>
     </timerEventDefinition>
@@ -23,6 +23,8 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 
 **BPMN 2.0 Standard:** ✅ Fully Supported  
 **Activiti Extensions:** ✅ Multiple event types, interrupting/non-interrupting
+
+**Important:** The `attachedToRef` attribute is **required** and must reference the ID of the activity the boundary event is attached to.
 
 ## 🎯 Key Features
 
@@ -54,7 +56,7 @@ Handle activity timeouts:
 <userTask id="approvalTask" name="Approve Request" activiti:assignee="${manager}">
   
   <!-- Interrupting timer - cancels task after 24 hours -->
-  <boundaryEvent id="approvalTimeout" cancelActivity="true">
+  <boundaryEvent id="approvalTimeout" attachedToRef="approvalTask" cancelActivity="true">
     <timerEventDefinition>
       <timeDuration>PT24H</timeDuration>
     </timerEventDefinition>
@@ -72,6 +74,11 @@ Handle activity timeouts:
 - `PT30M` - 30 minutes
 - Expression: `${calculateTimeout()}`
 
+**Timer Types:**
+- **Duration Timer:** `<timeDuration>PT24H</timeDuration>` - Relative duration
+- **Date Timer:** `<timeDate>${dueDate}</timeDate>` - Absolute date
+- **Cycle Timer:** `<timeCycle>RRULE:FREQ=DAILY;INTERVAL=1</timeCycle>` - iCalendar recurrence
+
 ### 2. Non-Interrupting Timer Boundary Event
 
 Log activity without canceling:
@@ -80,7 +87,7 @@ Log activity without canceling:
 <serviceTask id="longRunningTask" name="Process Data" activiti:class="com.example.DataProcessor">
   
   <!-- Non-interrupting timer - logs progress every hour -->
-  <boundaryEvent id="progressLog" cancelActivity="false">
+  <boundaryEvent id="progressLog" attachedToRef="longRunningTask" cancelActivity="false">
     <timerEventDefinition>
       <timeDuration>PT1H</timeDuration>
     </timerEventDefinition>
@@ -105,7 +112,7 @@ Catch errors from activities:
 <serviceTask id="paymentTask" name="Process Payment" activiti:class="com.example.PaymentService">
   
   <!-- Error boundary event -->
-  <boundaryEvent id="paymentError" cancelActivity="true">
+  <boundaryEvent id="paymentError" attachedToRef="paymentTask" cancelActivity="true">
     <errorEventDefinition errorRef="PaymentError"/>
   </boundaryEvent>
   
@@ -128,7 +135,7 @@ Wait for external messages:
 <userTask id="reviewTask" name="Review Document" activiti:assignee="${reviewer}">
   
   <!-- Message boundary event for cancellation -->
-  <boundaryEvent id="cancelReview" cancelActivity="true">
+  <boundaryEvent id="cancelReview" attachedToRef="reviewTask" cancelActivity="true">
     <messageEventDefinition messageRef="cancelMessage"/>
   </boundaryEvent>
   

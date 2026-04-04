@@ -468,10 +468,7 @@ Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
    - [History Service](./history-service.md) ✅ *Rewritten March 2024*
    - [Management Service](./management-service.md) ✅ *Rewritten March 2024*
 
-3. **DO NOT USE (does not exist in Activiti):**
-   - ❌ External Task Service - This is a Camunda feature, not available in Activiti
-
-4. **Explore modern API:**
+3. **Explore modern API:**
    - [Activiti API Reference](../activiti-api/README.md)
 
 ---

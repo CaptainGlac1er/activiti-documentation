@@ -13,9 +13,21 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 ```xml
 <userTask id="approvalTask" name="Approval">
   <extensionElements>
-    <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
-    <activiti:taskListener event="assignment" delegateExpression="${assignmentListener}"/>
-    <activiti:taskListener event="complete" class="com.example.TaskCompletedListener"/>
+    <activiti:taskListener 
+      event="create" 
+      class="com.example.TaskCreatedListener"
+      onTransaction="before-commit"
+      customPropertiesResolverClass="com.example.Resolver"/>
+    <activiti:taskListener 
+      event="assignment" 
+      delegateExpression="${assignmentListener}"
+      onTransaction="committed"
+      customPropertiesResolverDelegateExpression="${resolverDelegate}"/>
+    <activiti:taskListener 
+      event="complete" 
+      class="com.example.TaskCompletedListener"
+      onTransaction="rolled-back"
+      customPropertiesResolverExpression="${resolverExpression}"/>
   </extensionElements>
 </userTask>
 ```
@@ -27,6 +39,16 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 - ✅ Audit logging
 - ✅ Integration with external systems
 - ✅ Available for User Tasks only
+
+**Important Attributes:**
+- `event` - The event type (create, assignment, complete, delete, all)
+- `class` - Fully qualified class name implementing TaskListener
+- `expression` - EL/SpEL expression to evaluate
+- `delegateExpression` - Spring bean method call
+- `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
+- `customPropertiesResolverClass` - Custom properties resolver class
+- `customPropertiesResolverExpression` - Custom properties resolver expression
+- `customPropertiesResolverDelegateExpression` - Custom properties resolver delegate expression
 
 ## 🎯 Supported Events
 

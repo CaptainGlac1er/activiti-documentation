@@ -11,11 +11,18 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ## 📋 Overview
 
 ```xml
-<callActivity id="call1" name="Call SubProcess" activiti:calledElement="subProcessKey"/>
+<callActivity id="call1" name="Call SubProcess" calledElement="subProcessKey">
+  <extensionElements>
+    <activiti:in source="inputVar" target="outputVar"/>
+    <activiti:out source="outputVar" target="inputVar"/>
+  </extensionElements>
+</callActivity>
 ```
 
 **BPMN 2.0 Standard:** ✅ Fully Supported  
 **Activiti Extensions:** ✅ Variable mapping, dynamic selection
+
+**Important:** The `calledElement` attribute is a **standard BPMN attribute** (not prefixed with `activiti:`). It references the key of a deployed process or global task.
 
 ## 🎯 Key Features
 
@@ -39,7 +46,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ```xml
 <callActivity id="callSubProcess" 
               name="Process Order" 
-              activiti:calledElement="orderSubProcess"/>
+              calledElement="orderSubProcess"/>
 ```
 
 ### Dynamic Called Element
@@ -47,28 +54,32 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ```xml
 <callActivity id="dynamicCall" 
               name="Dynamic SubProcess" 
-              activiti:calledElement="${determineSubProcess()}"/>
+              calledElement="${determineSubProcess()}"/>
 ```
 
-### With Variable Mapping
+### With Variable Mapping (Recommended)
 
 ```xml
 <callActivity id="mappedCall" 
               name="Mapped SubProcess" 
-              activiti:calledElement="subProcess">
+              calledElement="subProcess">
   
-  <ioSpecification>
-    <inputDataItem name="orderId"/>
-    <inputDataItem name="customerData"/>
-    <outputDataItem name="result"/>
-  </ioSpecification>
-  
-  <dataInputAssociation>
-    <sourceRef>processOrder</sourceRef>
-    <targetRef>orderId</targetRef>
-  </dataInputAssociation>
+  <extensionElements>
+    <!-- Input mappings: from parent to called process -->
+    <activiti:in source="orderId" target="order.id"/>
+    <activiti:in sourceExpression="${order.customerId}" target="customerId"/>
+    
+    <!-- Output mappings: from called process to parent -->
+    <activiti:out source="result.status" target="orderStatus"/>
+    <activiti:out sourceExpression="${completionTime}" target="order.completedAt"/>
+  </extensionElements>
 </callActivity>
 ```
+
+**Input/Output Mapping Attributes:**
+- `source` - Variable name in source scope
+- `sourceExpression` - Expression to evaluate in source scope
+- `target` - Variable name in target scope
 
 ## 🔧 Advanced Features
 
@@ -77,7 +88,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ```xml
 <callActivity id="asyncCall" 
               name="Async SubProcess" 
-              activiti:calledElement="subProcess"
+              calledElement="subProcess"
               activiti:async="true"/>
 ```
 
@@ -86,7 +97,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ```xml
 <callActivity id="multiCall" 
               name="Parallel SubProcesses" 
-              activiti:calledElement="subProcess">
+              calledElement="subProcess">
   
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -100,10 +111,12 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 
 ```xml
 <callActivity id="trackedCall" 
-              activiti:calledElement="subProcess">
+              calledElement="subProcess">
   
-  <activiti:executionListener event="start" class="com.example.CallStartListener"/>
-  <activiti:executionListener event="end" class="com.example.CallEndListener"/>
+  <extensionElements>
+    <activiti:executionListener event="start" class="com.example.CallStartListener"/>
+    <activiti:executionListener event="end" class="com.example.CallEndListener"/>
+  </extensionElements>
 </callActivity>
 ```
 
@@ -115,7 +128,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 <!-- Call a deployed sub-process -->
 <callActivity id="callPaymentProcess" 
               name="Process Payment" 
-              activiti:calledElement="paymentSubProcess"/>
+              calledElement="paymentSubProcess"/>
 ```
 
 ### Example 2: Call with Variable Mapping
@@ -123,14 +136,14 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ```xml
 <callActivity id="callOrderFulfillment" 
               name="Fulfill Order" 
-              activiti:calledElement="fulfillmentProcess">
+              calledElement="fulfillmentProcess">
   
   <extensionElements>
-    <activiti:in name="orderId" expression="${order.id}"/>
-    <activiti:in name="items" expression="${order.items}"/>
-    <activiti:in name="customer" expression="${order.customer}"/>
-    <activiti:out name="fulfillmentStatus" variableName="status"/>
-    <activiti:out name="trackingNumber" variableName="tracking"/>
+    <activiti:in source="orderId" target="order.id"/>
+    <activiti:in sourceExpression="${order.items}" target="items"/>
+    <activiti:in source="customer" target="customerData"/>
+    <activiti:out source="fulfillmentStatus" target="status"/>
+    <activiti:out source="trackingNumber" target="tracking"/>
   </extensionElements>
 </callActivity>
 ```
@@ -140,11 +153,11 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ```xml
 <callActivity id="dynamicFulfillment" 
               name="Dynamic Fulfillment" 
-              activiti:calledElement="${determineFulfillmentProcess(order.type)}">
+              calledElement="${determineFulfillmentProcess(order.type)}">
   
   <extensionElements>
-    <activiti:in name="order" expression="${order}"/>
-    <activiti:out name="result" variableName="fulfillmentResult"/>
+    <activiti:in source="order" target="inputOrder"/>
+    <activiti:out source="result" target="fulfillmentResult"/>
   </extensionElements>
 </callActivity>
 ```
@@ -154,7 +167,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ```xml
 <callActivity id="batchProcessing" 
               name="Process Batch" 
-              activiti:calledElement="itemProcessingSubProcess">
+              calledElement="itemProcessingSubProcess">
   
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -162,12 +175,9 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
     activiti:elementVariable="item">
     <completionCondition>${processedCount >= totalCount}</completionCondition>
     
-    <inputDataItem name="currentItem">
-      <assignment>
-        <from>${item}</from>
-        <to>${currentItem}</to>
-      </assignment>
-    </inputDataItem>
+    <extensionElements>
+      <activiti:in source="item" target="currentItem"/>
+    </extensionElements>
   </multiInstanceLoopCharacteristics>
 </callActivity>
 ```
@@ -178,10 +188,10 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 <!-- Top-level process calls sub-process -->
 <callActivity id="callOrderProcess" 
               name="Order Process" 
-              activiti:calledElement="orderManagement">
+              calledElement="orderManagement">
   
   <extensionElements>
-    <activiti:in name="orderData" expression="${order}"/>
+    <activiti:in source="order" target="inputOrder"/>
   </extensionElements>
 </callActivity>
 
@@ -189,11 +199,11 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 <!-- Defined in orderManagement process -->
 <callActivity id="callPayment" 
               name="Payment" 
-              activiti:calledElement="paymentProcessing"/>
+              calledElement="paymentProcessing"/>
 
 <callActivity id="callShipping" 
               name="Shipping" 
-              activiti:calledElement="shippingProcess"/>
+              calledElement="shippingProcess"/>
 ```
 
 ## 🔍 Runtime API Usage

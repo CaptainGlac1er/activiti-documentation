@@ -130,26 +130,69 @@ Inject dependencies into delegates:
              name="Process Order"
              activiti:class="com.example.OrderService">
   
+  <!-- String value -->
+  <activiti:field name="emailTemplate" stringValue="order_confirmation.html"/>
+  
+  <!-- Expression -->
+  <activiti:field name="currency" expression="${order.currency}"/>
+  
+  <!-- Spring bean injection -->
   <activiti:field name="paymentGateway">
     <activiti:inject>#{paymentGatewayBean}</activiti:inject>
   </activiti:field>
   
-  <activiti:field name="emailTemplate">
-    <activiti:string>order_confirmation.html</activiti:string>
-  </activiti:field>
+  <!-- Integer value -->
+  <activiti:field name="retryCount" integer="3"/>
   
-  <activiti:field name="retryCount">
-    <activiti:integer>3</activiti:integer>
-  </activiti:field>
+  <!-- Boolean value -->
+  <activiti:field name="enabled" boolean="true"/>
 </serviceTask>
 ```
 
 **Field Types:**
-- `inject` - Spring bean injection
-- `string` - String value
+- `stringValue` - Direct string value
+- `expression` - EL/SpEL expression (e.g., `${variable}`)
+- `inject` - Spring bean injection (e.g., `#{beanName}`)
 - `integer` - Integer value
 - `boolean` - Boolean value
-- `expression` - EL/SpEL expression
+
+**Java Delegate with Fields:**
+```java
+public class OrderService implements JavaDelegate {
+    
+    private String emailTemplate;
+    private String currency;
+    private PaymentGateway paymentGateway;
+    private int retryCount;
+    private boolean enabled;
+    
+    @Override
+    public void execute(DelegateExecution execution) {
+        // Use injected fields
+    }
+    
+    // Setters for field injection
+    public void setEmailTemplate(String emailTemplate) {
+        this.emailTemplate = emailTemplate;
+    }
+    
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+    
+    public void setPaymentGateway(PaymentGateway paymentGateway) {
+        this.paymentGateway = paymentGateway;
+    }
+    
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
+    }
+    
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+}
+```
 
 ### 5. Connector Implementation
 

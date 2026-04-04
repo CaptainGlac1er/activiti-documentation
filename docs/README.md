@@ -35,7 +35,6 @@ Main engine services for process management:
 - **Task Service** - Work with user tasks
 - **History Service** - Query historical data
 - **Management Service** - Admin and monitoring
-- **External Task Service** - Worker pattern integration
 
 ### 🎨 Process Design
 Comprehensive BPMN 2.0 element reference:

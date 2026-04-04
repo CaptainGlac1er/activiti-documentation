@@ -15,13 +15,25 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
   <extensionElements>
     <activiti:executionListener 
       event="start" 
-      class="com.example.MyExecutionListener"/>
+      class="com.example.MyExecutionListener"
+      onTransaction="before-commit"
+      customPropertiesResolverClass="com.example.Resolver"/>
   </extensionElements>
 </userTask>
 ```
 
 **BPMN 2.0 Standard:** ❌ Activiti Extension  
 **Activiti Implementation:** ✅ Full support for start, end, and take events
+
+**Important Attributes:**
+- `event` - The event type (start, end, take)
+- `class` - Fully qualified class name implementing ExecutionListener
+- `expression` - EL/SpEL expression to evaluate
+- `delegateExpression` - Spring bean method call
+- `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
+- `customPropertiesResolverClass` - Custom properties resolver class
+- `customPropertiesResolverExpression` - Custom properties resolver expression
+- `customPropertiesResolverDelegateExpression` - Custom properties resolver delegate expression
 
 ## 🎯 Key Features
 
@@ -73,10 +85,17 @@ Java class implementing `ExecutionListener`:
   <extensionElements>
     <activiti:executionListener 
       event="start" 
-      class="com.example.MyExecutionListener"/>
+      class="com.example.MyExecutionListener"
+      onTransaction="before-commit"
+      customPropertiesResolverClass="com.example.Resolver"/>
   </extensionElements>
 </userTask>
 ```
+
+**Transaction Timing Options:**
+- `before-commit` - Execute before transaction commits
+- `committed` - Execute after transaction commits
+- `rolled-back` - Execute after transaction rolls back
 
 **Java Implementation:**
 ```java
@@ -107,7 +126,9 @@ Evaluate EL/SpEL expression:
   <extensionElements>
     <activiti:executionListener 
       event="end" 
-      expression="${myService.logCompletion(execution)}"/>
+      expression="${myService.logCompletion(execution)}"
+      onTransaction="committed"
+      customPropertiesResolverExpression="${resolverExpression}"/>
   </extensionElements>
 </userTask>
 ```
@@ -126,7 +147,9 @@ Call Spring bean method:
   <extensionElements>
     <activiti:executionListener 
       event="start" 
-      delegateExpression="#{auditService.recordActivityStart(execution)}"/>
+      delegateExpression="#{auditService.recordActivityStart(execution)}"
+      onTransaction="rolled-back"
+      customPropertiesResolverDelegateExpression="${resolverDelegate}"/>
   </extensionElements>
 </userTask>
 ```

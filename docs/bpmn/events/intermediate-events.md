@@ -136,7 +136,7 @@ Wait until a specific date:
 
 #### Cycle Timer
 
-Repeat at intervals:
+Repeat at intervals using iCalendar recurrence rules:
 
 ```xml
 <intermediateCatchEvent id="cycleTimer">
@@ -150,6 +150,19 @@ Repeat at intervals:
 - `R/10/PT1H` - Repeat 10 times, every 1 hour
 - `R/PT5M` - Repeat indefinitely, every 5 minutes
 - `R5/PT1D` - Repeat 5 times, every day
+- `RRULE:FREQ=DAILY;INTERVAL=1` - iCalendar format
+
+**With End Date:**
+```xml
+<timeCycle activiti:endDate="${EndDate}">R2/PT5S</timeCycle>
+```
+
+**Timer Event Types Summary:**
+| Type | Element | Description | Example |
+|------|---------|-------------|---------|
+| Duration | `<timeDuration>` | Relative time period | `PT24H`, `P7D` |
+| Date | `<timeDate>` | Absolute date/time | `${dueDate}` |
+| Cycle | `<timeCycle>` | Recurrence pattern | `R5/PT1H` |
 
 ### 3. Signal Intermediate Events
 
