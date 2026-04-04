@@ -230,30 +230,14 @@ Add **custom metadata** to any BPMN element.
              name="Task" 
              activiti:class="com.example.MyDelegate">
   
-  <!-- Inject Spring bean -->
-  <activiti:field name="service">
-    <activiti:inject>#{myService}</activiti:inject>
-  </activiti:field>
+  <!-- Spring bean injection using expression -->
+  <activiti:field name="service" expression="#{myService}"/>
   
   <!-- String value -->
-  <activiti:field name="config">
-    <activiti:string>configuration value</activiti:string>
-  </activiti:field>
-  
-  <!-- Integer value -->
-  <activiti:field name="timeout">
-    <activiti:integer>30</activiti:integer>
-  </activiti:field>
-  
-  <!-- Boolean value -->
-  <activiti:field name="enabled">
-    <activiti:boolean>true</activiti:boolean>
-  </activiti:field>
+  <activiti:field name="config" stringValue="configuration value"/>
   
   <!-- Expression -->
-  <activiti:field name="dynamicValue">
-    <activiti:expression>${calculateValue()}</activiti:expression>
-  </activiti:field>
+  <activiti:field name="dynamicValue" expression="${calculateValue()}"/>
   
 </serviceTask>
 ```
@@ -265,7 +249,6 @@ public class MyDelegate implements JavaDelegate {
     
     private MyService service;
     private String config;
-    private int timeout;
     
     // Setter injection (called by Activiti)
     public void setService(MyService service) {
@@ -274,10 +257,12 @@ public class MyDelegate implements JavaDelegate {
     
     public void execute(DelegateExecution execution) {
         // Use injected dependencies
-        service.doSomething(config, timeout);
+        service.doSomething(config);
     }
 }
 ```
+
+**Note:** Field injection only supports `stringValue` and `expression` attributes. For Spring bean injection, use `expression="#{beanName}"`.
 
 ## 📊 Feature Availability Matrix
 

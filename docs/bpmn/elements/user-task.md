@@ -280,9 +280,7 @@ Execute custom logic at task lifecycle events:
   
   <!-- Task completion -->
   <activiti:taskListener event="complete" class="com.example.TaskCompletedListener">
-    <activiti:field name="notificationService">
-      <activiti:inject>#{emailNotificationService}</activiti:inject>
-    </activiti:field>
+    <activiti:field name="notificationService" expression="${emailNotificationService}"/>
   </activiti:taskListener>
 </UserTask>
 ```

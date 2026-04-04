@@ -135,26 +135,12 @@ Inject dependencies into delegates:
   
   <!-- Expression -->
   <activiti:field name="currency" expression="${order.currency}"/>
-  
-  <!-- Spring bean injection -->
-  <activiti:field name="paymentGateway">
-    <activiti:inject>#{paymentGatewayBean}</activiti:inject>
-  </activiti:field>
-  
-  <!-- Integer value -->
-  <activiti:field name="retryCount" integer="3"/>
-  
-  <!-- Boolean value -->
-  <activiti:field name="enabled" boolean="true"/>
 </serviceTask>
 ```
 
 **Field Types:**
 - `stringValue` - Direct string value
 - `expression` - EL/SpEL expression (e.g., `${variable}`)
-- `inject` - Spring bean injection (e.g., `#{beanName}`)
-- `integer` - Integer value
-- `boolean` - Boolean value
 
 **Java Delegate with Fields:**
 ```java
@@ -162,9 +148,6 @@ public class OrderService implements JavaDelegate {
     
     private String emailTemplate;
     private String currency;
-    private PaymentGateway paymentGateway;
-    private int retryCount;
-    private boolean enabled;
     
     @Override
     public void execute(DelegateExecution execution) {
@@ -179,19 +162,15 @@ public class OrderService implements JavaDelegate {
     public void setCurrency(String currency) {
         this.currency = currency;
     }
-    
-    public void setPaymentGateway(PaymentGateway paymentGateway) {
-        this.paymentGateway = paymentGateway;
-    }
-    
-    public void setRetryCount(int retryCount) {
-        this.retryCount = retryCount;
-    }
-    
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 }
+```
+
+**Note:** For Spring bean injection, use `delegateExpression` on the service task itself instead of field injection:
+
+```xml
+<serviceTask id="notificationService" 
+             name="Send Notification"
+             activiti:delegateExpression="#{notificationService}"/>
 ```
 
 ### 5. Connector Implementation
@@ -379,9 +358,8 @@ Handle exceptions:
              activiti:async="true"
              activiti:resultVariable="paymentResult">
   
-  <activiti:field name="paymentGateway">
-    <activiti:inject>#{stripePaymentGateway}</activiti:inject>
-  </activiti:field>
+  <!-- Spring bean injection using expression -->
+  <activiti:field name="paymentGateway" expression="#{stripePaymentGateway}"/>
   
   <activiti:field name="currency">
     <activiti:expression>${order.currency}</activiti:expression>

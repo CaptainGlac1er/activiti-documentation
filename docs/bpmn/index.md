@@ -80,12 +80,8 @@ Hook into activity execution:
 Inject dependencies into delegates:
 ```xml
 <serviceTask id="service1" class="com.example.MyDelegate">
-  <activiti:field name="service">
-    <activiti:inject>#{beanName}</activiti:inject>
-  </activiti:field>
-  <activiti:field name="configValue">
-    <activiti:string>some value</activiti:string>
-  </activiti:field>
+  <activiti:field name="service" expression="#{beanName}"/>
+  <activiti:field name="configValue" stringValue="some value"/>
 </serviceTask>
 ```
 
