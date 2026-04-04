@@ -42,8 +42,10 @@ Activiti extends BPMN 2.0 with several proprietary features that enhance workflo
 Add metadata to any BPMN element using `<activiti:property>`:
 ```xml
 <userTask id="task1" name="Review Document">
-  <activiti:property name="department" value="finance"/>
-  <activiti:property name="priority" value="high"/>
+  <extensionElements>
+    <activiti:property name="department" value="finance"/>
+    <activiti:property name="priority" value="high"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -51,8 +53,10 @@ Add metadata to any BPMN element using `<activiti:property>`:
 Execute custom logic at task lifecycle events:
 ```xml
 <userTask id="task1" name="Approval">
-  <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
-  <activiti:taskListener event="complete" delegateExpression="${approvalListener}"/>
+  <extensionElements>
+    <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
+    <activiti:taskListener event="complete" delegateExpression="${approvalListener}"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -65,9 +69,11 @@ Execute custom logic at task lifecycle events:
 Hook into activity execution:
 ```xml
 <serviceTask id="service1" name="Process Data">
-  <activiti:executionListener event="start" class="com.example.StartListener"/>
-  <activiti:executionListener event="end" delegateExpression="${endListener}"/>
-  <activiti:executionListener event="take" class="com.example.FlowListener"/>
+  <extensionElements>
+    <activiti:executionListener event="start" class="com.example.StartListener"/>
+    <activiti:executionListener event="end" delegateExpression="${endListener}"/>
+    <activiti:executionListener event="take" class="com.example.FlowListener"/>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -79,9 +85,11 @@ Hook into activity execution:
 ### 4. **Field Injection**
 Inject dependencies into delegates:
 ```xml
-<serviceTask id="service1" class="com.example.MyDelegate">
-  <activiti:field name="service" expression="#{beanName}"/>
-  <activiti:field name="configValue" stringValue="some value"/>
+<serviceTask id="service1" activiti:class="com.example.MyDelegate">
+  <extensionElements>
+    <activiti:field name="service" expression="#{beanName}"/>
+    <activiti:field name="configValue" stringValue="some value"/>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -109,7 +117,9 @@ managementService.setJobPriority(jobId, 5);
 Configure retry policies for failed jobs:
 ```xml
 <serviceTask id="service1" activiti:async="true">
-  <activiti:property name="failedJobRetryTimeCycle" value="R/5"/>
+  <extensionElements>
+    <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -345,11 +355,14 @@ Execute activities multiple times:
 ```
 
 ### Boundary Events
-Attach exception handling:
+Attach exception handling (boundary events are siblings, not children):
 ```xml
-<serviceTask id="service1" name="Process">
-  <boundaryEvent id="timeout" eventDefinitionRef="timer1" cancelActivity="true"/>
-</serviceTask>
+<serviceTask id="service1" name="Process"/>
+<boundaryEvent id="timeout" attachedToRef="service1" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT1H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 ### Extension Elements

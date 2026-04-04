@@ -129,7 +129,7 @@ public class TaskCompletionService {
             System.out.println("ID: " + task.getId());
             
             // Complete the task
-            taskRuntime.complete(
+            Task completed = taskRuntime.complete(
                 TaskPayloadBuilder.complete()
                     .withTaskId(task.getId())
                     .withVariable("completedBy", "system")
@@ -137,7 +137,7 @@ public class TaskCompletionService {
                     .build()
             );
             
-            System.out.println("Task completed: " + task.getId());
+            System.out.println("Task completed: " + completed.getId());
         }
     }
 }

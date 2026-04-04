@@ -11,9 +11,9 @@ User Tasks represent work items that require **human interaction** in a business
 ## 📋 Overview
 
 ```xml
-<UserTask id="task1" name="Review Document">
+<userTask id="task1" name="Review Document">
   <!-- Activiti customizations -->
-</UserTask>
+</userTask>
 ```
 
 **BPMN 2.0 Standard:** ✅ Fully Supported  
@@ -119,32 +119,30 @@ Assign task to groups/roles (comma-separated list):
 Advanced assignment with custom types for fine-grained access control:
 
 ```xml
-<UserTask id="complexTask" name="Complex Assignment">
-  <activiti:candidateUsers>alice</activiti:candidateUsers>
-  
+<userTask id="complexTask" name="Complex Assignment" activiti:candidateUsers="alice">
   <extensionElements>
     <!-- Custom identity link type: viewer -->
     <activiti:customResource name="viewer">
-      <resourceAssignment>
+      <resourceAssignmentExpression>
         <formalExpression>user(bob), user(carol)</formalExpression>
-      </resourceAssignment>
+      </resourceAssignmentExpression>
     </activiti:customResource>
     
     <!-- Custom identity link type: commenter -->
     <activiti:customResource name="commenter">
-      <resourceAssignment>
+      <resourceAssignmentExpression>
         <formalExpression>user(carol)</formalExpression>
-      </resourceAssignment>
+      </resourceAssignmentExpression>
     </activiti:customResource>
     
     <!-- Custom identity link type: audit (group) -->
     <activiti:customResource name="audit">
-      <resourceAssignment>
+      <resourceAssignmentExpression>
         <formalExpression>group(auditors)</formalExpression>
-      </resourceAssignment>
+      </resourceAssignmentExpression>
     </activiti:customResource>
   </extensionElements>
-</UserTask>
+</userTask>
 ```
 
 **How It Works:**
@@ -271,18 +269,20 @@ List<Task> tasks = taskService.createTaskQuery()
 Execute custom logic at task lifecycle events:
 
 ```xml
-<UserTask id="notifiedTask" name="Review with Notification">
-  <!-- Task creation -->
-  <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
-  
-  <!-- Task assignment -->
-  <activiti:taskListener event="assignment" delegateExpression="${assignmentListener}"/>
-  
-  <!-- Task completion -->
-  <activiti:taskListener event="complete" class="com.example.TaskCompletedListener">
-    <activiti:field name="notificationService" expression="${emailNotificationService}"/>
-  </activiti:taskListener>
-</UserTask>
+<userTask id="notifiedTask" name="Review with Notification">
+  <extensionElements>
+    <!-- Task creation -->
+    <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
+    
+    <!-- Task assignment -->
+    <activiti:taskListener event="assignment" delegateExpression="${assignmentListener}"/>
+    
+    <!-- Task completion -->
+    <activiti:taskListener event="complete" class="com.example.TaskCompletedListener">
+      <activiti:field name="notificationService" expression="${emailNotificationService}"/>
+    </activiti:taskListener>
+  </extensionElements>
+</userTask>
 ```
 
 **Supported Events:**
@@ -399,29 +399,21 @@ Execute task for multiple users:
 Define form fields:
 
 ```xml
-<UserTask id="dataEntry" name="Enter Information" activiti:formKey="dataEntryForm">
-  <activiti:formProperty name="firstName" type="string" required="true"/>
-  <activiti:formProperty name="age" type="int" required="false">
-    <activiti:default>0</activiti:default>
-  </activiti:formProperty>
-  <activiti:formProperty name="email" type="string" required="true">
-    <activiti:validators>
-      <activiti:validator name="email"/>
-    </activiti:validators>
-  </activiti:formProperty>
-  <activiti:formProperty name="department" type="string">
-    <activiti:values>
+<userTask id="dataEntry" name="Enter Information" activiti:formKey="dataEntryForm">
+  <extensionElements>
+    <activiti:formProperty name="firstName" type="string" required="true"/>
+    <activiti:formProperty name="age" type="int" required="false" activiti:default="0"/>
+    <activiti:formProperty name="email" type="string" required="true"/>
+    <activiti:formProperty name="department" type="string">
       <activiti:value>Engineering</activiti:value>
       <activiti:value>Marketing</activiti:value>
       <activiti:value>Sales</activiti:value>
-    </activiti:values>
-  </activiti:formProperty>
-  <activiti:formProperty name="joinDate" type="date"/>
-  <activiti:formProperty name="salary" type="double"/>
-  <activiti:formProperty name="active" type="bool" >
-    <activiti:default>true</activiti:default>
-  </activiti:formProperty>
-</UserTask>
+    </activiti:formProperty>
+    <activiti:formProperty name="joinDate" type="date"/>
+    <activiti:formProperty name="salary" type="double"/>
+    <activiti:formProperty name="active" type="bool" activiti:default="true"/>
+  </extensionElements>
+</userTask>
 ```
 
 **Property Types:**
@@ -443,7 +435,7 @@ Define form fields:
 ### Example 1: Simple Approval Task
 
 ```xml
-<UserTask id="approveRequest" 
+<userTask id="approveRequest" 
           name="Approve Request" 
           activiti:assignee="${requestManager}"
           activiti:candidateGroups="approvers"
@@ -452,18 +444,20 @@ Define form fields:
           activiti:formKey="approval-form"
           activiti:category="approval">
   
-  <activiti:taskListener event="create" class="com.example.ApprovalNotificationListener"/>
-  <activiti:taskListener event="complete" delegateExpression="${approvalAuditListener}"/>
-  
-  <activiti:formProperty name="approvalReason" type="string" required="true"/>
-  <activiti:formProperty name="approvedAmount" type="double"/>
-</UserTask>
+  <extensionElements>
+    <activiti:taskListener event="create" class="com.example.ApprovalNotificationListener"/>
+    <activiti:taskListener event="complete" delegateExpression="${approvalAuditListener}"/>
+    
+    <activiti:formProperty name="approvalReason" type="string" required="true"/>
+    <activiti:formProperty name="approvedAmount" type="double"/>
+  </extensionElements>
+</userTask>
 ```
 
 ### Example 2: Multi-Reviewer Task
 
 ```xml
-<UserTask id="peerReview" 
+<userTask id="peerReview" 
           name="Peer Review" 
           activiti:candidateUsers="${reviewers}"
           activiti:skipExpression="${skipPeerReview}">
@@ -489,37 +483,39 @@ Define form fields:
     </outputDataItem>
   </multiInstanceLoopCharacteristics>
   
-  <activiti:formProperty name="reviewComment" type="string"/>
-  <activiti:formProperty name="rating" type="int">
-    <activiti:values>
+  <extensionElements>
+    <activiti:formProperty name="reviewComment" type="string"/>
+    <activiti:formProperty name="rating" type="int">
       <activiti:value>1</activiti:value>
       <activiti:value>2</activiti:value>
       <activiti:value>3</activiti:value>
       <activiti:value>4</activiti:value>
       <activiti:value>5</activiti:value>
-    </activiti:values>
-  </activiti:formProperty>
-</UserTask>
+    </activiti:formProperty>
+  </extensionElements>
+</userTask>
 ```
 
 ### Example 3: Delegatable Task with Boundary Event
 
 ```xml
-<UserTask id="managerTask" 
+<userTask id="managerTask" 
           name="Manager Decision" 
           activiti:assignee="${managerId}"
           activiti:owner="${delegatorId}"
           activiti:dueDate="${calculateDueDate()}">
   
-  <!-- Timer boundary event for escalation -->
-  <boundaryEvent id="escalationTimer" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT24H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-  <activiti:taskListener event="assignment" class="com.example.DelegationListener"/>
-</UserTask>
+  <extensionElements>
+    <activiti:taskListener event="assignment" class="com.example.DelegationListener"/>
+  </extensionElements>
+</userTask>
+
+<!-- Boundary event is a sibling, not a child -->
+<boundaryEvent id="escalationTimer" attachedToRef="managerTask" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT24H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 ## 🔍 Runtime API Usage

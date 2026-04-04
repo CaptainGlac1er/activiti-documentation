@@ -49,7 +49,7 @@ Execute a Java class implementing `JavaDelegate`:
 ```xml
 <serviceTask id="paymentService" 
              name="Process Payment"
-             activiti:implementation="${com.example.PaymentService}"/>
+             activiti:class="com.example.PaymentService"/>
 ```
 
 **JavaDelegate Interface:**
@@ -130,11 +130,13 @@ Inject dependencies into delegates:
              name="Process Order"
              activiti:class="com.example.OrderService">
   
-  <!-- String value -->
-  <activiti:field name="emailTemplate" stringValue="order_confirmation.html"/>
-  
-  <!-- Expression -->
-  <activiti:field name="currency" expression="${order.currency}"/>
+  <extensionElements>
+    <!-- String value -->
+    <activiti:field name="emailTemplate" stringValue="order_confirmation.html"/>
+    
+    <!-- Expression -->
+    <activiti:field name="currency" expression="${order.currency}"/>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -216,17 +218,19 @@ Send emails:
              name="Send Confirmation Email"
              activiti:type="mail">
   
-  <activiti:field name="to">
-    <activiti:expression>${customerEmail}</activiti:expression>
-  </activiti:field>
-  
-  <activiti:field name="subject">
-    <activiti:string>Order Confirmation</activiti:string>
-  </activiti:field>
-  
-  <activiti:field name="message">
-    <activiti:expression>${emailTemplate}</activiti:expression>
-  </activiti:field>
+  <extensionElements>
+    <activiti:field name="to">
+      <activiti:expression>${customerEmail}</activiti:expression>
+    </activiti:field>
+    
+    <activiti:field name="subject">
+      <activiti:string>Order Confirmation</activiti:string>
+    </activiti:field>
+    
+    <activiti:field name="message">
+      <activiti:expression>${emailTemplate}</activiti:expression>
+    </activiti:field>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -261,12 +265,21 @@ Configure retry policies for failed jobs:
              activiti:class="com.example.ExternalApiService"
              activiti:async="true">
   
-  <!-- Retry 5 times -->
-  <activiti:property name="failedJobRetryTimeCycle" value="R/5"/>
-  
-  <!-- Retry with exponential backoff -->
-  <activiti:property name="failedJobRetryTimeCycle" 
-                     value="R5/PT1M;R3/PT5M;R2/PT30M"/>
+  <extensionElements>
+    <!-- Retry 5 times -->
+    <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
+</serviceTask>
+```
+
+**Or with exponential backoff:**
+```xml
+<serviceTask id="unreliableService" 
+             activiti:async="true"
+             activiti:class="com.example.ExternalApiService">
+  <extensionElements>
+    <activiti:failedJobRetryTimeCycle>R5/PT1M;R3/PT5M;R2/PT30M</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -295,9 +308,11 @@ Add metadata:
              name="Custom Processing"
              activiti:class="com.example.CustomService">
   
-  <activiti:property name="department" value="finance"/>
-  <activiti:property name="version" value="2.0"/>
-  <activiti:property name="sla" value="PT1H"/>
+  <extensionElements>
+    <activiti:property name="department" value="finance"/>
+    <activiti:property name="version" value="2.0"/>
+    <activiti:property name="sla" value="PT1H"/>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -325,26 +340,25 @@ Hook into execution lifecycle:
 
 ### Boundary Events
 
-Handle exceptions:
+Handle exceptions (boundary events are siblings, not children):
 
 ```xml
 <serviceTask id="riskyService" 
              name="External Call"
              activiti:class="com.example.ExternalService"
-             activiti:async="true">
-  
-  <!-- Error boundary event -->
-  <boundaryEvent id="errorHandler" cancelActivity="true">
-    <errorEventDefinition errorRef="ExternalServiceError"/>
-  </boundaryEvent>
-  
-  <!-- Timer boundary event -->
-  <boundaryEvent id="timeoutHandler" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT30S</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-</serviceTask>
+             activiti:async="true"/>
+
+<!-- Error boundary event -->
+<boundaryEvent id="errorHandler" attachedToRef="riskyService" cancelActivity="true">
+  <errorEventDefinition errorRef="ExternalServiceError"/>
+</boundaryEvent>
+
+<!-- Timer boundary event -->
+<boundaryEvent id="timeoutHandler" attachedToRef="riskyService" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT30S</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 ## 💡 Complete Examples
@@ -358,32 +372,34 @@ Handle exceptions:
              activiti:async="true"
              activiti:resultVariable="paymentResult">
   
-  <!-- Spring bean injection using expression -->
-  <activiti:field name="paymentGateway" expression="#{stripePaymentGateway}"/>
-  
-  <activiti:field name="currency">
-    <activiti:expression>${order.currency}</activiti:expression>
-  </activiti:field>
-  
-  <!-- Retry configuration -->
-  <activiti:property name="failedJobRetryTimeCycle" value="R3/PT1M;R2/PT5M"/>
-  
-  <!-- Execution tracking -->
-  <activiti:executionListener event="start" class="com.example.PaymentStartListener"/>
-  <activiti:executionListener event="end" delegateExpression="${paymentEndListener}"/>
-  
-  <!-- Error handling -->
-  <boundaryEvent id="paymentError" cancelActivity="true">
-    <errorEventDefinition errorRef="PaymentError"/>
-  </boundaryEvent>
-  
-  <!-- Timeout handling -->
-  <boundaryEvent id="paymentTimeout" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT60S</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
+  <extensionElements>
+    <!-- Spring bean injection using expression -->
+    <activiti:field name="paymentGateway" expression="#{stripePaymentGateway}"/>
+    
+    <activiti:field name="currency">
+      <activiti:expression>${order.currency}</activiti:expression>
+    </activiti:field>
+    
+    <!-- Retry configuration -->
+    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
+    
+    <!-- Execution tracking -->
+    <activiti:executionListener event="start" class="com.example.PaymentStartListener"/>
+    <activiti:executionListener event="end" delegateExpression="${paymentEndListener}"/>
+  </extensionElements>
 </serviceTask>
+
+<!-- Error boundary event -->
+<boundaryEvent id="paymentError" attachedToRef="processPayment" cancelActivity="true">
+  <errorEventDefinition errorRef="PaymentError"/>
+</boundaryEvent>
+
+<!-- Timeout boundary event -->
+<boundaryEvent id="paymentTimeout" attachedToRef="processPayment" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT60S</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 ### Example 2: Multi-Service Orchestration
@@ -401,11 +417,13 @@ Handle exceptions:
              activiti:class="com.example.InventoryService"
              activiti:skipExpression="${!validationResult.isValid}">
   
-  <activiti:field name="items">
-    <activiti:expression>${order.items}</activiti:expression>
-  </activiti:field>
-  
-  <activiti:executionListener event="start" class="com.example.InventoryCheckListener"/>
+  <extensionElements>
+    <activiti:field name="items">
+      <activiti:expression>${order.items}</activiti:expression>
+    </activiti:field>
+    
+    <activiti:executionListener event="start" class="com.example.InventoryCheckListener"/>
+  </extensionElements>
 </serviceTask>
 
 <!-- Service 3: Reserve Stock -->
@@ -414,7 +432,9 @@ Handle exceptions:
              activiti:delegateExpression="${inventoryService.reserve()}"
              activiti:async="true">
   
-  <activiti:property name="failedJobRetryTimeCycle" value="R/3"/>
+  <extensionElements>
+    <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
 </serviceTask>
 
 <!-- Service 4: Send Confirmation -->
@@ -422,17 +442,19 @@ Handle exceptions:
              name="Send Confirmation"
              activiti:type="mail">
   
-  <activiti:field name="to">
-    <activiti:expression>${customer.email}</activiti:expression>
-  </activiti:field>
-  
-  <activiti:field name="subject">
-    <activiti:string>Order Confirmation: ${order.id}</activiti:string>
-  </activiti:field>
-  
-  <activiti:field name="message">
-    <activiti:expression>${emailService.generateConfirmation(order)}</activiti:expression>
-  </activiti:field>
+  <extensionElements>
+    <activiti:field name="to">
+      <activiti:expression>${customer.email}</activiti:expression>
+    </activiti:field>
+    
+    <activiti:field name="subject">
+      <activiti:string>Order Confirmation: ${order.id}</activiti:string>
+    </activiti:field>
+    
+    <activiti:field name="message">
+      <activiti:expression>${emailService.generateConfirmation(order)}</activiti:expression>
+    </activiti:field>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -450,9 +472,9 @@ Handle exceptions:
     <activiti:inputParameter name="annualIncome">${applicant.annualIncome}</activiti:inputParameter>
     <activiti:inputParameter name="creditScore">${applicant.creditScore}</activiti:inputParameter>
     <activiti:inputParameter name="loanAmount">${loan.amount}</activiti:inputParameter>
+    
+    <activiti:executionListener event="end" class="com.example.CreditDecisionListener"/>
   </extensionElements>
-  
-  <activiti:executionListener event="end" class="com.example.CreditDecisionListener"/>
 </serviceTask>
 ```
 
@@ -475,14 +497,15 @@ Handle exceptions:
         <connector:parameter name="customerData" to="${externalCustomerData}"/>
       </connector:output>
     </connector:operation>
+    
+    <activiti:failedJobRetryTimeCycle>R5/PT30S</activiti:failedJobRetryTimeCycle>
   </extensionElements>
-  
-  <activiti:property name="failedJobRetryTimeCycle" value="R5/PT30S"/>
-  
-  <boundaryEvent id="apiError" cancelActivity="true">
-    <errorEventDefinition errorRef="ExternalApiError"/>
-  </boundaryEvent>
 </serviceTask>
+
+<!-- Error boundary event -->
+<boundaryEvent id="apiError" attachedToRef="callExternalAPI" cancelActivity="true">
+  <errorEventDefinition errorRef="ExternalApiError"/>
+</boundaryEvent>
 ```
 
 ## 🔍 Runtime API Usage
@@ -558,11 +581,11 @@ public class PaymentServiceTest {
 ### Pattern 1: Try-Catch with Boundary Event
 
 ```xml
-<serviceTask id="riskyOperation" activiti:class="com.example.RiskyService">
-  <boundaryEvent id="catchError" cancelActivity="true">
-    <errorEventDefinition errorRef="OperationError"/>
-  </boundaryEvent>
-</serviceTask>
+<serviceTask id="riskyOperation" activiti:class="com.example.RiskyService"/>
+
+<boundaryEvent id="catchError" attachedToRef="riskyOperation" cancelActivity="true">
+  <errorEventDefinition errorRef="OperationError"/>
+</boundaryEvent>
 ```
 
 ### Pattern 2: Retry with Exponential Backoff
@@ -571,8 +594,9 @@ public class PaymentServiceTest {
 <serviceTask id="unreliableService" 
              activiti:async="true"
              activiti:class="com.example.UnreliableService">
-  <activiti:property name="failedJobRetryTimeCycle" 
-                     value="R1/PT10S;R2/PT1M;R2/PT5M;R1/PT30M"/>
+  <extensionElements>
+    <activiti:failedJobRetryTimeCycle>R1/PT10S;R2/PT1M;R2/PT5M;R1/PT30M</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
 </serviceTask>
 ```
 
