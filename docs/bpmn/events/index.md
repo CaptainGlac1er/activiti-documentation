@@ -1,7 +1,8 @@
 ---
 sidebar_label: Events Overview
 slug: /bpmn/events/index
-description: Complete guide to BPMN event elements for triggers, exceptions, and process responses
+title: "Events Overview"
+description: "Complete guide to BPMN event elements for triggers, exceptions, and process responses in Activiti workflows."
 ---
 
 # Events

@@ -1,7 +1,8 @@
 ---
 sidebar_label: Multi-Instance
 slug: /bpmn/advanced/multi-instance
-description: Complete guide to multi-instance activities in Activiti for iterative execution
+title: "Multi-Instance Activities"
+description: "Complete guide to multi-instance activities in Activiti for iterative execution with parallel or sequential processing of collections."
 ---
 
 # Multi-Instance Activities

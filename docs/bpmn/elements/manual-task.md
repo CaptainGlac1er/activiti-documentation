@@ -1,12 +1,13 @@
 ---
 sidebar_label: Manual Task
 slug: /bpmn/elements/manual-task
-description: Guide to ManualTask elements for tasks performed outside the workflow engine
+title: "Manual Task"
+description: "Complete guide to ManualTask elements for tasks performed outside the workflow engine with external tools or procedures."
 ---
 
 # Manual Task
 
-Manual Tasks represent work that is performed **outside the workflow engine**, typically by a human operator using external tools or procedures.
+Manual Tasks represent work that is performed **outside the workflow engine**, typically by a human operator using external tools or procedures. Unlike User Tasks, Manual Tasks do not create task entities in the engine.
 
 ## 📋 Overview
 

@@ -1,12 +1,13 @@
 ---
 sidebar_label: Parallel Gateway
 slug: /bpmn/gateways/parallel-gateway
-description: Guide to ParallelGateway (AND) for concurrent execution
+title: "Parallel Gateway"
+description: "Complete guide to ParallelGateway (AND) for concurrent execution and synchronization of multiple process paths."
 ---
 
 # Parallel Gateway
 
-The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or waits for **all incoming paths** to complete before proceeding.
+The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or waits for **all incoming paths** to complete before proceeding. It enables true parallelism in workflows.
 
 ## 📋 Overview
 

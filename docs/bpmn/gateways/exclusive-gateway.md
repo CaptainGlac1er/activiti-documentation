@@ -1,12 +1,13 @@
 ---
 sidebar_label: Exclusive Gateway
 slug: /bpmn/gateways/exclusive-gateway
-description: Guide to ExclusiveGateway (XOR) for conditional branching
+title: "Exclusive Gateway"
+description: "Complete guide to ExclusiveGateway (XOR) for conditional branching with one path selection based on evaluated conditions."
 ---
 
 # Exclusive Gateway
 
-The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on conditions evaluated on outgoing sequence flows.
+The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on conditions evaluated on outgoing sequence flows. It's the most commonly used gateway for decision points.
 
 ## 📋 Overview
 

@@ -1,181 +1,190 @@
 ---
 sidebar_position: 0
 slug: /documentation-index
+title: "Activiti API Documentation"
+description: "Comprehensive documentation for Activiti API 8.7.2-SNAPSHOT. Learn to build robust workflow automation solutions."
 ---
 
-# Activiti API Documentation Index
+# Activiti API Documentation
 
-Welcome to the comprehensive documentation for **Activiti API** - Version 8.7.2-SNAPSHOT
+**Version 8.7.2-SNAPSHOT** | **Last Updated: 2026**
 
-## Documentation Structure
+**Community-Maintained Documentation**
 
-This documentation is organized into several guides to help you learn and use Activiti API effectively.
+Welcome to this community-maintained documentation for Activiti API. This comprehensive resource guides developers from initial setup through advanced workflow automation patterns.
+
+> **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
+
+## Documentation Overview
+
+This documentation is structured to support developers at all experience levels, from those new to workflow automation to seasoned architects designing enterprise solutions.
 
 ---
 
 ## Getting Started
 
-### For Complete Beginners
+Choose the path that best matches your experience level:
 
-1. **[Quick Start Guide](./quickstart.md)** - Get up and running in 5 minutes
-   - Installation and setup
-   - Your first process
-   - Basic examples
-   - Common pitfalls
+### New to Activiti
 
-### For Experienced Developers
+Begin here if you're unfamiliar with workflow automation or Activiti:
 
-1. **[API Reference](./api-reference/overview.md)** - Complete API documentation
-   - All interfaces and methods
-   - Parameter details
-   - Return types
-   - Examples
+| Guide | Description | Time Required |
+|-------|-------------|---------------|
+| [Quick Start Guide](./quickstart.md) | Install Activiti and deploy your first workflow | 15 minutes |
+| [Configuration](./getting-started/configuration.md) | Understand application setup and dependencies | 10 minutes |
 
-2. **[Implementation Patterns](./advanced/implementation-patterns.md)** - Architecture choices
-   - Monolithic vs Microservices
-   - Integration patterns
-   - Event handling strategies
-   - Security models
-   - Deployment options
+### Experienced Developers
+
+Accelerate your onboarding with these resources:
+
+| Guide | Description | Focus Areas |
+|-------|-------------|-------------|
+| [API Reference](./api-reference/overview.md) | Complete interface and method documentation | Runtime APIs, Payload builders, Event handlers |
+| [Implementation Patterns](./advanced/implementation-patterns.md) | Architectural guidance for production systems | Microservices, Security, Integration |
 
 ---
 
 ## Core Documentation
 
-### Essential Reading
+### Essential Resources
 
-| Document | Audience | Purpose | Time |
-|----------|----------|---------|------|
-| [Quick Start](./quickstart.md) | Everyone | Get started quickly | 15 min |
-| [API Reference](./api-reference/overview.md) | Developers | Look up APIs | Reference |
-| [Best Practices](./best-practices/overview.md) | All | Write better code | 1 hour |
+All developers should review these foundational documents:
+
+| Document | Purpose | Priority |
+|----------|---------|----------|
+| [Quick Start](./quickstart.md) | Rapid onboarding and first workflow | 🔴 Required |
+| [API Reference](./api-reference/overview.md) | Comprehensive API documentation | 🔴 Required |
+| [Best Practices](./best-practices/overview.md) | Production-ready patterns and guidelines | 🟡 Recommended |
 
 ### Advanced Topics
 
-| Document | Audience | Purpose | Time |
-|----------|----------|---------|------|
-| [Implementation Patterns](./advanced/implementation-patterns.md) | Architects | Design systems | 2 hours |
-| [Troubleshooting](./troubleshooting/overview.md) | Developers | Fix issues | Reference |
+Deep-dive resources for complex scenarios:
+
+| Document | Audience | Topics Covered |
+|----------|----------|----------------|
+| [Implementation Patterns](./advanced/implementation-patterns.md) | Architects, Senior Developers | System design, Integration patterns, Scalability |
+| [Troubleshooting Guide](./troubleshooting/overview.md) | Developers, Operations | Debugging, Performance optimization, Common issues |
+| [Architecture Overview](./architecture/overview.md) | Technical Leads | System components, Data flow, Deployment models |
 
 ---
 
 ## Learning Paths
 
-### Path 1: Beginner to Proficient (2-4 weeks)
+Structured learning paths to guide your journey with Activiti:
 
-```
-Week 1:
-├─ Day 1-2: Quick Start Guide
-├─ Day 3-4: Main Documentation - Core Concepts
-└─ Day 5-7: Build simple processes
+### Path 1: Beginner to Proficient
 
-Week 2:
-├─ Day 1-3: Task Management
-├─ Day 4-5: Event Handling
-└─ Day 6-7: Build task-based workflow
+**Duration:** 2-4 weeks | **Prerequisites:** Basic Java knowledge
 
-Week 3:
-├─ Day 1-2: API Reference - Process Runtime
-├─ Day 3-4: API Reference - Task Runtime
-├─ Day 5-6: Variables and Data
-└─ Day 7: Review and practice
+**Week 1: Foundations**
+- Days 1-2: Complete the [Quick Start Guide](./quickstart.md)
+- Days 3-4: Study core BPMN concepts and Activiti architecture
+- Days 5-7: Build and deploy simple workflow processes
 
-Week 4:
-├─ Day 1-2: Security Basics
-├─ Day 3-4: Best Practices
-├─ Day 5-6: Build complete application
-└─ Day 7: Testing and deployment
-```
+**Week 2: Task Management**
+- Days 1-3: Implement user tasks and task assignments
+- Days 4-5: Configure event handlers and listeners
+- Days 6-7: Develop a complete task-based workflow
 
-### Path 2: Experienced Developer (1 week)
+**Week 3: API Mastery**
+- Days 1-2: [Process Runtime API](./api-reference/overview.md#process-runtime-api)
+- Days 3-4: [Task Runtime API](./api-reference/overview.md#task-runtime-api)
+- Days 5-6: Process variables and data management
+- Day 7: Review exercises and best practices
 
-```
-Day 1:
-├─ Morning: Quick Start + Architecture Overview
-└─ Afternoon: API Reference review
+**Week 4: Production Readiness**
+- Days 1-2: Security fundamentals and authentication
+- Days 3-4: [Best Practices](./best-practices/overview.md) implementation
+- Days 5-6: Build and test a complete application
+- Day 7: Deployment strategies and monitoring
 
-Day 2:
-├─ Morning: Process Management
-├─ Afternoon: Task Management
-└─ Evening: Build prototype
+### Path 2: Experienced Developer
 
-Day 3:
-├─ Morning: Event Handling
-├─ Afternoon: Security Implementation
-└─ Evening: Integration patterns
+**Duration:** 1 week | **Prerequisites:** Workflow engine experience
 
-Day 4:
-├─ Morning: Best Practices
-├─ Afternoon: Performance optimization
-└─ Evening: Code review
+| Day | Morning | Afternoon | Evening |
+|-----|---------|-----------|---------|
+| 1 | Quick Start + Architecture | API Reference review | Environment setup |
+| 2 | Process Management | Task Management | Build prototype |
+| 3 | Event Handling | Security Implementation | Integration patterns |
+| 4 | Best Practices | Performance optimization | Code review |
+| 5 | Advanced topics | Troubleshooting guide | Final project |
 
-Day 5:
-├─ Morning: Advanced topics
-├─ Afternoon: Troubleshooting guide
-└─ Evening: Final project
-```
+### Path 3: Architect/Technical Lead
 
-### Path 3: Architect/Lead (3-5 days)
+**Duration:** 3-5 days | **Prerequisites:** System design experience
 
-```
-Day 1:
-├─ Implementation Patterns - Architecture
-├─ Integration Patterns
-└─ Security Models
+**Day 1: Strategic Patterns**
+- Implementation patterns and architectural styles
+- Integration strategies for enterprise systems
+- Security models and compliance requirements
 
-Day 2:
-├─ Deployment Strategies
-├─ Scalability considerations
-└─ Performance patterns
+**Day 2: Scalability & Deployment**
+- Deployment architectures (monolithic, microservices, hybrid)
+- Scalability patterns and performance considerations
+- High availability and disaster recovery
 
-Day 3:
-├─ Best Practices review
-├─ Event Sourcing patterns
-└─ Multi-tenancy options
+**Day 3: Advanced Architecture**
+- Best practices review and organizational standards
+- Event sourcing and CQRS patterns
+- Multi-tenancy and isolation strategies
 
-Day 4:
-├─ Troubleshooting strategies
-├─ Monitoring approaches
-└─ Disaster recovery
+**Day 4: Operations & Maintenance**
+- Troubleshooting methodologies
+- Monitoring and observability approaches
+- Incident response and recovery procedures
 
-Day 5:
-└─ Design review and recommendations
-```
+**Day 5: Design Review**
+- Architecture validation and recommendations
+- Risk assessment and mitigation strategies
 
 ---
 
 ## Quick Navigation
 
-### By Topic
-- **Process Management**: [API Reference](./api-reference/overview.md#process-runtime-api)
-- **Task Management**: [API Reference](./api-reference/overview.md#task-runtime-api)
-- **Events**: [Implementation Patterns](./advanced/implementation-patterns.md#event-handling-patterns)
-- **Security**: [Best Practices](./best-practices/overview.md#security-best-practices)
-- **Performance**: [Best Practices](./best-practices/overview.md#performance-optimization), [Troubleshooting](./troubleshooting/overview.md#performance-problems)
-- **Integration**: [Implementation Patterns](./advanced/implementation-patterns.md#integration-patterns)
+### Navigate by Topic
 
-### By Goal
-- **Get started quickly**: [Quick Start Guide](./quickstart.md)
-- **Look up an API method**: [API Reference](./api-reference/overview.md)
-- **Fix a problem**: [Troubleshooting Guide](./troubleshooting/overview.md)
-- **Write better code**: [Best Practices](./best-practices/overview.md)
-- **Choose an architecture**: [Implementation Patterns](./advanced/implementation-patterns.md)
+| Topic | Documentation |
+|-------|---------------|
+| **Process Management** | [Process Runtime API](./api-reference/overview.md#process-runtime-api) |
+| **Task Management** | [Task Runtime API](./api-reference/overview.md#task-runtime-api) |
+| **Event Handling** | [Event Patterns](./advanced/implementation-patterns.md#event-handling-patterns) |
+| **Security** | [Security Best Practices](./best-practices/overview.md#security-best-practices) |
+| **Performance** | [Performance Optimization](./best-practices/overview.md#performance-optimization) |
+| **Integration** | [Integration Patterns](./advanced/implementation-patterns.md#integration-patterns) |
 
-### By Experience Level
-- **Beginner**: Start with [Quick Start](./quickstart.md)
-- **Intermediate**: Study [API Reference](./api-reference/overview.md) and [Best Practices](./best-practices/overview.md)
-- **Advanced**: Deep dive [Implementation Patterns](./advanced/implementation-patterns.md)
+### Navigate by Goal
+
+| Goal | Recommended Resource |
+|------|---------------------|
+| Get started quickly | [Quick Start Guide](./quickstart.md) |
+| Look up an API method | [API Reference](./api-reference/overview.md) |
+| Resolve an issue | [Troubleshooting Guide](./troubleshooting/overview.md) |
+| Improve code quality | [Best Practices](./best-practices/overview.md) |
+| Design system architecture | [Implementation Patterns](./advanced/implementation-patterns.md) |
+
+### Navigate by Experience Level
+
+- **Beginner:** Start with the [Quick Start Guide](./quickstart.md)
+- **Intermediate:** Study the [API Reference](./api-reference/overview.md) and [Best Practices](./best-practices/overview.md)
+- **Advanced:** Explore [Implementation Patterns](./advanced/implementation-patterns.md) and [Architecture Overview](./architecture/overview.md)
 
 ---
 
 ## Version Information
 
-### Current Version
-- **API Version**: 8.7.2-SNAPSHOT
-- **Java Version**: 11+ (17+ recommended)
-- **Last Updated**: 2026
+### Current Release
+
+| Property | Value |
+|----------|-------|
+| **API Version** | 8.7.2-SNAPSHOT |
+| **Java Version** | 11+ (17+ recommended for production) |
+| **Documentation Updated** | 2026 |
 
 ### Compatibility Matrix
+
+Ensure your dependencies align with the following compatibility requirements:
 
 | API Version | Java | Spring Boot | Engine |
 |-------------|------|-------------|--------|
@@ -183,91 +192,108 @@ Day 5:
 | 8.6.0+ | 11+ | 3.0+ | 8.6.0+ |
 | 8.5.0+ | 11+ | 2.7+ | 8.5.0+ |
 
+> **Note:** For production deployments, we recommend using the latest stable version with Java 17 or higher for optimal performance and security.
+
 ---
 
 ## Additional Resources
 
-### Official Resources
-- **GitHub Repository**: https://github.com/Activiti/Activiti
+### External Resources
+
+- [Activiti GitHub Repository](https://github.com/Activiti/Activiti) - Source code, issues, and contributions
+- [Activiti Website](https://activiti.org) - Product information and announcements
 
 ### Learning Resources
-- **BPMN 2.0 Tutorial**: https://www.bpmn.org
-- **Workflow Patterns**: https://workflowpatterns.com
-- **Spring Boot Documentation**: https://spring.io/projects/spring-boot
 
-### Community
-- **Stack Overflow**: Use tag `activiti`
-- **GitHub Issues**: For bug reports and feature requests
-- **Community Forums**: Check Activiti community channels
+| Resource | Description |
+|----------|-------------|
+| [BPMN 2.0 Specification](https://www.bpmn.org) | BPMN standard documentation |
+| [Workflow Patterns](https://workflowpatterns.com) | Common workflow design patterns |
+| [Spring Boot Documentation](https://spring.io/projects/spring-boot) | Spring Boot framework reference |
+
+### Community Support
+
+- **Stack Overflow:** Use the `activiti` tag for questions
+- **GitHub Issues:** Report bugs and request features
+- **Community Forums:** Engage with other Activiti developers
 
 ---
 
 ## Contributing
 
+We welcome contributions to improve the Activiti documentation and project.
+
 ### Documentation Feedback
 
-If you find errors or have suggestions:
-1. Check if issue exists on GitHub
-2. Create new issue with details
-3. Submit pull request with fixes
+Found an error or have suggestions? Please follow this process:
 
-### Content to Improve
+1. **Search existing issues** on GitHub to avoid duplicates
+2. **Create a new issue** with detailed information about the problem
+3. **Submit a pull request** with your proposed fixes or improvements
 
-We're always looking to improve:
-- More real-world examples
-- Additional integration patterns
+### Areas for Improvement
+
+We're continuously looking to enhance:
+
+- Real-world examples and use cases
+- Integration patterns for common systems
 - Performance benchmarking data
 - Security best practices
-- Troubleshooting scenarios
+- Troubleshooting scenarios and solutions
 
 ---
 
 ## Getting Help
 
-### Quick Help
-1. **Check Troubleshooting Guide**: [Common Issues](./troubleshooting/overview.md#common-issues)
-2. **Review Examples**: [Quick Start](./quickstart.md)
-3. **Search Documentation**: Use Ctrl+F in your browser
+### Self-Service Resources
 
-### Need More Help?
-1. **GitHub Issues**: Search existing issues first
-2. **Stack Overflow**: Ask with `activiti` tag
+1. **[Troubleshooting Guide](./troubleshooting/overview.md)** - Common issues and solutions
+2. **[Quick Start Examples](./quickstart.md)** - Working code samples
+3. **Search this documentation** - Use your browser's search (Ctrl+F / Cmd+F)
 
-### Before Asking
-- Enable debug logging
-- Create minimal reproduction
-- Check version compatibility
-- Review relevant documentation
-- Gather error messages and logs
+### Community Support
+
+1. **GitHub Issues** - Search existing issues before creating new ones
+2. **Stack Overflow** - Ask questions with the `activiti` tag
+
+### Before Submitting an Issue
+
+To help us assist you faster, please prepare:
+
+- ✅ Enable debug logging and collect relevant logs
+- ✅ Create a minimal reproduction case
+- ✅ Verify version compatibility
+- ✅ Review the relevant documentation sections
+- ✅ Gather complete error messages and stack traces
 
 ---
 
-## Document List
+## Documentation Index
 
-| File | Description | Size | Last Updated |
-|------|-------------|------|--------------|
-| [quickstart.md](./quickstart.md) | Quick start guide | ~11KB | 2026 |
-| [api-reference.md](./api-reference/overview.md) | Complete API reference | ~29KB | 2026 |
-| [best-practices.md](./best-practices/overview.md) | Best practices guide | ~30KB | 2026 |
-| [implementation-patterns.md](./advanced/implementation-patterns.md) | Architecture patterns | ~26KB | 2026 |
-| [troubleshooting.md](./troubleshooting/overview.md) | Troubleshooting guide | ~18KB | 2026 |
-| [index.md](./index.md) | This file | ~15KB | 2026 |
-
-**Total Documentation**: ~181KB
+| Document | Description | Status |
+|----------|-------------|--------|
+| [Quick Start](./quickstart.md) | Rapid onboarding guide | ✅ Complete |
+| [API Reference](./api-reference/overview.md) | Comprehensive API documentation | ✅ Complete |
+| [Best Practices](./best-practices/overview.md) | Production patterns and guidelines | ✅ Complete |
+| [Implementation Patterns](./advanced/implementation-patterns.md) | Architectural guidance | ✅ Complete |
+| [Troubleshooting](./troubleshooting/overview.md) | Issue resolution guide | ✅ Complete |
+| [Architecture Overview](./architecture/overview.md) | System architecture | ✅ Complete |
 
 ---
 
 ## Quick Links
 
-- **Start Here**: [Quick Start Guide](./quickstart.md)
-- **API Lookup**: [API Reference](./api-reference/overview.md)
-- **Architecture**: [Implementation Patterns](./advanced/implementation-patterns.md)
-- **Best Code**: [Best Practices](./best-practices/overview.md)
-- **Fix Issues**: [Troubleshooting](./troubleshooting/overview.md)
+- 🚀 **Start Here:** [Quick Start Guide](./quickstart.md)
+- 📚 **API Reference:** [Complete API Documentation](./api-reference/overview.md)
+- 🏗️ **Architecture:** [Implementation Patterns](./advanced/implementation-patterns.md)
+- ✨ **Best Practices:** [Production Guidelines](./best-practices/overview.md)
+- 🔧 **Troubleshooting:** [Issue Resolution](./troubleshooting/overview.md)
 
 ---
 
-**Happy Learning!**
+**Ready to build workflow automation solutions?** Begin with the [Quick Start Guide](./quickstart.md).
 
-*Last updated: 2026*
-*Version: 8.7.2-SNAPSHOT*
+---
+
+*Documentation Version: 8.7.2-SNAPSHOT*  
+*Last Updated: 2026*

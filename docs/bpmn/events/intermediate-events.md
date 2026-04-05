@@ -1,7 +1,8 @@
 ---
 sidebar_label: Intermediate Events
 slug: /bpmn/events/intermediate-events
-description: Complete guide to Intermediate Events in Activiti - catch and throw events during process execution
+title: "Intermediate Events"
+description: "Complete guide to Intermediate Events in Activiti - catch and throw events during process execution with various triggers."
 ---
 
 # Intermediate Events

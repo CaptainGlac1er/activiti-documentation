@@ -1,7 +1,8 @@
 ---
 sidebar_label: Task Listeners
 slug: /bpmn/advanced/task-listeners
-description: Complete guide to task listeners in Activiti for user task lifecycle events
+title: "Task Listeners"
+description: "Complete guide to task listeners in Activiti for user task lifecycle events - notifications, auditing, and dynamic configuration."
 ---
 
 # Task Listeners

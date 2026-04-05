@@ -1,12 +1,23 @@
 ---
 sidebar_label: Implementation Patterns
 slug: /implementation-patterns
-description: Various implementation patterns with pros, cons, and architectural diagrams to help you choose the right approach.
+title: "Implementation Patterns & Architecture Guide"
+description: "Comprehensive guide to architectural patterns, integration strategies, and implementation approaches for Activiti workflow solutions."
 ---
 
 # Implementation Patterns & Architecture Guide
 
-This guide provides various implementation patterns with pros, cons, and architectural diagrams to help you choose the right approach for your use case.
+**Community-Maintained Guide**
+
+This guide provides proven implementation patterns with architectural diagrams, code examples, and decision frameworks to help you design robust workflow automation solutions.
+
+> **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
+
+## Target Audience
+
+- **Software Architects** - Designing system architecture
+- **Senior Developers** - Implementing complex workflows
+- **Technical Leads** - Making technology decisions
 
 ## Table of Contents
 
@@ -15,7 +26,7 @@ This guide provides various implementation patterns with pros, cons, and archite
 - [Event Handling Patterns](#event-handling-patterns)
 - [Security Patterns](#security-patterns)
 - [Deployment Patterns](#deployment-patterns)
-- [Comparison Matrix](#comparison-matrix)
+- [Decision Frameworks](#decision-frameworks)
 
 ---
 
@@ -23,7 +34,9 @@ This guide provides various implementation patterns with pros, cons, and archite
 
 ### 1. Monolithic Architecture
 
-**Diagram:**
+**Description:** All components (business logic, workflow engine, data access) reside in a single application deployment unit.
+
+**Architecture Diagram:**
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   Monolithic Application                     │
@@ -65,24 +78,25 @@ public class ActivitiConfig {
 ```
 
 **Pros:**
-✅ Simple to develop and deploy
-✅ No network latency between components
-✅ Easier transaction management
-✅ Single codebase to maintain
-✅ Good for small to medium applications
+- ✅ Simple to develop and deploy
+- ✅ No network latency between components
+- ✅ Easier transaction management
+- ✅ Single codebase to maintain
+- ✅ Good for small to medium applications
 
 **Cons:**
-❌ Tight coupling between layers
-❌ Harder to scale individual components
-❌ Database can become a bottleneck
-❌ Limited technology choices
-❌ Not suitable for microservices architecture
+- ❌ Tight coupling between layers
+- ❌ Harder to scale individual components
+- ❌ Database can become a bottleneck
+- ❌ Limited technology choices
+- ❌ Not suitable for microservices architecture
 
 **Best For:**
-- Small to medium applications
+- Small to medium applications (< 10 team members)
 - Teams with limited DevOps resources
 - Applications with simple workflow needs
 - Prototypes and MVPs
+- Internal tools with predictable load
 
 ---
 

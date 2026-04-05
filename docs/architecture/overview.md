@@ -1,14 +1,21 @@
 ---
 sidebar_label: Overview
 slug: /architecture/overview
-description: Comprehensive guide to Activiti Engine architecture, components, and design patterns.
+title: "Architecture Overview"
+description: "Comprehensive guide to Activiti Engine architecture, internal components, design patterns, and extension mechanisms."
 ---
 
 # Activiti Engine Architecture
 
-**Target Audience:** Senior Software Engineers, System Architects
+**Community-Maintained Guide**
+
+**Target Audience:** Senior Software Engineers, System Architects, Technical Leads
 
 **Version:** 8.7.2-SNAPSHOT
+
+**Purpose:** Understand the internal workings of the Activiti Engine to make informed architectural decisions and effectively extend the platform.
+
+> **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
 
 ## System Overview
 
@@ -16,12 +23,12 @@ The Activiti Engine is built on a layered architecture that separates concerns a
 
 ### Architectural Principles
 
-1. **Separation of Concerns**: Clear boundaries between services, execution, and persistence
-2. **Command Pattern**: All operations go through a centralized command manager
-3. **Transaction Safety**: ACID compliance for all engine operations
-4. **Extensibility**: Pluggable components for customization
-5. **Performance**: Optimized for high-throughput process execution
-6. **Observability**: Comprehensive eventing and history tracking
+1. **Separation of Concerns** - Clear boundaries between services, execution, and persistence layers
+2. **Command Pattern** - All operations go through a centralized command manager for consistency
+3. **Transaction Safety** - ACID compliance for all engine operations
+4. **Extensibility** - Pluggable components for customization without modifying core code
+5. **Performance** - Optimized for high-throughput process execution
+6. **Observability** - Comprehensive eventing and history tracking for monitoring
 
 ### High-Level Architecture
 

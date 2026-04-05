@@ -1,7 +1,8 @@
 ---
 sidebar_label: Regular SubProcess
 slug: /bpmn/subprocesses/regular-subprocess
-description: Complete guide to Regular (Embedded) SubProcesses in Activiti
+title: "Regular SubProcess"
+description: "Complete guide to Regular (Embedded) SubProcesses in Activiti - organizing related activities into collapsible workflow units."
 ---
 
 # Regular SubProcess

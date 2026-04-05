@@ -1,7 +1,8 @@
 ---
 sidebar_label: Async Execution
 slug: /bpmn/advanced/async-execution
-description: Complete guide to asynchronous execution in Activiti
+title: "Async Execution"
+description: "Complete guide to asynchronous execution in Activiti - background job processing, retry policies, and scalability optimization."
 ---
 
 # Async Execution

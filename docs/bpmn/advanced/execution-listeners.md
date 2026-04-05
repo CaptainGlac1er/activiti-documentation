@@ -1,7 +1,8 @@
 ---
 sidebar_label: Execution Listeners
 slug: /bpmn/advanced/execution-listeners
-description: Complete guide to Execution Listeners in Activiti - monitoring and reacting to process execution events
+title: "Execution Listeners"
+description: "Complete guide to Execution Listeners in Activiti - monitoring and reacting to process execution events with custom logic."
 ---
 
 # Execution Listeners

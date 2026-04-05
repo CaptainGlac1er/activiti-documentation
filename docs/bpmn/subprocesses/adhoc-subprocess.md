@@ -1,7 +1,8 @@
 ---
 sidebar_label: Ad-hoc SubProcess
 slug: /bpmn/subprocesses/adhoc-subprocess
-description: Complete guide to Ad-hoc SubProcesses in Activiti - flexible, user-driven workflow execution
+title: "Ad-hoc SubProcess"
+description: "Complete guide to Ad-hoc SubProcesses in Activiti - flexible, user-driven workflow execution with arbitrary activity ordering."
 ---
 
 # Ad-hoc SubProcess

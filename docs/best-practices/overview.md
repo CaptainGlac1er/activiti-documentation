@@ -1,12 +1,17 @@
 ---
 sidebar_label: Best Practices
 slug: /best-practices
-description: Comprehensive guide for building robust, scalable, and maintainable Activiti applications.
+title: "Best Practices Guide"
+description: "Comprehensive guide for building robust, scalable, and maintainable Activiti applications in production environments."
 ---
 
-# Best Practices
+# Best Practices Guide
 
-Comprehensive guide for building robust, scalable, and maintainable Activiti applications.
+**Community-Maintained Guide**
+
+This comprehensive guide provides proven patterns and recommendations for building production-ready workflow automation solutions with Activiti.
+
+> **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
 
 ## Table of Contents
 
@@ -25,10 +30,12 @@ Comprehensive guide for building robust, scalable, and maintainable Activiti app
 
 ### 1. Separate Concerns
 
-**✅ DO:** Organize code by responsibility
+**Principle:** Organize code by responsibility to improve maintainability and testability.
+
+**✅ Recommended Approach:**
 
 ```java
-// Good: Clear separation
+// Service layer: Business logic orchestration
 @Service
 public class OrderService {
     @Autowired
@@ -41,10 +48,11 @@ public class OrderService {
     }
     
     private void startOrderProcess(Order order) {
-        // Process logic
+        // Process orchestration logic
     }
 }
 
+// Event listener layer: Reactive business logic
 @Service
 public class OrderEventListener {
     @EventListener
@@ -54,10 +62,10 @@ public class OrderEventListener {
 }
 ```
 
-**❌ DON'T:** Mix business logic with process logic
+**❌ Anti-Pattern to Avoid:**
 
 ```java
-// Bad: Mixed concerns
+// Mixing business logic, process logic, and notifications
 @Service
 public class OrderService {
     public void createOrder(Order order) {
@@ -67,17 +75,28 @@ public class OrderService {
 }
 ```
 
+**Benefits:**
+- Improved code maintainability
+- Easier unit testing
+- Clearer separation of responsibilities
+- Better team collaboration
+
 ### 2. Use Repository Pattern
 
-**✅ DO:** Abstract process operations
+**Principle:** Abstract process operations behind interfaces to enable testing and implementation swapping.
+
+**✅ Recommended Approach:**
 
 ```java
+// Interface: Define contract
 public interface ProcessRepository {
     ProcessInstance startProcess(String key, Map<String, Object> variables);
     ProcessInstance getProcessInstance(String id);
     List<ProcessInstance> getActiveProcesses();
+    void cancelProcess(String id, String reason);
 }
 
+// Implementation: Activiti-specific logic
 @Service
 public class ActivitiProcessRepository implements ProcessRepository {
     @Autowired
@@ -97,7 +116,11 @@ public class ActivitiProcessRepository implements ProcessRepository {
 }
 ```
 
-**Benefit:** Easy to test, swap implementations, and maintain.
+**Benefits:**
+- Easy to write unit tests with mock implementations
+- Can swap implementations without changing business logic
+- Clear contract between layers
+- Supports multiple workflow engines if needed
 
 ### 3. Implement Domain-Driven Design
 

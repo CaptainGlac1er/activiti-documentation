@@ -1,7 +1,8 @@
 ---
 sidebar_label: End Event
 slug: /bpmn/events/end-event
-description: Complete guide to End Events in Activiti - terminating process instances and sub-processes
+title: "End Event"
+description: "Complete guide to End Events in Activiti - terminating process instances and sub-processes with various completion types."
 ---
 
 # End Event

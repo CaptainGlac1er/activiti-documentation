@@ -1,7 +1,8 @@
 ---
 sidebar_label: Complex Gateway
 slug: /bpmn/gateways/complex-gateway
-description: Complete guide to Complex Gateways in Activiti - advanced condition-based routing with multiple criteria
+title: "Complex Gateway"
+description: "Complete guide to Complex Gateways in Activiti - advanced condition-based routing with DAN, DOR, and activation/cancellation conditions."
 ---
 
 # Complex Gateway

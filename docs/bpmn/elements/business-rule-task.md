@@ -1,12 +1,13 @@
 ---
 sidebar_label: Business Rule Task
 slug: /bpmn/elements/business-rule-task
-description: Guide to BusinessRuleTask elements for executing business rules and decisions
+title: "Business Rule Task"
+description: "Complete guide to BusinessRuleTask elements for executing business rules and decisions with DMN and Drools integration."
 ---
 
 # Business Rule Task
 
-Business Rule Tasks execute **business rules** using rule engines like Drools or DMN (Decision Model and Notation).
+Business Rule Tasks execute **business rules** using rule engines like Drools or DMN (Decision Model and Notation), enabling separation of business logic from process flow.
 
 ## 📋 Overview
 

@@ -1,7 +1,8 @@
 ---
 sidebar_label: Gateways Overview
 slug: /bpmn/gateways/index
-description: Complete guide to BPMN gateway elements for process branching and merging
+title: "Gateways Overview"
+description: "Complete guide to BPMN gateway elements for process branching, merging, and flow control in Activiti workflows."
 ---
 
 # Gateways

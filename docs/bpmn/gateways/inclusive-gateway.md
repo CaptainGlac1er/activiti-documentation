@@ -1,7 +1,8 @@
 ---
 sidebar_label: Inclusive Gateway
 slug: /bpmn/gateways/inclusive-gateway
-description: Complete guide to Inclusive Gateways in Activiti - OR logic for selecting one or more paths
+title: "Inclusive Gateway"
+description: "Complete guide to Inclusive Gateways in Activiti - OR logic for selecting one or more paths simultaneously based on conditions."
 ---
 
 # Inclusive Gateway

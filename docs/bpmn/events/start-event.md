@@ -1,12 +1,13 @@
 ---
 sidebar_label: Start Event
 slug: /bpmn/events/start-event
-description: Guide to StartEvent elements for initiating process instances
+title: "Start Event"
+description: "Complete guide to StartEvent elements for initiating process instances with various triggers and configurations."
 ---
 
 # Start Event
 
-Start Events **initiate process instances** and define how a process can be started. They are the entry points of BPMN processes.
+Start Events **initiate process instances** and define how a process can be started. They are the entry points of BPMN processes and support multiple trigger types.
 
 ## 📋 Overview
 

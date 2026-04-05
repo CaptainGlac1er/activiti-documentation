@@ -1,12 +1,13 @@
 ---
 sidebar_label: Script Task
 slug: /bpmn/elements/script-task
-description: Guide to ScriptTask elements for executing scripts in various languages
+title: "Script Task"
+description: "Complete guide to ScriptTask elements for executing scripts in various languages within Activiti workflows."
 ---
 
 # Script Task
 
-Script Tasks allow you to **execute scripts** in various programming languages directly within your workflow, providing flexibility for lightweight automation and custom logic.
+Script Tasks allow you to **execute scripts** in various programming languages directly within your workflow, providing flexibility for lightweight automation and custom logic without requiring full Java classes.
 
 ## 📋 Overview
 

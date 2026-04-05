@@ -1,7 +1,8 @@
 ---
 sidebar_label: SubProcesses
 slug: /bpmn/subprocesses/index
-description: Overview of subprocess types in Activiti - Regular, Event, Ad-hoc, and Transaction subprocesses
+title: "SubProcesses Overview"
+description: "Complete overview of subprocess types in Activiti - Regular, Event, Ad-hoc, and Transaction subprocesses for organizing complex workflows."
 ---
 
 # SubProcesses Overview

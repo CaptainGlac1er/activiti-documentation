@@ -1,7 +1,8 @@
 ---
 sidebar_label: Error Handling
-slug: /bpmn/advanced/error-handing
-description: Complete guide to error handling in Activiti - boundary events, error propagation, and exception mapping
+slug: /bpmn/advanced/error-handling
+title: "Error Handling"
+description: "Complete guide to error handling in Activiti - boundary events, error propagation, exception mapping, and graceful failure management."
 ---
 
 # Error Handling

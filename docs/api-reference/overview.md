@@ -1,12 +1,27 @@
 ---
 sidebar_label: API Reference
 slug: /api-reference
-description: Complete reference for all Activiti API interfaces, classes, and methods.
+title: "API Reference"
+description: "Complete reference for all Activiti API interfaces, classes, methods, and payload builders. Essential guide for developers implementing workflow automation."
 ---
 
 # API Reference
 
-Complete reference for all Activiti API interfaces, classes, and methods.
+**Community-Maintained Guide**
+
+Complete reference for all Activiti API interfaces, classes, and methods. This documentation serves as a community-contributed guide for developers implementing workflow automation solutions.
+
+> **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
+
+## Quick Navigation
+
+| API Category | Interface | Purpose |
+|--------------|-----------|---------|
+| **Process Management** | `ProcessRuntime` | Start, query, and manage process instances |
+| **Process Administration** | `ProcessAdminRuntime` | Admin-level process operations |
+| **Task Management** | `TaskRuntime` | Query and complete user tasks |
+| **Task Administration** | `TaskAdminRuntime` | Admin-level task operations |
+| **Repository** | `RepositoryRuntime` | Manage process definitions and deployments |
 
 ## Table of Contents
 

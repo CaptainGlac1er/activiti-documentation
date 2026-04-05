@@ -1,12 +1,13 @@
 ---
 sidebar_label: Overview
 slug: /api-reference/activiti-api/overview
-description: Overview of Activiti API modules for process and task management.
+title: "Activiti API Reference"
+description: "Complete overview of Activiti API modules for process and task management with type-safe interfaces and Spring integration."
 ---
 
 # Activiti API Reference
 
-The Activiti API provides a modern, type-safe interface for process automation.
+The Activiti API provides a modern, type-safe interface for process automation, enabling developers to build robust workflow solutions with clean, intuitive APIs.
 
 ## 📦 Modules
 

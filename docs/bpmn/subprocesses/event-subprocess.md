@@ -1,7 +1,8 @@
 ---
 sidebar_label: Event SubProcess
 slug: /bpmn/subprocesses/event-subprocess
-description: Complete guide to Event SubProcesses in Activiti - interrupting and non-interrupting event handling
+title: "Event SubProcess"
+description: "Complete guide to Event SubProcesses in Activiti - interrupting and non-interrupting event handling for exceptions and compensation."
 ---
 
 # Event SubProcess

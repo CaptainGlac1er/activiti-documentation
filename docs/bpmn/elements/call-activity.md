@@ -1,12 +1,13 @@
 ---
 sidebar_label: Call Activity
 slug: /bpmn/elements/call-activity
-description: Guide to CallActivity elements for reusing global tasks and sub-processes
+title: "Call Activity"
+description: "Complete guide to CallActivity elements for reusing global tasks and sub-processes with variable mapping and dynamic selection."
 ---
 
 # Call Activity
 
-Call Activities **reference and execute** global tasks or sub-processes, enabling process modularity and reuse.
+Call Activities **reference and execute** global tasks or sub-processes, enabling process modularity, reuse, and better organization of complex workflows.
 
 ## 📋 Overview
 

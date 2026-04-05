@@ -1,7 +1,8 @@
 ---
 sidebar_label: Process Runtime
 slug: /api-reference/activiti-api/process-runtime
-description: Activiti API module documentation.
+title: "Process Runtime API"
+description: "Complete documentation for the activiti-api-process-runtime module - runtime APIs for process execution, management, and monitoring."
 ---
 
 # Activiti API Process Runtime Module

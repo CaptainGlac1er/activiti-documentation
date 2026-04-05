@@ -1,7 +1,8 @@
 ---
 sidebar_label: Event-Based Gateway
 slug: /bpmn/gateways/event-gateway
-description: Complete guide to Event-Based Gateways in Activiti - routing based on which event occurs first
+title: "Event-Based Gateway"
+description: "Complete guide to Event-Based Gateways in Activiti - routing process flow based on which event (message, timer, signal) occurs first."
 ---
 
 # Event-Based Gateway

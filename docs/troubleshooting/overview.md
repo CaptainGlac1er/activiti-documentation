@@ -1,12 +1,17 @@
 ---
 sidebar_label: Overview
 slug: /troubleshooting/overview
-description: Comprehensive guide for diagnosing and resolving common issues with Activiti API.
+title: "Troubleshooting Guide"
+description: "Comprehensive guide for diagnosing and resolving common issues with Activiti API in development and production environments."
 ---
 
 # Troubleshooting Guide
 
-Comprehensive guide for diagnosing and resolving common issues with Activiti API.
+**Community-Maintained Guide**
+
+This guide provides systematic approaches to diagnose and resolve common issues encountered when working with Activiti API.
+
+> **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
 
 ## Table of Contents
 
@@ -26,15 +31,16 @@ Comprehensive guide for diagnosing and resolving common issues with Activiti API
 
 ### 1. Enable Debug Logging
 
-**Quick Fix:**
+Activate detailed logging to trace workflow execution:
+
+**application.properties:**
 ```properties
-# application.properties
 logging.level.org.activiti=DEBUG
 logging.level.org.flowable=DEBUG
 logging.level.org.activiti.engine.impl=DEBUG
 ```
 
-**YAML Configuration:**
+**application.yml:**
 ```yaml
 logging:
   level:
@@ -43,10 +49,10 @@ logging:
     org.activiti.engine.impl: DEBUG
 ```
 
-**What You'll See:**
+**Output includes:**
 - Process instance lifecycle events
-- Task creation and completion
-- Variable changes
+- Task creation and completion details
+- Variable modifications
 - Database operations
 - Transaction boundaries
 

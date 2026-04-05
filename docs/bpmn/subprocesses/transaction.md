@@ -1,7 +1,8 @@
 ---
 sidebar_label: Transaction
 slug: /bpmn/subprocesses/transaction
-description: Complete guide to Transaction SubProcesses in Activiti - all-or-nothing atomic operations
+title: "Transaction SubProcess"
+description: "Complete guide to Transaction SubProcesses in Activiti - all-or-nothing atomic operations with compensation and rollback support."
 ---
 
 # Transaction SubProcess

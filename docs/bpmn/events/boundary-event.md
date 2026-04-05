@@ -1,7 +1,8 @@
 ---
 sidebar_label: Boundary Event
 slug: /bpmn/events/boundary-event
-description: Complete guide to Boundary Events in Activiti - exception handling at activity level
+title: "Boundary Event"
+description: "Complete guide to Boundary Events in Activiti - exception handling at activity level with interrupting and non-interrupting modes."
 ---
 
 # Boundary Event
