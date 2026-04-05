@@ -8,7 +8,7 @@ description: Overview of core common utilities and shared modules.
 
 Core common modules provide shared utilities and Spring integration support.
 
-## 📦 Modules
+## Modules
 
 ### Utilities
 - [Common Util](./common-util) - Shared utilities
@@ -32,7 +32,7 @@ Core common modules provide shared utilities and Spring integration support.
 - [Spring Security](./spring-security) - Security integration
 - [Spring Security Policies](./spring-security-policies) - Policy management
 
-## 🎯 Use Cases
+## Use Cases
 
 - **Testing**: Use `core-test` for unit and integration tests
 - **Connectors**: Build custom integrations with connector framework

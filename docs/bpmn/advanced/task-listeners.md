@@ -9,7 +9,7 @@ description: "Complete guide to task listeners in Activiti for user task lifecyc
 
 Task listeners allow you to **execute custom logic at specific points** in the lifecycle of a user task. They are essential for notifications, auditing, dynamic task configuration, and integration with external systems.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <userTask id="approvalTask" name="Approval">
@@ -34,12 +34,12 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 ```
 
 **Key Benefits:**
-- ✅ Hook into task lifecycle events
-- ✅ Send notifications
-- ✅ Dynamic task configuration
-- ✅ Audit logging
-- ✅ Integration with external systems
-- ✅ Available for User Tasks only
+- Hook into task lifecycle events
+- Send notifications
+- Dynamic task configuration
+- Audit logging
+- Integration with external systems
+- Available for User Tasks only
 
 **Important Attributes:**
 - `event` - The event type (create, assignment, complete, delete, all)
@@ -51,7 +51,7 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 - `customPropertiesResolverExpression` - Custom properties resolver expression
 - `customPropertiesResolverDelegateExpression` - Custom properties resolver delegate expression
 
-## 🎯 Supported Events
+## Supported Events
 
 Task listeners support **four lifecycle events**:
 
@@ -89,7 +89,7 @@ Task Lifecycle
 └─────────────┘
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### Using Class
 
@@ -142,7 +142,7 @@ Execute a method call directly:
 - Method must be accessible
 - Useful for simple operations
 
-## 🔧 Implementation
+## Implementation
 
 ### Basic TaskListener
 
@@ -213,7 +213,7 @@ public class ComprehensiveTaskListener implements TaskListener {
 }
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Task Creation Notification
 
@@ -503,7 +503,7 @@ public class UniversalTaskHandler implements TaskListener {
 </userTask>
 ```
 
-## 🔄 Event-Specific Patterns
+## Event-Specific Patterns
 
 ### Create Event Patterns
 
@@ -643,7 +643,7 @@ public class TaskCleanupListener implements TaskListener {
 }
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 ### 1. Keep Listeners Focused
 
@@ -743,7 +743,7 @@ public class AssignmentNotificationListener implements TaskListener {
 }
 ```
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. Modifying Task During Iteration
 
@@ -841,7 +841,7 @@ public class EventAwareListener implements TaskListener {
 }
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Listener Not Firing
 
@@ -874,7 +874,7 @@ public class EventAwareListener implements TaskListener {
 3. Cache frequently accessed data
 4. Use appropriate event (don't use 'all' if not needed)
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [User Task](../elements/user-task.md) - User task configuration
 - [Execution Listeners](../common-features.md#execution-listeners) - Activity-level listeners

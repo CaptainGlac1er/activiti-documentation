@@ -9,7 +9,7 @@ description: "Complete guide to BPMN event elements for triggers, exceptions, an
 
 Events represent **something that happens** during the execution of a process. They can trigger processes, interrupt activities, or signal completions.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <startEvent id="start1" name="Process Start"/>
@@ -17,10 +17,10 @@ Events represent **something that happens** during the execution of a process. T
 <endEvent id="end1" name="Process End"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Enhanced event handling and subscriptions
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Enhanced event handling and subscriptions
 
-## 🎯 Event Categories
+## Event Categories
 
 ### By Position in Process
 
@@ -47,7 +47,7 @@ Events represent **something that happens** during the execution of a process. T
 8. **Terminate Events** - Immediate termination
 9. **Cancel Events** - Sub-process cancellation
 
-## 🔧 Event Definitions
+## Event Definitions
 
 ### Message Event Definition
 
@@ -135,7 +135,7 @@ Events represent **something that happens** during the execution of a process. T
 <terminateEventDefinition/>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Start Event Variations
 
@@ -330,7 +330,7 @@ Events represent **something that happens** during the execution of a process. T
 </eventSubProcess>
 ```
 
-## 🔍 Activiti Customizations
+## Activiti Customizations
 
 ### Message Correlation
 
@@ -405,7 +405,7 @@ runtimeService.signalEventReceived("globalSignal",
 throw new ActivitiException("PAY001", "Payment failed");
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use Appropriate Event Types:** Match event to use case
 2. **Define Clear Messages:** Use descriptive message names
@@ -418,7 +418,7 @@ throw new ActivitiException("PAY001", "Payment failed");
 9. **Message Correlation:** Design correlation keys carefully
 10. **Document Events:** Explain event purposes
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Uncorrelated Messages:** Messages without proper correlation
 - **Timer Memory:** Too many pending timers consume memory
@@ -428,7 +428,7 @@ throw new ActivitiException("PAY001", "Payment failed");
 - **Interrupting vs Non-Interrupting:** Wrong choice causes issues
 - **Link Event Scope:** Links only work within same process
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Sending Messages
 
@@ -477,7 +477,7 @@ public void execute(DelegateExecution execution) {
 }
 ```
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Start Events](./start-event.md)
 - [Intermediate Events](./intermediate-events.md)

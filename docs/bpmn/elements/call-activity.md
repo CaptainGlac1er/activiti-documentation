@@ -9,7 +9,7 @@ description: "Complete guide to CallActivity elements for reusing global tasks a
 
 Call Activities **reference and execute** global tasks or sub-processes, enabling process modularity, reuse, and better organization of complex workflows.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <callActivity id="call1" name="Call SubProcess" calledElement="subProcessKey">
@@ -20,12 +20,12 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 </callActivity>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Variable mapping, dynamic selection
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Variable mapping, dynamic selection
 
 **Important:** The `calledElement` attribute is a **standard BPMN attribute** (not prefixed with `activiti:`). It references the key of a deployed process or global task.
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Called Element** - Reference to global task/sub-process
@@ -40,7 +40,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 - **Custom Properties** - Metadata extension
 - **Execution Listeners** - Lifecycle hooks
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### Static Called Element
 
@@ -82,7 +82,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 - `sourceExpression` - Expression to evaluate in source scope
 - `target` - Variable name in target scope
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Async Execution
 
@@ -121,7 +121,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 </callActivity>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Simple Sub-Process Call
 
@@ -207,7 +207,7 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
               calledElement="shippingProcess"/>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Starting Called Process
 
@@ -229,7 +229,7 @@ runtimeService.setVariable(executionId, "inputData", data);
 Object output = runtimeService.getVariable(executionId, "outputData");
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Reuse Common Logic:** Extract repeated flows to sub-processes
 2. **Clear Naming:** Use descriptive called element keys
@@ -240,7 +240,7 @@ Object output = runtimeService.getVariable(executionId, "outputData");
 7. **Async for Long Runs:** Prevent blocking parent process
 8. **Test Independently:** Verify sub-processes separately
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Circular References:** Sub-process calling parent
 - **Missing Variables:** Required inputs not provided
@@ -249,7 +249,7 @@ Object output = runtimeService.getVariable(executionId, "outputData");
 - **Variable Scope:** Understanding inheritance
 - **Transaction Boundaries:** Cross-process transactions
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [SubProcesses](../subprocesses/regular-subprocess.md)
 - [Multi-Instance](../advanced/multi-instance.md)

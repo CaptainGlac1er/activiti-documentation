@@ -8,7 +8,7 @@ description: Complete guide to connectors in Activiti for external system integr
 
 Connectors in Activiti provide a **declarative way to integrate with external systems** from your BPMN processes. They enable you to call APIs, send emails, process data, and perform external operations using **JSON definitions** instead of writing custom Java code.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <serviceTask id="processImage" 
@@ -17,13 +17,13 @@ Connectors in Activiti provide a **declarative way to integrate with external sy
 ```
 
 **Key Benefits:**
-- ✅ **No Java Code Required** - Configure integrations declaratively
-- ✅ **Reusable** - Define once, use across multiple processes
-- ✅ **Type-Safe** - Input/output validation via JSON schema
-- ✅ **Testable** - Easy to mock and test
-- ✅ **Simple Syntax** - Just reference connector in `implementation` attribute
+- **No Java Code Required** - Configure integrations declaratively
+- **Reusable** - Define once, use across multiple processes
+- **Type-Safe** - Input/output validation via JSON schema
+- **Testable** - Easy to mock and test
+- **Simple Syntax** - Just reference connector in `implementation` attribute
 
-## 🎯 What Are Connectors?
+## What Are Connectors?
 
 Connectors are **JSON-defined integration components** that bridge your BPMN processes with external systems. Each connector defines one or more **actions** that can be invoked from service tasks using a simple `implementation` attribute.
 
@@ -58,7 +58,7 @@ Connectors are **JSON-defined integration components** that bridge your BPMN pro
 └─────────────────┘
 ```
 
-## 📁 Connector Definition Structure
+## Connector Definition Structure
 
 ### Basic Structure
 
@@ -85,9 +85,9 @@ Connectors are defined in **JSON files** placed in `classpath:/connectors/`:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | String | ✅ | Unique identifier (used internally) |
-| `name` | String | ✅ | **Used in BPMN** - Reference as `"name.action-name"` |
-| `actions` | Object | ✅ | Map of action definitions |
+| `id` | String | | Unique identifier (used internally) |
+| `name` | String | | **Used in BPMN** - Reference as `"name.action-name"` |
+| `actions` | Object | | Map of action definitions |
 
 ### Optional Fields
 
@@ -95,7 +95,7 @@ Connectors are defined in **JSON files** placed in `classpath:/connectors/`:
 |-------|------|-------------|
 | `description` | String | Connector description |
 
-## 🔧 Action Definitions
+## Action Definitions
 
 Each connector can define multiple **actions** (operations).
 
@@ -138,7 +138,7 @@ Supported variable types:
 - `object` - Complex objects (JSON)
 - `list` - Arrays/collections
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Image Processing Connector
 
@@ -351,7 +351,7 @@ Supported variable types:
 </serviceTask>
 ```
 
-## 🔗 Using Connectors in BPMN
+## Using Connectors in BPMN
 
 ### Basic Usage
 
@@ -395,7 +395,7 @@ Connector outputs are **automatically set** as process variables:
 
 After execution, `approved` will be available as a process variable.
 
-## 🏗️ Creating Custom Connectors
+## Creating Custom Connectors
 
 ### Implementing the Connector Interface
 
@@ -468,7 +468,7 @@ public class MealsConnector implements Connector {
 }
 ```
 
-## 📂 Connector Configuration
+## Connector Configuration
 
 ### Location
 
@@ -505,7 +505,7 @@ public class ConnectorsConfiguration {
 }
 ```
 
-## 🔄 Variable Mapping
+## Variable Mapping
 
 ### Automatic Name Matching
 
@@ -558,7 +558,7 @@ Some connectors support expressions in variable mapping:
              implementation="Variable Mapping Expression Connector.variableMappingExpressionActionName"/>
 ```
 
-## 🧪 Testing Connectors
+## Testing Connectors
 
 ### Unit Testing
 
@@ -623,7 +623,7 @@ public class ProcessWithConnectorIT {
 }
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 ### 1. Use Meaningful Names
 
@@ -708,7 +708,7 @@ public IntegrationContext apply(IntegrationContext context) {
              activiti:async="true"/>
 ```
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. Name Mismatch
 
@@ -771,7 +771,7 @@ If process variable `count` is a String, the connector may fail.
 - Ensure connector Java bean is registered
 - Restart application after adding new connector
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Connector Not Found
 
@@ -818,7 +818,7 @@ If process variable `count` is a String, the connector may fail.
 - Implement caching where appropriate
 - Optimize connector Java implementation
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Service Task](../elements/service-task.md) - Using connectors in service tasks
 - [Integration Patterns](../integration/index.md) - Other integration approaches

@@ -32,7 +32,7 @@ This comprehensive guide provides proven patterns and recommendations for buildi
 
 **Principle:** Organize code by responsibility to improve maintainability and testability.
 
-**✅ Recommended Approach:**
+**Recommended Approach:**
 
 ```java
 // Service layer: Business logic orchestration
@@ -85,7 +85,7 @@ public class OrderService {
 
 **Principle:** Abstract process operations behind interfaces to enable testing and implementation swapping.
 
-**✅ Recommended Approach:**
+**Recommended Approach:**
 
 ```java
 // Interface: Define contract
@@ -124,7 +124,7 @@ public class ActivitiProcessRepository implements ProcessRepository {
 
 ### 3. Implement Domain-Driven Design
 
-**✅ DO:** Align processes with domain concepts
+**DO:** Align processes with domain concepts
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -165,7 +165,7 @@ public class PaymentContextService {
 
 ### 4. Use Anti-Corruption Layer
 
-**✅ DO:** Isolate external systems
+**DO:** Isolate external systems
 
 ```java
 @Service
@@ -195,7 +195,7 @@ public class ExternalSystemAdapter {
 
 ### 1. Implement Efficient Pagination
 
-**✅ DO:** Always use pagination for queries
+**DO:** Always use pagination for queries
 
 ```java
 @Service
@@ -234,7 +234,7 @@ Page<Task> allTasks = taskRuntime.tasks(Pageable.of(0, Integer.MAX_VALUE));
 
 ### 2. Use Async Processing
 
-**✅ DO:** Configure async for long-running tasks
+**DO:** Configure async for long-running tasks
 
 ```xml
 <!-- BPMN Configuration -->
@@ -248,7 +248,7 @@ Page<Task> allTasks = taskRuntime.tasks(Pageable.of(0, Integer.MAX_VALUE));
 </serviceTask>
 ```
 
-**✅ DO:** Implement async event listeners
+**DO:** Implement async event listeners
 
 ```java
 @Component
@@ -271,7 +271,7 @@ public class AsyncEventListener {
 
 ### 3. Implement Caching Strategy
 
-**✅ DO:** Cache frequently accessed data
+**DO:** Cache frequently accessed data
 
 ```java
 @Service
@@ -295,7 +295,7 @@ public class ProcessDefinitionService {
 }
 ```
 
-**✅ DO:** Use distributed cache for clustered environments
+**DO:** Use distributed cache for clustered environments
 
 ```java
 @Configuration
@@ -320,7 +320,7 @@ public class CacheConfig {
 
 ### 4. Optimize Variable Storage
 
-**✅ DO:** Store references, not large objects
+**DO:** Store references, not large objects
 
 ```java
 // Good: Store document reference
@@ -344,7 +344,7 @@ processRuntime.setVariables(
 
 ### 5. Batch Operations
 
-**✅ DO:** Use batch operations when available
+**DO:** Use batch operations when available
 
 ```java
 @Service
@@ -364,7 +364,7 @@ public class BatchTaskService {
 
 ### 6. Database Optimization
 
-**✅ DO:** Configure connection pool properly
+**DO:** Configure connection pool properly
 
 ```yaml
 # application.yml
@@ -378,7 +378,7 @@ spring:
       max-lifetime: 1800000
 ```
 
-**✅ DO:** Add indexes for frequently queried fields
+**DO:** Add indexes for frequently queried fields
 
 ```sql
 -- Example indexes for performance
@@ -393,7 +393,7 @@ CREATE INDEX idx_process_instance_status ON ACT_RU_EXECUTION(PROC_INST_ID_, SUSP
 
 ### 1. Implement Principle of Least Privilege
 
-**✅ DO:** Use appropriate runtime based on user role
+**DO:** Use appropriate runtime based on user role
 
 ```java
 @Service
@@ -428,7 +428,7 @@ public class TaskService {
 
 ### 2. Validate All Inputs
 
-**✅ DO:** Sanitize and validate user input
+**DO:** Sanitize and validate user input
 
 ```java
 @Service
@@ -467,7 +467,7 @@ public class SecureProcessService {
 
 ### 3. Implement Audit Logging
 
-**✅ DO:** Log all security-relevant events
+**DO:** Log all security-relevant events
 
 ```java
 @Component
@@ -504,7 +504,7 @@ public class SecurityAuditListener {
 
 ### 4. Secure API Endpoints
 
-**✅ DO:** Implement proper authorization
+**DO:** Implement proper authorization
 
 ```java
 @RestController
@@ -533,7 +533,7 @@ public class ProcessController {
 
 ### 5. Implement Rate Limiting
 
-**✅ DO:** Prevent abuse with rate limiting
+**DO:** Prevent abuse with rate limiting
 
 ```java
 @Configuration
@@ -562,7 +562,7 @@ public class RateLimitConfig {
 
 ### 1. Implement Comprehensive Error Handling
 
-**✅ DO:** Use specific exception types
+**DO:** Use specific exception types
 
 ```java
 @Service
@@ -601,7 +601,7 @@ public class RobustProcessService {
 
 ### 2. Implement Retry Logic
 
-**✅ DO:** Use retry for transient failures
+**DO:** Use retry for transient failures
 
 ```java
 @Service
@@ -635,7 +635,7 @@ public class RetryableProcessService {
 
 ### 3. Implement Compensation
 
-**✅ DO:** Handle failed processes with compensation
+**DO:** Handle failed processes with compensation
 
 ```java
 @Component
@@ -671,7 +671,7 @@ public class CompensationHandler {
 
 ### 4. Implement Circuit Breaker
 
-**✅ DO:** Protect against cascading failures
+**DO:** Protect against cascading failures
 
 ```java
 @Service
@@ -696,7 +696,7 @@ public class CircuitBreakerService {
 
 ### 1. Unit Testing
 
-**✅ DO:** Mock runtime dependencies
+**DO:** Mock runtime dependencies
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -730,7 +730,7 @@ class OrderServiceTest {
 
 ### 2. Integration Testing
 
-**✅ DO:** Test with real runtime in test database
+**DO:** Test with real runtime in test database
 
 ```java
 @SpringBootTest
@@ -778,7 +778,7 @@ class ProcessIntegrationTest {
 
 ### 3. Contract Testing
 
-**✅ DO:** Test API contracts
+**DO:** Test API contracts
 
 ```java
 @ExtendWith(SpringCloudContractVerifierExtension.class)
@@ -801,7 +801,7 @@ class ProcessControllerContractTest {
 
 ### 4. Performance Testing
 
-**✅ DO:** Test under load
+**DO:** Test under load
 
 ```java
 @SpringBootTest
@@ -842,7 +842,7 @@ class ProcessPerformanceTest {
 
 ### 1. Implement Health Checks
 
-**✅ DO:** Create comprehensive health indicators
+**DO:** Create comprehensive health indicators
 
 ```java
 @Component
@@ -879,7 +879,7 @@ public class ActivitiHealthIndicator implements HealthIndicator {
 
 ### 2. Implement Metrics
 
-**✅ DO:** Track key performance indicators
+**DO:** Track key performance indicators
 
 ```java
 @Component
@@ -910,7 +910,7 @@ public class ProcessMetrics {
 
 ### 3. Implement Distributed Tracing
 
-**✅ DO:** Add tracing to process execution
+**DO:** Add tracing to process execution
 
 ```java
 @Component
@@ -945,7 +945,7 @@ public class TracingProcessListener implements ProcessEventListener<ProcessStart
 
 ### 4. Implement Logging Best Practices
 
-**✅ DO:** Use structured logging
+**DO:** Use structured logging
 
 ```java
 @Service
@@ -988,7 +988,7 @@ public class LoggingService {
 
 ### 1. Project Structure
 
-**✅ DO:** Follow consistent structure
+**DO:** Follow consistent structure
 
 ```
 src/
@@ -1039,7 +1039,7 @@ src/
 
 ### 2. Naming Conventions
 
-**✅ DO:** Use descriptive names
+**DO:** Use descriptive names
 
 ```java
 // Good
@@ -1055,7 +1055,7 @@ v = processRuntime.variables(...);
 
 ### 3. Documentation
 
-**✅ DO:** Document complex logic
+**DO:** Document complex logic
 
 ```java
 /**
@@ -1085,7 +1085,7 @@ public ProcessInstance startOrderFulfillment(Order order) {
 
 ### 1. Subprocess Pattern
 
-**✅ DO:** Use subprocesses for complex logic
+**DO:** Use subprocesses for complex logic
 
 ```
 Main Process
@@ -1103,7 +1103,7 @@ Main Process
 
 ### 2. Error Handling Pattern
 
-**✅ DO:** Implement proper error handling
+**DO:** Implement proper error handling
 
 ```xml
 <sequenceFlow sourceRef="task1" targetRef="errorBoundary"/>
@@ -1119,7 +1119,7 @@ Main Process
 
 ### 3. Parallel Processing Pattern
 
-**✅ DO:** Use parallel gateways for concurrent tasks
+**DO:** Use parallel gateways for concurrent tasks
 
 ```
 Start Event
@@ -1135,7 +1135,7 @@ End Event
 
 ### 4. Conditional Flow Pattern
 
-**✅ DO:** Use exclusive gateways for decisions
+**DO:** Use exclusive gateways for decisions
 
 ```
 Start Event

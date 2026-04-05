@@ -9,7 +9,7 @@ description: "Complete guide to process variables, task variables, and variable 
 
 Variables in Activiti are used to **store and pass data** throughout the process lifecycle. Understanding variable scope is crucial for effective process design and data management.
 
-## 📋 Overview
+## Overview
 
 ```java
 // Setting a process variable
@@ -23,12 +23,12 @@ execution.setVariableLocal("subProcessData", data);
 ```
 
 **Key Concepts:**
-- ✅ **Process Variables** - Available throughout the entire process instance
-- ✅ **Local Variables** - Scoped to specific executions (subprocesses)
-- ✅ **Task Variables** - Associated with user tasks
-- ✅ **Transient Variables** - Temporary, not persisted to database
+- **Process Variables** - Available throughout the entire process instance
+- **Local Variables** - Scoped to specific executions (subprocesses)
+- **Task Variables** - Associated with user tasks
+- **Transient Variables** - Temporary, not persisted to database
 
-## 🎯 Variable Types
+## Variable Types
 
 ### Process Variables
 
@@ -115,7 +115,7 @@ execution.setTransientVariable("myVar", "temporary");
 - Useful for intermediate calculations
 - Better performance for temporary data
 
-## 📊 Variable Scope Hierarchy
+## Variable Scope Hierarchy
 
 ```
 Process Instance (Root Execution)
@@ -167,7 +167,7 @@ subExecution.getVariableLocal("myVar");   // Returns "subprocess" (local only)
 rootExecution.getVariable("myVar");       // Returns "process-level"
 ```
 
-## 🔧 Variable Operations
+## Variable Operations
 
 ### Setting Variables
 
@@ -257,7 +257,7 @@ execution.removeVariables();
 execution.removeVariablesLocal();
 ```
 
-## 💡 BPMN Variable Usage
+## BPMN Variable Usage
 
 ### Start Event with Variables
 
@@ -363,7 +363,7 @@ subExecution.setVariable("orderId", id);            // On process instance
 // orderId is still accessible (process variable)
 ```
 
-## 🔄 Variable Lifecycle
+## Variable Lifecycle
 
 ### 1. Process Start
 
@@ -417,7 +417,7 @@ historyService.createHistoricVariableInstanceQuery()
     .list();
 ```
 
-## 📊 Database Storage
+## Database Storage
 
 ### Runtime Variables
 
@@ -446,7 +446,7 @@ Same structure as runtime variables, plus:
 - `PROC_DEF_ID_` - Process definition ID
 - `REV_` - Revision number
 
-## 🎯 Best Practices
+## Best Practices
 
 ### 1. Use Meaningful Variable Names
 
@@ -531,7 +531,7 @@ Object var = execution.getVariable("specificVar", false);
 Object var = execution.getVariable("specificVar"); // fetchAll=true by default
 ```
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. Variable Shadowing Confusion
 
@@ -608,7 +608,7 @@ Map<String, Object> allVars = execution.getVariables();
 Object var = execution.getVariable("specificVar", false); // Don't fetch all
 ```
 
-## 🔍 Variable Inspection
+## Variable Inspection
 
 ### Runtime Inspection
 
@@ -644,7 +644,7 @@ List<HistoricVariableUpdate> updates = historyService
     .list();
 ```
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Expression Language](../../api-reference/core-common/expression-language.md) - Using variables in expressions
 - [Service Task](../elements/service-task.md) - Variable usage in delegates

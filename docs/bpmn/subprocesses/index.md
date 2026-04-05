@@ -9,7 +9,7 @@ description: "Complete overview of subprocess types in Activiti - Regular, Event
 
 SubProcesses in BPMN allow you to **group activities** into a single, collapsible unit. They help organize complex processes into manageable chunks and promote reusability.
 
-## 📋 Types of SubProcesses
+## Types of SubProcesses
 
 Activiti supports four types of subprocesses:
 
@@ -20,7 +20,7 @@ Activiti supports four types of subprocesses:
 | **Ad-hoc SubProcess** | Activities in arbitrary order | Flexible, user-driven workflows |
 | **Transaction** | All-or-nothing atomic unit | Ensuring data consistency |
 
-## 🔗 Documentation
+## Documentation
 
 - [Regular SubProcess](./regular-subprocess.md) - Embedded subprocesses
 - [Event SubProcess](./event-subprocess.md) - Event-triggered subprocesses

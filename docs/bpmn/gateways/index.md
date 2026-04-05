@@ -9,16 +9,16 @@ description: "Complete guide to BPMN gateway elements for process branching, mer
 
 Gateways control the **divergence and convergence of sequence flows** in a BPMN process. They determine which paths are taken based on conditions, parallel execution, or events.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <exclusiveGateway id="gateway1" name="Decision Point"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Enhanced condition evaluation
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Enhanced condition evaluation
 
-## 🎯 Gateway Types
+## Gateway Types
 
 ### 1. [Exclusive Gateway (XOR)](./exclusive-gateway.md)
 Only **one path** is taken based on conditions.
@@ -80,7 +80,7 @@ Advanced routing with **conditions and dependencies**.
 - Completion dependencies
 - Advanced flow control
 
-## 🔧 Common Features
+## Common Features
 
 ### Condition Expressions
 
@@ -134,7 +134,7 @@ Gateways work seamlessly with multi-instance activities:
 <parallelGateway id="join"/>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Exclusive Gateway with Multiple Conditions
 
@@ -236,7 +236,7 @@ Gateways work seamlessly with multi-instance activities:
 <serviceTask id="sendReminder" name="Send Reminder" activiti:async="true"/>
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Always Define Conditions:** Ensure all paths have clear conditions
 2. **Use Default Flows:** Provide fallback when no conditions match
@@ -249,7 +249,7 @@ Gateways work seamlessly with multi-instance activities:
 9. **Handle Timeouts:** Add timer events for long waits
 10. **Monitor Gateway Usage:** Track which paths are taken most
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Missing Conditions:** All flows should have conditions (except parallel)
 - **Unbalanced Gateways:** Split/join must match in type and count
@@ -259,7 +259,7 @@ Gateways work seamlessly with multi-instance activities:
 - **Parallel Without Join:** Lost synchronizations
 - **Event Gateway Misuse:** Wrong gateway type for scenario
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Inspecting Gateway Execution
 
@@ -286,7 +286,7 @@ DynamicBpmnService dynamicBpmnService = processEngine.getDynamicBpmnService();
 dynamicBpmnService.addSequenceFlow(processDefinitionId, "gateway1", "newTarget");
 ```
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Exclusive Gateway](./exclusive-gateway.md)
 - [Parallel Gateway](./parallel-gateway.md)

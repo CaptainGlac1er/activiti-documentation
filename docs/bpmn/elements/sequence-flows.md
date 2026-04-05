@@ -8,16 +8,16 @@ description: Complete guide to Sequence Flows in Activiti - connecting activitie
 
 Sequence Flows **connect flow elements** (activities, events, gateways) and define the order of execution in a BPMN process. They can include **conditions** that determine whether a path is taken.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <sequenceFlow id="flow1" sourceRef="task1" targetRef="task2"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Condition expressions, SpEL support
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Condition expressions, SpEL support
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Source and Target** - Connect two flow elements
@@ -31,7 +31,7 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 - **Variable Access** - Process variable conditions
 - **Complex Conditions** - Multiple criteria evaluation
 
-## 📝 Basic Syntax
+## Basic Syntax
 
 ### Simple Sequence Flow
 
@@ -61,7 +61,7 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 </sequenceFlow>
 ```
 
-## 🔧 Condition Expressions
+## Condition Expressions
 
 ### 1. Variable Comparison
 
@@ -131,7 +131,7 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 </sequenceFlow>
 ```
 
-## 🎯 Default Flows
+## Default Flows
 
 When using gateways with multiple outgoing flows, specify a **default flow** for when no conditions match:
 
@@ -158,7 +158,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
 - Default flow should NOT have a condition expression
 - Used when all other conditions evaluate to false or null
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Order Processing with Conditions
 
@@ -333,7 +333,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
 <sequenceFlow id="flow6" sourceRef="taskC" targetRef="parallelEnd"/>
 ```
 
-## 🔍 Condition Expression Syntax
+## Condition Expression Syntax
 
 ### Supported Operators
 
@@ -381,7 +381,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
 <conditionExpression>#{#service.checkCondition(data)}</conditionExpression>
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 ### 1. Clear Naming
 
@@ -444,7 +444,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
 </sequenceFlow>
 ```
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. Missing Default Flow
 
@@ -519,7 +519,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
 <conditionExpression>#{#orderService.shouldExpedite(order)}</conditionExpression>
 ```
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Exclusive Gateway](../gateways/exclusive-gateway.md) - XOR gateway with conditions
 - [Inclusive Gateway](../gateways/inclusive-gateway.md) - OR gateway with multiple paths

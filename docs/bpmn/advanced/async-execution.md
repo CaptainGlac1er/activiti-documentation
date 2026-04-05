@@ -9,7 +9,7 @@ description: "Complete guide to asynchronous execution in Activiti - background 
 
 Asynchronous execution allows activities to run in the **background** using Activiti's job executor, preventing blocking of process engine threads and improving scalability.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <serviceTask id="asyncTask" 
@@ -19,15 +19,15 @@ Asynchronous execution allows activities to run in the **background** using Acti
 ```
 
 **Key Benefits:**
-- ✅ Non-blocking execution
-- ✅ Better resource utilization
-- ✅ Improved scalability
-- ✅ Automatic retry on failure
-- ✅ Job persistence across restarts
+- Non-blocking execution
+- Better resource utilization
+- Improved scalability
+- Automatic retry on failure
+- Job persistence across restarts
 
-## 🎯 When to Use Async
+## When to Use Async
 
-### ✅ **Use Async For:**
+### **Use Async For:**
 - Long-running operations (> 1 second)
 - External system calls (APIs, databases)
 - Batch processing
@@ -42,7 +42,7 @@ Asynchronous execution allows activities to run in the **background** using Acti
 - Critical path activities requiring immediate completion
 - Operations that must complete within the same transaction
 
-## ⚙️ Configuration
+## Configuration
 
 ### Basic Async Task
 
@@ -86,7 +86,7 @@ Asynchronous execution allows activities to run in the **background** using Acti
 - `R3/PT1M;R2/PT5M` - Retry 3 times (1min), then 2 times (5min)
 - `R5/PT10S;R3/PT1M;R2/PT5M` - Progressive backoff strategy
 
-## 🔄 Async Execution Flow
+## Async Execution Flow
 
 ```
 Process Execution
@@ -127,7 +127,7 @@ Process Execution
 └─────────────────┘
 ```
 
-## 📊 Async on Different Elements
+## Async on Different Elements
 
 ### Service Task
 
@@ -198,7 +198,7 @@ Process Execution
 </subProcess>
 ```
 
-## 🔧 Async Executor Configuration
+## Async Executor Configuration
 
 ### Spring Boot Configuration
 
@@ -288,7 +288,7 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 - Better performance and scalability
 - Supports message queue mode for distributed setups
 
-## 📈 Job Management
+## Job Management
 
 ### Querying Jobs
 
@@ -331,7 +331,7 @@ managementService.setJobPriority(jobId, 10);
 
 **Note:** In Activiti 8, the `AsyncExecutor` automatically handles job acquisition and execution. Manual job locking/unlocking is typically not needed unless implementing custom execution strategies.
 
-## 🎯 Advanced Patterns
+## Advanced Patterns
 
 ### Pattern 1: Async After Duration
 
@@ -404,7 +404,7 @@ managementService.setJobLockTime(jobId, 60000); // 60 seconds
 </userTask>
 ```
 
-## 🔍 Monitoring and Debugging
+## Monitoring and Debugging
 
 ### Job Tables
 
@@ -447,7 +447,7 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
 
 **Note:** Activiti 8's `AsyncExecutor` provides better monitoring capabilities through Spring Boot Actuator when used with the Spring Boot starter.
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. **Too Many Async Tasks**
 ```xml
@@ -492,7 +492,7 @@ try {
 
 **Solution:** Throw exceptions to trigger retry or boundary events
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use Async for Long Operations:** Prevent blocking engine threads
 2. **Configure Retry Policies:** Handle transient failures gracefully
@@ -505,7 +505,7 @@ try {
 9. **Avoid Stateful Jobs:** Jobs should be idempotent and stateless
 10. **Document Async Behavior:** Explain why tasks are async
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Service Task](../elements/service-task.md) - Async service tasks
 - [Common Features](../common-features.md) - Listeners and extensions

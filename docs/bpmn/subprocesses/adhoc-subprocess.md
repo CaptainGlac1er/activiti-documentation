@@ -9,7 +9,7 @@ description: "Complete guide to Ad-hoc SubProcesses in Activiti - flexible, user
 
 Ad-hoc SubProcesses allow activities to be executed in **arbitrary order** based on user decisions or runtime conditions. Unlike regular subprocesses with fixed sequence flows, ad-hoc subprocesses provide **flexibility** for dynamic workflows.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <adHocSubProcess id="adHocProcess" name="Flexible Process">
@@ -21,10 +21,10 @@ Ad-hoc SubProcesses allow activities to be executed in **arbitrary order** based
 </adHocSubProcess>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Completion conditions, user-driven execution
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Completion conditions, user-driven execution
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Arbitrary Execution Order** - No fixed sequence
@@ -38,7 +38,7 @@ Ad-hoc SubProcesses allow activities to be executed in **arbitrary order** based
 - **Variable-Based Conditions** - Runtime evaluation
 - **User Interface Integration** - Task selection UI
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Basic Ad-hoc SubProcess
 
@@ -168,7 +168,7 @@ Define what happens to running activities when subprocess completes:
 </adHocSubProcess>
 ```
 
-## 💡 Complete Real-World Example
+## Complete Real-World Example
 
 ### Scenario: Project Onboarding Process
 
@@ -228,7 +228,7 @@ Define what happens to running activities when subprocess completes:
 - Process completes when 6+ core tasks are done
 - Remaining tasks are cancelled on completion
 
-## 🔧 Runtime API
+## Runtime API
 
 ### Getting Available Activities
 
@@ -269,7 +269,7 @@ boolean isComplete = runtimeService.isAdHocSubProcessComplete(executionId);
 boolean conditionMet = runtimeService.evaluateAdHocCompletionCondition(executionId);
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Clear Completion Conditions** - Make completion logic obvious
 2. **Meaningful Activity Names** - Users need to understand what each task does
@@ -279,7 +279,7 @@ boolean conditionMet = runtimeService.evaluateAdHocCompletionCondition(execution
 6. **Documentation** - Explain the flexible nature of the process
 7. **Testing** - Test various completion paths and scenarios
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Unclear Completion** - Users don't know when process is done
 - **Too Many Activities** - Overwhelming number of choices
@@ -289,7 +289,7 @@ boolean conditionMet = runtimeService.evaluateAdHocCompletionCondition(execution
 - **Inconsistent Assignment** - Tasks assigned to wrong users
 - **Testing Gaps** - Not testing all possible completion paths
 
-## 🎯 Use Cases
+## Use Cases
 
 ### 1. **Checklist Processes**
 - Onboarding checklists
@@ -311,7 +311,7 @@ boolean conditionMet = runtimeService.evaluateAdHocCompletionCondition(execution
 - Cross-functional reviews
 - Collaborative work
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Regular SubProcess](./regular-subprocess.md) - Fixed sequence subprocesses
 - [Event SubProcess](./event-subprocess.md) - Event-triggered subprocesses

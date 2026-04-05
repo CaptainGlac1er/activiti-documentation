@@ -8,7 +8,7 @@ description: Integration patterns and external system connectivity in Activiti
 
 This section covers **integration patterns** for connecting Activiti processes with external systems.
 
-## 📋 Overview
+## Overview
 
 Activiti provides multiple approaches for external system integration:
 
@@ -17,7 +17,7 @@ Activiti provides multiple approaches for external system integration:
 - **Message Events** - Event-driven integration
 - **REST API** - Direct engine interaction
 
-## 🔗 Integration Approaches
+## Integration Approaches
 
 ### 1. Connectors (Recommended)
 
@@ -30,13 +30,13 @@ Activiti provides multiple approaches for external system integration:
 ```
 
 **Advantages:**
-- ✅ No Java code required
-- ✅ Reusable across processes
-- ✅ Type-safe with validation
-- ✅ Easy to test and mock
-- ✅ Simple declarative syntax
+- No Java code required
+- Reusable across processes
+- Type-safe with validation
+- Easy to test and mock
+- Simple declarative syntax
 
-📖 **Learn more:** [Connectors](./connectors.md)
+**Learn more:** [Connectors](./connectors.md)
 
 ### 2. Service Tasks with Java Delegates
 
@@ -48,12 +48,12 @@ Activiti provides multiple approaches for external system integration:
 ```
 
 **Advantages:**
-- ✅ Full Java programming power
-- ✅ Complex business logic
-- ✅ Custom error handling
-- ✅ Direct framework integration
+- Full Java programming power
+- Complex business logic
+- Custom error handling
+- Direct framework integration
 
-📖 **Learn more:** [Service Task](../elements/service-task.md)
+**Learn more:** [Service Task](../elements/service-task.md)
 
 ### 3. Message Events
 
@@ -66,12 +66,12 @@ Activiti provides multiple approaches for external system integration:
 ```
 
 **Advantages:**
-- ✅ Loose coupling
-- ✅ Asynchronous processing
-- ✅ Event-driven design
-- ✅ External system triggers
+- Loose coupling
+- Asynchronous processing
+- Event-driven design
+- External system triggers
 
-📖 **Learn more:** [Intermediate Events](../events/intermediate-events.md#1-message-intermediate-events)
+**Learn more:** [Intermediate Events](../events/intermediate-events.md#1-message-intermediate-events)
 
 ### 4. REST API Integration
 
@@ -88,14 +88,14 @@ processInstance = runtimeService.createProcessInstanceQuery()
 ```
 
 **Advantages:**
-- ✅ HTTP-based integration
-- ✅ Language-agnostic
-- ✅ Direct engine access
-- ✅ Microservices friendly
+- HTTP-based integration
+- Language-agnostic
+- Direct engine access
+- Microservices friendly
 
-📖 **Learn more:** [Runtime API](../../api-reference/engine-api/runtime-service.md)
+**Learn more:** [Runtime API](../../api-reference/engine-api/runtime-service.md)
 
-## 🎯 Choosing the Right Approach
+## Choosing the Right Approach
 
 | Scenario | Recommended Approach |
 |----------|---------------------|
@@ -107,7 +107,7 @@ processInstance = runtimeService.createProcessInstanceQuery()
 | One-off custom integration | **Service Tasks** |
 | Asynchronous processing | **Message Events** or **Async Service Tasks** |
 
-## 📊 Integration Patterns
+## Integration Patterns
 
 ### Request-Reply Pattern
 
@@ -149,7 +149,7 @@ Process → External System → ... → Callback → Process
 
 **Implementation:** Message event for callback reception
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Connectors](./connectors.md) - Declarative integrations
 - [Service Task](../elements/service-task.md) - Java-based integrations

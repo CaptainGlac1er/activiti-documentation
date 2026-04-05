@@ -9,16 +9,16 @@ description: "Complete guide to ParallelGateway (AND) for concurrent execution a
 
 The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or waits for **all incoming paths** to complete before proceeding. It enables true parallelism in workflows.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <parallelGateway id="parallel" name="Parallel Processing"/>
 ```
 
 **BPMN 2.0 Symbol:** ⊞ (circle with plus)  
-**Activiti Extensions:** ✅ Complex parallel execution, multi-instance integration
+**Activiti Extensions:** Complex parallel execution, multi-instance integration
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Fork** - Split into parallel paths
@@ -33,7 +33,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 - **Execution Listeners** - Track parallel branches
 - **Complex Synchronization** - Advanced join patterns
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### Basic Parallel Gateway
 
@@ -90,7 +90,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <sequenceFlow id="m3" sourceRef="service3" targetRef="merge"/>
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Nested Parallel Gateways
 
@@ -147,7 +147,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <serviceTask id="asyncTask2" name="Async Task 2" activiti:async="true"/>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Order Processing Pipeline
 
@@ -277,7 +277,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <parallelGateway id="approvalJoin" name="All Approvals Received"/>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Monitoring Parallel Executions
 
@@ -311,7 +311,7 @@ taskService.complete(taskId2);
 // Process continues when all branches complete
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Balance Forks and Joins:** Ensure every split has a corresponding join
 2. **Use Async:** Prevent thread blocking in parallel branches
@@ -322,7 +322,7 @@ taskService.complete(taskId2);
 7. **Clear Naming:** Describe what's happening in parallel
 8. **Monitor Performance:** Track parallel execution times
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Unbalanced Gateways:** More splits than joins (or vice versa)
 - **Blocking Joins:** One slow branch delays everything
@@ -332,7 +332,7 @@ taskService.complete(taskId2);
 - **Shared State:** Parallel branches modifying same variables
 - **Missing Error Handling:** One failure stops all branches
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Gateways Overview](./index.md)
 - [Exclusive Gateway](./exclusive-gateway.md)

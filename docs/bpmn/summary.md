@@ -8,7 +8,7 @@ description: Quick reference guide to all BPMN elements supported by Activiti
 
 This page provides a **quick reference** to all BPMN 2.0 elements supported by Activiti, organized by category.
 
-## 📊 Element Categories
+## Element Categories
 
 ### Task Elements
 
@@ -105,7 +105,7 @@ This page provides a **quick reference** to all BPMN 2.0 elements supported by A
 | **Lane** | Swimlane division |
 | **Pool** | Participant separation |
 
-## 🔧 Common Activiti Extensions
+## Common Activiti Extensions
 
 ### Available on All Activities
 
@@ -156,7 +156,7 @@ This page provides a **quick reference** to all BPMN 2.0 elements supported by A
 | **resource** | External script |
 | **resultVariable** | Output |
 
-## 📋 Quick Comparison
+## Quick Comparison
 
 ### Task Selection Guide
 
@@ -192,20 +192,20 @@ This page provides a **quick reference** to all BPMN 2.0 elements supported by A
 | Exception | Error Event |
 | Timeout | Timer Boundary Event |
 
-## 🔍 Feature Matrix
+## Feature Matrix
 
 | Feature | User Task | Service Task | Script Task | Gateway | Event |
 |---------|-----------|--------------|-------------|---------|-------|
-| Async Execution | ✅ | ✅ | ✅ | ❌ | ✅ (catch) |
-| Multi-Instance | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Boundary Events | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Execution Listeners | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Skip Expression | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Field Injection | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Form Integration | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Retry Configuration | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Async Execution | | | | ❌ | (catch) |
+| Multi-Instance | | | | ❌ | ❌ |
+| Boundary Events | | | | ❌ | ❌ |
+| Execution Listeners | | | | | |
+| Skip Expression | | | | ❌ | ❌ |
+| Field Injection | ❌ | | ❌ | ❌ | ❌ |
+| Form Integration | | ❌ | ❌ | ❌ | ❌ |
+| Retry Configuration | ❌ | | | ❌ | ❌ |
 
-## 📚 Documentation Navigation
+## Documentation Navigation
 
 ### By Element Type
 
@@ -242,7 +242,7 @@ This page provides a **quick reference** to all BPMN 2.0 elements supported by A
 - **[Common Features](./common-features.md)** - Multi-instance, listeners, etc.
 - **[Process Extensions](./advanced/process-extensions.md)** - Variable mapping and configuration
 
-## 🎯 Getting Started
+## Getting Started
 
 1. **Read the [BPMN Overview](./index.md)** for introduction
 2. **Choose your element type** from this summary
@@ -251,7 +251,7 @@ This page provides a **quick reference** to all BPMN 2.0 elements supported by A
 5. **Learn about [Process Extensions](./advanced/process-extensions.md)** for variable management
 6. **Follow best practices** for production systems
 
-## 🔗 Related Resources
+## Related Resources
 
 - [BPMN 2.0 Specification](https://www.omg.org/spec/BPMN/2.0/)
 - [Activiti BPMN Model API](../api-reference/engine-api/bpmn-model.md)

@@ -9,7 +9,7 @@ description: "Complete overview of Activiti API modules for process and task man
 
 The Activiti API provides a modern, type-safe interface for process automation, enabling developers to build robust workflow solutions with clean, intuitive APIs.
 
-## 📦 Modules
+## Modules
 
 | Module | Description | Documentation |
 |--------|-------------|---------------|
@@ -21,14 +21,14 @@ The Activiti API provides a modern, type-safe interface for process automation, 
 | **Task Runtime** | Task management APIs | [View](./task-runtime) |
 | **API Implementation** | Implementation details | [View](./api-implementation) |
 
-## 🎯 Key Features
+## Key Features
 
 - **Type Safety**: Full TypeScript/Java type definitions
 - **Modern API**: Clean, intuitive interfaces
 - **Extensible**: Easy to customize and extend
 - **Spring Integration**: Seamless Spring Boot support
 
-## 📖 Getting Started
+## Getting Started
 
 1. Choose your API: **Process** or **Task**
 2. Review the **Model** documentation for data structures

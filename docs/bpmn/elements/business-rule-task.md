@@ -9,16 +9,16 @@ description: "Complete guide to BusinessRuleTask elements for executing business
 
 Business Rule Tasks execute **business rules** using rule engines like Drools or DMN (Decision Model and Notation), enabling separation of business logic from process flow.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <businessRuleTask id="ruleTask" name="Evaluate Rules" activiti:resultVariable="decisionResult"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ DMN integration, custom rule engines
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** DMN integration, custom rule engines
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Decision Table** - Rule definition
@@ -34,7 +34,7 @@ Business Rule Tasks execute **business rules** using rule engines like Drools or
 - **Skip Expression** - Conditional execution
 - **Execution Listeners** - Lifecycle hooks
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### DMN Implementation
 
@@ -94,7 +94,7 @@ Business Rule Tasks execute **business rules** using rule engines like Drools or
 </sequenceFlow>
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Async Execution
 
@@ -121,7 +121,7 @@ Business Rule Tasks execute **business rules** using rule engines like Drools or
 </businessRuleTask>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: DMN Credit Decision
 
@@ -158,7 +158,7 @@ Business Rule Tasks execute **business rules** using rule engines like Drools or
 </businessRuleTask>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Evaluating Rules
 
@@ -170,7 +170,7 @@ DecisionEvaluationResult result = evaluator.evaluateDecisionTableByKey("creditDe
     .evaluate();
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use DMN for Complex Decisions:** Leverage decision tables
 2. **Separate Rules from Process:** Maintain rules independently
@@ -181,7 +181,7 @@ DecisionEvaluationResult result = evaluator.evaluateDecisionTableByKey("creditDe
 7. **Use Result Variables:** Store decisions for audit
 8. **Handle Errors:** Add boundary events for rule failures
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Service Task](./service-task.md)
 - [DMN in Service Tasks](./service-task.md#dmn-decision)

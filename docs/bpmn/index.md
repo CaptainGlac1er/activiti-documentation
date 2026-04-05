@@ -8,7 +8,7 @@ description: Comprehensive guide to BPMN 2.0 elements supported by Activiti and 
 
 This guide provides a comprehensive overview of all BPMN 2.0 elements supported by Activiti, including **Activiti-specific customizations** and extensions that go beyond the standard BPMN 2.0 specification.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Activiti Extensions](#activiti-extensions)
@@ -19,22 +19,22 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 - [Data Objects](#data-objects)
 - [Common Features](#common-features)
 
-## 🎯 Overview
+## Overview
 
 Activiti fully supports the **BPMN 2.0 specification** while adding powerful extensions for enterprise workflow automation. The engine can parse, validate, execute, and visualize BPMN diagrams with both standard and custom elements.
 
 ### Key Features
 
-- ✅ **Full BPMN 2.0 compliance** - All standard elements supported
-- ✅ **Activiti extensions** - Custom properties and behaviors
-- ✅ **Multi-instance support** - Parallel and sequential iterations
-- ✅ **Boundary events** - Exception handling at activity level
-- ✅ **Execution listeners** - Hook into lifecycle events
-- ✅ **Field injection** - Dependency injection for delegates
-- ✅ **Async execution** - Background job processing
-- ✅ **Retry mechanisms** - Configurable job retry policies
+- **Full BPMN 2.0 compliance** - All standard elements supported
+- **Activiti extensions** - Custom properties and behaviors
+- **Multi-instance support** - Parallel and sequential iterations
+- **Boundary events** - Exception handling at activity level
+- **Execution listeners** - Hook into lifecycle events
+- **Field injection** - Dependency injection for delegates
+- **Async execution** - Background job processing
+- **Retry mechanisms** - Configurable job retry policies
 
-## 🔧 Activiti Extensions
+## Activiti Extensions
 
 Activiti extends BPMN 2.0 with several proprietary features that enhance workflow capabilities:
 
@@ -123,7 +123,7 @@ Configure retry policies for failed jobs:
 </serviceTask>
 ```
 
-## 📝 Task Elements
+## Task Elements
 
 Tasks represent work performed in a process. Activiti supports all standard BPMN task types:
 
@@ -185,7 +185,7 @@ Reference and execute global tasks or sub-processes.
 - Case support
 - Dynamic process selection
 
-## 🚦 Gateway Elements
+## Gateway Elements
 
 Gateways control the divergence and convergence of sequence flows.
 
@@ -225,7 +225,7 @@ Advanced routing with conditions and dependencies.
 - Activation conditions
 - Completion conditions
 
-## 🎪 Event Elements
+## Event Elements
 
 Events represent something that happens during process execution.
 
@@ -287,7 +287,7 @@ Events attached to activities for exception handling.
 - Signal boundary events
 - Compensation boundary events
 
-## 🔀 SubProcesses
+## SubProcesses
 
 Sub-processes group activities into logical units.
 
@@ -317,7 +317,7 @@ Activities executed in arbitrary order.
 - Completion conditions
 - User-driven activity selection
 
-## 📊 Data Objects
+## Data Objects
 
 Data objects represent information used or produced by the process.
 
@@ -327,7 +327,7 @@ Data objects represent information used or produced by the process.
 - Complex data types
 - Item definitions
 
-## 🔗 Common Features
+## Common Features
 
 All BPMN elements support these common Activiti features:
 
@@ -382,7 +382,7 @@ Define variables, mappings, and constants separately from BPMN:
 - Variable mapping for activities
 - Constants and configuration values
 
-## 📖 Next Steps
+## Next Steps
 
 - Start with [User Tasks](./elements/user-task.md) for human interactions
 - Explore [Service Tasks](./elements/service-task.md) for automation
@@ -390,7 +390,7 @@ Define variables, mappings, and constants separately from BPMN:
 - Understand [Events](./events/) for triggers and exceptions
 - Master [Process Extensions](./advanced/process-extensions.md) for variable management
 
-## 🛠️ Tools and Integration
+## Tools and Integration
 
 - **BPMN Model API** - Programmatic model manipulation
 - **BPMN Converter** - XML and JSON serialization

@@ -9,16 +9,16 @@ description: "Complete guide to ManualTask elements for tasks performed outside 
 
 Manual Tasks represent work that is performed **outside the workflow engine**, typically by a human operator using external tools or procedures. Unlike User Tasks, Manual Tasks do not create task entities in the engine.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <manualTask id="manual1" name="Manual Verification"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Execution listeners, documentation
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Execution listeners, documentation
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Documentation** - Manual procedures
@@ -31,7 +31,7 @@ Manual Tasks represent work that is performed **outside the workflow engine**, t
 - **Custom Properties** - Metadata extension
 - **Skip Expression** - Conditional execution
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### Basic Manual Task
 
@@ -61,7 +61,7 @@ Manual Tasks represent work that is performed **outside the workflow engine**, t
             activiti:documentation="Complete this task in the external system"/>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: External System Verification
 
@@ -89,7 +89,7 @@ Manual Tasks represent work that is performed **outside the workflow engine**, t
 </manualTask>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Completing Manual Tasks
 
@@ -101,7 +101,7 @@ taskService.complete(taskId);
 taskService.complete(taskId, Map.of("verified", true, "notes", "All items checked"));
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Clear Documentation:** Describe exact manual procedures
 2. **Execution Listeners:** Track when tasks start/complete
@@ -110,7 +110,7 @@ taskService.complete(taskId, Map.of("verified", true, "notes", "All items checke
 5. **Audit Trail:** Log manual task completion
 6. **Training:** Ensure users understand procedures
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [User Task](./user-task.md)
 - [Service Task](./service-task.md)

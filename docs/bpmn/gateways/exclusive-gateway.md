@@ -9,16 +9,16 @@ description: "Complete guide to ExclusiveGateway (XOR) for conditional branching
 
 The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on conditions evaluated on outgoing sequence flows. It's the most commonly used gateway for decision points.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <exclusiveGateway id="decision" name="Approval Decision"/>
 ```
 
 **BPMN 2.0 Symbol:** ⨉ (circle with X)  
-**Activiti Extensions:** ✅ Enhanced condition evaluation
+**Activiti Extensions:** Enhanced condition evaluation
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Condition Expressions** - Evaluate on outgoing flows
@@ -32,7 +32,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 - **Execution Listeners** - Track decision points
 - **History Tracking** - Audit which path was taken
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### Basic Exclusive Gateway
 
@@ -74,7 +74,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 <sequenceFlow id="continueFlow" sourceRef="mergeGateway" targetRef="nextTask"/>
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Complex Conditions
 
@@ -114,7 +114,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 </sequenceFlow>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Order Processing Decision
 
@@ -182,7 +182,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 </sequenceFlow>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Inspecting Gateway Decisions
 
@@ -206,7 +206,7 @@ List<HistoricSequenceFlowInstance> flows = historyService
     .list();
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Mutually Exclusive:** Ensure conditions don't overlap
 2. **Cover All Cases:** Use default flow for unmatched conditions
@@ -217,7 +217,7 @@ List<HistoricSequenceFlowInstance> flows = historyService
 7. **Use Expressions:** Leverage EL/SpEL for flexibility
 8. **History Level:** Enable history to track decisions
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Overlapping Conditions:** Multiple paths could be taken
 - **No Default Flow:** Unmatched conditions cause errors
@@ -226,7 +226,7 @@ List<HistoricSequenceFlowInstance> flows = historyService
 - **Performance:** Expensive condition evaluation
 - **Debugging:** Hard to trace which condition matched
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Gateways Overview](./index.md)
 - [Parallel Gateway](./parallel-gateway.md)

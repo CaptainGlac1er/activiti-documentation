@@ -35,14 +35,14 @@ HistoryService historyService = processEngine.getHistoryService();
 ```
 
 **Key Capabilities:**
-- ✅ Query historic process instances
-- ✅ Query historic task instances
-- ✅ Query historic activity instances
-- ✅ Query historic variable instances
-- ✅ Query historic details (variable updates, form properties)
-- ✅ Access process instance history logs
-- ✅ Retrieve historic identity links
-- ✅ Delete historic data
+- Query historic process instances
+- Query historic task instances
+- Query historic activity instances
+- Query historic variable instances
+- Query historic details (variable updates, form properties)
+- Access process instance history logs
+- Retrieve historic identity links
+- Delete historic data
 
 ---
 
@@ -1036,7 +1036,7 @@ public void investigateFailedProcesses(HistoryService historyService,
 
 ## Important Notes
 
-### ✅ Best Practices
+### Best Practices
 
 1. **Enable History in Configuration** - Set appropriate history level
 2. **Use Specific Queries** - Don't fetch all data unnecessarily

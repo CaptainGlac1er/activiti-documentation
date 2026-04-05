@@ -9,7 +9,7 @@ description: "Complete guide to Regular (Embedded) SubProcesses in Activiti - or
 
 Regular SubProcesses (also called **Embedded SubProcesses**) are containers that group related activities into a single, collapsible unit within a process. They help organize complex workflows and improve readability.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <subProcess id="subProcess1" name="Order Processing">
@@ -19,10 +19,10 @@ Regular SubProcesses (also called **Embedded SubProcesses**) are containers that
 </subProcess>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Multi-instance, listeners, boundary events
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Multi-instance, listeners, boundary events
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Activity Grouping** - Organize related tasks
@@ -37,7 +37,7 @@ Regular SubProcesses (also called **Embedded SubProcesses**) are containers that
 - **Extension Elements** - Custom metadata
 - **Variable Scope** - Isolated variable context
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Basic SubProcess
 
@@ -131,7 +131,7 @@ Hook into subprocess lifecycle:
 - `end` - When subprocess completes
 - `take` - When sequence flow is taken
 
-## 🔍 Variable Scope
+## Variable Scope
 
 SubProcesses have their own **variable scope**:
 
@@ -178,7 +178,7 @@ SubProcesses have their own **variable scope**:
 </subProcess>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Order Processing SubProcess
 
@@ -264,7 +264,7 @@ SubProcesses have their own **variable scope**:
 </process>
 ```
 
-## 🔧 Runtime API
+## Runtime API
 
 ### Querying SubProcess Instances
 
@@ -292,7 +292,7 @@ Map<String, Object> subprocessVars = runtimeService.getVariables(executionId);
 runtimeService.setVariable(processInstanceId, "sharedVariable", "value");
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Keep It Focused** - Each subprocess should have a single responsibility
 2. **Use Meaningful Names** - Clear subprocess names improve understanding
@@ -302,7 +302,7 @@ runtimeService.setVariable(processInstanceId, "sharedVariable", "value");
 6. **Add Boundary Events** - Handle exceptions at subprocess level
 7. **Scope Variables Properly** - Use local variables when appropriate
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Variable Scope Confusion** - Understanding which variables are local vs inherited
 - **Over-nesting** - Too many levels of subprocesses makes processes hard to follow
@@ -310,7 +310,7 @@ runtimeService.setVariable(processInstanceId, "sharedVariable", "value");
 - **Performance Issues** - Large subprocesses with many activities can slow execution
 - **Testing Difficulty** - Subprocesses can be harder to test in isolation
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Event SubProcess](./event-subprocess.md) - Event-triggered subprocesses
 - [Ad-hoc SubProcess](./adhoc-subprocess.md) - Flexible activity execution

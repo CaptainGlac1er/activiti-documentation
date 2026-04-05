@@ -9,7 +9,7 @@ description: "Complete guide to Intermediate Events in Activiti - catch and thro
 
 Intermediate Events occur **during process execution** between the start and end events. They can be **catch events** (waiting for something to happen) or **throw events** (triggering something to happen).
 
-## 📋 Overview
+## Overview
 
 ```xml
 <!-- Catch Event: Wait for message -->
@@ -23,10 +23,10 @@ Intermediate Events occur **during process execution** between the start and end
 </intermediateThrowEvent>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Multiple event types, expressions, async support
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Multiple event types, expressions, async support
 
-## 🎯 Key Features
+## Key Features
 
 ### Catch Events (Wait for Events)
 - **Message** - Wait for external message
@@ -44,7 +44,7 @@ Intermediate Events occur **during process execution** between the start and end
 - **Compensate** - Trigger compensation
 - **Escalation** - Throw escalation
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Message Intermediate Events
 
@@ -284,7 +284,7 @@ Trigger compensation (undo) operations:
 </intermediateThrowEvent>
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Non-Interrupting Events
 
@@ -326,7 +326,7 @@ Events that don't cancel the current activity:
 </userTask>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Order Processing with Timer
 
@@ -400,7 +400,7 @@ Events that don't cancel the current activity:
 </process>
 ```
 
-## 🔍 Runtime API
+## Runtime API
 
 ### Sending Messages
 
@@ -434,7 +434,7 @@ List<Job> timerJobs = managementService.createJobQuery()
     .list();
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use Messages for External Triggers** - Clear integration points
 2. **Use Signals for Internal Communication** - Cross-process coordination
@@ -444,7 +444,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 6. **Non-Interrupting** - For logging and notifications
 7. **Clear Naming** - Descriptive event and message names
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Message Not Correlating** - Check message name matches
 - **Timer Not Firing** - Verify duration format
@@ -453,7 +453,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 - **Link Name Mismatch** - Throw and catch must match
 - **Error Handling** - Not catching all error types
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Start Events](./start-event.md) - Process initiation
 - [End Events](./end-event.md) - Process termination

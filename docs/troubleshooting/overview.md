@@ -381,7 +381,7 @@ taskRuntime.createVariable(...); // Too late!
 
 **Correct Approach:**
 ```java
-// ✅ CORRECT
+// CORRECT
 taskRuntime.complete(
     TaskPayloadBuilder.complete()
         .withTaskId(taskId)
@@ -523,7 +523,7 @@ CREATE INDEX idx_var_exec ON ACT_RU_VARIABLE(EXECUTION_ID_);
 // ❌ Bad: Load all
 Page<Task> allTasks = taskRuntime.tasks(Pageable.of(0, Integer.MAX_VALUE));
 
-// ✅ Good: Paginate
+// Good: Paginate
 int pageSize = 50;
 for (int i = 0; i < totalItems; i += pageSize) {
     Page<Task> page = taskRuntime.tasks(Pageable.of(i, pageSize));

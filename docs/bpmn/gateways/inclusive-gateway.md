@@ -9,16 +9,16 @@ description: "Complete guide to Inclusive Gateways in Activiti - OR logic for se
 
 Inclusive Gateways implement **OR logic** in BPMN processes. Unlike Exclusive Gateways (XOR) that select exactly one path, Inclusive Gateways can select **one or more paths** simultaneously based on conditions.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <inclusiveGateway id="inclusiveGateway" name="OR Decision"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Condition expressions, default flow support
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Condition expressions, default flow support
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **OR Logic** - Select one or more outgoing paths
@@ -32,7 +32,7 @@ Inclusive Gateways implement **OR logic** in BPMN processes. Unlike Exclusive Ga
 - **Async Support** - Can be configured for async execution
 - **Execution Listeners** - Lifecycle hooks
 
-## 📝 How It Works
+## How It Works
 
 ### Split Behavior (Diverging)
 
@@ -49,7 +49,7 @@ When paths converge at an Inclusive Gateway:
 2. **Continue process flow**
 3. **Merge variables from all paths**
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Basic Inclusive Gateway
 
@@ -201,7 +201,7 @@ Process through multiple channels simultaneously:
 </process>
 ```
 
-## 💡 Complete Real-World Examples
+## Complete Real-World Examples
 
 ### Example 1: Order Fulfillment with Multiple Options
 
@@ -331,7 +331,7 @@ Process through multiple channels simultaneously:
 - Process waits for ALL selected approvals to complete
 - Flexible approval routing based on request type
 
-## 🔧 Runtime API
+## Runtime API
 
 ### Querying Inclusive Gateway Executions
 
@@ -352,7 +352,7 @@ for (Execution execution : gatewayExecutions) {
 }
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Clear Conditions** - Make conditions mutually understandable
 2. **Default Flow** - Always define a default flow to prevent stalls
@@ -362,7 +362,7 @@ for (Execution execution : gatewayExecutions) {
 6. **Testing** - Test all condition combinations
 7. **Documentation** - Document which conditions can be true simultaneously
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **No Conditions True** - Process stalls without default flow
 - **Variable Conflicts** - Different paths setting same variables
@@ -372,7 +372,7 @@ for (Execution execution : gatewayExecutions) {
 - **Performance Issues** - Too many parallel executions
 - **Testing Gaps** - Not testing all condition combinations
 
-## 🔍 Inclusive vs Other Gateways
+## Inclusive vs Other Gateways
 
 | Feature | Inclusive | Exclusive | Parallel |
 |---------|-----------|-----------|----------|
@@ -382,7 +382,7 @@ for (Execution execution : gatewayExecutions) {
 | **Join Behavior** | Wait for selected | N/A | Wait for all |
 | **Default Flow** | Optional but recommended | Required if no match | Not applicable |
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Exclusive Gateway](./exclusive-gateway.md) - XOR logic (one path)
 - [Parallel Gateway](./parallel-gateway.md) - AND logic (all paths)

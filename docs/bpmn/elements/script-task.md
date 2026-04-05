@@ -9,7 +9,7 @@ description: "Complete guide to ScriptTask elements for executing scripts in var
 
 Script Tasks allow you to **execute scripts** in various programming languages directly within your workflow, providing flexibility for lightweight automation and custom logic without requiring full Java classes.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <scriptTask id="script1" name="Calculate Total" activiti:scriptFormat="javascript">
@@ -17,10 +17,10 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 </scriptTask>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Multiple script languages and formats
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Multiple script languages and formats
 
-## 🎯 Supported Script Formats
+## Supported Script Formats
 
 ### 1. JavaScript (Nashorn/GraalVM)
 
@@ -73,7 +73,7 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 </scriptTask>
 ```
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### Script Format
 
@@ -123,7 +123,7 @@ Inject dependencies into script:
 </scriptTask>
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Async Execution
 
@@ -179,7 +179,7 @@ Handle script exceptions:
 </scriptTask>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Data Transformation
 
@@ -309,7 +309,7 @@ Handle script exceptions:
 </scriptTask>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Executing Scripts Programmatically
 
@@ -335,7 +335,7 @@ public class CustomScriptEngine implements ScriptEngine {
 }
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Choose Right Language:** Use appropriate script format for task
 2. **Keep Scripts Simple:** Complex logic belongs in service tasks
@@ -348,7 +348,7 @@ public class CustomScriptEngine implements ScriptEngine {
 9. **Version Control:** Track script changes
 10. **Result Variables:** Store outputs for downstream use
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Syntax Errors:** Script syntax varies by language
 - **Variable Scope:** Understand execution context
@@ -358,7 +358,7 @@ public class CustomScriptEngine implements ScriptEngine {
 - **Type Safety:** Dynamic typing can cause runtime errors
 - **Maintenance:** Scripts scattered across processes
 
-## 🔒 Security Considerations
+## Security Considerations
 
 ```xml
 <!-- Avoid executing untrusted code -->
@@ -375,7 +375,7 @@ public class CustomScriptEngine implements ScriptEngine {
 - Limit script execution time
 - Monitor script performance
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Service Task](./service-task.md)
 - [User Task](./user-task.md)

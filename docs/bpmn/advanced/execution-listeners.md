@@ -9,7 +9,7 @@ description: "Complete guide to Execution Listeners in Activiti - monitoring and
 
 Execution Listeners allow you to **execute custom logic** at specific points during process execution. They are triggered by events such as activity start, activity end, or sequence flow transitions.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <userTask id="myTask">
@@ -24,7 +24,7 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 ```
 
 **BPMN 2.0 Standard:** ❌ Activiti Extension  
-**Activiti Implementation:** ✅ Full support for start, end, and take events
+**Activiti Implementation:** Full support for start, end, and take events
 
 **Important Attributes:**
 - `event` - The event type (start, end, take)
@@ -36,7 +36,7 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 - `customPropertiesResolverExpression` - Custom properties resolver expression
 - `customPropertiesResolverDelegateExpression` - Custom properties resolver delegate expression
 
-## 🎯 Key Features
+## Key Features
 
 ### Supported Events
 - **`start`** - When activity/element execution begins
@@ -55,7 +55,7 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 - **Sequence Flow Level** - Listen to transitions
 - **Gateway Level** - Listen to gateway execution
 
-## 📝 Execution Listener Interface
+## Execution Listener Interface
 
 ### Basic Interface
 
@@ -75,7 +75,7 @@ public interface BaseExecutionListener extends Serializable {
 }
 ```
 
-## 🔧 Implementation Types
+## Implementation Types
 
 ### 1. Class Delegate (Recommended)
 
@@ -203,7 +203,7 @@ log.info "Task started by: ${execution.currentUserId}"
 </activiti:executionListener>
 ```
 
-## 📍 Placement Options
+## Placement Options
 
 ### 1. Process Level
 
@@ -316,7 +316,7 @@ Listen to event execution:
 </intermediateCatchEvent>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Comprehensive Process with Listeners
 
@@ -541,7 +541,7 @@ public class ConfigurableListener implements ExecutionListener {
 
 **Note:** Multiple listeners of the same event type are executed in declaration order.
 
-## 🔍 DelegateExecution API
+## DelegateExecution API
 
 ### Accessing Variables
 
@@ -626,7 +626,7 @@ public void notify(DelegateExecution execution) {
 }
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 ### 1. Keep Listeners Focused
 
@@ -704,7 +704,7 @@ public class SafeExecutionListener implements ExecutionListener {
   class="SLAMonitorListener"/>
 ```
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. Modifying Variables Incorrectly
 
@@ -783,7 +783,7 @@ public void notify(DelegateExecution execution) {
 }
 ```
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Task Listeners](./task-listeners.md) - Task-specific listeners
 - [Variables](./variables.md) - Variable scope and management

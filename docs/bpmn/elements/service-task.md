@@ -8,7 +8,7 @@ description: Complete guide to ServiceTask elements with Activiti customizations
 
 Service Tasks represent **automated work** performed by the system, such as calling external services, executing business logic, or integrating with other systems.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <serviceTask id="service1" name="Process Payment">
@@ -16,10 +16,10 @@ Service Tasks represent **automated work** performed by the system, such as call
 </serviceTask>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Rich integration capabilities
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Rich integration capabilities
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Implementation** - Service interface and operation
@@ -40,7 +40,7 @@ Service Tasks represent **automated work** performed by the system, such as call
 - **Skip Expression** - Conditional execution
 - **Retry Configuration** - Job retry policies
 
-## 📝 Implementation Types
+## Implementation Types
 
 ### 1. Class Implementation
 
@@ -234,7 +234,7 @@ Send emails:
 </serviceTask>
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Async Execution
 
@@ -361,7 +361,7 @@ Handle exceptions (boundary events are siblings, not children):
 </boundaryEvent>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Payment Processing with Retry
 
@@ -508,7 +508,7 @@ Handle exceptions (boundary events are siblings, not children):
 </boundaryEvent>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Executing Service Tasks
 
@@ -554,7 +554,7 @@ public class PaymentServiceTest {
 }
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use Async for Long Operations:** Prevent blocking the process engine
 2. **Configure Retry Policies:** Handle transient failures gracefully
@@ -567,7 +567,7 @@ public class PaymentServiceTest {
 9. **Idempotency:** Design services to handle retries safely
 10. **Monitoring:** Track job execution and failures
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Synchronous Long Operations:** Blocks process engine threads
 - **No Error Handling:** Uncaught exceptions fail the process
@@ -576,7 +576,7 @@ public class PaymentServiceTest {
 - **Stateful Delegates:** Thread safety issues in multi-tenant environments
 - **No Transaction Management:** Data inconsistency risks
 
-## 🔄 Error Handling Patterns
+## Error Handling Patterns
 
 ### Pattern 1: Try-Catch with Boundary Event
 
@@ -613,7 +613,7 @@ public class PaymentServiceTest {
 </serviceTask>
 ```
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [User Task](./user-task.md)
 - [Script Task](./script-task.md)

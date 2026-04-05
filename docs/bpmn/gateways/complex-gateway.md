@@ -9,16 +9,16 @@ description: "Complete guide to Complex Gateways in Activiti - advanced conditio
 
 Complex Gateways provide **advanced routing logic** that combines multiple conditions and behaviors. They support **DAN (Disjunctive AND)**, **DOR (Disjunctive OR)**, and **activation/cancellation** conditions, making them suitable for sophisticated process control scenarios.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <complexGateway id="complexGateway" name="Complex Decision"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Advanced condition expressions, activation/cancellation flows
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Advanced condition expressions, activation/cancellation flows
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Multiple Conditions** - Combine AND/OR logic
@@ -34,7 +34,7 @@ Complex Gateways provide **advanced routing logic** that combines multiple condi
 - **Execution Listeners** - Lifecycle hooks
 - **Variable-Based Conditions** - Dynamic evaluation
 
-## 📝 How It Works
+## How It Works
 
 ### Activation Conditions
 
@@ -52,7 +52,7 @@ Each outgoing sequence flow can have:
 | **Activation** | Start flow | Condition becomes true |
 | **Cancellation** | Stop flow | Condition becomes false |
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Basic Complex Gateway with Conditions
 
@@ -211,7 +211,7 @@ Execute at least one path:
 - If multiple conditions true → Multiple paths taken
 - DOR = "At least one"
 
-## 💡 Complete Real-World Examples
+## Complete Real-World Examples
 
 ### Example 1: Multi-Channel Marketing Campaign
 
@@ -423,7 +423,7 @@ Execute at least one path:
 - Complex conditions determine which reviews needed
 - All reviews must complete before finalization
 
-## 🔧 Runtime API
+## Runtime API
 
 ### Evaluating Complex Gateway Conditions
 
@@ -443,7 +443,7 @@ for (String activityId : runtimeService.getActiveActivityIds(processInstanceId))
 }
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Clear Conditions** - Well-documented condition logic
 2. **Avoid Overlap** - Minimize conflicting conditions
@@ -453,7 +453,7 @@ for (String activityId : runtimeService.getActiveActivityIds(processInstanceId))
 6. **Documentation** - Document complex routing logic
 7. **Simplification** - Consider if simpler gateway would work
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Too Complex** - Overly complicated condition logic
 - **Conflicting Conditions** - Conditions that contradict each other
@@ -463,7 +463,7 @@ for (String activityId : runtimeService.getActiveActivityIds(processInstanceId))
 - **Maintenance** - Complex logic difficult to update
 - **Testing Gaps** - Not all condition combinations tested
 
-## 🔍 Complex vs Other Gateways
+## Complex vs Other Gateways
 
 | Feature          | Complex          | Exclusive        | Parallel      | Inclusive      | Event-Based   |
 |------------------|------------------|------------------|---------------|----------------|---------------|
@@ -474,9 +474,9 @@ for (String activityId : runtimeService.getActiveActivityIds(processInstanceId))
 | **Complexity**   | High             | Low              | Low           | Medium         | Medium        |
 | **Use Case**     | Advanced routing | Simple decisions | Parallel work | Optional paths | Event waiting |
 
-## 🎯 When to Use Complex Gateway
+## When to Use Complex Gateway
 
-### ✅ Good Use Cases
+### Good Use Cases
 - Multi-department approval workflows
 - Dynamic routing based on multiple criteria
 - DAN/DOR behavior needed
@@ -490,7 +490,7 @@ for (String activityId : runtimeService.getActiveActivityIds(processInstanceId))
 - Waiting for events (use Event-Based)
 - Logic can be simplified
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Exclusive Gateway](./exclusive-gateway.md) - XOR logic (one path)
 - [Parallel Gateway](./parallel-gateway.md) - AND logic (all paths)

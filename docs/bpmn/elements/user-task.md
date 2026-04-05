@@ -8,7 +8,7 @@ description: Complete guide to UserTask elements with Activiti customizations fo
 
 User Tasks represent work items that require **human interaction** in a business process. They are the primary mechanism for modeling human activities in Activiti workflows.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <userTask id="task1" name="Review Document">
@@ -16,10 +16,10 @@ User Tasks represent work items that require **human interaction** in a business
 </userTask>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Rich customizations
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Rich customizations
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Name and Documentation** - Task identification
@@ -41,7 +41,7 @@ User Tasks represent work items that require **human interaction** in a business
 - **Business Calendar** - Working time calculation
 - **Category** - Task classification
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Assignee
 
@@ -262,7 +262,7 @@ List<Task> tasks = taskService.createTaskQuery()
     .list();
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Task Listeners
 
@@ -430,7 +430,7 @@ Define form fields:
 - `group` - Group selection
 - `enum` - Enumerated values
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Simple Approval Task
 
@@ -518,7 +518,7 @@ Define form fields:
 </boundaryEvent>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Querying User Tasks
 
@@ -576,7 +576,7 @@ taskService.complete(taskId, Map.of(
 taskService.complete(taskId);
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use Expressions:** Leverage EL/SpEL for dynamic assignments
 2. **Set Due Dates:** Always define deadlines for time-sensitive tasks
@@ -587,7 +587,7 @@ taskService.complete(taskId);
 7. **Multi-Instance:** Use for group approvals and reviews
 8. **Boundary Events:** Add timeout handling for long-running tasks
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **No Assignee or Candidates:** Task cannot be claimed
 - **Hard-coded Values:** Use expressions for flexibility
@@ -595,7 +595,7 @@ taskService.complete(taskId);
 - **Complex Skip Expressions:** Can make process hard to understand
 - **Too Many Listeners:** Performance impact
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Task Service API](../../api-reference/engine-api/task-service.md)
 - [Service Task](./service-task.md)

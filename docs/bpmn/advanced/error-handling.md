@@ -9,7 +9,7 @@ description: "Complete guide to error handling in Activiti - boundary events, er
 
 Error handling in Activiti allows you to **gracefully manage exceptions** and **BPMN errors** during process execution. It provides mechanisms to catch, propagate, and handle errors at different levels of the process hierarchy.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <!-- Define an error -->
@@ -26,10 +26,10 @@ Error handling in Activiti allows you to **gracefully manage exceptions** and **
 </endEvent>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Exception mapping, error propagation, uncaught error handling
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Exception mapping, error propagation, uncaught error handling
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Error Definitions** - Named errors with optional codes
@@ -45,7 +45,7 @@ Error handling in Activiti allows you to **gracefully manage exceptions** and **
 - **Error Events API** - Programmatic error throwing
 - **Activity Error Events** - Monitor error occurrences
 
-## 📝 Error Definitions
+## Error Definitions
 
 ### Basic Error Definition
 
@@ -74,7 +74,7 @@ Error handling in Activiti allows you to **gracefully manage exceptions** and **
 - `name` - Human-readable name (optional)
 - `errorCode` - Custom error code for matching (optional)
 
-## 🔧 Error Boundary Events
+## Error Boundary Events
 
 ### 1. Interrupting Error Boundary Event
 
@@ -95,9 +95,9 @@ Stops the activity and transfers control to error handler:
 ```
 
 **Behavior:**
-- ✅ Cancels the attached activity
-- ✅ Transfers to error handling path
-- ✅ Can be placed on any activity
+- Cancels the attached activity
+- Transfers to error handling path
+- Can be placed on any activity
 
 ### 2. Non-Interrupting Error Boundary Event
 
@@ -155,7 +155,7 @@ Handle different errors differently:
 
 **Important:** Only ONE boundary event can be attached per activity type. Use error codes for specificity.
 
-## 🚀 Throwing Errors
+## Throwing Errors
 
 ### 1. Error End Event
 
@@ -202,7 +202,7 @@ Or using Runtime API:
 runtimeService.throwError(executionId, "PaymentError");
 ```
 
-## 🔄 Exception Mapping
+## Exception Mapping
 
 Map Java exceptions to BPMN errors:
 
@@ -281,7 +281,7 @@ Map Java exceptions to BPMN errors:
 </serviceTask>
 ```
 
-## 📊 Error Propagation
+## Error Propagation
 
 ### 1. Subprocess Error Propagation
 
@@ -355,7 +355,7 @@ Errors bubble up through subprocess hierarchy:
 - Errors from called process propagate to caller
 - Can be caught by boundary event on call activity
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Payment Processing with Error Handling
 
@@ -559,7 +559,7 @@ Errors bubble up through subprocess hierarchy:
 </process>
 ```
 
-## 🔍 Runtime API
+## Runtime API
 
 ### Throwing Errors Programmatically
 
@@ -601,7 +601,7 @@ List<HistoricActivityInstance> errorActivities = historyService
     .list();
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 ### 1. Define Errors at Process Level
 
@@ -673,7 +673,7 @@ List<HistoricActivityInstance> errorActivities = historyService
 <error id="PaymentError" name="Payment Error" errorCode="PAY001"/>
 ```
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. Missing Error Definitions
 
@@ -760,7 +760,7 @@ List<HistoricActivityInstance> errorActivities = historyService
 </activiti:mapException>
 ```
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Boundary Events](../events/boundary-event.md) - Error boundary events
 - [End Events](../events/end-event.md) - Error end events

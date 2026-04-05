@@ -21,7 +21,7 @@ Activiti provides powerful extensions that can be applied to most BPMN elements:
 - **Skip Expressions** - Conditional execution
 - **Field Injection** - Dependency injection
 
-## 🔔 Execution Listeners
+## Execution Listeners
 
 Execute activities in the **background** using job executor.
 
@@ -91,7 +91,7 @@ Configure retry policy using `failedJobRetryTimeCycle` property:
 
 **Note:** This is one of the few properties that affects engine behavior. Most other `activiti:property` elements are for custom metadata only.
 
-## 🛡️ Boundary Events
+## Boundary Events
 
 Handle **exceptions and interruptions** at activity level.
 
@@ -160,7 +160,7 @@ Handle **exceptions and interruptions** at activity level.
 </serviceTask>
 ```
 
-## 🔧 Extension Elements
+## Extension Elements
 
 Add **custom metadata** to any BPMN element.
 
@@ -197,7 +197,7 @@ Add **custom metadata** to any BPMN element.
 </serviceTask>
 ```
 
-## ⏭️ Skip Expression
+## Skip Expression
 
 **Conditionally skip** activity execution.
 
@@ -219,7 +219,7 @@ Add **custom metadata** to any BPMN element.
 - Feature flags
 - A/B testing
 
-## 💉 Field Injection
+## Field Injection
 
 **Inject dependencies** into delegates (Service Tasks).
 
@@ -264,18 +264,18 @@ public class MyDelegate implements JavaDelegate {
 
 **Note:** Field injection only supports `stringValue` and `expression` attributes. For Spring bean injection, use `expression="#{beanName}"`.
 
-## 📊 Feature Availability Matrix
+## Feature Availability Matrix
 
 | Feature | User Task | Service Task | Script Task | Gateway | Event | SubProcess |
 |---------|-----------|--------------|-------------|---------|-------|------------|
-| Multi-Instance | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| Execution Listeners | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Task Listeners | ✅ (see [Task Listeners](./advanced/task-listeners.md)) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Async Execution | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Boundary Events | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| Skip Expression | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| Field Injection | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Extension Elements | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Multi-Instance | | | | ❌ | ❌ | |
+| Execution Listeners | | | | | | |
+| Task Listeners | (see [Task Listeners](./advanced/task-listeners.md)) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Async Execution | | | | ❌ | | |
+| Boundary Events | | | | ❌ | ❌ | |
+| Skip Expression | | | | ❌ | ❌ | |
+| Field Injection | ❌ | | ❌ | ❌ | ❌ | ❌ |
+| Extension Elements | | | | | | |
 
 ## Complete Example
 
@@ -336,7 +336,7 @@ public class MyDelegate implements JavaDelegate {
 8. **Extension Elements for Metadata:** Store custom info
 9. **Document Complex Configurations:** Explain why features are used
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [User Task](./elements/user-task.md)
 - [Service Task](./elements/service-task.md)

@@ -9,7 +9,7 @@ description: "Complete guide to Event SubProcesses in Activiti - interrupting an
 
 Event SubProcesses are **specialized subprocesses** that are triggered by events occurring within their scope. They're primarily used for **exception handling**, **compensation**, and **asynchronous event processing**.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <eventSubProcess id="errorHandler" triggeredByError="true">
@@ -19,10 +19,10 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 </eventSubProcess>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Multiple event types, interrupting/non-interrupting
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Multiple event types, interrupting/non-interrupting
 
-## 🎯 Key Features
+## Key Features
 
 ### Types of Event SubProcesses
 
@@ -36,7 +36,7 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 | **Signal** | Signal event | Global broadcast | Cross-process communication |
 | **Compensation** | Compensation event | Undo operations | Transaction rollback |
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Interrupting Event SubProcess
 
@@ -256,7 +256,7 @@ Handles compensation (undo) operations:
 </process>
 ```
 
-## 💡 Complete Real-World Example
+## Complete Real-World Example
 
 ### Scenario: E-Commerce Order Processing with Event Handling
 
@@ -360,7 +360,7 @@ Handles compensation (undo) operations:
 </process>
 ```
 
-## 🔧 Runtime API
+## Runtime API
 
 ### Sending Messages to Event SubProcess
 
@@ -393,7 +393,7 @@ Map<String, Object> vars = Map.of(
 runtimeService.startProcessInstanceByKey("orderProcess", vars);
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use Interrupting for Critical Events** - Errors, cancellations, timeouts
 2. **Use Non-Interrupting for Logging** - Audit trails, notifications
@@ -403,7 +403,7 @@ runtimeService.startProcessInstanceByKey("orderProcess", vars);
 6. **Avoid Nested Event SubProcesses** - Can become complex and hard to debug
 7. **Use Meaningful Names** - Clear event subprocess and event names
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Event Not Triggering** - Check message/signal/error definitions match
 - **Wrong Interrupting Setting** - Verify `isInterrupting` attribute
@@ -412,7 +412,7 @@ runtimeService.startProcessInstanceByKey("orderProcess", vars);
 - **Signal Broadcasting** - Signals trigger ALL matching event subprocesses
 - **Error Handling** - Ensure errors are properly defined and referenced
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Regular SubProcess](./regular-subprocess.md) - Embedded subprocesses
 - [Ad-hoc SubProcess](./adhoc-subprocess.md) - Flexible activity execution

@@ -9,7 +9,7 @@ description: "Complete guide to using *-extension.json files for variable mappin
 
 Process Extensions files (named `*-extension.json`) provide a **powerful mechanism** to define process variables, variable mappings, and constants **separately** from your BPMN diagram. This separation of concerns makes your processes more maintainable, testable, and flexible.
 
-## 📋 Overview
+## Overview
 
 ```json
 {
@@ -29,13 +29,13 @@ Process Extensions files (named `*-extension.json`) provide a **powerful mechani
 - Extensions file: `myProcess-extension.json`
 
 **Key Benefits:**
-- ✅ **Separation of Concerns** - Keep variable definitions separate from process flow
-- ✅ **Version Control** - Track changes to variables independently
-- ✅ **Reusability** - Share extension files across multiple processes
-- ✅ **Testing** - Easily modify variables without changing BPMN
-- ✅ **Collaboration** - Business analysts can work on extensions while developers work on BPMN
+- **Separation of Concerns** - Keep variable definitions separate from process flow
+- **Version Control** - Track changes to variables independently
+- **Reusability** - Share extension files across multiple processes
+- **Testing** - Easily modify variables without changing BPMN
+- **Collaboration** - Business analysts can work on extensions while developers work on BPMN
 
-## 🎯 When to Use Process Extensions
+## When to Use Process Extensions
 
 ### Use Extensions When:
 1. **Complex Variable Mappings** - Your process has many input/output variables
@@ -49,7 +49,7 @@ Process Extensions files (named `*-extension.json`) provide a **powerful mechani
 2. **Static Variables** - Variables never change
 3. **Quick Prototypes** - You need to iterate rapidly
 
-## 📝 File Structure
+## File Structure
 
 ### Basic Structure
 
@@ -71,17 +71,17 @@ Process Extensions files (named `*-extension.json`) provide a **powerful mechani
 
 | Component | Description | Required |
 |-----------|-------------|----------|
-| `id` | Process identifier (matches BPMN process id) | ✅ Yes |
+| `id` | Process identifier (matches BPMN process id) | Yes |
 | `name` | Optional display name | ❌ No |
-| `extensions` | Container for all extension definitions | ✅ Yes |
-| `Process_<id>` | Process-specific extensions | ✅ Yes |
+| `extensions` | Container for all extension definitions | Yes |
+| `Process_<id>` | Process-specific extensions | Yes |
 | `properties` | Process variable definitions | ❌ No |
 | `mappings` | Variable mappings for activities | ❌ No |
 | `constants` | Constant values for activities | ❌ No |
 
 ---
 
-## 🔧 Properties (Process Variables)
+## Properties (Process Variables)
 
 Properties define **process-level variables** with their types, default values, and requirements.
 
@@ -172,7 +172,7 @@ Properties define **process-level variables** with their types, default values, 
 
 ---
 
-## 🔄 Mappings (Variable Transformation)
+## Mappings (Variable Transformation)
 
 Mappings define how variables flow **into and out of** specific activities (tasks, service tasks, etc.).
 
@@ -543,7 +543,7 @@ Use `MAP_ALL_OUTPUTS` when you want to control inputs but automatically return a
 
 ---
 
-## 📌 Constants
+## Constants
 
 Constants define **fixed values** that can be used across multiple activities without being stored as process variables.
 
@@ -609,7 +609,7 @@ Constants define **fixed values** that can be used across multiple activities wi
 
 ---
 
-## 💡 Complete Real-World Example
+## Complete Real-World Example
 
 ### Scenario: E-Commerce Order Processing
 
@@ -833,7 +833,7 @@ Constants define **fixed values** that can be used across multiple activities wi
 
 ---
 
-## 🔍 Advanced Features
+## Advanced Features
 
 ### 1. Combining MAP_ALL with Explicit Mappings
 
@@ -941,7 +941,7 @@ Supported JSON Patch operations:
 
 ---
 
-## 🚀 Deployment and Usage
+## Deployment and Usage
 
 ### File Location
 
@@ -976,7 +976,7 @@ activiti:
 
 ---
 
-## 📊 Best Practices
+## Best Practices
 
 ### 1. **Naming Conventions**
 - Properties: `<variableName>-id`
@@ -1021,7 +1021,7 @@ Use expressions for environment-specific values:
 
 ---
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. **ID Mismatch**
 ```json
@@ -1031,7 +1031,7 @@ Use expressions for environment-specific values:
   ...
 }
 
-// ✅ Correct - Matches BPMN process id
+// Correct - Matches BPMN process id
 {
   "id": "orderProcess",
   ...
@@ -1047,7 +1047,7 @@ Use expressions for environment-specific values:
   "value": 99.99
 }
 
-// ✅ Correct - Types match
+// Correct - Types match
 {
   "name": "orderTotal",
   "type": "bigdecimal",
@@ -1065,7 +1065,7 @@ Use expressions for environment-specific values:
   // Missing "value"
 }
 
-// ✅ Correct - Provide default or ensure set at runtime
+// Correct - Provide default or ensure set at runtime
 {
   "name": "orderId",
   "type": "string",
@@ -1081,7 +1081,7 @@ Use expressions for environment-specific values:
   "nonExistentTask": { ... }
 }
 
-// ✅ Correct - Matches BPMN activity ID
+// Correct - Matches BPMN activity ID
 "mappings": {
   "paymentServiceTask": { ... }
 }
@@ -1089,7 +1089,7 @@ Use expressions for environment-specific values:
 
 ---
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Variable Scope](./variables.md) - Understanding variable lifecycle
 - [Service Tasks](../elements/service-task.md) - Using mappings with service tasks
@@ -1099,7 +1099,7 @@ Use expressions for environment-specific values:
 
 ---
 
-## 📚 Examples Repository
+## Examples Repository
 
 For more complete examples, see:
 - `Activiti/activiti-core/activiti-api-impl/activiti-api-process-runtime-impl/src/test/resources/processes/`
@@ -1109,4 +1109,4 @@ For more complete examples, see:
 
 **Version:** 8.7.2-SNAPSHOT  
 **Last Updated: 2026  
-**Feature Status:** ✅ Production Ready
+**Feature Status:** Production Ready

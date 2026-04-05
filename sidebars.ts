@@ -11,12 +11,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'doc',
       id: 'quickstart',
-      label: '🚀 Quick Start',
+      label: 'Quick Start',
       className: 'hero-quickstart',
     },
     {
       type: 'category',
-      label: '🏛️ Architecture',
+      label: 'Architecture',
       link: {type: 'doc', id: 'architecture/overview'},
       items: [
         'architecture/overview',
@@ -24,16 +24,14 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '📦 Getting Started',
-      link: {type: 'doc', id: 'getting-started/configuration'},
+          label: 'Getting Started',   link: {type: 'doc', id: 'getting-started/configuration'},
       items: [
         'getting-started/configuration',
       ],
     },
     {
       type: 'category',
-      label: '📋 BPMN Elements',
-      link: {type: 'doc', id: 'bpmn/index'},
+          label: 'BPMN Elements',   link: {type: 'doc', id: 'bpmn/index'},
       items: [
         {
           type: 'category',
@@ -114,7 +112,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '⚙️ Core Services',
+      label: 'Core Services',
       link: {type: 'generated-index', title: 'Engine Services Overview'},
       items: [
         'api-reference/engine-api/repository-service',
@@ -126,7 +124,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '🔌 API Reference',
+      label: 'API Reference',
       link: {type: 'doc', id: 'api-reference/overview'},
       items: [
         {
@@ -175,7 +173,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '🚀 Advanced Topics',
+      label: 'Advanced Topics',
       link: {type: 'doc', id: 'advanced/implementation-patterns'},
       items: [
         'advanced/implementation-patterns',
@@ -183,7 +181,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '✨ Best Practices',
+      label: 'Best Practices',
       link: {type: 'doc', id: 'best-practices/overview'},
       items: [
         'best-practices/overview',
@@ -191,7 +189,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '🐛 Troubleshooting',
+      label: 'Troubleshooting',
       link: {type: 'doc', id: 'troubleshooting/overview'},
       items: [
         'troubleshooting/overview',

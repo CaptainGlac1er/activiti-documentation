@@ -9,16 +9,16 @@ description: "Complete guide to Event-Based Gateways in Activiti - routing proce
 
 Event-Based Gateways route process flow based on **which event occurs first**. Unlike other gateways that use conditions, Event-Based Gateways wait for events (messages, timers, signals) and take the path corresponding to the first event that arrives.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <eventBasedGateway id="eventGateway" name="Wait for Event"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Message, timer, signal events, exclusive/inclusive modes
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Message, timer, signal events, exclusive/inclusive modes
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Event-Driven Routing** - Path selected by first occurring event
@@ -33,7 +33,7 @@ Event-Based Gateways route process flow based on **which event occurs first**. U
 - **Signal Broadcasting** - Global signal support
 - **Async Execution** - Non-blocking event waiting
 
-## 📝 How It Works
+## How It Works
 
 ### Split Behavior (Diverging)
 
@@ -51,7 +51,7 @@ When paths converge at an Event-Based Gateway:
 2. **Continue process flow**
 3. **Typically used with sub-processes**
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Basic Event-Based Gateway (Exclusive)
 
@@ -208,7 +208,7 @@ Multiple timers, first to fire wins:
 - Long timer is cancelled
 - Useful for escalation scenarios
 
-## 💡 Complete Real-World Examples
+## Complete Real-World Examples
 
 ### Example 1: Customer Response with Escalation
 
@@ -445,7 +445,7 @@ Multiple timers, first to fire wins:
 - Admin can close auction early
 - Timer expires if no bids for 7 days
 
-## 🔧 Runtime API
+## Runtime API
 
 ### Sending Messages to Event Gateway
 
@@ -475,7 +475,7 @@ List<Job> timerJobs = managementService.createJobQuery()
     .list();
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Clear Event Definitions** - Well-defined messages/signals/timers
 2. **Timeout Always** - Include timer as fallback to prevent infinite waits
@@ -485,7 +485,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 6. **Testing** - Test all event scenarios and timing
 7. **Monitoring** - Track waiting processes at event gateways
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **No Timeout** - Process can wait forever if no event occurs
 - **Event Not Sent** - Message/signal never arrives
@@ -495,7 +495,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 - **Timer Precision** - Timers may not fire exactly on time
 - **Testing Gaps** - Not testing all event combinations
 
-## 🔍 Event-Based vs Other Gateways
+## Event-Based vs Other Gateways
 
 | Feature | Event-Based | Exclusive | Parallel | Inclusive |
 |---------|-------------|-----------|----------|-----------|
@@ -505,7 +505,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 | **Parallel** | No | No | Yes | Yes |
 | **Timeout** | Common | Rare | Rare | Rare |
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Exclusive Gateway](./exclusive-gateway.md) - XOR logic (one path)
 - [Parallel Gateway](./parallel-gateway.md) - AND logic (all paths)

@@ -9,7 +9,7 @@ description: "Complete guide to Boundary Events in Activiti - exception handling
 
 Boundary Events are **attached to activities** and handle exceptions, timeouts, or other events that occur during activity execution. They provide **fine-grained error handling** at the task level.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <userTask id="task1" name="Process Order">
@@ -22,12 +22,12 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 </userTask>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Multiple event types, interrupting/non-interrupting
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Multiple event types, interrupting/non-interrupting
 
 **Important:** The `attachedToRef` attribute is **required** and must reference the ID of the activity the boundary event is attached to.
 
-## 🎯 Key Features
+## Key Features
 
 ### Boundary Event Types
 
@@ -47,7 +47,7 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 | **Interrupting** | Cancels activity | Timeouts, errors, cancellations |
 | **Non-Interrupting** | Runs parallel | Logging, notifications, tracking |
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Timer Boundary Event
 
@@ -238,7 +238,7 @@ Attach multiple boundary events to one activity:
 - Non-interrupting events run in parallel
 - Multiple timeout logs can occur
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Boundary Event on Multi-Instance
 
@@ -291,7 +291,7 @@ Attach multiple boundary events to one activity:
 </subProcess>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Order Processing with Timeouts
 
@@ -404,7 +404,7 @@ Attach multiple boundary events to one activity:
 </process>
 ```
 
-## 🔍 Runtime API
+## Runtime API
 
 ### Sending Messages to Boundary Events
 
@@ -430,7 +430,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 // by error intermediate events or propagated
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use Interrupting for Critical Events** - Timeouts, errors, cancellations
 2. **Use Non-Interrupting for Logging** - Progress tracking, audit trails
@@ -440,7 +440,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 6. **Compensation Logic** - Define undo operations
 7. **Testing** - Test all boundary event scenarios
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Too Many Boundary Events** - Can make process complex
 - **Conflicting Events** - Multiple interrupting events competing
@@ -449,7 +449,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 - **Non-Interrupting Confusion** - Understanding parallel execution
 - **Compensation Order** - Reverse order of completion
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Start Events](./start-event.md) - Process initiation
 - [Intermediate Events](./intermediate-events.md) - Events during execution

@@ -9,7 +9,7 @@ description: "Complete guide to End Events in Activiti - terminating process ins
 
 End Events mark the **completion** of a process or sub-process. They can be simple terminators or trigger additional actions like sending messages, signals, or throwing errors.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <!-- Simple end event -->
@@ -26,10 +26,10 @@ End Events mark the **completion** of a process or sub-process. They can be simp
 </endEvent>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Multiple end event types, expressions
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Multiple end event types, expressions
 
-## 🎯 Key Features
+## Key Features
 
 ### End Event Types
 
@@ -43,7 +43,7 @@ End Events mark the **completion** of a process or sub-process. They can be simp
 | **Terminate** | End entire process instance | Force termination of all branches |
 | **Escalation** | Escalate on end | Escalation workflows |
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Terminator End Event
 
@@ -209,7 +209,7 @@ Escalate on process completion:
 - Trigger escalation workflows
 - Report to external systems
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Multiple End Events
 
@@ -258,7 +258,7 @@ public class VariableSetter implements JavaDelegate {
 }
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Order Process with Multiple End Events
 
@@ -384,7 +384,7 @@ public class VariableSetter implements JavaDelegate {
 </process>
 ```
 
-## 🔍 Runtime API
+## Runtime API
 
 ### Querying Completed Processes
 
@@ -408,7 +408,7 @@ ProcessInstance instance = runtimeService.createProcessInstanceQuery()
 runtimeService.signalEventReceived("orderShipped");
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Use Terminator for Normal End** - Simple completion
 2. **Signal for Notifications** - Cross-process communication
@@ -418,7 +418,7 @@ runtimeService.signalEventReceived("orderShipped");
 6. **Clear Naming** - Descriptive end event names
 7. **Document Behavior** - Explain end event effects
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Terminate Misuse** - Can unexpectedly kill parallel branches
 - **Error Not Caught** - Errors may propagate unexpectedly
@@ -427,7 +427,7 @@ runtimeService.signalEventReceived("orderShipped");
 - **Multiple Terminators** - Can cause confusion
 - **Missing End Events** - Process must have at least one
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Start Events](./start-event.md) - Process initiation
 - [Intermediate Events](./intermediate-events.md) - Events during execution

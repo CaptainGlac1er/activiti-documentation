@@ -9,16 +9,16 @@ description: "Complete guide to StartEvent elements for initiating process insta
 
 Start Events **initiate process instances** and define how a process can be started. They are the entry points of BPMN processes and support multiple trigger types.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <startEvent id="start1" name="Process Start"/>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Multiple start event types, candidate starters
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Multiple start event types, candidate starters
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **None** - Manual start
@@ -36,7 +36,7 @@ Start Events **initiate process instances** and define how a process can be star
 - **Async Timer** - Background scheduling
 - **Custom Properties** - Metadata
 
-## 📝 Start Event Types
+## Start Event Types
 
 ### 1. None Start Event (Manual)
 
@@ -144,7 +144,7 @@ runtimeService.signalEventReceived("processTrigger");
 </startEvent>
 ```
 
-## 🔧 Activiti Customizations
+## Activiti Customizations
 
 ### Form Key
 
@@ -183,7 +183,7 @@ runtimeService.signalEventReceived("processTrigger");
 - `initiator` - Set to current user when process starts
 - Available in all subsequent tasks
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Multiple Start Events
 
@@ -274,7 +274,7 @@ ProcessInstance process = runtimeService
 </startEvent>
 ```
 
-## 🔍 Runtime API Usage
+## Runtime API Usage
 
 ### Starting Processes
 
@@ -318,7 +318,7 @@ List<Message> messages = repositoryService
     .list();
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Choose Appropriate Type:** Match start event to use case
 2. **Multiple Starts:** Provide flexibility with multiple start events
@@ -329,7 +329,7 @@ List<Message> messages = repositoryService
 7. **Security:** Restrict who can start sensitive processes
 8. **Initiator Tracking:** Leverage automatic initiator variable
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **No Start Event:** Process must have at least one
 - **Conflicting Timers:** Multiple timers causing issues
@@ -338,7 +338,7 @@ List<Message> messages = repositoryService
 - **Missing Correlation:** Messages without proper correlation
 - **Complex Conditions:** Hard to test conditional starts
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Events Overview](./index.md)
 - [Intermediate Events](./intermediate-events.md)

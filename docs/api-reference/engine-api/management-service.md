@@ -29,13 +29,13 @@ ManagementService managementService = processEngine.getManagementService();
 ```
 
 **Key Capabilities:**
-- ✅ Database schema inspection and table metadata
-- ✅ Job management (query, execute, delete, retry)
-- ✅ Timer job operations
-- ✅ Dead letter job handling
-- ✅ Event log access
-- ✅ Custom SQL execution
-- ✅ Engine properties management
+- Database schema inspection and table metadata
+- Job management (query, execute, delete, retry)
+- Timer job operations
+- Dead letter job handling
+- Event log access
+- Custom SQL execution
+- Engine properties management
 
 ---
 
@@ -581,7 +581,7 @@ public void executeTimerJobNow(ManagementService managementService, String timer
 
 ## Important Notes
 
-### ✅ Best Practices
+### Best Practices
 
 1. **Use for Administration Only** - ManagementService is for ops/maintenance, not workflow logic
 2. **Query Before Delete** - Always verify jobs exist before deletion

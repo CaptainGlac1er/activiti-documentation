@@ -9,7 +9,7 @@ description: "Complete guide to Transaction SubProcesses in Activiti - all-or-no
 
 Transaction SubProcesses ensure **all-or-nothing execution** of a group of activities. If any activity fails, the entire transaction is rolled back, maintaining data consistency and integrity.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <transaction id="transaction1" name="Financial Transaction">
@@ -20,10 +20,10 @@ Transaction SubProcesses ensure **all-or-nothing execution** of a group of activ
 </transaction>
 ```
 
-**BPMN 2.0 Standard:** ✅ Fully Supported  
-**Activiti Extensions:** ✅ Compensation handling, error propagation
+**BPMN 2.0 Standard:** Fully Supported  
+**Activiti Extensions:** Compensation handling, error propagation
 
-## 🎯 Key Features
+## Key Features
 
 ### Standard BPMN Features
 - **Atomic Execution** - All activities succeed or all fail
@@ -37,7 +37,7 @@ Transaction SubProcesses ensure **all-or-nothing execution** of a group of activ
 - **Error Event Definitions** - Custom transaction errors
 - **Scope Management** - Variable isolation
 
-## 📝 Configuration Options
+## Configuration Options
 
 ### 1. Basic Transaction
 
@@ -205,7 +205,7 @@ Transactions within transactions:
 - Outer transaction also rolls back if inner fails
 - Both must succeed for complete transaction
 
-## 💡 Complete Real-World Example
+## Complete Real-World Example
 
 ### Scenario: E-Commerce Order Processing with Inventory and Payment
 
@@ -297,14 +297,14 @@ Transactions within transactions:
 ```
 
 **Transaction Guarantees:**
-- ✅ Inventory reserved, payment processed, order updated, label created - ALL succeed
+- Inventory reserved, payment processed, order updated, label created - ALL succeed
 - ❌ If ANY step fails, ALL changes are rolled back:
   - Payment refunded
   - Inventory released
   - Shipping label cancelled
   - Order status reverted
 
-## 🔧 Runtime API
+## Runtime API
 
 ### Starting Transactions
 
@@ -333,7 +333,7 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 // Custom error handling via boundary events
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 1. **Keep Transactions Short** - Minimize lock duration
 2. **Define Compensation** - Clear rollback logic for each activity
@@ -343,7 +343,7 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 6. **Handle Errors Gracefully** - Use boundary events for errors
 7. **Avoid User Tasks** - Transactions should be automated
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 - **Long-Running Transactions** - Holding locks too long
 - **Missing Compensation** - Not defining rollback logic
@@ -353,7 +353,7 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 - **Overusing Transactions** - Not needed for every process
 - **Testing Gaps** - Only testing success paths
 
-## 🎯 Use Cases
+## Use Cases
 
 ### 1. **Financial Operations**
 - Bank transfers
@@ -375,7 +375,7 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 - Database consistency
 - API integrations
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Regular SubProcess](./regular-subprocess.md) - Embedded subprocesses
 - [Event SubProcess](./event-subprocess.md) - Event-triggered subprocesses

@@ -160,7 +160,7 @@ List<HistoricIdentityLink> links = historyService
     .getHistoricIdentityLinksForTask("task-id");
 ```
 
-**See:** [History Service Documentation](./history-service.md) ✅ *Rewritten and verified*
+**See:** [History Service Documentation](./history-service.md) *Rewritten and verified*
 
 ### Management Service
 
@@ -193,7 +193,7 @@ Job restored = managementService.moveDeadLetterJobToExecutableJob(jobId, 3);
 List<Job> deadLetterJobs = managementService.createDeadLetterJobQuery().list();
 ```
 
-**See:** [Management Service Documentation](./management-service.md) ✅ *Rewritten and verified*
+**See:** [Management Service Documentation](./management-service.md) *Rewritten and verified*
 
 ## Configuration
 
@@ -460,13 +460,13 @@ Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
 ## Next Steps
 
 1. **Start with verified core services:**
-   - [Repository Service](./repository-service.md) ✅
-   - [Runtime Service](./runtime-service.md) ✅
-   - [Task Service](./task-service.md) ✅
+   - [Repository Service](./repository-service.md)
+   - [Runtime Service](./runtime-service.md)
+   - [Task Service](./task-service.md)
 
 2. **Learn advanced topics (all verified):**
-   - [History Service](./history-service.md) ✅ *Rewritten March 2024*
-   - [Management Service](./management-service.md) ✅ *Rewritten March 2024*
+   - [History Service](./history-service.md) *Rewritten March 2024*
+   - [Management Service](./management-service.md) *Rewritten March 2024*
 
 3. **Explore modern API:**
    - [Activiti API Reference](../activiti-api/README.md)

@@ -9,7 +9,7 @@ description: "Complete guide to multi-instance activities in Activiti for iterat
 
 Multi-instance activities allow you to **execute an activity multiple times**, either sequentially or in parallel. This is useful for processing collections, approvals, or any scenario requiring iterative execution.
 
-## 📋 Overview
+## Overview
 
 ```xml
 <userTask id="reviewTask" name="Review">
@@ -22,13 +22,13 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 ```
 
 **Key Benefits:**
-- ✅ Process collections efficiently
-- ✅ Parallel or sequential execution
-- ✅ Built-in completion conditions
-- ✅ Input/output data mapping
-- ✅ Support for all activity types
+- Process collections efficiently
+- Parallel or sequential execution
+- Built-in completion conditions
+- Input/output data mapping
+- Support for all activity types
 
-## 🎯 When to Use Multi-Instance
+## When to Use Multi-Instance
 
 ### Ideal Use Cases
 
@@ -54,15 +54,15 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 
 ### Supported Activity Types
 
-- ✅ User Tasks
-- ✅ Service Tasks
-- ✅ Script Tasks
-- ✅ Call Activities
-- ✅ SubProcesses
-- ✅ Business Rule Tasks
-- ✅ Manual Tasks
+- User Tasks
+- Service Tasks
+- Script Tasks
+- Call Activities
+- SubProcesses
+- Business Rule Tasks
+- Manual Tasks
 
-## ⚙️ Configuration
+## Configuration
 
 ### Using Collection (Activiti Extension)
 
@@ -95,7 +95,7 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 - `loopCardinality` - Number of iterations
 - `isSequential` - Execution mode
 
-## 🔄 Execution Modes
+## Execution Modes
 
 ### Sequential (One Instance at a Time)
 
@@ -110,10 +110,10 @@ Instances execute **one after another** in order.
 ```
 
 **Characteristics:**
-- ✅ Ordered execution
-- ✅ Each instance waits for previous to complete
-- ✅ Access to `loopCounter` variable
-- ✅ Better for dependent operations
+- Ordered execution
+- Each instance waits for previous to complete
+- Access to `loopCounter` variable
+- Better for dependent operations
 - ❌ Slower overall execution
 
 **Use Cases:**
@@ -134,10 +134,10 @@ Instances execute **concurrently** without waiting.
 ```
 
 **Characteristics:**
-- ✅ Concurrent execution
-- ✅ Faster overall processing
-- ✅ No ordering guarantees
-- ✅ Better for independent operations
+- Concurrent execution
+- Faster overall processing
+- No ordering guarantees
+- Better for independent operations
 - ❌ Higher resource usage
 
 **Use Cases:**
@@ -145,7 +145,7 @@ Instances execute **concurrently** without waiting.
 - Parallel API calls
 - Independent approvals
 
-## 🏁 Completion Conditions
+## Completion Conditions
 
 Specify when the multi-instance activity should complete.
 
@@ -213,16 +213,16 @@ If no completion condition is specified, the multi-instance completes when **all
 </multiInstanceLoopCharacteristics>
 ```
 
-## 📊 Built-in Variables
+## Built-in Variables
 
 Multi-instance activities provide these **automatic variables**:
 
 | Variable                 | Description                   | Sequential | Parallel |
 |--------------------------|-------------------------------|------------|----------|
-| `nrOfInstances`          | Total number of instances     | ✅          | ✅        |
-| `nrOfCompletedInstances` | Number of completed instances | ✅          | ✅        |
-| `loopCounter`            | Current iteration (1-based)   | ✅          | ❌        |
-| `elementVariable`        | Current collection element    | ✅          | ✅        |
+| `nrOfInstances`          | Total number of instances     |          |        |
+| `nrOfCompletedInstances` | Number of completed instances |          |        |
+| `loopCounter`            | Current iteration (1-based)   |          | ❌        |
+| `elementVariable`        | Current collection element    |          |        |
 
 ### Using Built-in Variables
 
@@ -252,7 +252,7 @@ public void execute(DelegateExecution execution) {
 }
 ```
 
-## 📥 Input/Output Data Items
+## Input/Output Data Items
 
 Map data to and from each instance.
 
@@ -346,7 +346,7 @@ Collect results **from** each instance:
 </userTask>
 ```
 
-## 💡 Complete Examples
+## Complete Examples
 
 ### Example 1: Sequential Approvals
 
@@ -523,7 +523,7 @@ Collect results **from** each instance:
 </userTask>
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Combining with Async Execution
 
@@ -588,7 +588,7 @@ Collect results **from** each instance:
 </subProcess>
 ```
 
-## 📊 Best Practices
+## Best Practices
 
 ### 1. Choose Execution Mode Wisely
 
@@ -653,7 +653,7 @@ Collect results **from** each instance:
 </multiInstanceLoopCharacteristics>
 ```
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 ### 1. Variable Scope Confusion
 
@@ -713,7 +713,7 @@ public void execute(DelegateExecution execution) {
 // In completion condition: ${nrOfCompletedInstances >= 5}
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Multi-Instance Not Completing
 
@@ -744,7 +744,7 @@ public void execute(DelegateExecution execution) {
 3. Limit collection size
 4. Use completion condition to stop early
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Common Features](../common-features.md) - Other BPMN extensions
 - [Variables](./variables.md) - Understanding variable scope
