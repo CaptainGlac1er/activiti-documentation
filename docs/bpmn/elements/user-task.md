@@ -11,9 +11,16 @@ User Tasks represent work items that require **human interaction** in a business
 ## Overview
 
 ```xml
-<userTask id="task1" name="Review Document">
-  <!-- Activiti customizations -->
-</userTask>
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:process id="userTaskProcess" name="User Task Process"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:activiti="http://activiti.org/bpmn">
+  
+  <bpmn:userTask id="task1" name="Review Document">
+    <!-- Activiti customizations -->
+  </bpmn:userTask>
+  
+</bpmn:process>
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
@@ -118,6 +125,17 @@ Assign task to groups/roles (comma-separated list):
 
 Advanced assignment with custom types for fine-grained access control:
 
+**Built-in Identity Link Types:**
+Activiti provides these predefined identity link types:
+- `assignee` - Direct task assignee
+- `candidate` - Users/groups who can claim the task
+- `owner` - Task owner (for delegation)
+- `starter` - User who started the process
+- `participant` - General participant
+
+**Custom Identity Link Types:**
+You can define custom types beyond the built-in ones:
+
 ```xml
 <userTask id="complexTask" name="Complex Assignment" activiti:candidateUsers="alice">
   <extensionElements>
@@ -161,11 +179,20 @@ Advanced assignment with custom types for fine-grained access control:
 
 **Runtime API:**
 ```java
+import org.activiti.engine.task.IdentityLinkType;
+
 // Add custom user identity link
 taskService.addUserIdentityLink(taskId, "bob", "viewer");
 
 // Add custom group identity link
 taskService.addGroupIdentityLink(taskId, "auditors", "audit");
+
+// Use built-in identity link types
+taskService.addUserIdentityLink(taskId, "john", IdentityLinkType.ASSIGNEE);
+taskService.addUserIdentityLink(taskId, "alice", IdentityLinkType.CANDIDATE);
+taskService.addUserIdentityLink(taskId, "manager", IdentityLinkType.OWNER);
+taskService.addUserIdentityLink(taskId, "starter", IdentityLinkType.STARTER);
+taskService.addUserIdentityLink(taskId, "participant", IdentityLinkType.PARTICIPANT);
 
 // Query tasks by custom identity link
 List<Task> tasks = taskService.createTaskQuery()
@@ -500,18 +527,34 @@ Define form fields:
 
 ```xml
 <userTask id="managerTask" 
-          name="Manager Decision" 
-          activiti:assignee="${managerId}"
-          activiti:owner="${delegatorId}"
-          activiti:dueDate="${calculateDueDate()}">
-  
-  <extensionElements>
-    <activiti:taskListener event="assignment" class="com.example.DelegationListener"/>
-  </extensionElements>
-</userTask>
+          name="Manager De### Task Assignment
 
-<!-- Boundary event is a sibling, not a child -->
-<boundaryEvent id="escalationTimer" attachedToRef="managerTask" cancelActivity="true">
+```java
+import org.activiti.engine.task.IdentityLinkType;
+
+// Assign task
+taskService.setAssignee(taskId, "john.doe");
+
+// Add candidate user
+taskService.addCandidateUser(taskId, "alice");
+
+// Add candidate group
+taskService.addCandidateGroup(taskId, "reviewers");
+
+// Claim task (if you're a candidate)
+taskService.claim(taskId, "john.doe");
+
+// Release task
+taskService.release(taskId);
+
+// Add identity link with details (for audit/custom metadata)
+taskService.addUserIdentityLink(taskId, "bob", "viewer", 
+    "Read-only access granted".getBytes());
+
+// Add identity link using built-in types
+taskService.addUserIdentityLink(taskId, "manager", IdentityLinkType.OWNER);
+taskService.addGroupIdentityLink(taskId, "auditors", IdentityLinkType.PARTICIPANT);
+```"escalationTimer" attachedToRef="managerTask" cancelActivity="true">
   <timerEventDefinition>
     <timeDuration>PT24H</timeDuration>
   </timerEventDefinition>

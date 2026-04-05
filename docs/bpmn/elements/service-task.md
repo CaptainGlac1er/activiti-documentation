@@ -11,9 +11,16 @@ Service Tasks represent **automated work** performed by the system, such as call
 ## Overview
 
 ```xml
-<serviceTask id="service1" name="Process Payment">
-  <!-- Activiti customizations -->
-</serviceTask>
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:process id="serviceTaskProcess" name="Service Task Process"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:activiti="http://activiti.org/bpmn">
+  
+  <bpmn:serviceTask id="service1" name="Process Payment">
+    <!-- Activiti customizations -->
+  </bpmn:serviceTask>
+  
+</bpmn:process>
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
@@ -167,36 +174,38 @@ public class OrderService implements JavaDelegate {
 }
 ```
 
-**Note:** For Spring bean injection, use `delegateExpression` on the service task itself instead of field injection:
+**Note:** For Spring bea### 5. Connector Implementation
+
+Use pre-built connectors (mail, mule, camel, shell):
 
 ```xml
-<serviceTask id="notificationService" 
-             name="Send Notification"
-             activiti:delegateExpression="#{notificationService}"/>
-```
-
-### 5. Connector Implementation
-
-Use pre-built connectors:
-
-```xml
-<serviceTask id="httpCall" 
-             name="Call REST API"
-             activiti:type="rest"
-             activiti:operationRef="getOrderDetails">
+<serviceTask id="mailService" 
+             name="Send Email"
+             activiti:type="mail">
   
   <extensionElements>
-    <connector:operation id="getOrderDetails">
-      <connector:input>
-        <connector:parameter name="orderId" value="${orderId}"/>
-      </connector:input>
-      <connector:output>
-        <connector:parameter name="order" to="${orderDetails}"/>
-      </connector:output>
-    </connector:operation>
+    <activiti:field name="to">
+      <activiti:expression>${recipientEmail}</activiti:expression>
+    </activiti:field>
+    
+    <activiti:field name="subject">
+      <activiti:string>Notification</activiti:string>
+    </activiti:field>
+    
+    <activiti:field name="message">
+      <activiti:expression>${emailContent}</activiti:expression>
+    </activiti:field>
   </extensionElements>
 </serviceTask>
 ```
+
+**Supported Connector Types:**
+- `mail` - Send emails
+- `mule` - Mule ESB integration
+- `camel` - Apache Camel routes
+- `shell` - Execute shell commands
+
+**Note:** For REST API calls, use a custom Java class implementing `JavaDelegate` or integrate with Apache Camel connector.
 
 ### 6. DMN Decision
 
@@ -480,27 +489,54 @@ Handle exceptions (boundary events are siblings, not children):
 
 ### Example 4: REST API Integration
 
+For REST API calls, use a custom Java class since `type="rest"` is not a built-in connector:
+
 ```xml
 <serviceTask id="callExternalAPI" 
              name="Fetch Customer Data"
-             activiti:type="rest"
-             activiti:operationRef="getCustomer">
+             activiti:class="com.example.RestApiClient"
+             activiti:async="true">
   
   <extensionElements>
-    <connector:operation id="getCustomer" 
-                         implementation="com.example.connector.RestClient">
-      <connector:input>
-        <connector:parameter name="customerId" value="${customerId}"/>
-        <connector:parameter name="apiKey" value="${#apiKeys.customerApi}"/>
-      </connector:input>
-      <connector:output>
-        <connector:parameter name="customerData" to="${externalCustomerData}"/>
-      </connector:output>
-    </connector:operation>
+    <activiti:field name="apiKey">
+      <activiti:expression>${apiKeys.customerApi}</activiti:expression>
+    </activiti:field>
     
     <activiti:failedJobRetryTimeCycle>R5/PT30S</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
+```
+
+**Java Implementation:**
+```java
+import org.activiti.engine.delegate.DelegateExecution;
+import org.activiti.engine.delegate.JavaDelegate;
+
+public class RestApiClient implements JavaDelegate {
+    
+    private String apiKey;
+    
+    @Override
+    public void execute(DelegateExecution execution) {
+        String customerId = (String) execution.getVariable("customerId");
+        
+        // Call REST API
+        CustomerData data = fetchCustomerData(customerId, apiKey);
+        
+        // Set result variable
+        execution.setVariable("externalCustomerData", data);
+    }
+    
+    private CustomerData fetchCustomerData(String customerId, String apiKey) {
+        // REST API implementation
+        return null;
+    }
+    
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+}
+```
 
 <!-- Error boundary event -->
 <boundaryEvent id="apiError" attachedToRef="callExternalAPI" cancelActivity="true">

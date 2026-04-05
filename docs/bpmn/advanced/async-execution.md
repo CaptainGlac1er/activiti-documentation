@@ -12,10 +12,17 @@ Asynchronous execution allows activities to run in the **background** using Acti
 ## Overview
 
 ```xml
-<serviceTask id="asyncTask" 
-             name="Background Task" 
-             activiti:async="true"
-             activiti:class="com.example.AsyncService"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:process id="asyncProcess" name="Async Process"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:activiti="http://activiti.org/bpmn">
+  
+  <bpmn:serviceTask id="asyncTask" 
+               name="Background Task" 
+               activiti:async="true"
+               activiti:class="com.example.AsyncService"/>
+  
+</bpmn:process>
 ```
 
 **Key Benefits:**
@@ -47,10 +54,17 @@ Asynchronous execution allows activities to run in the **background** using Acti
 ### Basic Async Task
 
 ```xml
-<serviceTask id="asyncService" 
-             name="Async Service" 
-             activiti:async="true"
-             activiti:class="com.example.MyService"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:process id="asyncProcess"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:activiti="http://activiti.org/bpmn">
+  
+  <bpmn:serviceTask id="asyncService" 
+               name="Async Service" 
+               activiti:async="true"
+               activiti:class="com.example.MyService"/>
+  
+</bpmn:process>
 ```
 
 ### Async with Retry Policy
@@ -60,8 +74,10 @@ Asynchronous execution allows activities to run in the **background** using Acti
              name="Retryable Task" 
              activiti:async="true">
   
-  <!-- Retry 5 times immediately -->
-  <activiti:property name="failedJobRetryTimeCycle" value="R/5"/>
+  <extensionElements>
+    <!-- Retry 5 times immediately -->
+    <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
   
 </serviceTask>
 ```
@@ -73,9 +89,10 @@ Asynchronous execution allows activities to run in the **background** using Acti
              name="Task with Backoff" 
              activiti:async="true">
   
-  <!-- Retry with increasing intervals -->
-  <activiti:property name="failedJobRetryTimeCycle" 
-                     value="R3/PT1M;R2/PT5M;R1/PT30M"/>
+  <extensionElements>
+    <!-- Retry with increasing intervals -->
+    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M;R1/PT30M</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
   
 </serviceTask>
 ```
@@ -248,13 +265,11 @@ spring:
 - `number-of-retries` - Default retry count for failed jobs (default: 3)
 - `retry-wait-time-in-millis` - Wait time between retries (default: 500ms)
 - `max-async-jobs-due-per-acquisition` - Jobs fetched per query (default: 1)
-- `default-async-job-acquire-wait-time-in-millis` - Wait between acquisitions (default: 10s)
-- `async-job-lock-time-in-millis` - How long a job is locked (default: 5min)
-- `message-queue-mode` - Enable distributed message queue mode (default: false)
-
-### Programmatic Configuration
+- `default-async-job-acquire-wait-tim### Programmatic Configuration
 
 ```java
+import org.activiti.engine.impl.cfg.AsyncExecutor;
+
 @Bean
 public ProcessEngineConfiguration processEngineConfiguration() {
     ProcessEngineConfiguration config = ProcessEngineConfiguration
@@ -267,6 +282,48 @@ public ProcessEngineConfiguration processEngineConfiguration() {
     config.setAsyncExecutorCorePoolSize(3);
     config.setAsyncExecutorMaxPoolSize(10);
     config.setAsyncExecutorThreadPoolQueueSize(1000);
+    
+    // Configure job acquisition
+    config.setAsyncExecutorMaxAsyncJobsDuePerAcquisition(10);
+    config.setAsyncExecutorDefaultAsyncJobAcquireWaitTime(1000);
+    
+    // Configure lock times
+    config.setAsyncJobLockTimeInMillis(300000);  // 5 minutes
+    config.setTimerLockTimeInMillis(300000);     // 5 minutes
+    
+    // Configure retry settings
+    config.setNumberOfRetries(3);
+    config.setRetryWaitTimeInMillis(5000);
+    
+    // Advanced: Default queue size full wait time
+    // Time to wait when queue is full before adding new thread
+    config.setDefaultQueueSizeFullWaitTimeInMillis(1000);
+    
+    // Advanced: Reset expired jobs configuration
+    // Interval for checking and resetting expired jobs (0 = disabled)
+    config.setResetExpiredJobsInterval(60000);  // Check every minute
+    config.setResetExpiredJobsPageSize(100);     // Process 100 jobs per check
+    
+    return config;
+}
+```
+
+**AsyncExecutor Configuration Methods:**
+
+| Method | Description | Default |
+|--------|-------------|---------|
+| `setAsyncExecutorCorePoolSize(int)` | Minimum thread pool size | 2 |
+| `setAsyncExecutorMaxPoolSize(int)` | Maximum thread pool size | 10 |
+| `setAsyncExecutorThreadPoolQueueSize(int)` | Job queue capacity | 100 |
+| `setAsyncExecutorMaxAsyncJobsDuePerAcquisition(int)` | Jobs fetched per query | 1 |
+| `setAsyncExecutorDefaultAsyncJobAcquireWaitTime(long)` | Wait between acquisitions (ms) | 10000 |
+| `setAsyncJobLockTimeInMillis(long)` | Job lock duration (ms) | 300000 |
+| `setTimerLockTimeInMillis(long)` | Timer lock duration (ms) | 300000 |
+| `setNumberOfRetries(int)` | Default retry count | 3 |
+| `setRetryWaitTimeInMillis(long)` | Wait between retries (ms) | 500 |
+| `setDefaultQueueSizeFullWaitTimeInMillis(long)` | Wait when queue full (ms) | 1000 |
+| `setResetExpiredJobsInterval(long)` | Expired job check interval (ms) | 0 (disabled) |
+| `setResetExpiredJobsPageSize(int)` | Jobs per expired check | 100 |oolQueueSize(1000);
     
     // Configure job acquisition
     config.setAsyncExecutorMaxAsyncJobsDuePerAcquisition(10);
