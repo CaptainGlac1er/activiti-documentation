@@ -103,7 +103,7 @@ spring:
       seconds-to-wait-on-shutdown: 60       # Graceful shutdown timeout
 ```
 
-**Source:** `AsyncExecutorProperties.java` - All properties verified against `@ConfigurationProperties(prefix = "spring.activiti.async-executor")`
+**Source:** `AsyncExecutorProperties.java`
 
 ### Java Configuration (Standalone)
 
@@ -147,7 +147,7 @@ public class AsyncExecutionConfig {
 }
 ```
 
-**Source:** `ProcessEngineConfigurationImpl.java` lines 3559-3650 - All methods verified
+**Source:** `ProcessEngineConfigurationImpl.java`
 
 ## Job Execution Flow
 
@@ -191,7 +191,7 @@ Async Executor Acquisition Loop:
 7. Repeat
 ```
 
-**Source:** `DefaultAsyncJobExecutor.java` - Acquisition logic verified
+**Source:** `DefaultAsyncJobExecutor.java`
 
 ### 3. Job Execution
 
