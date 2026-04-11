@@ -538,6 +538,7 @@ public class RestApiClient implements JavaDelegate {
 }
 ```
 
+```xml
 <!-- Error boundary event -->
 <boundaryEvent id="apiError" attachedToRef="callExternalAPI" cancelActivity="true">
   <errorEventDefinition errorRef="ExternalApiError"/>
