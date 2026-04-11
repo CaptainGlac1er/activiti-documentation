@@ -103,6 +103,8 @@ for (Task task : taskPage.getResults()) {
 
 ## Job Management
 
+For detailed information about async execution, job architecture, and configuration, see [Async Execution](./async-execution.md).
+
 ### Query Jobs
 
 Create and execute job queries:
@@ -155,6 +157,8 @@ List<Job> unlockedJobs = jobQuery
 - `orderByProcessInstanceId()`
 - `orderByExecutionId()`
 - `orderByTenantId()`
+
+**See also:** [Async Execution - Job Management](./async-execution.md#querying-jobs) for monitoring and analysis examples.
 
 ### Execute a Job
 
