@@ -735,9 +735,9 @@ if (isValidExpression("${orderAmount > 1000}")) {
 
 - [Runtime Service](./runtime-service.md) - Process instance management
 - [Repository Service](./repository-service.md) - Process definitions
-- [User Task](../bpmn/elements/user-task.md) - User task configuration
-- [Service Task](../bpmn/elements/service-task.md) - Service task configuration
-- [Script Task](../bpmn/elements/script-task.md) - Script task configuration
+- [User Task](../../bpmn/elements/user-task.md) - User task configuration
+- [Service Task](../../bpmn/elements/service-task.md) - Service task configuration
+- [Script Task](../../bpmn/elements/script-task.md) - Script task configuration
 
 ---
 
