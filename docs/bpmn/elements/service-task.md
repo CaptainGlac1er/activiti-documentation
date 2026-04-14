@@ -49,34 +49,85 @@ Service Tasks represent **automated work** performed by the system, such as call
 
 ## Implementation Types
 
-### 1. Class Implementation
+Activiti 8 supports **two primary ways** to implement service tasks, plus legacy syntax for backward compatibility. The recommended approach uses the standard BPMN `implementation` attribute with Spring bean references.
 
-Execute a Java class implementing `JavaDelegate`:
+### 1. Spring Bean Reference (RECOMMENDED for Activiti 8)
+
+Use the standard BPMN `implementation` attribute to reference a Spring bean by its **plain bean name**:
 
 ```xml
-<serviceTask id="paymentService" 
-             name="Process Payment"
-             activiti:class="com.example.PaymentService"/>
+<serviceTask id="tagImageTask" 
+             name="Tag Image"
+             implementation="tagImageConnector"/>
 ```
 
-**JavaDelegate Interface:**
+The engine will look up a Spring bean named `tagImageConnector` from the ApplicationContext.
+
+#### For Connector Implementations (Recommended):
+
 ```java
-public interface JavaDelegate {
-    void execute(DelegateExecution execution);
+import org.activiti.api.process.runtime.connector.Connector;
+import org.activiti.api.process.model.IntegrationContext;
+import org.springframework.stereotype.Component;
+
+@Component("tagImageConnector")
+public class TagImageConnector implements Connector {
+    
+    @Autowired
+    private ImageService imageService;
+    
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        // Access input variables
+        String imageUrl = context.getInBoundVariables().get("imageUrl");
+        
+        // Business logic
+        imageService.tagImage(imageUrl);
+        
+        // Return output variables
+        return context.withOutBoundVariable("tagged", true);
+    }
 }
 ```
 
-**Example Implementation:**
+**Or using lambda (as shown in official examples):**
+
 ```java
+@Component("tagImageConnector")
+public class TagImageConnector {
+    
+    @Bean("tagImageConnector")
+    public Connector connector() {
+        return integrationContext -> {
+            String imageUrl = integrationContext.getInBoundVariables().get("imageUrl");
+            // Business logic...
+            return integrationContext.withOutBoundVariable("tagged", true);
+        };
+    }
+}
+```
+
+#### For JavaDelegate Implementations (Legacy but Still Supported):
+
+```java
+import org.activiti.engine.delegate.JavaDelegate;
+import org.activiti.engine.delegate.DelegateExecution;
+import org.springframework.stereotype.Component;
+
+@Component("paymentService")
 public class PaymentService implements JavaDelegate {
+    
+    @Autowired
+    private PaymentGateway gateway;
+    
     @Override
     public void execute(DelegateExecution execution) {
         // Get process variables
         String orderId = (String) execution.getVariable("orderId");
-        double amount = (Double) execution.getVariable("amount");
+        Double amount = (Double) execution.getVariable("amount");
         
         // Business logic
-        PaymentResult result = processPayment(orderId, amount);
+        PaymentResult result = gateway.process(orderId, amount);
         
         // Set output variables
         execution.setVariable("paymentResult", result);
@@ -85,57 +136,285 @@ public class PaymentService implements JavaDelegate {
 }
 ```
 
-### 2. Delegate Expression
-
-Reference a Spring bean:
-
+**Usage:**
 ```xml
-<serviceTask id="notificationService" 
-             name="Send Notification"
-             activiti:delegateExpression="${notificationService}"/>
+<serviceTask id="paymentTask" 
+             name="Process Payment"
+             implementation="paymentService"/>
 ```
 
-**Spring Bean:**
+**Benefits:**
+- ✅ Standard BPMN 2.0 compliant
+- ✅ Full Spring dependency injection (`@Autowired`)
+- ✅ Type-safe with `Connector` or `JavaDelegate` interface
+- ✅ Recommended for Activiti 7+
+- ✅ Works with extension JSON variable mappings
+
+**Connector.action Format:**
+
+You can also specify a connector bean and action name using the `Connector.action` format:
+
+```xml
+<serviceTask id="getMovieTask" 
+             name="Get Movie Description"
+             implementation="Movies.getMovieDesc"/>
+```
+
+This looks up the `Movies.getMovieDesc` connector bean
+
+**Connector Bean Definition:**
+
 ```java
-@Component("notificationService")
-public class NotificationService implements JavaDelegate {
+import org.activiti.api.process.runtime.connector.Connector;
+import org.activiti.api.process.model.IntegrationContext;
+import org.springframework.stereotype.Component;
+
+@Component("Movies.getMovieDesc")
+public class MoviesConnector implements Connector {
+    
     @Override
-    public void execute(DelegateExecution execution) {
-        // Send notification
+    public IntegrationContext apply(IntegrationContext context) {
+        // Access input variables
+        String movieId = context.getInBoundVariables().get("movieId");
+        
+        // Business logic - call external API
+        String description = fetchMovieDescription(movieId);
+        
+        // Return output variables
+        return context.withOutBoundVariable("movieDescription", description);
+    }
+    
+    private String fetchMovieDescription(String movieId) {
+        // Implementation...
+        return "Movie description";
     }
 }
 ```
 
-**Advanced Delegate Expression:**
-```xml
-<serviceTask activiti:delegateExpression="${paymentService.processPayment()}"/>
+**Using Connector with Extension JSON:**
+
+Connectors work seamlessly with extension JSON for variable mapping:
+
+```json
+{
+  "id": "movieProcess",
+  "extensions": {
+    "Process_movieProcess": {
+      "mappings": {
+        "getMovieTask": {
+          "inputs": {
+            "movieId": {
+              "type": "VARIABLE",
+              "value": "selectedMovie"
+            }
+          },
+          "outputs": {
+            "movieDescription": {
+              "type": "VARIABLE",
+              "value": "description"
+            }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
-### 3. Expression
+**Benefits of Connectors:**
+- ✅ Clean separation of integration logic
+- ✅ Reusable across multiple processes
+- ✅ Works with extension JSON variable mappings
+- ✅ Supports input/output variable transformation
+- ✅ Ideal for REST APIs, email, external services
 
-Execute EL/SpEL expressions:
+### 2. Legacy Activiti Extensions (Activiti 5/6 Style - Still Supported)
+
+Activiti 8 maintains backward compatibility with Activiti 5/6 syntax using the `activiti:` namespace. **These are still fully supported** but not recommended for new development.
+
+#### Legacy `activiti:class` (Direct Class Instantiation)
+
+For direct class instantiation without Spring beans:
 
 ```xml
-<serviceTask id="calculation" 
-             name="Calculate Total"
-             activiti:expression="${calculateTotal(orderItems)}"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:process id="legacyProcess"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:activiti="http://activiti.org/bpmn">
+  
+  <serviceTask id="legacyTask" 
+               name="Legacy Service"
+               activiti:class="com.example.LegacyService"/>
+</bpmn:process>
 ```
 
-**Result Variable:**
+**Legacy JavaDelegate Interface (Activiti 5/6):**
+```java
+import org.activiti.engine.delegate.DelegateExecution;
+import org.activiti.engine.delegate.JavaDelegate;
+
+public class LegacyService implements JavaDelegate {
+    @Override
+    public void execute(DelegateExecution execution) {
+        String orderId = (String) execution.getVariable("orderId");
+        execution.setVariable("result", "processed");
+    }
+}
+```
+
+**Use Cases for `activiti:class`:**
+- Direct class instantiation (no Spring bean required)
+- Simple utility classes
+- Backward compatibility with Activiti 5/6
+- Classes that cannot be Spring-managed
+
+**Note:** You cannot use `@Autowired`; the engine instantiates the class directly. Use field injection via `<activiti:field>` if needed.
+
+#### Legacy `activiti:delegateExpression`
+
 ```xml
-<serviceTask id="calculation" 
+<serviceTask id="legacyBeanTask" 
+             name="Legacy Bean Service"
+             activiti:delegateExpression="${legacyService}"/>
+```
+
+**Spring Bean:**
+```java
+@Component("legacyService")
+public class LegacyBeanService implements JavaDelegate {
+    @Override
+    public void execute(DelegateExecution execution) {
+        // Legacy implementation
+    }
+}
+```
+
+#### Legacy `activiti:expression`
+
+```xml
+<serviceTask id="legacyExpression" 
+             name="Legacy Expression"
              activiti:expression="${calculator.compute()}"
              activiti:resultVariable="computationResult"/>
 ```
 
-### 4. Field Injection
+**⚠️ Legacy Syntax Note:**
+- Legacy syntax uses `JavaDelegate` and `DelegateExecution` (Activiti 5/6/7/8 API)
+- Modern syntax uses `Connector` interface (Activiti 8+)
+- Legacy attributes require `<xmlns:activiti="http://activiti.org/bpmn">` namespace
+- **Recommendation:** Use `implementation="beanName"` with `Connector` for new development
+- **Status:** Legacy syntax is still fully supported for backward compatibility
 
-Inject dependencies into delegates:
+### Comparison Table
+
+| Feature | `implementation="beanName"` | Legacy `activiti:class` | Legacy `activiti:delegateExpression` |
+|---------|----------------------------|------------------------|-------------------------------------|
+| **Bean Type** | `Connector` or `JavaDelegate` | `JavaDelegate` | `JavaDelegate` |
+| **Spring Bean** | Required (`@Component`) | Not required | Required (`@Component`) |
+| **Dependency Injection** | ✅ `@Autowired` | ❌ No (field injection only) | ✅ `@Autowired` |
+| **Interface** | `Connector` or `JavaDelegate` | `JavaDelegate` | `JavaDelegate` |
+| **Execution API** | `apply(context)` or `execute(execution)` | `execute(execution)` | `execute(execution)` |
+| **Use Case** | Modern integrations & logic | Direct instantiation | Legacy Spring beans |
+| **Activiti Version** | 8+ (recommended) | 5/6/7/8 (still supported) | 5/6/7/8 (still supported) |
+| **Namespace Required** | No | Yes (`activiti:`) | Yes (`activiti:`) |
+| **Format** | `beanName` or `Connector.action` | Full class name | `${beanName}` |
+| **Status** | ✅ Current | ⚠️ Legacy (not deprecated) | ⚠️ Legacy (not deprecated) |
+
+### Migration Example
+
+**From Legacy (Activiti 6):**
+```xml
+<!-- OLD -->
+<serviceTask activiti:class="com.example.PaymentService"/>
+```
+
+```java
+public class PaymentService implements JavaDelegate {
+    public void execute(DelegateExecution execution) {
+        execution.setVariable("result", "done");
+    }
+}
+```
+
+**To Modern (Activiti 8) - Using Connector:**
+```xml
+<!-- NEW - Recommended -->
+<serviceTask implementation="paymentService"/>
+```
+
+```java
+@Component("paymentService")
+public class PaymentService implements Connector {
+    @Autowired
+    private PaymentGateway gateway;
+    
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        String orderId = context.getInBoundVariables().get("orderId");
+        // Business logic...
+        return context.withOutBoundVariable("result", "done");
+    }
+}
+```
+
+**Or Using JavaDelegate (Still Works):**
+```xml
+<!-- Also valid -->
+<serviceTask implementation="paymentService"/>
+```
+
+```java
+@Component("paymentService")
+public class PaymentService implements JavaDelegate {
+    @Autowired
+    private PaymentGateway gateway;
+    
+    @Override
+    public void execute(DelegateExecution execution) {
+        execution.setVariable("result", "done");
+    }
+}
+```
+
+**Key Changes:**
+1. Remove `activiti:` namespace prefix
+2. Change `class` to `implementation`
+3. Use bean name instead of full class name
+4. Add `@Component` annotation with bean name
+5. Use `@Autowired` instead of field injection
+6. **Recommended:** Use `Connector` interface for new development
+7. **Alternative:** `JavaDelegate` still works with `implementation`
+
+### 3. Field Injection (Legacy - Use Spring @Autowired Instead)
+
+**Modern Approach:** Use Spring's `@Autowired` in your bean:
+
+```java
+@Component("orderService")
+public class OrderService implements JavaDelegator {
+    
+    @Autowired
+    private EmailService emailService;
+    
+    @Value("${order.currency:USD}")
+    private String currency;
+    
+    @Override
+    public void execute() {
+        // Use injected dependencies
+        emailService.sendOrderConfirmation(getVariable("orderId"));
+    }
+}
+```
+
+**Legacy Approach (Activiti 5/6 Style - Still Supported):**
+
+For backward compatibility, Activiti supports field injection via XML:
 
 ```xml
 <serviceTask id="orderService" 
              name="Process Order"
-             activiti:class="com.example.OrderService">
+             implementation="com.example.OrderService">
   
   <extensionElements>
     <!-- String value -->
@@ -147,23 +426,19 @@ Inject dependencies into delegates:
 </serviceTask>
 ```
 
-**Field Types:**
-- `stringValue` - Direct string value
-- `expression` - EL/SpEL expression (e.g., `${variable}`)
-
-**Java Delegate with Fields:**
+**Legacy Java Class with Field Injection:**
 ```java
-public class OrderService implements JavaDelegate {
+public class OrderService implements JavaDelegator {
     
     private String emailTemplate;
     private String currency;
     
     @Override
-    public void execute(DelegateExecution execution) {
+    public void execute() {
         // Use injected fields
     }
     
-    // Setters for field injection
+    // Setters required for field injection
     public void setEmailTemplate(String emailTemplate) {
         this.emailTemplate = emailTemplate;
     }
@@ -174,14 +449,22 @@ public class OrderService implements JavaDelegate {
 }
 ```
 
-**Note:** For Spring bea### 5. Connector Implementation
+**⚠️ Recommendation:** Prefer Spring's `@Autowired` and `@Value` annotations over XML field injection for better type safety and IDE support.
 
-Use pre-built connectors (mail, mule, camel, shell):
+### 4. Connector Implementation
+
+Use connectors for external integrations like email, REST APIs, messaging systems, etc.
+
+#### Built-in Connectors (Legacy Syntax Only)
+
+Activiti includes some built-in connectors that **only work with legacy XML syntax**.
+
+**Mail Connector (Legacy - Still Supported):**
 
 ```xml
-<serviceTask id="mailService" 
-             name="Send Email"
-             activiti:type="mail">
+<sendTask id="sendEmail" 
+          name="Send Email"
+          activiti:type="mail">
   
   <extensionElements>
     <activiti:field name="to">
@@ -192,56 +475,135 @@ Use pre-built connectors (mail, mule, camel, shell):
       <activiti:string>Notification</activiti:string>
     </activiti:field>
     
-    <activiti:field name="message">
+    <activiti:field name="text">
       <activiti:expression>${emailContent}</activiti:expression>
     </activiti:field>
+    
+    <!-- Optional fields -->
+    <activiti:field name="cc">
+      <activiti:expression>${ccEmails}</activiti:expression>
+    </activiti:field>
+    
+    <activiti:field name="html">
+      <activiti:expression>${htmlContent}</activiti:expression>
+    </activiti:field>
   </extensionElements>
-</serviceTask>
+</sendTask>
 ```
 
-**Supported Connector Types:**
-- `mail` - Send emails
-- `mule` - Mule ESB integration
-- `camel` - Apache Camel routes
-- `shell` - Execute shell commands
+**Supported Mail Fields:**
+- `to` - Recipient email address(es)
+- `cc` - Carbon copy recipients
+- `bcc` - Blind carbon copy recipients
+- `subject` - Email subject
+- `text` - Plain text body
+- `html` - HTML body
+- `from` - Sender address (overrides default)
 
-**Note:** For REST API calls, use a custom Java class implementing `JavaDelegate` or integrate with Apache Camel connector.
+**⚠️ Important:** The built-in mail connector does NOT support modern `implementation` syntax. You must use `activiti:type="mail"` with field injection.
 
-### 6. DMN Decision
+**Other Built-in Connector Types (Legacy Only):**
+- `activiti:type="mule"` - Mule ESB integration
+- `activiti:type="camel"` - Apache Camel routes
+- `activiti:type="shell"` - Execute shell commands
 
-Integrate with Decision Model and Notation:
+#### Custom Connectors (Modern Approach - Recommended)
 
-```xml
-<serviceTask id="creditDecision" 
-             name="Credit Assessment"
-             activiti:type="dmn"
-             activiti:implementation="dmn:credit-decision.dmn"/>
-```
+For email and other integrations, create your own Connector bean for full Spring integration:
 
-### 7. Mail Task
-
-Send emails:
-
+**BPMN:**
 ```xml
 <serviceTask id="sendEmail" 
-             name="Send Confirmation Email"
-             activiti:type="mail">
-  
-  <extensionElements>
-    <activiti:field name="to">
-      <activiti:expression>${customerEmail}</activiti:expression>
-    </activiti:field>
-    
-    <activiti:field name="subject">
-      <activiti:string>Order Confirmation</activiti:string>
-    </activiti:field>
-    
-    <activiti:field name="message">
-      <activiti:expression>${emailTemplate}</activiti:expression>
-    </activiti:field>
-  </extensionElements>
-</serviceTask>
+             name="Send Email"
+             implementation="emailConnector"/>
 ```
+
+**Java Implementation:**
+```java
+import org.activiti.api.process.runtime.connector.Connector;
+import org.activiti.api.process.model.IntegrationContext;
+import org.springframework.stereotype.Component;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+
+@Component("emailConnector")
+public class EmailConnector implements Connector {
+    
+    @Autowired
+    private JavaMailSender mailSender;
+    
+    @Value("${mail.from.address:noreply@company.com}")
+    private String fromAddress;
+    
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        String to = context.getInBoundVariables().get("to");
+        String subject = context.getInBoundVariables().get("subject");
+        String text = context.getInBoundVariables().get("text");
+        
+        try {
+            javax.mail.MessagingMessage message = mailSender.createMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setFrom(fromAddress);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(text);
+            
+            mailSender.send(message);
+            
+            return context.withOutBoundVariable("emailSent", true);
+        } catch (Exception e) {
+            return context.withOutBoundVariable("emailSent", false)
+                         .withOutBoundVariable("error", e.getMessage());
+        }
+    }
+}
+```
+
+**Extension JSON for Variable Mapping:**
+```json
+{
+  "id": "notificationProcess",
+  "extensions": {
+    "Process_notificationProcess": {
+      "mappings": {
+        "sendEmail": {
+          "inputs": {
+            "to": {
+              "type": "VARIABLE",
+              "value": "customerEmail"
+            },
+            "subject": {
+              "type": "VALUE",
+              "value": "Order Confirmation"
+            },
+            "text": {
+              "type": "VARIABLE",
+              "value": "emailTemplate"
+            }
+          },
+          "outputs": {
+            "emailSent": {
+              "type": "VARIABLE",
+              "value": "sent"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Benefits of Custom Connectors:**
+- ✅ Full Spring dependency injection (`@Autowired`)
+- ✅ Better error handling and logging
+- ✅ More flexibility (attachments, templates, etc.)
+- ✅ Works with extension JSON variable mappings
+- ✅ Easier to test and maintain
+- ✅ Type-safe with IDE support
+
+**Recommendation:** For new development, create custom Connector beans instead of relying on built-in legacy connectors. The built-in mail connector is maintained for backward compatibility but lacks modern Spring integration features.
 
 ## Advanced Features
 
@@ -249,6 +611,15 @@ Send emails:
 
 Run service tasks in the background:
 
+**Modern Syntax:**
+```xml
+<serviceTask id="longRunningService" 
+             name="Process Large Dataset"
+             implementation="batchProcessor"
+             activiti:async="true"/>
+```
+
+**Legacy Syntax (Activiti 5/6 Style - Still Supported):**
 ```xml
 <serviceTask id="longRunningService" 
              name="Process Large Dataset"
@@ -268,10 +639,11 @@ Run service tasks in the background:
 
 Configure retry policies for failed jobs:
 
+**Modern Syntax:**
 ```xml
 <serviceTask id="unreliableService" 
              name="Call External API"
-             activiti:class="com.example.ExternalApiService"
+             implementation="#{externalApiService}"
              activiti:async="true">
   
   <extensionElements>
@@ -282,6 +654,17 @@ Configure retry policies for failed jobs:
 ```
 
 **Or with exponential backoff:**
+```xml
+<serviceTask id="unreliableService" 
+             implementation="#{externalApiService}"
+             activiti:async="true">
+  <extensionElements>
+    <activiti:failedJobRetryTimeCycle>R5/PT1M;R3/PT5M;R2/PT30M</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
+</serviceTask>
+```
+
+**Legacy Syntax (Activiti 5/6 Style - Still Supported):**
 ```xml
 <serviceTask id="unreliableService" 
              activiti:async="true"
@@ -301,6 +684,15 @@ Configure retry policies for failed jobs:
 
 Conditionally skip service execution:
 
+**Modern Syntax:**
+```xml
+<serviceTask id="optionalService" 
+             name="Enrich Data"
+             implementation="#{dataEnricher}"
+             activiti:skipExpression="${!enrichData}"/>
+```
+
+**Legacy Syntax (Activiti 5/6 Style - Still Supported):**
 ```xml
 <serviceTask id="optionalService" 
              name="Enrich Data"
@@ -312,6 +704,21 @@ Conditionally skip service execution:
 
 Add metadata:
 
+**Modern Syntax:**
+```xml
+<serviceTask id="customService" 
+             name="Custom Processing"
+             implementation="#{customService}">
+  
+  <extensionElements>
+    <activiti:property name="department" value="finance"/>
+    <activiti:property name="version" value="2.0"/>
+    <activiti:property name="sla" value="PT1H"/>
+  </extensionElements>
+</serviceTask>
+```
+
+**Legacy Syntax (Activiti 5/6 Style - Still Supported):**
 ```xml
 <serviceTask id="customService" 
              name="Custom Processing"
@@ -329,6 +736,21 @@ Add metadata:
 
 Hook into execution lifecycle:
 
+**Modern Syntax:**
+```xml
+<serviceTask id="trackedService" 
+             name="Tracked Service"
+             implementation="#{trackedService}">
+  
+  <extensionElements>
+    <activiti:executionListener event="start" class="com.example.StartTracker"/>
+    <activiti:executionListener event="end" delegateExpression="${endTracker}"/>
+    <activiti:executionListener event="take" class="com.example.FlowTracker"/>
+  </extensionElements>
+</serviceTask>
+```
+
+**Legacy Syntax (Activiti 5/6 Style - Still Supported):**
 ```xml
 <serviceTask id="trackedService" 
              name="Tracked Service"
@@ -351,6 +773,27 @@ Hook into execution lifecycle:
 
 Handle exceptions (boundary events are siblings, not children):
 
+**Modern Syntax:**
+```xml
+<serviceTask id="riskyService" 
+             name="External Call"
+             implementation="#{externalService}"
+             activiti:async="true"/>
+
+<!-- Error boundary event -->
+<boundaryEvent id="errorHandler" attachedToRef="riskyService" cancelActivity="true">
+  <errorEventDefinition errorRef="ExternalServiceError"/>
+</boundaryEvent>
+
+<!-- Timer boundary event -->
+<boundaryEvent id="timeoutHandler" attachedToRef="riskyService" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT30S</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
+```
+
+**Legacy Syntax (Activiti 5/6 Style - Still Supported):**
 ```xml
 <serviceTask id="riskyService" 
              name="External Call"
@@ -374,29 +817,12 @@ Handle exceptions (boundary events are siblings, not children):
 
 ### Example 1: Payment Processing with Retry
 
+**BPMN:**
 ```xml
 <serviceTask id="processPayment" 
              name="Process Payment"
-             activiti:class="com.example.PaymentProcessor"
-             activiti:async="true"
-             activiti:resultVariable="paymentResult">
-  
-  <extensionElements>
-    <!-- Spring bean injection using expression -->
-    <activiti:field name="paymentGateway" expression="#{stripePaymentGateway}"/>
-    
-    <activiti:field name="currency">
-      <activiti:expression>${order.currency}</activiti:expression>
-    </activiti:field>
-    
-    <!-- Retry configuration -->
-    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
-    
-    <!-- Execution tracking -->
-    <activiti:executionListener event="start" class="com.example.PaymentStartListener"/>
-    <activiti:executionListener event="end" delegateExpression="${paymentEndListener}"/>
-  </extensionElements>
-</serviceTask>
+             implementation="paymentProcessor"
+             activiti:async="true"/>
 
 <!-- Error boundary event -->
 <boundaryEvent id="paymentError" attachedToRef="processPayment" cancelActivity="true">
@@ -411,45 +837,140 @@ Handle exceptions (boundary events are siblings, not children):
 </boundaryEvent>
 ```
 
+**Java Implementation (Connector):**
+```java
+@Component("paymentProcessor")
+public class PaymentProcessor implements Connector {
+    
+    @Autowired
+    private PaymentGateway paymentGateway;
+    
+    @Value("${payment.currency:USD}")
+    private String currency;
+    
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        String orderId = context.getInBoundVariables().get("orderId");
+        Double amount = context.getInBoundVariables().get("amount");
+        
+        // Process payment
+        PaymentResult result = paymentGateway.process(orderId, amount, currency);
+        
+        // Configure retry in application.yml or via extension JSON
+        return context.withOutBoundVariable("paymentResult", result);
+    }
+}
+```
+
+**Extension JSON for Retry Configuration:**
+```json
+{
+  "id": "paymentProcess",
+  "extensions": {
+    "Process_paymentProcess": {
+      "constants": {
+        "processPayment": {
+          "retryCycle": {
+            "value": "R3/PT1M;R2/PT5M"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ### Example 2: Multi-Service Orchestration
 
+**BPMN:**
 ```xml
 <!-- Service 1: Validate Order -->
 <serviceTask id="validateOrder" 
              name="Validate Order"
-             activiti:delegateExpression="${orderValidator.validate()}"
-             activiti:resultVariable="validationResult"/>
+             implementation="orderValidator"/>
 
 <!-- Service 2: Check Inventory -->
 <serviceTask id="checkInventory" 
              name="Check Inventory"
-             activiti:class="com.example.InventoryService"
-             activiti:skipExpression="${!validationResult.isValid}">
-  
-  <extensionElements>
-    <activiti:field name="items">
-      <activiti:expression>${order.items}</activiti:expression>
-    </activiti:field>
-    
-    <activiti:executionListener event="start" class="com.example.InventoryCheckListener"/>
-  </extensionElements>
-</serviceTask>
+             implementation="inventoryService"/>
 
 <!-- Service 3: Reserve Stock -->
 <serviceTask id="reserveStock" 
              name="Reserve Stock"
-             activiti:delegateExpression="${inventoryService.reserve()}"
-             activiti:async="true">
-  
-  <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
-  </extensionElements>
-</serviceTask>
+             implementation="inventoryService"
+             activiti:async="true"/>
 
-<!-- Service 4: Send Confirmation -->
+<!-- Service 4: Send Confirmation (Using Custom Email Connector) -->
 <serviceTask id="sendConfirmation" 
              name="Send Confirmation"
-             activiti:type="mail">
+             implementation="emailConnector"/>
+```
+
+**Java Implementation for Email Connector:**
+```java
+@Component("emailConnector")
+public class EmailConnector implements Connector {
+    
+    @Autowired
+    private JavaMailSender mailSender;
+    
+    @Value("${mail.from.address:noreply@company.com}")
+    private String fromAddress;
+    
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        String to = context.getInBoundVariables().get("to");
+        String subject = context.getInBoundVariables().get("subject");
+        String message = context.getInBoundVariables().get("message");
+        
+        try {
+            javax.mail.MessagingMessage msg = mailSender.createMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(msg, true);
+            helper.setFrom(fromAddress);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(message);
+            
+            mailSender.send(msg);
+            return context.withOutBoundVariable("emailSent", true);
+        } catch (Exception e) {
+            return context.withOutBoundVariable("emailSent", false)
+                         .withOutBoundVariable("error", e.getMessage());
+        }
+    }
+}
+
+// Other service implementations
+@Component("orderValidator")
+public class OrderValidator implements Connector {
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        // Validation logic
+        return context.withOutBoundVariable("validationResult", true);
+    }
+}
+
+@Component("inventoryService")
+public class InventoryService implements Connector {
+    @Autowired
+    private InventoryRepository inventoryRepo;
+    
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        // Inventory logic
+        return context.withOutBoundVariable("inStock", true);
+    }
+}
+```
+
+**Alternative: Using Legacy Built-in Mail Task**
+
+If you prefer the built-in mail functionality (legacy syntax only):
+
+```xml
+<sendTask id="sendConfirmation" 
+          name="Send Confirmation"
+          activiti:type="mail">
   
   <extensionElements>
     <activiti:field name="to">
@@ -460,56 +981,128 @@ Handle exceptions (boundary events are siblings, not children):
       <activiti:string>Order Confirmation: ${order.id}</activiti:string>
     </activiti:field>
     
-    <activiti:field name="message">
-      <activiti:expression>${emailService.generateConfirmation(order)}</activiti:expression>
+    <activiti:field name="text">
+      <activiti:expression>${emailTemplate}</activiti:expression>
     </activiti:field>
   </extensionElements>
-</serviceTask>
+</sendTask>
 ```
 
-### Example 3: DMN Decision Integration
+**⚠️ Note:** The built-in mail task only works with legacy `activiti:type="mail"` syntax. For modern development, create a custom Connector bean as shown above.
 
-```xml
-<serviceTask id="creditDecision" 
-             name="Credit Assessment"
-             activiti:type="dmn"
-             activiti:implementation="dmn:credit-decision-table.dmn"
-             activiti:resultVariable="creditDecision">
-  
-  <extensionElements>
-    <activiti:inputParameter name="applicantAge">${applicant.age}</activiti:inputParameter>
-    <activiti:inputParameter name="annualIncome">${applicant.annualIncome}</activiti:inputParameter>
-    <activiti:inputParameter name="creditScore">${applicant.creditScore}</activiti:inputParameter>
-    <activiti:inputParameter name="loanAmount">${loan.amount}</activiti:inputParameter>
-    
-    <activiti:executionListener event="end" class="com.example.CreditDecisionListener"/>
-  </extensionElements>
-</serviceTask>
+**Extension JSON for Variable Mapping:**
+```json
+{
+  "id": "orderProcess",
+  "extensions": {
+    "Process_orderProcess": {
+      "mappings": {
+        "validateOrder": {
+          "inputs": {
+            "orderId": { "type": "VARIABLE", "value": "orderId" }
+          },
+          "outputs": {
+            "validationResult": { "type": "VARIABLE", "value": "isValid" }
+          }
+        },
+        "checkInventory": {
+          "inputs": {
+            "items": { "type": "VARIABLE", "value": "orderItems" }
+          }
+        },
+        "sendConfirmation": {
+          "inputs": {
+            "to": { "type": "VARIABLE", "value": "customer.email" },
+            "subject": { "type": "VALUE", "value": "Order Confirmation: ${order.id}" },
+            "message": { "type": "VARIABLE", "value": "emailTemplate" }
+          },
+          "outputs": {
+            "emailSent": { "type": "VARIABLE", "value": "sent" }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
-### Example 4: REST API Integration
+### Example 3: REST API Integration
 
-For REST API calls, use a custom Java class since `type="rest"` is not a built-in connector:
-
+**BPMN:**
 ```xml
 <serviceTask id="callExternalAPI" 
              name="Fetch Customer Data"
-             activiti:class="com.example.RestApiClient"
-             activiti:async="true">
-  
-  <extensionElements>
-    <activiti:field name="apiKey">
-      <activiti:expression>${apiKeys.customerApi}</activiti:expression>
-    </activiti:field>
-    
-    <activiti:failedJobRetryTimeCycle>R5/PT30S</activiti:failedJobRetryTimeCycle>
-  </extensionElements>
-</serviceTask>
+             implementation="restApiClient"
+             activiti:async="true"/>
 ```
 
 **Java Implementation:**
 ```java
-import org.activiti.engine.delegate.DelegateExecution;
+@Component("restApiClient")
+public class RestApiClient implements Connector {
+    
+    @Autowired
+    private RestTemplate restTemplate;
+    
+    @Value("${api.customer.url}")
+    private String apiUrl;
+    
+    @Value("${api.customer.key}")
+    private String apiKey;
+    
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        String customerId = context.getInBoundVariables().get("customerId");
+        
+        // Call REST API
+        CustomerData data = restTemplate.getForObject(
+            apiUrl + "/" + customerId, 
+            CustomerData.class,
+            apiKey
+        );
+        
+        return context.withOutBoundVariable("customerData", data);
+    }
+}
+```
+
+**application.yml Configuration:**
+```yaml
+api:
+  customer:
+    url: https://api.company.com/customers
+    key: ${CUSTOMER_API_KEY}
+```
+
+**Legacy Examples (Still Supported):**
+
+For reference, here's how these examples would look using legacy syntax:
+
+```xml
+<!-- Legacy: Payment Processing -->
+<serviceTask id="processPayment" 
+             activiti:class="com.example.PaymentProcessor"
+             activiti:async="true">
+  <extensionElements>
+    <activiti:field name="paymentGateway" expression="#{stripePaymentGateway}"/>
+    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
+</serviceTask>
+
+<!-- Legacy: Using delegateExpression -->
+<serviceTask id="validateOrder" 
+             activiti:delegateExpression="${orderValidator.validate()}"
+             activiti:resultVariable="validationResult"/>
+```
+
+**Why Modern Approach is Better:**
+- ✅ No XML field injection (use `@Autowired` instead)
+- ✅ Cleaner separation of concerns (BPMN for flow, Java for logic, JSON for mappings)
+- ✅ Type-safe with Spring dependency injection
+- ✅ Easier to test and maintain
+- ✅ Works seamlessly with extension JSON
+
+```java
 import org.activiti.engine.delegate.JavaDelegate;
 
 public class RestApiClient implements JavaDelegate {
