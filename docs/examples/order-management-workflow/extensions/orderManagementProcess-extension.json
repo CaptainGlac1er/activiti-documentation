@@ -1,0 +1,459 @@
+{
+  "id": "orderManagementProcess",
+  "name": "Order Management Workflow",
+  "type": "PROCESS",
+  "extensions": {
+    "Process_orderManagementProcess": {
+      "properties": {
+        "orderId-id": {
+          "id": "orderId-id",
+          "name": "orderId",
+          "type": "string",
+          "required": true,
+          "value": ""
+        },
+        "customerName-id": {
+          "id": "customerName-id",
+          "name": "customerName",
+          "type": "string",
+          "required": true,
+          "value": ""
+        },
+        "customerEmail-id": {
+          "id": "customerEmail-id",
+          "name": "customerEmail",
+          "type": "string",
+          "required": true,
+          "value": ""
+        },
+        "customerAddress-id": {
+          "id": "customerAddress-id",
+          "name": "customerAddress",
+          "type": "json",
+          "required": true,
+          "value": {}
+        },
+        "orderTotal-id": {
+          "id": "orderTotal-id",
+          "name": "orderTotal",
+          "type": "bigdecimal",
+          "required": true,
+          "value": 0
+        },
+        "orderItems-id": {
+          "id": "orderItems-id",
+          "name": "orderItems",
+          "type": "json",
+          "required": true,
+          "value": []
+        },
+        "customerValid-id": {
+          "id": "customerValid-id",
+          "name": "customerValid",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        },
+        "creditScore-id": {
+          "id": "creditScore-id",
+          "name": "creditScore",
+          "type": "integer",
+          "required": false,
+          "value": 0
+        },
+        "creditApproved-id": {
+          "id": "creditApproved-id",
+          "name": "creditApproved",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        },
+        "manualApproved-id": {
+          "id": "manualApproved-id",
+          "name": "manualApproved",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        },
+        "paymentStatus-id": {
+          "id": "paymentStatus-id",
+          "name": "paymentStatus",
+          "type": "string",
+          "required": false,
+          "value": "PENDING"
+        },
+        "paymentResult-id": {
+          "id": "paymentResult-id",
+          "name": "paymentResult",
+          "type": "json",
+          "required": false,
+          "value": {}
+        },
+        "inventoryStatus-id": {
+          "id": "inventoryStatus-id",
+          "name": "inventoryStatus",
+          "type": "string",
+          "required": false,
+          "value": "NOT_CHECKED"
+        },
+        "inStock-id": {
+          "id": "inStock-id",
+          "name": "inStock",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        },
+        "qualityPassed-id": {
+          "id": "qualityPassed-id",
+          "name": "qualityPassed",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        },
+        "shippingStatus-id": {
+          "id": "shippingStatus-id",
+          "name": "shippingStatus",
+          "type": "string",
+          "required": false,
+          "value": "NOT_SHIPPED"
+        },
+        "trackingNumber-id": {
+          "id": "trackingNumber-id",
+          "name": "trackingNumber",
+          "type": "string",
+          "required": false,
+          "value": ""
+        },
+        "invoiceNumber-id": {
+          "id": "invoiceNumber-id",
+          "name": "invoiceNumber",
+          "type": "string",
+          "required": false,
+          "value": ""
+        },
+        "orderStatus-id": {
+          "id": "orderStatus-id",
+          "name": "orderStatus",
+          "type": "string",
+          "required": false,
+          "value": "IN_PROGRESS"
+        }
+      },
+      "mappings": {
+        "validateCustomerTask": {
+          "inputs": {
+            "customerName": {
+              "type": "VARIABLE",
+              "value": "customerName"
+            },
+            "customerEmail": {
+              "type": "VARIABLE",
+              "value": "customerEmail"
+            },
+            "customerAddress": {
+              "type": "VARIABLE",
+              "value": "customerAddress"
+            }
+          },
+          "outputs": {
+            "customerValid": {
+              "type": "VARIABLE",
+              "value": "validationResult"
+            },
+            "customerData": {
+              "type": "VARIABLE",
+              "value": "validatedCustomerData"
+            }
+          }
+        },
+        "checkCreditScoreTask": {
+          "inputs": {
+            "customerId": {
+              "type": "VARIABLE",
+              "value": "customerName"
+            },
+            "orderAmount": {
+              "type": "VARIABLE",
+              "value": "orderTotal"
+            }
+          },
+          "outputs": {
+            "creditScore": {
+              "type": "VARIABLE",
+              "value": "score"
+            },
+            "creditApproved": {
+              "type": "VARIABLE",
+              "value": "approved"
+            }
+          }
+        },
+        "manualCreditReviewTask": {
+          "inputs": {
+            "customerInfo": {
+              "type": "VARIABLE",
+              "value": "customerName"
+            },
+            "creditScore": {
+              "type": "VARIABLE",
+              "value": "creditScore"
+            },
+            "orderTotal": {
+              "type": "VARIABLE",
+              "value": "orderTotal"
+            }
+          },
+          "outputs": {
+            "manualApproved": {
+              "type": "VARIABLE",
+              "value": "approved"
+            },
+            "reviewComments": {
+              "type": "VARIABLE",
+              "value": "comments"
+            }
+          }
+        },
+        "paymentCallActivity": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "amount": {
+              "type": "VARIABLE",
+              "value": "orderTotal"
+            },
+            "customerEmail": {
+              "type": "VARIABLE",
+              "value": "customerEmail"
+            }
+          },
+          "outputs": {
+            "paymentStatus": {
+              "type": "VARIABLE",
+              "value": "paymentStatus"
+            },
+            "paymentResult": {
+              "type": "VARIABLE",
+              "value": "paymentDetails"
+            }
+          }
+        },
+        "inventoryCallActivity": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "orderItems": {
+              "type": "VARIABLE",
+              "value": "orderItems"
+            }
+          },
+          "outputs": {
+            "inventoryStatus": {
+              "type": "VARIABLE",
+              "value": "inventoryStatus"
+            },
+            "inStock": {
+              "type": "VARIABLE",
+              "value": "inStock"
+            }
+          }
+        },
+        "generateInvoiceTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "customerName": {
+              "type": "VARIABLE",
+              "value": "customerName"
+            },
+            "customerAddress": {
+              "type": "VARIABLE",
+              "value": "customerAddress"
+            },
+            "orderItems": {
+              "type": "VARIABLE",
+              "value": "orderItems"
+            },
+            "orderTotal": {
+              "type": "VARIABLE",
+              "value": "orderTotal"
+            }
+          },
+          "outputs": {
+            "invoiceNumber": {
+              "type": "VARIABLE",
+              "value": "invoiceId"
+            },
+            "invoiceUrl": {
+              "type": "VARIABLE",
+              "value": "downloadUrl"
+            }
+          }
+        },
+        "sendConfirmationTask": {
+          "inputs": {
+            "recipient": {
+              "type": "VARIABLE",
+              "value": "customerEmail"
+            },
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "customerName": {
+              "type": "VARIABLE",
+              "value": "customerName"
+            },
+            "orderTotal": {
+              "type": "VARIABLE",
+              "value": "orderTotal"
+            },
+            "invoiceNumber": {
+              "type": "VARIABLE",
+              "value": "invoiceNumber"
+            },
+            "emailTemplate": {
+              "type": "VALUE",
+              "value": "order_confirmation"
+            }
+          }
+        },
+        "qualityCheckTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "orderItems": {
+              "type": "VARIABLE",
+              "value": "orderItems"
+            },
+            "paymentStatus": {
+              "type": "VARIABLE",
+              "value": "paymentStatus"
+            },
+            "inventoryStatus": {
+              "type": "VARIABLE",
+              "value": "inventoryStatus"
+            }
+          },
+          "outputs": {
+            "qualityPassed": {
+              "type": "VARIABLE",
+              "value": "passed"
+            },
+            "qualityNotes": {
+              "type": "VARIABLE",
+              "value": "notes"
+            }
+          }
+        },
+        "shippingCallActivity": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "customerAddress": {
+              "type": "VARIABLE",
+              "value": "customerAddress"
+            },
+            "orderItems": {
+              "type": "VARIABLE",
+              "value": "orderItems"
+            },
+            "shippingMethod": {
+              "type": "VARIABLE",
+              "value": "selectedShippingMethod"
+            }
+          },
+          "outputs": {
+            "shippingStatus": {
+              "type": "VARIABLE",
+              "value": "shippingStatus"
+            },
+            "trackingNumber": {
+              "type": "VARIABLE",
+              "value": "trackingNumber"
+            }
+          }
+        },
+        "updateOrderStatusTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "orderStatus": {
+              "type": "VALUE",
+              "value": "COMPLETED"
+            },
+            "trackingNumber": {
+              "type": "VARIABLE",
+              "value": "trackingNumber"
+            },
+            "completionDate": {
+              "type": "VARIABLE",
+              "value": "currentDate"
+            }
+          },
+          "outputs": {
+            "orderStatus": {
+              "type": "VARIABLE",
+              "value": "updatedStatus"
+            }
+          }
+        }
+      },
+      "constants": {
+        "checkCreditScoreTask": {
+          "creditBureauApi": {
+            "value": "https://api.creditbureau.com/v1"
+          },
+          "minCreditScore": {
+            "value": "650"
+          },
+          "timeout": {
+            "value": "30000"
+          }
+        },
+        "generateInvoiceTask": {
+          "invoiceTemplate": {
+            "value": "STANDARD_INVOICE"
+          },
+          "currency": {
+            "value": "USD"
+          },
+          "invoicePrefix": {
+            "value": "INV-"
+          }
+        },
+        "sendConfirmationTask": {
+          "smtpServer": {
+            "value": "smtp.company.com"
+          },
+          "fromAddress": {
+            "value": "orders@company.com"
+          },
+          "emailTemplate": {
+            "value": "order_confirmation"
+          }
+        },
+        "updateOrderStatusTask": {
+          "orderManagementSystem": {
+            "value": "https://oms.company.com/api"
+          },
+          "statusCompleted": {
+            "value": "COMPLETED"
+          }
+        }
+      }
+    }
+  }
+}

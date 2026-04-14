@@ -1,0 +1,237 @@
+{
+  "id": "inventoryProcess",
+  "name": "Inventory Management Process",
+  "type": "PROCESS",
+  "extensions": {
+    "Process_inventoryProcess": {
+      "properties": {
+        "orderId-id": {
+          "id": "orderId-id",
+          "name": "orderId",
+          "type": "string",
+          "required": true,
+          "value": ""
+        },
+        "orderItems-id": {
+          "id": "orderItems-id",
+          "name": "orderItems",
+          "type": "json",
+          "required": true,
+          "value": []
+        },
+        "inStock-id": {
+          "id": "inStock-id",
+          "name": "inStock",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        },
+        "inventoryStatus-id": {
+          "id": "inventoryStatus-id",
+          "name": "inventoryStatus",
+          "type": "string",
+          "required": false,
+          "value": "NOT_CHECKED"
+        },
+        "stockLevels-id": {
+          "id": "stockLevels-id",
+          "name": "stockLevels",
+          "type": "json",
+          "required": false,
+          "value": {}
+        },
+        "reservedItems-id": {
+          "id": "reservedItems-id",
+          "name": "reservedItems",
+          "type": "json",
+          "required": false,
+          "value": []
+        },
+        "backorderApproved-id": {
+          "id": "backorderApproved-id",
+          "name": "backorderApproved",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        },
+        "warehouseId-id": {
+          "id": "warehouseId-id",
+          "name": "warehouseId",
+          "type": "string",
+          "required": false,
+          "value": ""
+        },
+        "supplierNotified-id": {
+          "id": "supplierNotified-id",
+          "name": "supplierNotified",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        }
+      },
+      "mappings": {
+        "checkStockAvailabilityTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "orderItems": {
+              "type": "VARIABLE",
+              "value": "orderItems"
+            }
+          },
+          "outputs": {
+            "inStock": {
+              "type": "VARIABLE",
+              "value": "available"
+            },
+            "stockLevels": {
+              "type": "VARIABLE",
+              "value": "levels"
+            },
+            "inventoryStatus": {
+              "type": "VARIABLE",
+              "value": "status"
+            }
+          }
+        },
+        "reserveInventoryTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "orderItems": {
+              "type": "VARIABLE",
+              "value": "orderItems"
+            },
+            "stockLevels": {
+              "type": "VARIABLE",
+              "value": "stockLevels"
+            }
+          },
+          "outputs": {
+            "reservedItems": {
+              "type": "VARIABLE",
+              "value": "reserved"
+            },
+            "warehouseId": {
+              "type": "VARIABLE",
+              "value": "warehouse"
+            },
+            "inventoryStatus": {
+              "type": "VARIABLE",
+              "value": "RESERVED"
+            }
+          }
+        },
+        "updateWarehouseSystemTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "reservedItems": {
+              "type": "VARIABLE",
+              "value": "reservedItems"
+            },
+            "warehouseId": {
+              "type": "VARIABLE",
+              "value": "warehouseId"
+            }
+          },
+          "outputs": {
+            "warehouseUpdated": {
+              "type": "VARIABLE",
+              "value": "updated"
+            }
+          }
+        },
+        "notifySupplierTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "reservedItems": {
+              "type": "VARIABLE",
+              "value": "reservedItems"
+            },
+            "warehouseId": {
+              "type": "VARIABLE",
+              "value": "warehouseId"
+            }
+          },
+          "outputs": {
+            "supplierNotified": {
+              "type": "VARIABLE",
+              "value": "notified"
+            }
+          }
+        },
+        "backorderApprovalTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "orderItems": {
+              "type": "VARIABLE",
+              "value": "orderItems"
+            },
+            "stockLevels": {
+              "type": "VARIABLE",
+              "value": "stockLevels"
+            }
+          },
+          "outputs": {
+            "backorderApproved": {
+              "type": "VARIABLE",
+              "value": "approved"
+            },
+            "backorderReason": {
+              "type": "VARIABLE",
+              "value": "reason"
+            },
+            "inventoryStatus": {
+              "type": "VARIABLE",
+              "value": "BACKORDERED"
+            }
+          }
+        }
+      },
+      "constants": {
+        "checkStockAvailabilityTask": {
+          "inventorySystem": {
+            "value": "https://inventory.company.com/api"
+          },
+          "minStockThreshold": {
+            "value": "10"
+          }
+        },
+        "reserveInventoryTask": {
+          "reservationTimeout": {
+            "value": "PT1H"
+          },
+          "maxReservationDays": {
+            "value": "7"
+          }
+        },
+        "updateWarehouseSystemTask": {
+          "warehouseApi": {
+            "value": "https://warehouse.company.com/api"
+          }
+        },
+        "notifySupplierTask": {
+          "supplierPortal": {
+            "value": "https://supplier.company.com/api"
+          },
+          "notificationTemplate": {
+            "value": "inventory_replenishment"
+          }
+        }
+      }
+    }
+  }
+}

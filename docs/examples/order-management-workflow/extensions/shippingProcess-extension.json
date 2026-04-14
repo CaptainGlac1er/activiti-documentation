@@ -1,0 +1,365 @@
+{
+  "id": "shippingProcess",
+  "name": "Shipping & Delivery Process",
+  "type": "PROCESS",
+  "extensions": {
+    "Process_shippingProcess": {
+      "properties": {
+        "orderId-id": {
+          "id": "orderId-id",
+          "name": "orderId",
+          "type": "string",
+          "required": true,
+          "value": ""
+        },
+        "customerAddress-id": {
+          "id": "customerAddress-id",
+          "name": "customerAddress",
+          "type": "json",
+          "required": true,
+          "value": {}
+        },
+        "orderItems-id": {
+          "id": "orderItems-id",
+          "name": "orderItems",
+          "type": "json",
+          "required": true,
+          "value": []
+        },
+        "shippingMethod-id": {
+          "id": "shippingMethod-id",
+          "name": "shippingMethod",
+          "type": "string",
+          "required": false,
+          "value": "STANDARD"
+        },
+        "selectedShippingMethod-id": {
+          "id": "selectedShippingMethod-id",
+          "name": "selectedShippingMethod",
+          "type": "string",
+          "required": false,
+          "value": "STANDARD"
+        },
+        "packageDetails-id": {
+          "id": "packageDetails-id",
+          "name": "packageDetails",
+          "type": "json",
+          "required": false,
+          "value": {}
+        },
+        "shippingLabel-id": {
+          "id": "shippingLabel-id",
+          "name": "shippingLabel",
+          "type": "string",
+          "required": false,
+          "value": ""
+        },
+        "trackingNumber-id": {
+          "id": "trackingNumber-id",
+          "name": "trackingNumber",
+          "type": "string",
+          "required": false,
+          "value": ""
+        },
+        "shippingStatus-id": {
+          "id": "shippingStatus-id",
+          "name": "shippingStatus",
+          "type": "string",
+          "required": false,
+          "value": "NOT_SHIPPED"
+        },
+        "deliveryDate-id": {
+          "id": "deliveryDate-id",
+          "name": "deliveryDate",
+          "type": "date",
+          "required": false,
+          "value": null
+        },
+        "pickupScheduled-id": {
+          "id": "pickupScheduled-id",
+          "name": "pickupScheduled",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        },
+        "customerNotified-id": {
+          "id": "customerNotified-id",
+          "name": "customerNotified",
+          "type": "boolean",
+          "required": false,
+          "value": false
+        }
+      },
+      "mappings": {
+        "prepareShipmentTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "customerAddress": {
+              "type": "VARIABLE",
+              "value": "customerAddress"
+            },
+            "orderItems": {
+              "type": "VARIABLE",
+              "value": "orderItems"
+            },
+            "shippingMethod": {
+              "type": "VARIABLE",
+              "value": "selectedShippingMethod"
+            }
+          },
+          "outputs": {
+            "packageDetails": {
+              "type": "VARIABLE",
+              "value": "packageInfo"
+            },
+            "preparedDate": {
+              "type": "VARIABLE",
+              "value": "preparationDate"
+            }
+          }
+        },
+        "generateShippingLabelTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "customerAddress": {
+              "type": "VARIABLE",
+              "value": "customerAddress"
+            },
+            "packageDetails": {
+              "type": "VARIABLE",
+              "value": "packageDetails"
+            },
+            "shippingMethod": {
+              "type": "VARIABLE",
+              "value": "selectedShippingMethod"
+            }
+          },
+          "outputs": {
+            "shippingLabel": {
+              "type": "VARIABLE",
+              "value": "labelUrl"
+            },
+            "trackingNumber": {
+              "type": "VARIABLE",
+              "value": "trackingId"
+            }
+          }
+        },
+        "schedulePriorityPickupTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "trackingNumber": {
+              "type": "VARIABLE",
+              "value": "trackingNumber"
+            },
+            "packageDetails": {
+              "type": "VARIABLE",
+              "value": "packageDetails"
+            },
+            "pickupType": {
+              "type": "VALUE",
+              "value": "PRIORITY"
+            }
+          },
+          "outputs": {
+            "pickupScheduled": {
+              "type": "VARIABLE",
+              "value": "scheduled"
+            },
+            "pickupTime": {
+              "type": "VARIABLE",
+              "value": "scheduledTime"
+            },
+            "shippingStatus": {
+              "type": "VARIABLE",
+              "value": "IN_TRANSIT"
+            }
+          }
+        },
+        "scheduleRegularPickupTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "trackingNumber": {
+              "type": "VARIABLE",
+              "value": "trackingNumber"
+            },
+            "packageDetails": {
+              "type": "VARIABLE",
+              "value": "packageDetails"
+            },
+            "pickupType": {
+              "type": "VALUE",
+              "value": "STANDARD"
+            }
+          },
+          "outputs": {
+            "pickupScheduled": {
+              "type": "VARIABLE",
+              "value": "scheduled"
+            },
+            "pickupTime": {
+              "type": "VARIABLE",
+              "value": "scheduledTime"
+            },
+            "shippingStatus": {
+              "type": "VARIABLE",
+              "value": "IN_TRANSIT"
+            }
+          }
+        },
+        "notifyStorePickupTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "customerEmail": {
+              "type": "VARIABLE",
+              "value": "customerEmail"
+            },
+            "storeLocation": {
+              "type": "VARIABLE",
+              "value": "pickupLocation"
+            }
+          },
+          "outputs": {
+            "customerNotified": {
+              "type": "VARIABLE",
+              "value": "notified"
+            },
+            "shippingStatus": {
+              "type": "VARIABLE",
+              "value": "READY_FOR_PICKUP"
+            }
+          }
+        },
+        "updateTrackingSystemTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "trackingNumber": {
+              "type": "VARIABLE",
+              "value": "trackingNumber"
+            },
+            "shippingStatus": {
+              "type": "VARIABLE",
+              "value": "shippingStatus"
+            },
+            "pickupTime": {
+              "type": "VARIABLE",
+              "value": "pickupTime"
+            }
+          },
+          "outputs": {
+            "trackingUpdated": {
+              "type": "VARIABLE",
+              "value": "updated"
+            }
+          }
+        },
+        "sendDeliveryConfirmationTask": {
+          "inputs": {
+            "orderId": {
+              "type": "VARIABLE",
+              "value": "orderId"
+            },
+            "customerEmail": {
+              "type": "VARIABLE",
+              "value": "customerEmail"
+            },
+            "trackingNumber": {
+              "type": "VARIABLE",
+              "value": "trackingNumber"
+            },
+            "deliveryDate": {
+              "type": "VARIABLE",
+              "value": "deliveryDate"
+            },
+            "emailTemplate": {
+              "type": "VALUE",
+              "value": "delivery_confirmation"
+            }
+          },
+          "outputs": {
+            "confirmationSent": {
+              "type": "VARIABLE",
+              "value": "sent"
+            },
+            "shippingStatus": {
+              "type": "VARIABLE",
+              "value": "DELIVERED"
+            }
+          }
+        }
+      },
+      "constants": {
+        "generateShippingLabelTask": {
+          "shippingProvider": {
+            "value": "fedex"
+          },
+          "labelApi": {
+            "value": "https://api.fedex.com/label/v1"
+          },
+          "labelFormat": {
+            "value": "PDF"
+          }
+        },
+        "schedulePriorityPickupTask": {
+          "priorityService": {
+            "value": "OVERNIGHT"
+          },
+          "pickupApi": {
+            "value": "https://api.fedex.com/pickup/v1"
+          },
+          "maxPickupTime": {
+            "value": "PT4H"
+          }
+        },
+        "scheduleRegularPickupTask": {
+          "standardService": {
+            "value": "GROUND"
+          },
+          "pickupApi": {
+            "value": "https://api.fedex.com/pickup/v1"
+          },
+          "maxPickupTime": {
+            "value": "P1D"
+          }
+        },
+        "updateTrackingSystemTask": {
+          "trackingApi": {
+            "value": "https://api.fedex.com/tracking/v1"
+          },
+          "updateFrequency": {
+            "value": "PT1H"
+          }
+        },
+        "sendDeliveryConfirmationTask": {
+          "smtpServer": {
+            "value": "smtp.company.com"
+          },
+          "fromAddress": {
+            "value": "shipping@company.com"
+          },
+          "emailTemplate": {
+            "value": "delivery_confirmation"
+          }
+        }
+      }
+    }
+  }
+}

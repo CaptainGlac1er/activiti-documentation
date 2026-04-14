@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:activiti="http://activiti.org/bpmn" id="Definitions_ShippingProcess" targetNamespace="http://bpmn.io/schema/bpmn">
+  
+  <!-- Message for delivery confirmation -->
+  <bpmn:message id="shipmentDeliveredMessage" name="ShipmentDelivered"/>
+  <bpmn:message id="escalationMessage" name="EscalationRequest"/>
+  
+  <bpmn:process id="shippingProcess" name="Shipping &amp; Delivery Process" isExecutable="true">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="shippingStartEvent" name="Shipping Started">
+      <bpmn:outgoing>flowToPrepareShipment</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Prepare Shipment -->
+    <bpmn:userTask id="prepareShipmentTask" name="Prepare Shipment" activiti:assignee="${warehouseTeam}">
+      <bpmn:incoming>flowToPrepareShipment</bpmn:incoming>
+      <bpmn:outgoing>flowToGenerateLabel</bpmn:outgoing>
+      <bpmn:property id="packageDetails" name="packageDetails"/>
+    </bpmn:userTask>
+    
+    <!-- Generate Shipping Label -->
+    <bpmn:serviceTask id="generateShippingLabelTask" name="Generate Shipping Label" activiti:implementationType="#{shippingLabelService}">
+      <bpmn:incoming>flowToGenerateLabel</bpmn:incoming>
+      <bpmn:outgoing>flowToShippingMethodGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Shipping Method Gateway -->
+    <bpmn:exclusiveGateway id="shippingMethodGateway" name="Shipping Method?">
+      <bpmn:incoming>flowToShippingMethodGateway</bpmn:incoming>
+      <bpmn:outgoing>flowToPriorityPickup</bpmn:outgoing>
+      <bpmn:outgoing>flowToRegularPickup</bpmn:outgoing>
+      <bpmn:outgoing>flowToStorePickup</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Schedule Priority Pickup -->
+    <bpmn:serviceTask id="schedulePriorityPickupTask" name="Schedule Priority Pickup" activiti:implementationType="#{priorityPickupService}">
+      <bpmn:incoming>flowToPriorityPickup</bpmn:incoming>
+      <bpmn:outgoing>flowToUpdateTracking</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Schedule Regular Pickup -->
+    <bpmn:serviceTask id="scheduleRegularPickupTask" name="Schedule Regular Pickup" activiti:implementationType="#{regularPickupService}">
+      <bpmn:incoming>flowToRegularPickup</bpmn:incoming>
+      <bpmn:outgoing>flowToUpdateTracking</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Notify Customer for Pickup -->
+    <bpmn:userTask id="notifyStorePickupTask" name="Notify Customer for Pickup" activiti:assignee="${customerServiceTeam}">
+      <bpmn:incoming>flowToStorePickup</bpmn:incoming>
+      <bpmn:outgoing>flowToStorePickupComplete</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Update Tracking System -->
+    <bpmn:serviceTask id="updateTrackingSystemTask" name="Update Tracking System" activiti:implementationType="#{trackingUpdateService}">
+      <bpmn:incoming>flowToUpdateTracking</bpmn:incoming>
+      <bpmn:incoming>flowToUpdateTrackingFromRegular</bpmn:incoming>
+      <bpmn:outgoing>flowToDeliveryWait</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Intermediate Event - Wait for Delivery -->
+    <bpmn:intermediateCatchEvent id="waitForDeliveryEvent" name="Waiting for Delivery">
+      <bpmn:incoming>flowToDeliveryWait</bpmn:incoming>
+      <bpmn:outgoing>flowToSendConfirmation</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="shipmentDeliveredMessage"/>
+    </bpmn:intermediateCatchEvent>
+    
+    <!-- Send Delivery Confirmation -->
+    <bpmn:serviceTask id="sendDeliveryConfirmationTask" name="Send Delivery Confirmation" activiti:implementationType="#{deliveryConfirmationService}">
+      <bpmn:incoming>flowToSendConfirmation</bpmn:incoming>
+      <bpmn:outgoing>flowToShippingCompleted</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Events -->
+    <bpmn:endEvent id="shippingCompletedEndEvent" name="Shipping Completed">
+      <bpmn:incoming>flowToShippingCompleted</bpmn:incoming>
+      <bpmn:incoming>flowToStorePickupComplete</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flowToPrepareShipment" sourceRef="shippingStartEvent" targetRef="prepareShipmentTask"/>
+    <bpmn:sequenceFlow id="flowToGenerateLabel" sourceRef="prepareShipmentTask" targetRef="generateShippingLabelTask"/>
+    <bpmn:sequenceFlow id="flowToShippingMethodGateway" sourceRef="generateShippingLabelTask" targetRef="shippingMethodGateway"/>
+    <bpmn:sequenceFlow id="flowToPriorityPickup" name="Express" sourceRef="shippingMethodGateway" targetRef="schedulePriorityPickupTask">
+      <bpmn:conditionExpression>${shippingMethod == 'EXPRESS'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToRegularPickup" name="Standard" sourceRef="shippingMethodGateway" targetRef="scheduleRegularPickupTask">
+      <bpmn:conditionExpression>${shippingMethod == 'STANDARD'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToStorePickup" name="Store Pickup" sourceRef="shippingMethodGateway" targetRef="notifyStorePickupTask">
+      <bpmn:conditionExpression>${shippingMethod == 'STORE_PICKUP'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToUpdateTracking" sourceRef="schedulePriorityPickupTask" targetRef="updateTrackingSystemTask"/>
+    <bpmn:sequenceFlow id="flowToUpdateTrackingFromRegular" sourceRef="scheduleRegularPickupTask" targetRef="updateTrackingSystemTask"/>
+    <bpmn:sequenceFlow id="flowToDeliveryWait" sourceRef="updateTrackingSystemTask" targetRef="waitForDeliveryEvent"/>
+    <bpmn:sequenceFlow id="flowToSendConfirmation" sourceRef="waitForDeliveryEvent" targetRef="sendDeliveryConfirmationTask"/>
+    <bpmn:sequenceFlow id="flowToShippingCompleted" sourceRef="sendDeliveryConfirmationTask" targetRef="shippingCompletedEndEvent"/>
+    <bpmn:sequenceFlow id="flowToStorePickupComplete" sourceRef="notifyStorePickupTask" targetRef="shippingCompletedEndEvent"/>
+    
+  </bpmn:process>
+  
+  <bpmndi:BPMNDiagram id="BPMNDiagram_ShippingProcess">
+    <bpmndi:BPMNPlane id="BPMNPlane_ShippingProcess" bpmnElement="shippingProcess">
+      <bpmndi:BPMNShape id="shippingStartEvent_di" bpmnElement="shippingStartEvent">
+        <dc:Bounds x="100" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="prepareShipmentTask_di" bpmnElement="prepareShipmentTask">
+        <dc:Bounds x="200" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="generateShippingLabelTask_di" bpmnElement="generateShippingLabelTask">
+        <dc:Bounds x="350" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shippingMethodGateway_di" bpmnElement="shippingMethodGateway">
+        <dc:Bounds x="500" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="schedulePriorityPickupTask_di" bpmnElement="schedulePriorityPickupTask">
+        <dc:Bounds x="600" y="-100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="scheduleRegularPickupTask_di" bpmnElement="scheduleRegularPickupTask">
+        <dc:Bounds x="600" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="notifyStorePickupTask_di" bpmnElement="notifyStorePickupTask">
+        <dc:Bounds x="600" y="200" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="updateTrackingSystemTask_di" bpmnElement="updateTrackingSystemTask">
+        <dc:Bounds x="750" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="waitForDeliveryEvent_di" bpmnElement="waitForDeliveryEvent">
+        <dc:Bounds x="900" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sendDeliveryConfirmationTask_di" bpmnElement="sendDeliveryConfirmationTask">
+        <dc:Bounds x="1000" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shippingCompletedEndEvent_di" bpmnElement="shippingCompletedEndEvent">
+        <dc:Bounds x="1150" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

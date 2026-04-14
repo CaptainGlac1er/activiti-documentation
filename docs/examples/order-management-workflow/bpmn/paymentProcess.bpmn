@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:activiti="http://activiti.org/bpmn" id="Definitions_PaymentProcess" targetNamespace="http://bpmn.io/schema/bpmn">
+  
+  <bpmn:process id="paymentProcess" name="Payment Process" isExecutable="true">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="paymentStartEvent" name="Payment Started">
+      <bpmn:outgoing>flowToEnterPayment</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Enter Payment Details -->
+    <bpmn:userTask id="enterPaymentDetailsTask" name="Enter Payment Details" activiti:assignee="${paymentProcessor}">
+      <bpmn:incoming>flowToEnterPayment</bpmn:incoming>
+      <bpmn:outgoing>flowToValidatePayment</bpmn:outgoing>
+      <bpmn:property id="paymentMethod" name="paymentMethod"/>
+      <bpmn:property id="cardNumber" name="cardNumber"/>
+    </bpmn:userTask>
+    
+    <!-- Validate Payment Method -->
+    <bpmn:serviceTask id="validatePaymentMethodTask" name="Validate Payment Method" implementation="#{paymentValidationService}">
+      <bpmn:incoming>flowToValidatePayment</bpmn:incoming>
+      <bpmn:outgoing>flowToPaymentValidationGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Payment Validation Gateway -->
+    <bpmn:exclusiveGateway id="paymentValidationGateway" name="Valid Payment?">
+      <bpmn:incoming>flowToPaymentValidationGateway</bpmn:incoming>
+      <bpmn:outgoing>flowToProcessPayment</bpmn:outgoing>
+      <bpmn:outgoing>flowToPaymentFailed</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Process Payment -->
+    <bpmn:serviceTask id="processPaymentTask" name="Process Payment" implementation="#{paymentProcessingService}" activiti:async="true">
+      <bpmn:incoming>flowToProcessPayment</bpmn:incoming>
+      <bpmn:outgoing>flowToPaymentResultGateway</bpmn:outgoing>
+      
+      <!-- Boundary Event - Timer -->
+      <bpmn:boundaryEvent id="paymentTimeoutEvent" name="Payment Timeout" attachedToRef="processPaymentTask" cancelActivity="true">
+        <bpmn:outgoing>flowToRetryPayment</bpmn:outgoing>
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration>PT2M</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+    </bpmn:serviceTask>
+    
+    <!-- Payment Result Gateway -->
+    <bpmn:exclusiveGateway id="paymentResultGateway" name="Payment Success?">
+      <bpmn:incoming>flowToPaymentResultGateway</bpmn:incoming>
+      <bpmn:outgoing>flowToGenerateReceipt</bpmn:outgoing>
+      <bpmn:outgoing>flowToRetryGateway</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Retry Payment (Multi-Instance) -->
+    <bpmn:userTask id="retryPaymentTask" name="Retry Payment" activiti:assignee="${paymentProcessor}">
+      <bpmn:incoming>flowToRetryPayment</bpmn:incoming>
+      <bpmn:outgoing>flowToRetryValidation</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" activiti:collection="${retryAttempts}" activiti:elementVariable="attempt">
+        <bpmn:loopCardinality>3</bpmn:loopCardinality>
+        <bpmn:completionCondition>${approvedRetries >= 1}</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    
+    <!-- Retry Validation Gateway -->
+    <bpmn:exclusiveGateway id="retryValidationGateway" name="Retry Valid?">
+      <bpmn:incoming>flowToRetryValidation</bpmn:incoming>
+      <bpmn:outgoing>flowToProcessPaymentFromRetry</bpmn:outgoing>
+      <bpmn:outgoing>flowToCheckRetryCount</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Check Retry Count -->
+    <bpmn:exclusiveGateway id="retryCountGateway" name="Retries Exhausted?">
+      <bpmn:incoming>flowToCheckRetryCount</bpmn:incoming>
+      <bpmn:outgoing>flowToProcessPaymentFromRetry</bpmn:outgoing>
+      <bpmn:outgoing>flowToPaymentFailedFromRetry</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Generate Receipt -->
+    <bpmn:serviceTask id="generateReceiptTask" name="Generate Receipt" activiti:implementationType="#{receiptService}">
+      <bpmn:incoming>flowToGenerateReceipt</bpmn:incoming>
+      <bpmn:outgoing>flowToNotifyAccounting</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Notify Accounting System -->
+    <bpmn:serviceTask id="notifyAccountingTask" name="Notify Accounting System" activiti:implementationType="#{accountingNotificationService}">
+      <bpmn:incoming>flowToNotifyAccounting</bpmn:incoming>
+      <bpmn:outgoing>flowToPaymentCompleted</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Events -->
+    <bpmn:endEvent id="paymentCompletedEndEvent" name="Payment Completed">
+      <bpmn:incoming>flowToPaymentCompleted</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="paymentFailedEndEvent" name="Payment Failed">
+      <bpmn:incoming>flowToPaymentFailed</bpmn:incoming>
+      <bpmn:incoming>flowToPaymentFailedFromRetry</bpmn:incoming>
+      <bpmn:terminateEventDefinition/>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flowToEnterPayment" sourceRef="paymentStartEvent" targetRef="enterPaymentDetailsTask"/>
+    <bpmn:sequenceFlow id="flowToValidatePayment" sourceRef="enterPaymentDetailsTask" targetRef="validatePaymentMethodTask"/>
+    <bpmn:sequenceFlow id="flowToPaymentValidationGateway" sourceRef="validatePaymentMethodTask" targetRef="paymentValidationGateway"/>
+    <bpmn:sequenceFlow id="flowToProcessPayment" name="Yes" sourceRef="paymentValidationGateway" targetRef="processPaymentTask">
+      <bpmn:conditionExpression>${paymentValid == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToPaymentFailed" name="No" sourceRef="paymentValidationGateway" targetRef="paymentFailedEndEvent">
+      <bpmn:conditionExpression>${paymentValid == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToPaymentResultGateway" sourceRef="processPaymentTask" targetRef="paymentResultGateway"/>
+    <bpmn:sequenceFlow id="flowToGenerateReceipt" name="Success" sourceRef="paymentResultGateway" targetRef="generateReceiptTask">
+      <bpmn:conditionExpression>${paymentSuccess == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToRetryGateway" name="Failed" sourceRef="paymentResultGateway" targetRef="retryPaymentTask">
+      <bpmn:conditionExpression>${paymentSuccess == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToRetryPayment" sourceRef="paymentTimeoutEvent" targetRef="retryPaymentTask"/>
+    <bpmn:sequenceFlow id="flowToRetryValidation" sourceRef="retryPaymentTask" targetRef="retryValidationGateway"/>
+    <bpmn:sequenceFlow id="flowToProcessPaymentFromRetry" name="Valid" sourceRef="retryValidationGateway" targetRef="processPaymentTask">
+      <bpmn:conditionExpression>${retryValid == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToCheckRetryCount" name="Invalid" sourceRef="retryValidationGateway" targetRef="retryCountGateway">
+      <bpmn:conditionExpression>${retryValid == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToNotifyAccounting" sourceRef="generateReceiptTask" targetRef="notifyAccountingTask"/>
+    <bpmn:sequenceFlow id="flowToPaymentCompleted" sourceRef="notifyAccountingTask" targetRef="paymentCompletedEndEvent"/>
+    <bpmn:sequenceFlow id="flowToProcessPaymentFromRetry2" name="More Retries" sourceRef="retryCountGateway" targetRef="processPaymentTask">
+      <bpmn:conditionExpression>${retryCount < 3}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowToPaymentFailedFromRetry" name="No More Retries" sourceRef="retryCountGateway" targetRef="paymentFailedEndEvent">
+      <bpmn:conditionExpression>${retryCount >= 3}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+  </bpmn:process>
+  
+  <bpmndi:BPMNDiagram id="BPMNDiagram_PaymentProcess">
+    <bpmndi:BPMNPlane id="BPMNPlane_PaymentProcess" bpmnElement="paymentProcess">
+      <bpmndi:BPMNShape id="paymentStartEvent_di" bpmnElement="paymentStartEvent">
+        <dc:Bounds x="100" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="enterPaymentDetailsTask_di" bpmnElement="enterPaymentDetailsTask">
+        <dc:Bounds x="200" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="validatePaymentMethodTask_di" bpmnElement="validatePaymentMethodTask">
+        <dc:Bounds x="350" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="paymentValidationGateway_di" bpmnElement="paymentValidationGateway">
+        <dc:Bounds x="500" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="processPaymentTask_di" bpmnElement="processPaymentTask">
+        <dc:Bounds x="600" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="paymentResultGateway_di" bpmnElement="paymentResultGateway">
+        <dc:Bounds x="750" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="generateReceiptTask_di" bpmnElement="generateReceiptTask">
+        <dc:Bounds x="850" y="-50" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="notifyAccountingTask_di" bpmnElement="notifyAccountingTask">
+        <dc:Bounds x="1000" y="-50" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="paymentCompletedEndEvent_di" bpmnElement="paymentCompletedEndEvent">
+        <dc:Bounds x="1150" y="-34" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="retryPaymentTask_di" bpmnElement="retryPaymentTask">
+        <dc:Bounds x="850" y="200" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="retryValidationGateway_di" bpmnElement="retryValidationGateway">
+        <dc:Bounds x="1000" y="215" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="paymentFailedEndEvent_di" bpmnElement="paymentFailedEndEvent">
+        <dc:Bounds x="1150" y="200" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

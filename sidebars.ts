@@ -204,6 +204,18 @@ const sidebars: SidebarsConfig = {
         'troubleshooting/overview',
       ],
     },
+    {
+      type: 'category',
+      label: 'Examples',
+      link: {type: 'generated-index', title: 'Complete Working Examples'},
+      items: [
+        {
+          type: 'doc',
+          id: 'examples/order-management-workflow/README',
+          label: 'Order Management Workflow (45+ BPMN Elements)',
+        },
+      ],
+    },
   ],
 };
 
