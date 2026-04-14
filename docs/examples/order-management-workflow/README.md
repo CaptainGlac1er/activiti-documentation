@@ -210,12 +210,8 @@ Comprehensive input/output mappings for 25+ activities:
 ```
 
 **Mapping Types**:
-- `VARIABLE`: Map from another variable
-- `VALUE`: Constant literal value
-- `JSONPATCH`: Update JSON object fields
-- `MAP_ALL`: Automatic all variables
-- `MAP_ALL_INPUTS`: All inputs, selective outputs
-- `MAP_ALL_OUTPUTS`: Selective inputs, all outputs
+- `variable`: Map from another variable
+- `value`: Constant literal value
 
 ### Constants (Configuration Values)
 
@@ -244,19 +240,19 @@ Environment-specific configuration:
 
 ## Service Task Delegates
 
-All service tasks use Spring beans with `@Component` annotation and inject configuration from `ServiceProperties`:
+All service tasks use Spring beans implementing the `Connector` interface and inject configuration from `ServiceProperties`:
 
 ```java
 @Component("creditScoreService")
-public class CreditScoreService implements JavaDelegator {
+public class CreditScoreService implements Connector {
     
     @Autowired
     private ServiceProperties serviceProperties;
     
     @Override
-    public void execute() {
+    public IntegrationContext apply(IntegrationContext integrationContext) {
         // Access input variables
-        String customerId = (String) getVariable("customerId");
+        String customerId = (String) integrationContext.getInBoundVariables().get("customerId");
         
         // Use configuration from application.yml
         int minScore = serviceProperties.getCreditBureau().getMinCreditScore();
@@ -267,11 +263,11 @@ public class CreditScoreService implements JavaDelegator {
         boolean approved = creditScore >= minScore;
         
         // Set output variables
-        Map<String, Object> output = new HashMap<>();
-        output.put("score", creditScore);
-        output.put("approved", approved);
-        output.put("minRequiredScore", minScore);
-        setVariables(output);
+        integrationContext.addOutBoundVariable("score", creditScore);
+        integrationContext.addOutBoundVariable("approved", approved);
+        integrationContext.addOutBoundVariable("minRequiredScore", minScore);
+        
+        return integrationContext;
     }
 }
 ```
@@ -436,7 +432,6 @@ public class CreditScoreService implements JavaDelegator {
     }
 }
 ```
-    api-url: https://api.fedex.com/v1
 ```
 
 ## Running the Example
@@ -566,15 +561,9 @@ class OrderManagementIntegrationTest {
 </userTask>
 ```
 
-### Pattern 2: Retry with Multi-Instance
+### Pattern 2: Service Task with Connector
 ```xml
-<userTask id="retryTask">
-  <multiInstanceLoopCharacteristics 
-    activiti:collection="${retryAttempts}"
-    activiti:elementVariable="attempt">
-    <loopCardinality>3</loopCardinality>
-  </multiInstanceLoopCharacteristics>
-</userTask>
+<serviceTask id="checkCreditScore" name="Check Credit Score" implementation="creditScoreService"/>
 ```
 
 ### Pattern 3: Parallel Operations

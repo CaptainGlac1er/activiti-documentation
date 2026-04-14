@@ -1,14 +1,14 @@
 package com.example.ordermanagement.services;
 
 import com.example.ordermanagement.config.ServiceProperties;
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal;
 
 /**
  * Service for checking customer credit scores.
@@ -17,7 +17,7 @@ import java.util.Map;
  * Validates customer creditworthiness based on order amount and customer history.
  */
 @Component("creditScoreService")
-public class CreditScoreService implements JavaDelegator {
+public class CreditScoreService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(CreditScoreService.class);
 
@@ -25,12 +25,13 @@ public class CreditScoreService implements JavaDelegator {
     private ServiceProperties serviceProperties;
 
     @Override
-    public void execute() {
-        logger.info("Executing credit score check for order: {}", getVariable("orderId"));
+    public IntegrationContext apply(IntegrationContext integrationContext) {
+        logger.info("Executing credit score check for order: {}", 
+            integrationContext.getInBoundVariables().get("orderId"));
         logger.info("Using credit bureau API: {}", serviceProperties.getCreditBureau().getApiUrl());
         
-        String customerId = (String) getVariable("customerId");
-        Object orderAmountObj = getVariable("orderAmount");
+        String customerId = (String) integrationContext.getInBoundVariables().get("customerId");
+        Object orderAmountObj = integrationContext.getInBoundVariables().get("orderAmount");
         BigDecimal orderAmount = orderAmountObj instanceof BigDecimal 
             ? (BigDecimal) orderAmountObj 
             : new BigDecimal(orderAmountObj.toString());
@@ -42,12 +43,11 @@ public class CreditScoreService implements JavaDelegator {
         
         logger.info("Credit score: {}, Min required: {}, Approved: {}", creditScore, minScore, approved);
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("score", creditScore);
-        outputVariables.put("approved", approved);
-        outputVariables.put("minRequiredScore", minScore);
+        integrationContext.addOutBoundVariable("score", creditScore);
+        integrationContext.addOutBoundVariable("approved", approved);
+        integrationContext.addOutBoundVariable("minRequiredScore", minScore);
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
     
     private int calculateCreditScore(String customerId, BigDecimal orderAmount) {

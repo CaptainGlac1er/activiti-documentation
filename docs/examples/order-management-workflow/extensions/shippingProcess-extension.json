@@ -94,29 +94,29 @@
         "prepareShipmentTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "customerAddress": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerAddress"
             },
             "orderItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderItems"
             },
             "shippingMethod": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "selectedShippingMethod"
             }
           },
           "outputs": {
             "packageDetails": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "packageInfo"
             },
             "preparedDate": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "preparationDate"
             }
           }
@@ -124,29 +124,29 @@
         "generateShippingLabelTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "customerAddress": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerAddress"
             },
             "packageDetails": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "packageDetails"
             },
             "shippingMethod": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "selectedShippingMethod"
             }
           },
           "outputs": {
             "shippingLabel": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "labelUrl"
             },
             "trackingNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "trackingId"
             }
           }
@@ -154,33 +154,33 @@
         "schedulePriorityPickupTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "trackingNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "trackingNumber"
             },
             "packageDetails": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "packageDetails"
             },
             "pickupType": {
-              "type": "VALUE",
+              "type": "value",
               "value": "PRIORITY"
             }
           },
           "outputs": {
             "pickupScheduled": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "scheduled"
             },
             "pickupTime": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "scheduledTime"
             },
             "shippingStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "IN_TRANSIT"
             }
           }
@@ -188,33 +188,33 @@
         "scheduleRegularPickupTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "trackingNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "trackingNumber"
             },
             "packageDetails": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "packageDetails"
             },
             "pickupType": {
-              "type": "VALUE",
+              "type": "value",
               "value": "STANDARD"
             }
           },
           "outputs": {
             "pickupScheduled": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "scheduled"
             },
             "pickupTime": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "scheduledTime"
             },
             "shippingStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "IN_TRANSIT"
             }
           }
@@ -222,25 +222,25 @@
         "notifyStorePickupTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "customerEmail": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerEmail"
             },
             "storeLocation": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "pickupLocation"
             }
           },
           "outputs": {
             "customerNotified": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "notified"
             },
             "shippingStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "READY_FOR_PICKUP"
             }
           }
@@ -248,25 +248,25 @@
         "updateTrackingSystemTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "trackingNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "trackingNumber"
             },
             "shippingStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "shippingStatus"
             },
             "pickupTime": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "pickupTime"
             }
           },
           "outputs": {
             "trackingUpdated": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "updated"
             }
           }
@@ -274,33 +274,33 @@
         "sendDeliveryConfirmationTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "customerEmail": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerEmail"
             },
             "trackingNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "trackingNumber"
             },
             "deliveryDate": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "deliveryDate"
             },
             "emailTemplate": {
-              "type": "VALUE",
+              "type": "value",
               "value": "delivery_confirmation"
             }
           },
           "outputs": {
             "confirmationSent": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "sent"
             },
             "shippingStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "DELIVERED"
             }
           }

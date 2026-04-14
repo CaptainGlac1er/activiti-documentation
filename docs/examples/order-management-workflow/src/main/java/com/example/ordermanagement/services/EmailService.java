@@ -1,14 +1,14 @@
 package com.example.ordermanagement.services;
 
 import com.example.ordermanagement.config.ServiceProperties;
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
 
 /**
  * Service for sending email notifications.
@@ -17,7 +17,7 @@ import java.util.Map;
  * Sends order confirmation emails to customers.
  */
 @Component("emailService")
-public class EmailService implements JavaDelegator {
+public class EmailService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
@@ -25,13 +25,13 @@ public class EmailService implements JavaDelegator {
     private ServiceProperties serviceProperties;
 
     @Override
-    public void execute() {
+    public IntegrationContext apply(IntegrationContext integrationContext) {
         logger.info("Sending email notification");
         
-        String recipient = (String) getVariable("recipient");
-        String orderId = (String) getVariable("orderId");
-        String customerName = (String) getVariable("customerName");
-        String template = (String) getVariable("emailTemplate");
+        String recipient = (String) integrationContext.getInBoundVariables().get("recipient");
+        String orderId = (String) integrationContext.getInBoundVariables().get("orderId");
+        String customerName = (String) integrationContext.getInBoundVariables().get("customerName");
+        String template = (String) integrationContext.getInBoundVariables().get("emailTemplate");
         
         String smtpServer = serviceProperties.getEmail().getSmtpServer();
         String fromAddress = serviceProperties.getEmail().getFromAddress();
@@ -43,13 +43,12 @@ public class EmailService implements JavaDelegator {
         // Simulate email sending
         boolean sent = true;
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("emailSent", sent);
-        outputVariables.put("sentTo", recipient);
-        outputVariables.put("sentFrom", fromAddress);
-        outputVariables.put("smtpServer", smtpServer);
-        outputVariables.put("sentAt", new Date());
+        integrationContext.addOutBoundVariable("emailSent", sent);
+        integrationContext.addOutBoundVariable("sentTo", recipient);
+        integrationContext.addOutBoundVariable("sentFrom", fromAddress);
+        integrationContext.addOutBoundVariable("smtpServer", smtpServer);
+        integrationContext.addOutBoundVariable("sentAt", new Date());
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
 }

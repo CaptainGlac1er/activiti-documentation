@@ -9,7 +9,7 @@
     </bpmn:startEvent>
     
     <!-- Check Stock Availability -->
-    <bpmn:serviceTask id="checkStockAvailabilityTask" name="Check Stock Availability" activiti:implementationType="#{stockCheckService}">
+    <bpmn:serviceTask id="checkStockAvailabilityTask" name="Check Stock Availability" implementation="stockCheckService">
       <bpmn:incoming>flowToCheckStock</bpmn:incoming>
       <bpmn:outgoing>flowToStockGateway</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -22,7 +22,7 @@
     </bpmn:exclusiveGateway>
     
     <!-- Reserve Inventory -->
-    <bpmn:serviceTask id="reserveInventoryTask" name="Reserve Inventory" activiti:implementationType="#{inventoryReservationService}">
+    <bpmn:serviceTask id="reserveInventoryTask" name="Reserve Inventory" implementation="inventoryReservationService">
       <bpmn:incoming>flowToReserveInventory</bpmn:incoming>
       <bpmn:outgoing>flowToParallelSplit</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -35,13 +35,13 @@
     </bpmn:parallelGateway>
     
     <!-- Update Warehouse System -->
-    <bpmn:serviceTask id="updateWarehouseSystemTask" name="Update Warehouse System" activiti:implementationType="#{warehouseUpdateService}">
+    <bpmn:serviceTask id="updateWarehouseSystemTask" name="Update Warehouse System" implementation="warehouseUpdateService">
       <bpmn:incoming>flowToUpdateWarehouse</bpmn:incoming>
       <bpmn:outgoing>flowToParallelJoin</bpmn:outgoing>
     </bpmn:serviceTask>
-    
+
     <!-- Notify Supplier -->
-    <bpmn:serviceTask id="notifySupplierTask" name="Notify Supplier" activiti:implementationType="#{supplierNotificationService}">
+    <bpmn:serviceTask id="notifySupplierTask" name="Notify Supplier" implementation="supplierNotificationService">
       <bpmn:incoming>flowToNotifySupplier</bpmn:incoming>
       <bpmn:outgoing>flowToParallelJoin</bpmn:outgoing>
     </bpmn:serviceTask>

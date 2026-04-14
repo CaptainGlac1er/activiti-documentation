@@ -1,12 +1,10 @@
 package com.example.ordermanagement.services;
 
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Service for validating payment methods.
@@ -15,16 +13,16 @@ import java.util.Map;
  * Validates payment information before processing.
  */
 @Component("paymentValidationService")
-public class PaymentValidationService implements JavaDelegator {
+public class PaymentValidationService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentValidationService.class);
 
     @Override
-    public void execute() {
+    public IntegrationContext apply(IntegrationContext integrationContext) {
         logger.info("Validating payment method");
         
-        String paymentMethod = (String) getVariable("paymentMethod");
-        String cardNumber = (String) getVariable("cardNumber");
+        String paymentMethod = (String) integrationContext.getInBoundVariables().get("paymentMethod");
+        String cardNumber = (String) integrationContext.getInBoundVariables().get("cardNumber");
         
         // Basic validation logic
         boolean isValid = paymentMethod != null && !paymentMethod.isEmpty()
@@ -32,10 +30,9 @@ public class PaymentValidationService implements JavaDelegator {
         
         logger.info("Payment validation result: {}", isValid);
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("isValid", isValid);
-        outputVariables.put("errors", isValid ? "" : "Invalid payment information");
+        integrationContext.addOutBoundVariable("isValid", isValid);
+        integrationContext.addOutBoundVariable("errors", isValid ? "" : "Invalid payment information");
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
 }

@@ -1,12 +1,13 @@
 package com.example.ordermanagement.services;
 
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * Service for notifying the accounting system.
@@ -15,27 +16,27 @@ import java.util.Map;
  * Sends payment information to the accounting system.
  */
 @Component("accountingNotificationService")
-public class AccountingNotificationService implements JavaDelegator {
+public class AccountingNotificationService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountingNotificationService.class);
 
     @Override
-    public void execute() {
-        logger.info("Notifying accounting system for order: {}", getVariable("orderId"));
+    public IntegrationContext apply(IntegrationContext integrationContext) {
+        logger.info("Notifying accounting system for order: {}", 
+            integrationContext.getInBoundVariables().get("orderId"));
         
-        String orderId = (String) getVariable("orderId");
-        Object amountObj = getVariable("amount");
+        String orderId = (String) integrationContext.getInBoundVariables().get("orderId");
+        Object amountObj = integrationContext.getInBoundVariables().get("amount");
         BigDecimal amount = amountObj instanceof BigDecimal 
             ? (BigDecimal) amountObj 
-            : new BigDecimal(amountObjObj.toString());
+            : new BigDecimal(amountObj.toString());
         
         // In production, this would send a webhook or API call to the accounting system
         logger.info("Accounting notified for order {} with amount {}", orderId, amount);
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("notified", true);
-        outputVariables.put("notifiedAt", new Date());
+        integrationContext.addOutBoundVariable("notified", true);
+        integrationContext.addOutBoundVariable("notifiedAt", new Date());
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
 }

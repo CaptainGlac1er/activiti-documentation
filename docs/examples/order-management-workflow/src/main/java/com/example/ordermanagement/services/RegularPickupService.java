@@ -1,12 +1,12 @@
 package com.example.ordermanagement.services;
 
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
 
 /**
  * Service for scheduling regular pickups.
@@ -15,19 +15,19 @@ import java.util.Map;
  * Schedules standard ground shipping pickup.
  */
 @Component("regularPickupService")
-public class RegularPickupService implements JavaDelegator {
+public class RegularPickupService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(RegularPickupService.class);
 
     @Override
-    public void execute() {
-        logger.info("Scheduling regular pickup for order: {}", getVariable("orderId"));
+    public IntegrationContext apply(IntegrationContext integrationContext) {
+        logger.info("Scheduling regular pickup for order: {}", 
+            integrationContext.getInBoundVariables().get("orderId"));
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("scheduled", true);
-        outputVariables.put("scheduledTime", new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)); // +24 hours
-        outputVariables.put("status", "IN_TRANSIT");
+        integrationContext.addOutBoundVariable("scheduled", true);
+        integrationContext.addOutBoundVariable("scheduledTime", new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)); // +24 hours
+        integrationContext.addOutBoundVariable("status", "IN_TRANSIT");
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
 }

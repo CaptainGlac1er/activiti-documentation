@@ -1,12 +1,13 @@
 package com.example.ordermanagement.services;
 
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -16,17 +17,18 @@ import java.util.UUID;
  * Creates invoice documents and returns invoice number and download URL.
  */
 @Component("invoiceService")
-public class InvoiceService implements JavaDelegator {
+public class InvoiceService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(InvoiceService.class);
 
     @Override
-    public void execute() {
-        logger.info("Generating invoice for order: {}", getVariable("orderId"));
+    public IntegrationContext apply(IntegrationContext integrationContext) {
+        logger.info("Generating invoice for order: {}", 
+            integrationContext.getInBoundVariables().get("orderId"));
         
-        String orderId = (String) getVariable("orderId");
-        String customerName = (String) getVariable("customerName");
-        Object orderTotalObj = getVariable("orderTotal");
+        String orderId = (String) integrationContext.getInBoundVariables().get("orderId");
+        String customerName = (String) integrationContext.getInBoundVariables().get("customerName");
+        Object orderTotalObj = integrationContext.getInBoundVariables().get("orderTotal");
         BigDecimal orderTotal = orderTotalObj instanceof BigDecimal 
             ? (BigDecimal) orderTotalObj 
             : new BigDecimal(orderTotalObj.toString());
@@ -39,12 +41,11 @@ public class InvoiceService implements JavaDelegator {
         
         logger.info("Invoice generated: {} for customer: {}", invoiceNumber, customerName);
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("invoiceId", invoiceNumber);
-        outputVariables.put("downloadUrl", invoiceUrl);
-        outputVariables.put("invoiceAmount", orderTotal);
-        outputVariables.put("invoiceDate", new Date());
+        integrationContext.addOutBoundVariable("invoiceId", invoiceNumber);
+        integrationContext.addOutBoundVariable("downloadUrl", invoiceUrl);
+        integrationContext.addOutBoundVariable("invoiceAmount", orderTotal);
+        integrationContext.addOutBoundVariable("invoiceDate", new Date());
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
 }

@@ -17,7 +17,7 @@
     </bpmn:userTask>
     
     <!-- Validate Payment Method -->
-    <bpmn:serviceTask id="validatePaymentMethodTask" name="Validate Payment Method" implementation="#{paymentValidationService}">
+    <bpmn:serviceTask id="validatePaymentMethodTask" name="Validate Payment Method" implementation="paymentValidationService">
       <bpmn:incoming>flowToValidatePayment</bpmn:incoming>
       <bpmn:outgoing>flowToPaymentValidationGateway</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -30,7 +30,7 @@
     </bpmn:exclusiveGateway>
     
     <!-- Process Payment -->
-    <bpmn:serviceTask id="processPaymentTask" name="Process Payment" implementation="#{paymentProcessingService}" activiti:async="true">
+    <bpmn:serviceTask id="processPaymentTask" name="Process Payment" implementation="paymentProcessingService" activiti:async="true">
       <bpmn:incoming>flowToProcessPayment</bpmn:incoming>
       <bpmn:outgoing>flowToPaymentResultGateway</bpmn:outgoing>
       
@@ -75,13 +75,13 @@
     </bpmn:exclusiveGateway>
     
     <!-- Generate Receipt -->
-    <bpmn:serviceTask id="generateReceiptTask" name="Generate Receipt" activiti:implementationType="#{receiptService}">
+    <bpmn:serviceTask id="generateReceiptTask" name="Generate Receipt" implementation="receiptService">
       <bpmn:incoming>flowToGenerateReceipt</bpmn:incoming>
       <bpmn:outgoing>flowToNotifyAccounting</bpmn:outgoing>
     </bpmn:serviceTask>
-    
+
     <!-- Notify Accounting System -->
-    <bpmn:serviceTask id="notifyAccountingTask" name="Notify Accounting System" activiti:implementationType="#{accountingNotificationService}">
+    <bpmn:serviceTask id="notifyAccountingTask" name="Notify Accounting System" implementation="accountingNotificationService">
       <bpmn:incoming>flowToNotifyAccounting</bpmn:incoming>
       <bpmn:outgoing>flowToPaymentCompleted</bpmn:outgoing>
     </bpmn:serviceTask>

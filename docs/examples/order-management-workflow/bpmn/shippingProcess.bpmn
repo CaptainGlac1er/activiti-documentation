@@ -20,7 +20,7 @@
     </bpmn:userTask>
     
     <!-- Generate Shipping Label -->
-    <bpmn:serviceTask id="generateShippingLabelTask" name="Generate Shipping Label" activiti:implementationType="#{shippingLabelService}">
+    <bpmn:serviceTask id="generateShippingLabelTask" name="Generate Shipping Label" implementation="shippingLabelService">
       <bpmn:incoming>flowToGenerateLabel</bpmn:incoming>
       <bpmn:outgoing>flowToShippingMethodGateway</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -34,13 +34,13 @@
     </bpmn:exclusiveGateway>
     
     <!-- Schedule Priority Pickup -->
-    <bpmn:serviceTask id="schedulePriorityPickupTask" name="Schedule Priority Pickup" activiti:implementationType="#{priorityPickupService}">
+    <bpmn:serviceTask id="schedulePriorityPickupTask" name="Schedule Priority Pickup" implementation="priorityPickupService">
       <bpmn:incoming>flowToPriorityPickup</bpmn:incoming>
       <bpmn:outgoing>flowToUpdateTracking</bpmn:outgoing>
     </bpmn:serviceTask>
-    
+
     <!-- Schedule Regular Pickup -->
-    <bpmn:serviceTask id="scheduleRegularPickupTask" name="Schedule Regular Pickup" activiti:implementationType="#{regularPickupService}">
+    <bpmn:serviceTask id="scheduleRegularPickupTask" name="Schedule Regular Pickup" implementation="regularPickupService">
       <bpmn:incoming>flowToRegularPickup</bpmn:incoming>
       <bpmn:outgoing>flowToUpdateTracking</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -52,7 +52,7 @@
     </bpmn:userTask>
     
     <!-- Update Tracking System -->
-    <bpmn:serviceTask id="updateTrackingSystemTask" name="Update Tracking System" activiti:implementationType="#{trackingUpdateService}">
+    <bpmn:serviceTask id="updateTrackingSystemTask" name="Update Tracking System" implementation="trackingUpdateService">
       <bpmn:incoming>flowToUpdateTracking</bpmn:incoming>
       <bpmn:incoming>flowToUpdateTrackingFromRegular</bpmn:incoming>
       <bpmn:outgoing>flowToDeliveryWait</bpmn:outgoing>
@@ -66,7 +66,7 @@
     </bpmn:intermediateCatchEvent>
     
     <!-- Send Delivery Confirmation -->
-    <bpmn:serviceTask id="sendDeliveryConfirmationTask" name="Send Delivery Confirmation" activiti:implementationType="#{deliveryConfirmationService}">
+    <bpmn:serviceTask id="sendDeliveryConfirmationTask" name="Send Delivery Confirmation" implementation="deliveryConfirmationService">
       <bpmn:incoming>flowToSendConfirmation</bpmn:incoming>
       <bpmn:outgoing>flowToShippingCompleted</bpmn:outgoing>
     </bpmn:serviceTask>

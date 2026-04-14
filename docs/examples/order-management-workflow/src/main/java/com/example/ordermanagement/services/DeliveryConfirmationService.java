@@ -1,14 +1,14 @@
 package com.example.ordermanagement.services;
 
 import com.example.ordermanagement.config.ServiceProperties;
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
 
 /**
  * Service for sending delivery confirmations.
@@ -17,7 +17,7 @@ import java.util.Map;
  * Sends delivery confirmation emails to customers.
  */
 @Component("deliveryConfirmationService")
-public class DeliveryConfirmationService implements JavaDelegator {
+public class DeliveryConfirmationService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(DeliveryConfirmationService.class);
 
@@ -25,21 +25,21 @@ public class DeliveryConfirmationService implements JavaDelegator {
     private ServiceProperties serviceProperties;
 
     @Override
-    public void execute() {
-        logger.info("Sending delivery confirmation for order: {}", getVariable("orderId"));
+    public IntegrationContext apply(IntegrationContext integrationContext) {
+        logger.info("Sending delivery confirmation for order: {}", 
+            integrationContext.getInBoundVariables().get("orderId"));
         
         String smtpServer = serviceProperties.getEmail().getSmtpServer();
         String fromAddress = serviceProperties.getEmail().getShippingFromAddress();
         
         logger.info("Sending via {} from {}", smtpServer, fromAddress);
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("sent", true);
-        outputVariables.put("status", "DELIVERED");
-        outputVariables.put("sentAt", new Date());
-        outputVariables.put("smtpServer", smtpServer);
-        outputVariables.put("fromAddress", fromAddress);
+        integrationContext.addOutBoundVariable("sent", true);
+        integrationContext.addOutBoundVariable("status", "DELIVERED");
+        integrationContext.addOutBoundVariable("sentAt", new Date());
+        integrationContext.addOutBoundVariable("smtpServer", smtpServer);
+        integrationContext.addOutBoundVariable("fromAddress", fromAddress);
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
 }

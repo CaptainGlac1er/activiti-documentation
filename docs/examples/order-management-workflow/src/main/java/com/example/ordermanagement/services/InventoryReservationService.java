@@ -1,11 +1,12 @@
 package com.example.ordermanagement.services;
 
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -15,21 +16,21 @@ import java.util.Map;
  * Reserves items for the order.
  */
 @Component("inventoryReservationService")
-public class InventoryReservationService implements JavaDelegator {
+public class InventoryReservationService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryReservationService.class);
 
     @Override
-    public void execute() {
-        logger.info("Reserving inventory for order: {}", getVariable("orderId"));
+    public IntegrationContext apply(IntegrationContext integrationContext) {
+        logger.info("Reserving inventory for order: {}", 
+            integrationContext.getInBoundVariables().get("orderId"));
         
-        String orderId = (String) getVariable("orderId");
+        String orderId = (String) integrationContext.getInBoundVariables().get("orderId");
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("reserved", Map.of("orderId", orderId, "reservedAt", new Date()));
-        outputVariables.put("warehouse", "WH-001");
-        outputVariables.put("status", "RESERVED");
+        integrationContext.addOutBoundVariable("reserved", Map.of("orderId", orderId, "reservedAt", new Date()));
+        integrationContext.addOutBoundVariable("warehouse", "WH-001");
+        integrationContext.addOutBoundVariable("status", "RESERVED");
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
 }

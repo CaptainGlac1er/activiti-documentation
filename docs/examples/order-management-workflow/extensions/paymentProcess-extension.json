@@ -108,25 +108,25 @@
         "enterPaymentDetailsTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "amount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "amount"
             },
             "customerEmail": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerEmail"
             }
           },
           "outputs": {
             "paymentMethod": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentMethod"
             },
             "cardNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "cardNumber"
             }
           }
@@ -134,25 +134,25 @@
         "validatePaymentMethodTask": {
           "inputs": {
             "paymentMethod": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentMethod"
             },
             "cardNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "cardNumber"
             },
             "amount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "amount"
             }
           },
           "outputs": {
             "paymentValid": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "isValid"
             },
             "validationErrors": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "errors"
             }
           }
@@ -160,37 +160,37 @@
         "processPaymentTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "amount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "amount"
             },
             "paymentMethod": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentMethod"
             },
             "cardNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "cardNumber"
             },
             "customerEmail": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerEmail"
             }
           },
           "outputs": {
             "paymentSuccess": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "success"
             },
             "paymentStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "status"
             },
             "paymentDetails": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "transactionDetails"
             }
           }
@@ -198,33 +198,33 @@
         "retryPaymentTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "amount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "amount"
             },
             "attemptNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "${attempt}"
             },
             "retryCount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "retryCount"
             }
           },
           "outputs": {
             "retryValid": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "isValid"
             },
             "approvedRetries": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "approved"
             },
             "paymentMethod": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "newPaymentMethod"
             }
           }
@@ -232,29 +232,29 @@
         "generateReceiptTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "amount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "amount"
             },
             "paymentDetails": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentDetails"
             },
             "customerEmail": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerEmail"
             }
           },
           "outputs": {
             "receiptNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "receiptId"
             },
             "receiptUrl": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "downloadUrl"
             }
           }
@@ -262,23 +262,23 @@
         "notifyAccountingTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "amount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "amount"
             },
             "paymentDetails": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentDetails"
             },
             "receiptNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "receiptNumber"
             },
             "paymentStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentStatus"
             }
           }

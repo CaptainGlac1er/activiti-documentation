@@ -143,25 +143,25 @@
         "validateCustomerTask": {
           "inputs": {
             "customerName": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerName"
             },
             "customerEmail": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerEmail"
             },
             "customerAddress": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerAddress"
             }
           },
           "outputs": {
             "customerValid": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "validationResult"
             },
             "customerData": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "validatedCustomerData"
             }
           }
@@ -169,21 +169,21 @@
         "checkCreditScoreTask": {
           "inputs": {
             "customerId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerName"
             },
             "orderAmount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderTotal"
             }
           },
           "outputs": {
             "creditScore": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "score"
             },
             "creditApproved": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "approved"
             }
           }
@@ -191,25 +191,25 @@
         "manualCreditReviewTask": {
           "inputs": {
             "customerInfo": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerName"
             },
             "creditScore": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "creditScore"
             },
             "orderTotal": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderTotal"
             }
           },
           "outputs": {
             "manualApproved": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "approved"
             },
             "reviewComments": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "comments"
             }
           }
@@ -217,25 +217,25 @@
         "paymentCallActivity": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "amount": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderTotal"
             },
             "customerEmail": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerEmail"
             }
           },
           "outputs": {
             "paymentStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentStatus"
             },
             "paymentResult": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentDetails"
             }
           }
@@ -243,21 +243,21 @@
         "inventoryCallActivity": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "orderItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderItems"
             }
           },
           "outputs": {
             "inventoryStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "inventoryStatus"
             },
             "inStock": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "inStock"
             }
           }
@@ -265,33 +265,33 @@
         "generateInvoiceTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "customerName": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerName"
             },
             "customerAddress": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerAddress"
             },
             "orderItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderItems"
             },
             "orderTotal": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderTotal"
             }
           },
           "outputs": {
             "invoiceNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "invoiceId"
             },
             "invoiceUrl": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "downloadUrl"
             }
           }
@@ -299,27 +299,27 @@
         "sendConfirmationTask": {
           "inputs": {
             "recipient": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerEmail"
             },
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "customerName": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerName"
             },
             "orderTotal": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderTotal"
             },
             "invoiceNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "invoiceNumber"
             },
             "emailTemplate": {
-              "type": "VALUE",
+              "type": "value",
               "value": "order_confirmation"
             }
           }
@@ -327,29 +327,29 @@
         "qualityCheckTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "orderItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderItems"
             },
             "paymentStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "paymentStatus"
             },
             "inventoryStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "inventoryStatus"
             }
           },
           "outputs": {
             "qualityPassed": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "passed"
             },
             "qualityNotes": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "notes"
             }
           }
@@ -357,29 +357,29 @@
         "shippingCallActivity": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "customerAddress": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "customerAddress"
             },
             "orderItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderItems"
             },
             "shippingMethod": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "selectedShippingMethod"
             }
           },
           "outputs": {
             "shippingStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "shippingStatus"
             },
             "trackingNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "trackingNumber"
             }
           }
@@ -387,25 +387,25 @@
         "updateOrderStatusTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "orderStatus": {
-              "type": "VALUE",
+              "type": "value",
               "value": "COMPLETED"
             },
             "trackingNumber": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "trackingNumber"
             },
             "completionDate": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "currentDate"
             }
           },
           "outputs": {
             "orderStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "updatedStatus"
             }
           }

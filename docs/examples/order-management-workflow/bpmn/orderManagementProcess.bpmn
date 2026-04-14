@@ -6,6 +6,7 @@
   
   <!-- Error definitions -->
   <bpmn:error id="customerValidationError" name="CustomerValidationError" errorCode="CUST001"/>
+  <bpmn:error id="creditServiceError" name="CreditServiceError" errorCode="CREDIT001"/>
   <bpmn:error id="paymentError" name="PaymentError" errorCode="PAY001"/>
   <bpmn:error id="inventoryError" name="InventoryError" errorCode="INV001"/>
   
@@ -40,7 +41,7 @@
     </bpmn:exclusiveGateway>
     
     <!-- Check Credit Score -->
-    <bpmn:serviceTask id="checkCreditScoreTask" name="Check Credit Score" implementation="#{creditScoreService}">
+    <bpmn:serviceTask id="checkCreditScoreTask" name="Check Credit Score" implementation="creditScoreService">
       <bpmn:incoming>flowToCreditCheck</bpmn:incoming>
       <bpmn:outgoing>flowToCreditGateway</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -48,7 +49,7 @@
     <!-- Boundary Event for Credit Service Error -->
     <bpmn:boundaryEvent id="creditServiceError" name="Credit Service Unavailable" attachedToRef="checkCreditScoreTask" cancelActivity="true">
       <bpmn:outgoing>flowToCreditErrorHandler</bpmn:outgoing>
-      <bpmn:errorEventDefinition errorRef="paymentError"/>
+      <bpmn:errorEventDefinition errorRef="creditServiceError"/>
     </bpmn:boundaryEvent>
     
     <!-- Credit Approval Gateway -->
@@ -92,13 +93,13 @@
     </bpmn:parallelGateway>
     
     <!-- Generate Invoice -->
-    <bpmn:serviceTask id="generateInvoiceTask" name="Generate Invoice" implementation="#{invoiceService}">
+    <bpmn:serviceTask id="generateInvoiceTask" name="Generate Invoice" implementation="invoiceService">
       <bpmn:incoming>flowToGenerateInvoice</bpmn:incoming>
       <bpmn:outgoing>flowToParallelJoin</bpmn:outgoing>
     </bpmn:serviceTask>
 
     <!-- Send Order Confirmation -->
-    <bpmn:serviceTask id="sendConfirmationTask" name="Send Order Confirmation Email" implementation="#{emailService}">
+    <bpmn:serviceTask id="sendConfirmationTask" name="Send Order Confirmation Email" implementation="emailService">
       <bpmn:incoming>flowToSendConfirmation</bpmn:incoming>
       <bpmn:outgoing>flowToParallelJoin</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -135,7 +136,7 @@
     </bpmn:callActivity>
     
     <!-- Update Order Status -->
-    <bpmn:serviceTask id="updateOrderStatusTask" name="Update Order Status" implementation="#{orderStatusService}">
+    <bpmn:serviceTask id="updateOrderStatusTask" name="Update Order Status" implementation="orderStatusService">
       <bpmn:incoming>flowToUpdateStatus</bpmn:incoming>
       <bpmn:outgoing>flowToCompletedEnd</bpmn:outgoing>
     </bpmn:serviceTask>

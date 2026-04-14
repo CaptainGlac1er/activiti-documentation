@@ -73,25 +73,25 @@
         "checkStockAvailabilityTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "orderItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderItems"
             }
           },
           "outputs": {
             "inStock": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "available"
             },
             "stockLevels": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "levels"
             },
             "inventoryStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "status"
             }
           }
@@ -99,29 +99,29 @@
         "reserveInventoryTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "orderItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderItems"
             },
             "stockLevels": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "stockLevels"
             }
           },
           "outputs": {
             "reservedItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "reserved"
             },
             "warehouseId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "warehouse"
             },
             "inventoryStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "RESERVED"
             }
           }
@@ -129,21 +129,21 @@
         "updateWarehouseSystemTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "reservedItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "reservedItems"
             },
             "warehouseId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "warehouseId"
             }
           },
           "outputs": {
             "warehouseUpdated": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "updated"
             }
           }
@@ -151,21 +151,21 @@
         "notifySupplierTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "reservedItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "reservedItems"
             },
             "warehouseId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "warehouseId"
             }
           },
           "outputs": {
             "supplierNotified": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "notified"
             }
           }
@@ -173,29 +173,29 @@
         "backorderApprovalTask": {
           "inputs": {
             "orderId": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderId"
             },
             "orderItems": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "orderItems"
             },
             "stockLevels": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "stockLevels"
             }
           },
           "outputs": {
             "backorderApproved": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "approved"
             },
             "backorderReason": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "reason"
             },
             "inventoryStatus": {
-              "type": "VARIABLE",
+              "type": "variable",
               "value": "BACKORDERED"
             }
           }

@@ -1,13 +1,15 @@
 package com.example.ordermanagement.services;
 
 import com.example.ordermanagement.config.ServiceProperties;
-import org.activiti.api.runtime.shared.delegates.JavaDelegator;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.api.process.runtime.connector.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
@@ -18,7 +20,7 @@ import java.util.UUID;
  * Executes payment transaction and returns result.
  */
 @Component("paymentProcessingService")
-public class PaymentProcessingService implements JavaDelegator {
+public class PaymentProcessingService implements Connector {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentProcessingService.class);
 
@@ -26,12 +28,13 @@ public class PaymentProcessingService implements JavaDelegator {
     private ServiceProperties serviceProperties;
 
     @Override
-    public void execute() {
-        logger.info("Processing payment for order: {}", getVariable("orderId"));
+    public IntegrationContext apply(IntegrationContext integrationContext) {
+        logger.info("Processing payment for order: {}", 
+            integrationContext.getInBoundVariables().get("orderId"));
         logger.info("Using payment gateway: {}", serviceProperties.getPayment().getGateway());
         
-        String orderId = (String) getVariable("orderId");
-        Object amountObj = getVariable("amount");
+        String orderId = (String) integrationContext.getInBoundVariables().get("orderId");
+        Object amountObj = integrationContext.getInBoundVariables().get("amount");
         BigDecimal amount = amountObj instanceof BigDecimal 
             ? (BigDecimal) amountObj 
             : new BigDecimal(amountObj.toString());
@@ -47,10 +50,9 @@ public class PaymentProcessingService implements JavaDelegator {
         logger.info("Payment {} for order {}: Transaction ID {}, Currency: {}", 
             success ? "successful" : "failed", orderId, transactionId, currency);
         
-        Map<String, Object> outputVariables = new HashMap<>();
-        outputVariables.put("success", success);
-        outputVariables.put("status", success ? "COMPLETED" : "FAILED");
-        outputVariables.put("transactionDetails", Map.of(
+        integrationContext.addOutBoundVariable("success", success);
+        integrationContext.addOutBoundVariable("status", success ? "COMPLETED" : "FAILED");
+        integrationContext.addOutBoundVariable("transactionDetails", Map.of(
             "transactionId", transactionId,
             "amount", amount,
             "currency", currency,
@@ -58,6 +60,6 @@ public class PaymentProcessingService implements JavaDelegator {
             "timestamp", new Date()
         ));
         
-        setVariables(outputVariables);
+        return integrationContext;
     }
 }
