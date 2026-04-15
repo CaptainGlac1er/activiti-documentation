@@ -101,14 +101,47 @@ Properties define **process-level variables** with their types, default values, 
 
 ### Supported Data Types
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `string` | Text value | `"Hello World"` |
-| `integer` | Whole number | `42` |
-| `bigdecimal` | Decimal number | `19.99` |
-| `boolean` | True/False | `true` |
-| `json` | JSON object/array | `{"key": "value"}` |
-| `date` | Date/Time | `"2024-01-15T10:30:00"` |
+| Type | Java Class | Description | Example |
+|------|-----------|-------------|---------|
+| `string` | `String` | Text value | `"Hello World"` |
+| `integer` | `Integer` | Whole number | `42` |
+| `boolean` | `Boolean` | True/False | `true` |
+| `bigdecimal` | `BigDecimal` | Decimal number (for currency) | `19.99` |
+| `json` | `Map/List` | JSON object/array | `{"key": "value"}` |
+| `array` | `List` | Array of values | `[1, 2, 3]` |
+| `date` | `Date` | Date value | `"2024-01-15"` |
+| `datetime` | `Date` | DateTime value | `"2024-01-15T10:30:00"` |
+| `file` | `Map` | File reference | `{}` |
+| `folder` | `Map` | Folder reference | `{}` |
+| `content` | `Map` | Content reference | `{}` |
+
+**Source:** These types are registered in [`ProcessExtensionsAutoConfiguration.variableTypeMap()`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/conf/ProcessExtensionsAutoConfiguration.java#L93-L108):
+
+```java
+@Bean
+public Map<String, VariableType> variableTypeMap(ObjectMapper objectMapper,
+                                                 DateFormatterProvider dateFormatterProvider) {
+    Map<String, VariableType> variableTypeMap = new HashMap<>();
+    variableTypeMap.put("boolean", new JavaObjectVariableType(Boolean.class));
+    variableTypeMap.put("string", new JavaObjectVariableType(String.class));
+    variableTypeMap.put("integer", new JavaObjectVariableType(Integer.class));
+    variableTypeMap.put("bigdecimal", new BigDecimalVariableType());
+    variableTypeMap.put("json", new JsonObjectVariableType(objectMapper));
+    variableTypeMap.put("file", new JsonObjectVariableType(objectMapper));
+    variableTypeMap.put("folder", new JsonObjectVariableType(objectMapper));
+    variableTypeMap.put("content", new JsonObjectVariableType(objectMapper));
+    variableTypeMap.put("date", new DateVariableType(Date.class, dateFormatterProvider));
+    variableTypeMap.put("datetime", new DateVariableType(Date.class, dateFormatterProvider));
+    variableTypeMap.put("array", new JsonObjectVariableType(objectMapper));
+    return variableTypeMap;
+}
+```
+
+**Variable Type Implementations:**
+- [`JavaObjectVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/JavaObjectVariableType.java) - For primitive types (string, integer, boolean)
+- [`BigDecimalVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/BigDecimalVariableType.java) - For precise decimal calculations
+- [`JsonObjectVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/JsonObjectVariableType.java) - For complex JSON structures
+- [`DateVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/DateVariableType.java) - For date/time values
 
 ### Example: Complete Properties Definition
 

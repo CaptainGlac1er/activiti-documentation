@@ -210,9 +210,19 @@ const sidebars: SidebarsConfig = {
       link: {type: 'generated-index', title: 'Complete Working Examples'},
       items: [
         {
-          type: 'doc',
-          id: 'examples/order-management-workflow/README',
-          label: 'Order Management Workflow (45+ BPMN Elements)',
+          type: 'category',
+          label: 'Order Management Workflow',
+          link: {type: 'doc', id: 'examples/order-management-workflow/summary'},
+          items: [
+            'examples/order-management-workflow/summary',
+            'examples/order-management-workflow/main-process',
+            'examples/order-management-workflow/payment-process',
+            'examples/order-management-workflow/inventory-process',
+            'examples/order-management-workflow/shipping-process',
+            'examples/order-management-workflow/service-delegates',
+            'examples/order-management-workflow/process-extensions',
+            'examples/order-management-workflow/rest-api',
+          ],
         },
       ],
     },
