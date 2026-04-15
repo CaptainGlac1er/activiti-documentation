@@ -55,9 +55,12 @@ public interface Connector {
 ```
 
 **IntegrationContext Methods:**
-- `getInBoundVariables()` - Read input variables from process
-- `addOutBoundVariable(String key, Object value)` - Set output variables
-- `getVariable(String key)` - Access specific variable
+- `getInBoundVariables()` - Read all input variables from process as `Map<String, Object>`
+- `getInBoundVariable(String name)` - Access specific input variable with type inference
+- `getInBoundVariable(String name, Class<T> type)` - Access specific input variable with explicit type
+- `addOutBoundVariable(String name, Object value)` - Set output variable
+- `addOutBoundVariables(Map<String, Object> variables)` - Set multiple output variables
+- `getOutBoundVariables()` - Read all output variables as `Map<String, Object>`
 
 ---
 

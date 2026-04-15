@@ -78,7 +78,7 @@ Start
 ```xml
 <bpmn:userTask id="enterPaymentDetailsTask" 
                name="Enter Payment Details" 
-               activiti:assignee="${paymentProcessor}">
+               activiti:assignee="paymentProcessor">
   <bpmn:incoming>flowToEnterPayment</bpmn:incoming>
   <bpmn:outgoing>flowToValidatePayment</bpmn:outgoing>
   <bpmn:property id="paymentMethod" name="paymentMethod"/>
@@ -92,7 +92,7 @@ Start
 - `paymentMethod` - Credit card, PayPal, etc.
 - `cardNumber` - Payment card details (masked)
 
-**Assignee:** `${paymentProcessor}` - Resolved at runtime (could be a specific user or role)
+**Assignee:** `paymentProcessor` - Static user ID or group (can also use EL expression `${paymentProcessor}` for dynamic resolution)
 
 **Why a user task here?**
 - Payment details may need manual entry
@@ -347,7 +347,7 @@ services:
 ```xml
 <bpmn:userTask id="retryPaymentTask" 
                name="Retry Payment" 
-               activiti:assignee="${paymentProcessor}">
+               activiti:assignee="paymentProcessor">
   <bpmn:incoming>flowToRetryPayment</bpmn:incoming>
   <bpmn:outgoing>flowToRetryValidation</bpmn:outgoing>
   
@@ -356,7 +356,6 @@ services:
     activiti:collection="${retryAttempts}" 
     activiti:elementVariable="attempt">
     <bpmn:loopCardinality>3</bpmn:loopCardinality>
-    <bpmn:completionCondition>${approvedRetries >= 1}</bpmn:completionCondition>
   </bpmn:multiInstanceLoopCharacteristics>
 </bpmn:userTask>
 ```
@@ -367,40 +366,30 @@ services:
 |-----------|-------|---------|
 | `isSequential` | `true` | One retry at a time |
 | `loopCardinality` | `3` | Maximum 3 retry attempts |
-| `collection` | `${retryAttempts}` | Collection to iterate |
-| `elementVariable` | `attempt` | Current retry attempt |
-| `completionCondition` | `${approvedRetries >= 1}` | Exit early on success |
+| `activiti:collection` | `${retryAttempts}` | Collection to iterate (EL expression) |
+| `activiti:elementVariable` | `attempt` | Current retry attempt variable name |
+
+**Alternative with completion condition:**
+```xml
+<bpmn:multiInstanceLoopCharacteristics 
+  isSequential="true" 
+  activiti:collection="${retryAttempts}" 
+  activiti:elementVariable="attempt">
+  <bpmn:completionCondition>${nrOfCompletedInstances >= 1}</bpmn:completionCondition>
+</bpmn:multiInstanceLoopCharacteristics>
+```
+
+**Built-in Multi-Instance Variables:**
+- `nrOfInstances` - Total number of instances
+- `nrOfCompletedInstances` - Number of completed instances
+- `loopCounter` - Current iteration counter
+- `attempt` - Current element from collection (as defined by `elementVariable`)
 
 **Why multi-instance?**
 - Retry pattern without complex gateway logic
 - Built-in iteration counter
 - Early completion condition
 - Clear maximum retry limit
-
-**Triggers:**
-1. Payment timeout (from boundary event)
-2. Payment failure (from result gateway)
-
-**Runtime Behavior:**
-```
-Attempt 1: User enters new payment details
-  ├─ Valid → Process Payment
-  └─ Invalid → Attempt 2
-
-Attempt 2: User enters new payment details
-  ├─ Valid → Process Payment
-  └─ Invalid → Attempt 3
-
-Attempt 3: User enters new payment details
-  ├─ Valid → Process Payment
-  └─ Invalid → Check retry count
-```
-
-**Built-in Variables:**
-- `nrOfInstances` = 3 (total instances)
-- `nrOfCompletedInstances` = current completed count
-- `loopCounter` = current iteration (1, 2, or 3)
-- `attempt` = current element from collection
 
 ---
 
@@ -630,16 +619,19 @@ public class AccountingNotificationService implements Connector {
 ### 3. Multi-Instance Retry
 
 ```xml
-<multiInstanceLoopCharacteristics isSequential="true">
+<multiInstanceLoopCharacteristics 
+  isSequential="true" 
+  activiti:collection="${retryAttempts}" 
+  activiti:elementVariable="attempt">
   <loopCardinality>3</loopCardinality>
-  <completionCondition>${approvedRetries >= 1}</completionCondition>
+  <completionCondition>${nrOfCompletedInstances >= 1}</completionCondition>
 </multiInstanceLoopCharacteristics>
 ```
 
 **Completion Conditions:**
-- `${approvedRetries >= 1}` - Exit on first success
-- `${nrOfCompletedInstances >= nrOfInstances}` - Wait for all
-- `${failedInstances < 2}` - Allow up to 1 failure
+- `${nrOfCompletedInstances >= 1}` - Exit on first successful completion
+- `${nrOfCompletedInstances >= nrOfInstances}` - Wait for all instances to complete
+- Custom conditions based on process variables (e.g., `${approvedRetries >= 1}`)
 
 ### 4. Terminate End Event
 

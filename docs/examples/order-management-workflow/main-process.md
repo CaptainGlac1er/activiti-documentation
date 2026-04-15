@@ -86,7 +86,7 @@ ProcessPayloadBuilder.start()
 ```xml
 <bpmn:userTask id="validateCustomerTask" 
                name="Validate Customer Information" 
-               activiti:assignee="${customerValidator}">
+               activiti:assignee="customerValidator">
   <bpmn:incoming>flowToValidateCustomer</bpmn:incoming>
   <bpmn:outgoing>flowToCustomerGateway</bpmn:outgoing>
   <bpmn:property id="customerData" name="customerData"/>
@@ -96,7 +96,7 @@ ProcessPayloadBuilder.start()
 **Purpose:** Human task for verifying customer information before processing the order.
 
 **Key Features:**
-- **Dynamic Assignee:** `${customerValidator}` - resolved at runtime
+- **Assignee:** `customerValidator` - Static user ID or group (can also use EL expression `${customerValidator}` for dynamic resolution)
 - **Task Property:** `customerData` - stores validated customer information
 - **Boundary Event:** 30-minute timeout
 
@@ -300,13 +300,15 @@ public class CreditScoreService implements Connector {
 ```xml
 <bpmn:userTask id="manualCreditReviewTask" 
                name="Manual Credit Review" 
-               activiti:assignee="${creditManager}">
+               activiti:assignee="creditManager">
   <bpmn:incoming>flowToManualReview</bpmn:incoming>
   <bpmn:outgoing>flowToManualReviewGateway</bpmn:outgoing>
 </bpmn:userTask>
 ```
 
 **Purpose:** Human review for borderline credit cases.
+
+**Assignee:** `creditManager` - Static user ID (can also use EL expression `${creditManager}` for dynamic resolution)
 
 **Manual Review Gateway:**
 ```xml
@@ -478,7 +480,7 @@ public class CreditScoreService implements Connector {
 ```xml
 <bpmn:userTask id="qualityCheckTask" 
                name="Quality Check" 
-               activiti:assignee="${qualityTeam}">
+               activiti:assignee="qualityTeam">
   <bpmn:incoming>flowToQualityCheck</bpmn:incoming>
   <bpmn:outgoing>flowToQualityGateway</bpmn:outgoing>
   
@@ -494,6 +496,8 @@ public class CreditScoreService implements Connector {
 ```
 
 **Key Feature:** Non-cancelling boundary event
+
+**Assignee:** `qualityTeam` - Static user ID or group (can also use EL expression `${qualityTeam}` for dynamic resolution)
 
 ```xml
 <bpmn:message id="escalationMessage" name="EscalationRequest"/>
