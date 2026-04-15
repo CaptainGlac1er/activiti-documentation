@@ -117,33 +117,47 @@ execution.setTransientVariable("myVar", "temporary");
 
 ## Variable Scope Hierarchy
 
-```
-Process Instance (Root Execution)
-├── Process Variables (global scope)
-│   ├── customerName
-│   ├── orderTotal
-│   └── items
-│
-├── SubProcess 1
-│   ├── Local Variables (subprocess scope)
-│   │   ├── subProcess1Data
-│   │   └── calculationResult
-│   │
-│   └── Inherits Process Variables
-│
-├── Parallel Branch A
-│   ├── Local Variables (branch scope)
-│   │   ├── branchAData
-│   │   └── branchAResult
-│   │
-│   └── Inherits Process Variables
-│
-└── Parallel Branch B
-    ├── Local Variables (branch scope)
-    │   ├── branchBData
-    │   └── branchBResult
-    │
-    └── Inherits Process Variables
+```mermaid
+flowchart TD
+    Root["Process Instance<br/>(Root Execution)"]
+    
+    subgraph ProcessVars["Process Variables global scope"]
+        P1["customerName"]
+        P2["orderTotal"]
+        P3["items"]
+    end
+    
+    subgraph SubProcess["SubProcess 1"]
+        subgraph SubLocal["Local Variables subprocess scope"]
+            S1["subProcess1Data"]
+            S2["calculationResult"]
+        end
+        SubInherit["Inherits Process Variables"]
+    end
+    
+    subgraph BranchA["Parallel Branch A"]
+        subgraph ALocal["Local Variables branch scope"]
+            A1["branchAData"]
+            A2["branchAResult"]
+        end
+        AInherit["Inherits Process Variables"]
+    end
+    
+    subgraph BranchB["Parallel Branch B"]
+        subgraph BLocal["Local Variables branch scope"]
+            B1["branchBData"]
+            B2["branchBResult"]
+        end
+        BInherit["Inherits Process Variables"]
+    end
+    
+    Root --> ProcessVars
+    Root --> SubProcess
+    Root --> BranchA
+    Root --> BranchB
+    SubProcess --> SubInherit
+    BranchA --> AInherit
+    BranchB --> BInherit
 ```
 
 ### Scope Resolution Order

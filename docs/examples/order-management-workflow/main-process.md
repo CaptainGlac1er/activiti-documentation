@@ -11,34 +11,32 @@ The main process orchestrates the complete order workflow, coordinating customer
 
 ## Process Diagram
 
-```
-Start (New Order)
-    ↓
-[Validate Customer] ──timeout──→ End (Timeout)
-    ↓
-    ├─ Invalid ──→ End (Customer Error)
-    ↓ Valid
-[Check Credit Score] ──error──→ End (Service Error)
-    ↓
-    ├─ Approved ──→ [Payment Process]
-    ↓ Needs Review
-    [Manual Credit Review]
-        ├─ Approved ──┘
-        └─ Rejected ──→ End (Rejected)
-    ↓
-[Inventory Process]
-    ↓
-┌─ Parallel Split ──────────────┐
-│    ↓              ↓           │
-│ [Invoice]    [Email]    [Quality Check] │
-│    ↓              ↓           │
-└────────→ Parallel Join ←──────┘
-    ↓
-[Shipping Process]
-    ↓
-[Update Order Status]
-    ↓
-End (Completed)
+```mermaid
+flowchart TD
+    Start([Start: New Order]) --> Validate[Validate Customer]
+    Validate -->|timeout| TimeoutEnd([End: Timeout])
+    Validate --> CustomerGateway{Customer Valid?}
+    CustomerGateway -->|Invalid| CustomerError([End: Customer Error])
+    CustomerGateway -->|Valid| Credit[Check Credit Score]
+    Credit -->|error| ServiceError([End: Service Error])
+    Credit --> CreditGateway{Credit Approved?}
+    CreditGateway -->|Approved| Payment[Payment Process]
+    CreditGateway -->|Needs Review| Manual[Manual Credit Review]
+    Manual -->|Approved| Payment
+    Manual -->|Rejected| RejectedEnd([End: Rejected])
+    Payment --> Inventory[Inventory Process]
+    Inventory --> ParallelSplit([Parallel Split])
+    ParallelSplit --> Invoice[Generate Invoice]
+    ParallelSplit --> Email[Send Confirmation]
+    ParallelSplit --> Quality[Quality Check]
+    Invoice --> ParallelJoin([Parallel Join])
+    Email --> ParallelJoin
+    Quality --> QualityGateway{Quality Passed?}
+    QualityGateway -->|Failed| QualityFail([End: Quality Failed])
+    QualityGateway -->|Passed| ParallelJoin
+    ParallelJoin --> Shipping[Shipping Process]
+    Shipping --> Update[Update Order Status]
+    Update --> Completed([End: Completed])
 ```
 
 ## Step-by-Step Walkthrough

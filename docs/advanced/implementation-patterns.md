@@ -37,22 +37,21 @@ This guide provides proven implementation patterns with architectural diagrams, 
 **Description:** All components (business logic, workflow engine, data access) reside in a single application deployment unit.
 
 **Architecture Diagram:**
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Monolithic Application                     │
-│                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌───────────────────┐   │
-│  │  Controller │  │   Service   │  │  Activiti Runtime │   │
-│  │   Layer     │  │   Layer     │  │    (Embedded)     │   │
-│  └──────┬──────┘  └──────┬──────┘  └─────────┬─────────┘   │
-│         │                │                    │             │
-│         └────────────────┼────────────────────┘             │
-│                          │                                  │
-│              ┌───────────▼───────────┐                      │
-│              │   Database Layer      │                      │
-│              │ (App + Activiti DB)   │                      │
-│              └───────────────────────┘                      │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Monolith["Monolithic Application"]
+        Controller["Controller<br/>Layer"]
+        Service["Service<br/>Layer"]
+        Activiti["Activiti Runtime<br/>(Embedded)"]
+        
+        subgraph Database["Database Layer<br/>(App + Activiti DB)"]
+        end
+    end
+    
+    Controller --> Service
+    Service --> Activiti
+    Activiti --> Database
+    Service --> Database
 ```
 
 **Implementation:**
@@ -103,26 +102,26 @@ public class ActivitiConfig {
 ### 2. Microservices Architecture
 
 **Diagram:**
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    API Gateway / Load Balancer                    │
-└────────────┬──────────────────────────────────────┬──────────────┘
-             │                                      │
-    ┌────────▼────────┐                    ┌───────▼────────┐
-    │  Order Service  │                    │  Task Service  │
-    │  (Business)     │                    │  (Workflow)    │
-    └────────┬────────┘                    └───────┬────────┘
-             │                                      │
-             │         ┌──────────────────┐        │
-             └────────►│  Message Broker  │◄───────┘
-                       │  (Kafka/RabbitMQ)│
-                       └────────┬─────────┘
-                                │
-                       ┌────────▼────────┐
-                       │ Process Engine  │
-                       │   (External)    │
-                       │  Database       │
-                       └─────────────────┘
+```mermaid
+flowchart TD
+    Gateway["API Gateway / Load Balancer"]
+    
+    subgraph Services["Microservices"]
+        Order["Order Service<br/>(Business)"]
+        Task["Task Service<br/>(Workflow)"]
+    end
+    
+    subgraph MessageBroker["Message Broker<br/>(Kafka/RabbitMQ)"]
+    end
+    
+    subgraph ProcessEngine["Process Engine<br/>(External)<br/>Database"]
+    end
+    
+    Gateway --> Order
+    Gateway --> Task
+    Order --> MessageBroker
+    Task --> MessageBroker
+    MessageBroker --> ProcessEngine
 ```
 
 **Implementation:**
@@ -185,32 +184,21 @@ Supports distributed teams
 ### 3. Hybrid Architecture
 
 **Diagram:**
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Main Application                          │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           Business Logic Layer                      │   │
-│  │  (Controllers, Services, Domain Models)             │   │
-│  └──────────────────────┬──────────────────────────────┘   │
-│                         │                                   │
-│                         │ REST/gRPC                         │
-│                         ▼                                   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │         Workflow Service (Embedded)                 │   │
-│  │  ┌──────────────────────────────────────────────┐   │   │
-│  │  │      Activiti Runtime & Engine               │   │   │
-│  │  └──────────────────────────────────────────────┘   │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          │ Message Queue
-                          ▼
-              ┌─────────────────────────┐
-              │  External Systems       │
-              │  (Email, Notifications, │
-              │   Integrations)         │
-              └─────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph MainApp["Main Application"]
+        Business["Business Logic Layer<br/>(Controllers, Services, Domain Models)"]
+        
+        subgraph Workflow["Workflow Service (Embedded)"]
+            Activiti["Activiti Runtime & Engine"]
+        end
+    end
+    
+    subgraph External["External Systems<br/>(Email, Notifications, Integrations)"]
+    end
+    
+    Business -->|REST/gRPC| Workflow
+    Workflow -->|Message Queue| External
 ```
 
 **Implementation:**
@@ -273,28 +261,18 @@ Simplified transaction management
 ### 1. Synchronous Integration
 
 **Diagram:**
-```
-Client Request
-     │
-     ▼
-┌─────────────┐
-│  Controller │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│  Service    │
-│  (Blocking) │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│  Process    │
-│  Runtime    │
-└──────┬──────┘
-       │
-       ▼
-   Response
+```mermaid
+flowchart TD
+    Request["Client Request"]
+    Controller["Controller"]
+    Service["Service<br/>(Blocking)"]
+    Runtime["Process<br/>Runtime"]
+    Response["Response"]
+    
+    Request --> Controller
+    Controller --> Service
+    Service --> Runtime
+    Runtime --> Response
 ```
 
 **Implementation:**
@@ -345,32 +323,28 @@ Good for real-time operations
 ### 2. Asynchronous Integration
 
 **Diagram:**
-```
-Client Request
-     │
-     ▼
-┌─────────────┐     ┌──────────────┐
-│  Controller │────►│  Message     │
-│             │     │  Producer    │
-└─────────────┘     └──────┬───────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │  Message     │
-                    │  Queue       │
-                    └──────┬───────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │  Consumer    │
-                    │  (Worker)    │
-                    └──────┬───────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │  Process     │
-                    │  Runtime     │
-                    └──────────────┘
+```mermaid
+flowchart TD
+    Request["Client Request"]
+    
+    subgraph ControllerLayer["Controller Layer"]
+        Controller["Controller"]
+        Producer["Message<br/>Producer"]
+    end
+    
+    subgraph Queue["Message Queue"]
+    end
+    
+    subgraph Worker["Worker Layer"]
+        Consumer["Consumer<br/>(Worker)"]
+        Runtime["Process<br/>Runtime"]
+    end
+    
+    Request --> Controller
+    Controller --> Producer
+    Producer --> Queue
+    Queue --> Consumer
+    Consumer --> Runtime
 ```
 
 **Implementation:**
@@ -445,20 +419,16 @@ Decouples systems
 ### 3. Event-Driven Integration
 
 **Diagram:**
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Service A  │────►│   Event     │◄────│  Service B  │
-│             │     │  Bus        │     │             │
-└─────────────┘     └──────┬──────┘     └─────────────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │  Workflow   │
-                    │  Service    │
-                    │             │
-                    │  Listens to │
-                    │  events     │
-                    └─────────────┘
+```mermaid
+flowchart LR
+    ServiceA["Service A"]
+    EventBus["Event Bus"]
+    ServiceB["Service B"]
+    Workflow["Workflow Service<br/>Listens to events"]
+    
+    ServiceA --> EventBus
+    ServiceB --> EventBus
+    EventBus --> Workflow
 ```
 
 **Implementation:**
@@ -522,23 +492,16 @@ Supports complex workflows
 ### 1. Synchronous Event Handling
 
 **Diagram:**
-```
-Event Trigger
-     │
-     ▼
-┌─────────────┐
-│  Listener   │
-│  (Sync)     │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│  Business   │
-│  Logic      │
-└──────┬──────┘
-       │
-       ▼
-   Return
+```mermaid
+flowchart TD
+    Trigger["Event Trigger"]
+    Listener["Listener<br/>(Sync)"]
+    Logic["Business<br/>Logic"]
+    Return["Return"]
+    
+    Trigger --> Listener
+    Listener --> Logic
+    Logic --> Return
 ```
 
 **Implementation:**
@@ -582,20 +545,21 @@ Good for critical events
 ### 2. Asynchronous Event Handling
 
 **Diagram:**
-```
-Event Trigger
-     │
-     ▼
-┌─────────────┐     ┌─────────────┐
-│  Listener   │────►│  Task       │
-│  (Async)    │     │  Executor   │
-└─────────────┘     └──────┬──────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │  Business   │
-                    │  Logic      │
-                    └─────────────┘
+```mermaid
+flowchart TD
+    Trigger["Event Trigger"]
+    
+    subgraph AsyncLayer["Async Layer"]
+        Listener["Listener<br/>(Async)"]
+        Executor["Task<br/>Executor"]
+    end
+    
+    subgraph Logic["Business Logic"]
+    end
+    
+    Trigger --> Listener
+    Listener --> Executor
+    Executor --> Logic
 ```
 
 **Implementation:**
@@ -648,17 +612,16 @@ Improves scalability
 ### 3. Event Sourcing Pattern
 
 **Diagram:**
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Commands   │────►│  Process    │────►│  Events     │
-│             │     │  Execution  │     │  Store      │
-└─────────────┘     └─────────────┘     └──────┬──────┘
-                                               │
-                                               ▼
-                                        ┌─────────────┐
-                                        │  Projections│
-                                        │  (Read Model)│
-                                        └─────────────┘
+```mermaid
+flowchart LR
+    Commands["Commands"]
+    Process["Process<br/>Execution"]
+    Events["Events<br/>Store"]
+    Projections["Projections<br/>(Read Model)"]
+    
+    Commands --> Process
+    Process --> Events
+    Events --> Projections
 ```
 
 **Implementation:**
@@ -721,21 +684,14 @@ Good for compliance
 ### 1. Role-Based Access Control (RBAC)
 
 **Diagram:**
-```
-┌─────────────┐
-│    User     │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐     ┌─────────────┐
-│   Roles     │────►│  Permissions│
-│ (Admin,     │     │             │
-│  User, etc) │     │  - Start    │
-└─────────────┘     │  Process    │
-                    │  - Complete │
-                    │  Task       │
-                    │  - Delete   │
-                    └─────────────┘
+```mermaid
+flowchart TD
+    User["User"]
+    Roles["Roles<br/>(Admin, User, etc)"]
+    Permissions["Permissions<br/>- Start Process<br/>- Complete Task<br/>- Delete"]
+    
+    User --> Roles
+    Roles --> Permissions
 ```
 
 **Implementation:**
@@ -787,24 +743,20 @@ Well-established pattern
 ### 2. Attribute-Based Access Control (ABAC)
 
 **Diagram:**
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│    User     │     │   Resource  │     │    Action   │
-│ Attributes  │     │ Attributes  │     │ Attributes  │
-└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
-       │                    │                    │
-       └────────────────────┼────────────────────┘
-                            │
-                            ▼
-                    ┌─────────────┐
-                    │  Policy     │
-                    │  Engine     │
-                    └──────┬──────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │  Allow/Deny │
-                    └─────────────┘
+```mermaid
+flowchart TD
+    User["User<br/>Attributes"]
+    Resource["Resource<br/>Attributes"]
+    Action["Action<br/>Attributes"]
+    
+    Policy["Policy<br/>Engine"]
+    
+    Decision["Allow/Deny"]
+    
+    User --> Policy
+    Resource --> Policy
+    Action --> Policy
+    Policy --> Decision
 ```
 
 **Implementation:**
@@ -852,17 +804,13 @@ Scalable permissions
 ### 1. Single Instance Deployment
 
 **Diagram:**
-```
-┌─────────────────────────────────────┐
-│         Application Server          │
-│  ┌───────────────────────────────┐  │
-│  │    Embedded Activiti Engine   │  │
-│  │  ┌─────────────────────────┐  │  │
-│  │  │      Database           │  │  │
-│  │  │  (Shared)               │  │  │
-│  │  └─────────────────────────┘  │  │
-│  └───────────────────────────────┘  │
-└─────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph AppServer["Application Server"]
+        subgraph Activiti["Embedded Activiti Engine"]
+            Database["Database<br/>(Shared)"]
+        end
+    end
 ```
 
 **Configuration:**
@@ -896,23 +844,24 @@ Low infrastructure cost
 ### 2. Clustered Deployment
 
 **Diagram:**
-```
-┌─────────────────────────────────────────────────────┐
-│                  Load Balancer                       │
-└──────┬────────────────┬────────────────┬────────────┘
-       │                │                │
-┌──────▼────┐   ┌──────▼────┐   ┌──────▼────┐
-│  Node 1   │   │  Node 2   │   │  Node 3   │
-│           │   │           │   │           │
-│  Activiti │   │  Activiti │   │  Activiti │
-└────┬──────┘   └────┬──────┘   └────┬──────┘
-     │               │               │
-     └───────────────┼───────────────┘
-                     │
-              ┌──────▼──────┐
-              │   Database  │
-              │  (Shared)   │
-              └─────────────┘
+```mermaid
+flowchart TD
+    LB["Load Balancer"]
+    
+    subgraph Nodes["Application Nodes"]
+        Node1["Node 1<br/>Activiti"]
+        Node2["Node 2<br/>Activiti"]
+        Node3["Node 3<br/>Activiti"]
+    end
+    
+    Database["Database<br/>(Shared)"]
+    
+    LB --> Node1
+    LB --> Node2
+    LB --> Node3
+    Node1 --> Database
+    Node2 --> Database
+    Node3 --> Database
 ```
 
 **Configuration:**
@@ -984,38 +933,55 @@ Fault tolerance
 
 ### Choosing Architecture
 
-```
-Is your team < 10 people?
-├─ Yes → Monolithic
-└─ No
-    Is process complexity high?
-    ├─ Yes → Microservices
-    └─ No → Hybrid
+```mermaid
+flowchart TD
+    Decision1{"Is your team<br/>&lt; 10 people?"}
+    Decision2{"Is process<br/>complexity high?"}
+    
+    Monolithic["Monolithic"]
+    Microservices["Microservices"]
+    Hybrid["Hybrid"]
+    
+    Decision1 -->|Yes| Monolithic
+    Decision1 -->|No| Decision2
+    Decision2 -->|Yes| Microservices
+    Decision2 -->|No| Hybrid
 ```
 
 ### Choosing Integration Pattern
 
-```
-Is response time critical (< 1s)?
-├─ Yes → Synchronous
-└─ No
-    Is volume high (> 1000 req/min)?
-    ├─ Yes → Asynchronous
-    └─ No
-        Are there multiple systems?
-        ├─ Yes → Event-Driven
-        └─ No → Synchronous
+```mermaid
+flowchart TD
+    Decision1{"Is response time<br/>critical &lt; 1s?"}
+    Decision2{"Is volume high<br/>&gt; 1000 req/min?"}
+    Decision3{"Are there<br/>multiple systems?"}
+    
+    Sync["Synchronous"]
+    Async["Asynchronous"]
+    EventDriven["Event-Driven"]
+    
+    Decision1 -->|Yes| Sync
+    Decision1 -->|No| Decision2
+    Decision2 -->|Yes| Async
+    Decision2 -->|No| Decision3
+    Decision3 -->|Yes| EventDriven
+    Decision3 -->|No| Sync
 ```
 
 ### Choosing Security Pattern
 
-```
-Are permissions simple (roles only)?
-├─ Yes → RBAC
-└─ No
-    Do you need context-aware access?
-    ├─ Yes → ABAC
-    └─ No → RBAC
+```mermaid
+flowchart TD
+    Decision1{"Are permissions<br/>simple (roles only)?"}
+    Decision2{"Do you need<br/>context-aware access?"}
+    
+    RBAC["RBAC"]
+    ABAC["ABAC"]
+    
+    Decision1 -->|Yes| RBAC
+    Decision1 -->|No| Decision2
+    Decision2 -->|Yes| ABAC
+    Decision2 -->|No| RBAC
 ```
 
 ---

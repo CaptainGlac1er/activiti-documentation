@@ -10,14 +10,16 @@ The Activiti Engine API provides the core services for workflow execution, task 
 
 ## Engine Architecture
 
-```
-┌─────────────────────────────────────┐
-│        ProcessEngine                │
-├─────────────────────────────────────┤
-│  RepositoryService  │  RuntimeService│
-│  TaskService        │  HistoryService│
-│  ManagementService  │                │
-└─────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ProcessEngine["ProcessEngine"]
+        direction TB
+        Repo["RepositoryService"]
+        Runtime["RuntimeService"]
+        Task["TaskService"]
+        History["HistoryService"]
+        Mgmt["ManagementService"]
+    end
 ```
 
 ## Available Services

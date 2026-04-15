@@ -126,20 +126,20 @@ public class ActivitiProcessRepository implements ProcessRepository {
 
 **DO:** Align processes with domain concepts
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    Bounded Context                   │
-│                                                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────┐  │
-│  │ Order Context│  │ Payment      │  │ Shipping │  │
-│  │              │  │ Context      │  │ Context  │  │
-│  └──────┬───────┘  └──────┬───────┘  └────┬─────┘  │
-│         │                 │                │        │
-│  ┌──────▼─────────────────▼────────────────▼──────┐│
-│  │          Orchestrating Process                  ││
-│  │         (Order Fulfillment)                     ││
-│  └─────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph BoundedContext["Bounded Context"]
+        Order["Order Context"]
+        Payment["Payment Context"]
+        Shipping["Shipping Context"]
+        
+        subgraph Orchestrating["Orchestrating Process<br/>(Order Fulfillment)"]
+        end
+    end
+    
+    Order --> Orchestrating
+    Payment --> Orchestrating
+    Shipping --> Orchestrating
 ```
 
 ```java

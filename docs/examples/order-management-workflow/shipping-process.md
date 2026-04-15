@@ -11,24 +11,20 @@ The shipping process handles order delivery based on customer-selected shipping 
 
 ## Process Overview
 
-```
-Start
-    ↓
-[Prepare Shipment] (User Task)
-    ↓
-[Generate Shipping Label] (Service Task)
-    ↓
-    ├─ Express ──→ [Schedule Priority Pickup]
-    ├─ Standard ──→ [Schedule Regular Pickup]
-    └─ Store Pickup ──→ [Notify Customer for Pickup] → End
-            ↓                      ↓
-            └────→ [Update Tracking] ←────┘
-                    ↓
-            [Wait for Delivery] (Message Event)
-                    ↓
-            [Send Delivery Confirmation]
-                    ↓
-            End (Shipping Completed)
+```mermaid
+flowchart TD
+    Start([Start]) --> Prepare[Prepare Shipment]
+    Prepare --> Label[Generate Shipping Label]
+    Label --> MethodGateway{Shipping Method?}
+    MethodGateway -->|Express| Priority[Schedule Priority Pickup]
+    MethodGateway -->|Standard| Regular[Schedule Regular Pickup]
+    MethodGateway -->|Store Pickup| Notify[Notify Customer for Pickup]
+    Priority --> Tracking[Update Tracking]
+    Regular --> Tracking
+    Notify --> StoreEnd([End: Store Pickup])
+    Tracking --> Wait([Wait for Delivery])
+    Wait --> Confirm[Send Delivery Confirmation]
+    Confirm --> Completed([End: Shipping Completed])
 ```
 
 ## Key Features
@@ -751,52 +747,76 @@ Standard → /
 
 ## Variable Flow
 
-```
-Input (from main process)
-    ↓
-orderId, customerAddress, orderItems, shippingMethod
-    ↓
-[Prepare Shipment]
-    ↓
-packageDetails
-    ↓
-[Generate Label]
-    ↓
-shippingLabel, labelUrl
-    ↓
-    ├─ EXPRESS Path
-    │   ↓
-    │ [Priority Pickup]
-    │   ↓
-    │ pickupTime, estimatedDelivery
-    │   ↓
-    ├─ STANDARD Path
-    │   ↓
-    │ [Regular Pickup]
-    │   ↓
-    │ pickupTime, estimatedDelivery
-    │   ↓
-    └─→ [Update Tracking] ←─┘
-        ↓
-    trackingNumber, trackingUrl
-        ↓
-    [Wait for Delivery Message]
-        ↓
-    deliveredAt, signedBy
-        ↓
-    [Send Confirmation]
-        ↓
-    confirmationSent
-        ↓
-    End (Shipping Completed)
+```mermaid
+flowchart TD
+    subgraph Input["Input from main process"]
+        InVars["orderId, customerAddress,<br/>orderItems, shippingMethod"]
+    end
     
-    OR
+    subgraph Prepare["Prepare Shipment"]
+        PackageDetails["packageDetails"]
+    end
     
-    └─ STORE_PICKUP Path
-        ↓
-    [Notify Customer]
-        ↓
-        End (Shipping Completed)
+    subgraph Label["Generate Label"]
+        LabelVars["shippingLabel, labelUrl"]
+    end
+    
+    subgraph ExpressPath["EXPRESS Path"]
+        PriorityPickup["Priority Pickup"]
+        ExpressTime["pickupTime, estimatedDelivery"]
+    end
+    
+    subgraph StandardPath["STANDARD Path"]
+        RegularPickup["Regular Pickup"]
+        StandardTime["pickupTime, estimatedDelivery"]
+    end
+    
+    subgraph Tracking["Update Tracking"]
+        TrackingVars["trackingNumber, trackingUrl"]
+    end
+    
+    subgraph Wait["Wait for Delivery Message"]
+        DeliveryVars["deliveredAt, signedBy"]
+    end
+    
+    subgraph Confirm["Send Confirmation"]
+        ConfirmVars["confirmationSent"]
+    end
+    
+    subgraph StorePath["STORE_PICKUP Path"]
+        NotifyCustomer["Notify Customer"]
+    end
+    
+    subgraph EndShipping["End - Shipping Completed"]
+        End["End"]
+    end
+    
+    Input --> InVars
+    InVars --> Prepare
+    Prepare --> PackageDetails
+    PackageDetails --> Label
+    Label --> LabelVars
+    LabelVars --> ExpressPath
+    LabelVars --> StandardPath
+    LabelVars --> StorePath
+    
+    ExpressPath --> PriorityPickup
+    PriorityPickup --> ExpressTime
+    ExpressTime --> Tracking
+    
+    StandardPath --> RegularPickup
+    RegularPickup --> StandardTime
+    StandardTime --> Tracking
+    
+    Tracking --> TrackingVars
+    TrackingVars --> Wait
+    Wait --> DeliveryVars
+    DeliveryVars --> Confirm
+    Confirm --> ConfirmVars
+    ConfirmVars --> End
+    
+    StorePath --> NotifyCustomer
+    NotifyCustomer --> End
 ```
 
 ---

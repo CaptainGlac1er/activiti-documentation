@@ -53,33 +53,45 @@ This module is essential for:
 
 ### Module Structure
 
-```
-activiti-image-generator/
-├── src/main/java/org/activiti/image/
-│   ├── ImageGenerator.java              # Main generation API
-│   ├── renderers/
-│   │   ├── PngRenderer.java             # PNG image output
-│   │   ├── SvgRenderer.java             # SVG vector output
-│   │   ├── PdfRenderer.java             # PDF document output
-│   │   └── ConnectionRenderer.java      # Flow connection rendering
-│   ├── styles/
-│   │   ├── StyleTemplate.java           # Style configuration
-│   │   ├── DefaultStyle.java            # Default styling
-│   │   ├── CustomStyle.java             # Custom styling
-│   │   └── HighlightStyle.java          # Highlight styling
-│   ├── highlight/
-│   │   ├── HighlightManager.java        # Highlight control
-│   │   ├── PathHighlighter.java         # Path calculation
-│   │   └── HighlightData.java           # Highlight information
-│   ├── utils/
-│   │   ├── DiagramCalculator.java       # Diagram metrics
-│   │   ├── ImageUtils.java              # Image utilities
-│   │   └── TextRenderer.java            # Text rendering
-│   └── model/
-│       ├── DiagramElement.java          # Element representation
-│       ├── DiagramConnection.java       # Connection representation
-│       └── DiagramData.java             # Complete diagram data
-└── src/test/java/
+```mermaid
+flowchart TD
+    subgraph ImageGenerator["activiti-image-generator"]
+        subgraph Main["Main API"]
+            ImgGen["ImageGenerator.java<br/>Main generation API"]
+        end
+        
+        subgraph Renderers["Renderers"]
+            Png["PngRenderer.java<br/>PNG output"]
+            Svg["SvgRenderer.java<br/>SVG output"]
+            Pdf["PdfRenderer.java<br/>PDF output"]
+            Conn["ConnectionRenderer.java<br/>Flow rendering"]
+        end
+        
+        subgraph Styles["Styles"]
+            StyleTpl["StyleTemplate.java<br/>Configuration"]
+            Default["DefaultStyle.java<br/>Default"]
+            Custom["CustomStyle.java<br/>Custom"]
+            Highlight["HighlightStyle.java<br/>Highlight"]
+        end
+        
+        subgraph Highlight["Highlight"]
+            HlMgr["HighlightManager.java<br/>Control"]
+            Path["PathHighlighter.java<br/>Calculation"]
+            HlData["HighlightData.java<br/>Information"]
+        end
+        
+        subgraph Utils["Utils"]
+            DiagCalc["DiagramCalculator.java<br/>Metrics"]
+            ImgUtils["ImageUtils.java<br/>Utilities"]
+            Text["TextRenderer.java<br/>Text"]
+        end
+        
+        subgraph Model["Model"]
+            Elem["DiagramElement.java<br/>Element"]
+            ConnModel["DiagramConnection.java<br/>Connection"]
+            DiagData["DiagramData.java<br/>Complete data"]
+        end
+    end
 ```
 
 ---

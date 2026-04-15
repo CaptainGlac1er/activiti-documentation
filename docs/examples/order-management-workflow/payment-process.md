@@ -11,26 +11,24 @@ The payment process handles customer payment with validation, retry logic, and a
 
 ## Process Overview
 
-```
-Start
-    ↓
-[Enter Payment Details] (User Task)
-    ↓
-[Validate Payment Method] (Service Task)
-    ↓
-    ├─ Invalid ──→ End (Payment Failed - Terminate)
-    ↓ Valid
-[Process Payment] (Async Service Task)
-    │
-    └─ Timeout (2 min) ──→ [Retry Payment]
-    ↓
-    ├─ Success ──→ [Generate Receipt] → [Notify Accounting] → End
-    ↓ Failed
-    [Retry Payment] (Multi-Instance)
-        ├─ Valid Retry ──→ Back to Process Payment
-        └─ Invalid → Check Retry Count
-            ├─ < 3 attempts ──→ Back to Process Payment
-            └─ ≥ 3 attempts ──→ End (Payment Failed - Terminate)
+```mermaid
+flowchart TD
+    Start([Start]) --> Enter[Enter Payment Details]
+    Enter --> Validate[Validate Payment Method]
+    Validate --> ValidationGateway{Valid Payment?}
+    ValidationGateway -->|Invalid| Failed1([End: Payment Failed])
+    ValidationGateway -->|Valid| Process[Process Payment]
+    Process -->|timeout 2min| Retry[Retry Payment]
+    Process --> ResultGateway{Payment Success?}
+    ResultGateway -->|Success| Receipt[Generate Receipt]
+    ResultGateway -->|Failed| Retry
+    Retry --> RetryValidation{Retry Valid?}
+    RetryValidation -->|Valid| Process
+    RetryValidation -->|Invalid| CountGateway{Retries < 3?}
+    CountGateway -->|Yes| Process
+    CountGateway -->|No| Failed2([End: Payment Failed])
+    Receipt --> Accounting[Notify Accounting]
+    Accounting --> Completed([End: Completed])
 ```
 
 ## Key Features
@@ -647,32 +645,20 @@ public class AccountingNotificationService implements Connector {
 
 ## Variable Flow
 
-```
-Input (from main process)
-    ↓
-orderId, amount, customerEmail
-    ↓
-[Enter Payment Details]
-    ↓
-paymentMethod, cardNumber
-    ↓
-[Validate Payment]
-    ↓
-paymentValid
-    ↓
-[Process Payment]
-    ↓
-paymentSuccess, paymentDetails, transactionId
-    ↓
-[Generate Receipt]
-    ↓
-receiptId, receiptUrl
-    ↓
-[Notify Accounting]
-    ↓
-Output (to main process)
-    ↓
-paymentStatus, paymentDetails
+```mermaid
+flowchart TD
+    Input([Input from main process]) --> StartVars[orderId, amount, customerEmail]
+    StartVars --> Enter[Enter Payment Details]
+    Enter --> PaymentVars[paymentMethod, cardNumber]
+    PaymentVars --> Validate[Validate Payment]
+    Validate --> ValidVar[paymentValid]
+    ValidVar --> Process[Process Payment]
+    Process --> ResultVars[paymentSuccess, paymentDetails, transactionId]
+    ResultVars --> Receipt[Generate Receipt]
+    Receipt --> ReceiptVars[receiptId, receiptUrl]
+    ReceiptVars --> Accounting[Notify Accounting]
+    Accounting --> Output([Output to main process])
+    Output --> FinalVars[paymentStatus, paymentDetails]
 ```
 
 ---

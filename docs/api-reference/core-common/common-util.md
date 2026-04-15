@@ -57,63 +57,48 @@ activiti-common-util/
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Date Utilities                             │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │          DateFormatterProvider                       │   │
-│  │        (Central Date Utility)                        │   │
-│  │                                                      │   │
-│  │  Configuration:                                     │   │
-│  │  - dateFormatPattern: String                        │   │
-│  │  - zoneId: ZoneId (default: UTC)                    │   │
-│  │                                                      │   │
-│  │  Operations:                                        │   │
-│  │  - parse(String) → Date                             │   │
-│  │  - toDate(Object) → Date                            │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ configured by                       │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │   ActivitiCoreCommonUtilAutoConfiguration           │   │
-│  │         (Spring Boot Auto-Config)                    │   │
-│  │                                                      │   │
-│  │  - Creates DateFormatterProvider bean               │   │
-│  │  - Reads spring.activiti.date-format-pattern       │   │
-│  │  - Conditional on missing bean                      │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph DateUtils["Date Utilities"]
+        subgraph DateFormatter["DateFormatterProvider<br/>(Central Date Utility)"]
+            Config["Configuration:<br/>- dateFormatPattern<br/>- zoneId"]
+            Ops["Operations:<br/>- parse String → Date<br/>- toDate Object → Date"]
+        end
+        
+        subgraph AutoConfig["ActivitiCoreCommonUtilAutoConfiguration<br/>(Spring Boot Auto-Config)"]
+            AC1["- Creates DateFormatterProvider bean"]
+            AC2["- Reads spring.activiti.date-format-pattern"]
+            AC3["- Conditional on missing bean"]
+        end
+    end
+    
+    AutoConfig -->|configured by| DateFormatter
 ```
 
 ### Date Conversion Flow
 
-```
-Input Object
-    │
-    ▼
-┌─────────────────────────────┐
-│  toDate(Object value)       │
-│  Type Check                  │
-└──────────┬──────────────────┘
-           │
-    ┌──────┼──────┬───────────┬────────────┬───────────┐
-    │      │      │           │            │           │
-    ▼      ▼      ▼           ▼            ▼           ▼
- String  Date   Long    LocalDate   LocalDateTime  ZonedDateTime
-    │      │      │           │            │           │
-    │      │      │           │            │           │
-    ▼      ▼      ▼           ▼            ▼           ▼
- parse()  return  new Date()  atStartOfDay  atZone     toInstant()
-    │      │      │           │            │           │
-    └──────┴──────┴───────────┴────────────┴───────────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │    Date      │
-                    │  (Result)    │
-                    └──────────────┘
+```mermaid
+flowchart TD
+    Input["Input Object"]
+    TypeCheck["toDate Object value<br/>Type Check"]
+    
+    Input --> TypeCheck
+    
+    TypeCheck --> String
+    TypeCheck --> Date
+    TypeCheck --> Long
+    TypeCheck --> LocalDate
+    TypeCheck --> LocalDateTime
+    TypeCheck --> ZonedDateTime
+    
+    String -->|"parse()"| Result
+    Date -->|return| Result
+    Long -->|"new Date()"| Result
+    LocalDate -->|atStartOfDay| Result
+    LocalDateTime -->|atZone| Result
+    ZonedDateTime -->|"toInstant()"| Result
+    
+    Result["Date<br/>(Result)"]
 ```
 
 ---

@@ -276,55 +276,50 @@ The **activiti-api-impl** module provides the concrete implementation of the Act
 
 ### Layer Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Application Layer                       │
-│              (Your Business Logic)                          │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                      API Layer                              │
-│  (activiti-api interfaces - ProcessRuntime, TaskRuntime)    │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                 API Implementation Layer                    │
-│  (activiti-api-impl - Concrete implementations)             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  ProcessRuntimeImpl  │  TaskRuntimeImpl  │  ...     │   │
-│  └─────────────────────────────────────────────────────┘   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                   Engine Layer                              │
-│  (activiti-engine - RuntimeService, TaskService, etc.)      │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Application["Application Layer<br/>(Your Business Logic)"]
+    end
+    
+    subgraph API["API Layer<br/>(activiti-api interfaces - ProcessRuntime, TaskRuntime)"]
+    end
+    
+    subgraph APIImpl["API Implementation Layer<br/>(activiti-api-impl - Concrete implementations)"]
+        subgraph Impls["Implementations"]
+            ProcessImpl["ProcessRuntimeImpl"]
+            TaskImpl["TaskRuntimeImpl"]
+            More["..."]
+        end
+    end
+    
+    subgraph Engine["Engine Layer<br/>(activiti-engine - RuntimeService, TaskService, etc.)"]
+    end
+    
+    Application --> API
+    API --> APIImpl
+    APIImpl --> Engine
 ```
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    API Implementations                      │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │ ProcessRuntime  │  │  TaskRuntime    │  │ ModelRuntime│ │
-│  │     Impl        │  │     Impl        │  │    Impl     │ │
-│  └────────┬────────┘  └────────┬────────┘  └──────┬──────┘ │
-│           │                    │                   │        │
-│           └────────────────────┼───────────────────┘        │
-│                                │                            │
-│                   ┌────────────▼────────────┐               │
-│                   │    Converter Layer      │               │
-│                   │  (Model Translators)    │               │
-│                   └────────────┬────────────┘               │
-│                                │                            │
-└────────────────────────────────┼────────────────────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │   Engine Services       │
-                    │ (RuntimeService, etc.)  │
-                    └─────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph APIImpls["API Implementations"]
+        Process["ProcessRuntime<br/>Impl"]
+        Task["TaskRuntime<br/>Impl"]
+        Model["ModelRuntime<br/>Impl"]
+    end
+    
+    subgraph Converter["Converter Layer<br/>(Model Translators)"]
+    end
+    
+    subgraph EngineServices["Engine Services<br/>(RuntimeService, etc.)"]
+    end
+    
+    Process --> Converter
+    Task --> Converter
+    Model --> Converter
+    Converter --> EngineServices
 ```
 
 ---

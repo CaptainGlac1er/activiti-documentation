@@ -32,78 +32,44 @@ The Activiti Engine is built on a layered architecture that separates concerns a
 
 ### High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Application Layer                          │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Your Business Application                   │   │
-│  │  - Service layer                                         │   │
-│  │  - Controllers                                           │   │
-│  │  - Integration code                                      │   │
-│  └──────────────────────┬──────────────────────────────────┘   │
-└─────────────────────────┼───────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────────┐
-│                      Engine API Layer                           │
-│  ┌────────────┬────────────┬──────────┬────────┬─────────┐     │
-│  │ Repository │   Runtime  │   Task   │ History│ Management│   │
-│  │  Service   │   Service  │  Service │ Service│ Service │     │
-│  └────────────┴────────────┴──────────┴────────┴─────────┘     │
-│                         │                                       │
-│              ┌──────────▼──────────┐                           │
-│              │   Command Manager   │                           │
-│              │  (Central Gateway)  │                           │
-│              └──────────┬──────────┘                           │
-└─────────────────────────┼───────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────────┐
-│                    Engine Core Layer                            │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Process Engine Context                      │   │
-│  │  - Thread-local engine state                            │   │
-│  │  - Current command execution                            │   │
-│  │  - Transaction context                                  │   │
-│  └──────────────────────┬──────────────────────────────────┘   │
-│                         │                                       │
-│        ┌────────────────┼────────────────┐                     │
-│        │                │                │                     │
-│        ▼                ▼                ▼                     │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐                │
-│  │  Entity  │    │  History │    │   Event  │                │
-│  │  Manager │    │  Manager │    │ Manager  │                │
-│  └────┬─────┘    └────┬─────┘    └────┬─────┘                │
-│       │               │               │                       │
-│       └───────────────┼───────────────┘                       │
-│                       │                                       │
-│  ┌────────────────────▼────────────────────┐                 │
-│  │          BPMN Execution Engine          │                 │
-│  │  - Activity Behavior Handlers           │                 │
-│  │  - Agenda & Execution Management        │                 │
-│  └─────────────────────────────────────────┘                 │
-│                       │                                       │
-│  ┌────────────────────▼────────────────────┐                 │
-│  │          Job Executor                   │                 │
-│  │  - Async job processing                 │                 │
-│  │  - Timer management                     │                 │
-│  │  - Multi-tenant support                 │                 │
-│  └─────────────────────────────────────────┘                 │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────────┐
-│                   Persistence Layer                             │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Database Access Objects                     │   │
-│  │  - EntityMapper (MyBatis)                               │   │
-│  │  - DAO implementations                                  │   │
-│  │  - Connection management                                │   │
-│  └──────────────────────┬──────────────────────────────────┘   │
-│                         │                                       │
-│                         ▼                                       │
-│              ┌────────────────────┐                            │
-│              │   Database         │                            │
-│              │  (PostgreSQL, etc) │                            │
-│              └────────────────────┘                            │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ApplicationLayer["Application Layer"]
+        App["Your Business Application<br/>- Service layer<br/>- Controllers<br/>- Integration code"]
+    end
+
+    subgraph EngineAPILayer["Engine API Layer"]
+        direction TB
+        subgraph Services["Services"]
+            Repo["Repository<br/>Service"] --- Runtime["Runtime<br/>Service"] --- Task["Task<br/>Service"] --- History["History<br/>Service"] --- Mgmt["Management<br/>Service"]
+        end
+        CmdMgr["Command Manager<br/>(Central Gateway)"]
+    end
+
+    subgraph EngineCoreLayer["Engine Core Layer"]
+        Context["Process Engine Context<br/>- Thread-local engine state<br/>- Current command execution<br/>- Transaction context"]
+        
+        subgraph Managers["Managers"]
+            EntityMgr["Entity<br/>Manager"] --- HistoryMgr["History<br/>Manager"] --- EventMgr["Event<br/>Manager"]
+        end
+        
+        BPMN["BPMN Execution Engine<br/>- Activity Behavior Handlers<br/>- Agenda & Execution Management"]
+        JobExec["Job Executor<br/>- Async job processing<br/>- Timer management<br/>- Multi-tenant support"]
+    end
+
+    subgraph PersistenceLayer["Persistence Layer"]
+        DAO["Database Access Objects<br/>- EntityMapper MyBatis<br/>- DAO implementations<br/>- Connection management"]
+        DB["Database<br/>(PostgreSQL, etc)"]
+    end
+
+    ApplicationLayer --> EngineAPILayer
+    Services --> CmdMgr
+    CmdMgr --> Context
+    Context --> Managers
+    Managers --> BPMN
+    BPMN --> JobExec
+    JobExec --> DAO
+    DAO --> DB
 ```
 
 ---
@@ -322,36 +288,43 @@ VariableCreatedEvent, VariableUpdatedEvent
 
 ### Process Start Flow
 
-```
-Application → RuntimeService → CommandManager → TransactionManager
-    ↓
-CommandContext initialized
-    ↓
-StartProcessCmd.execute()
-    ├── Create process definition
-    ├── Create execution
-    ├── Initialize variables
-    └── Trigger start event
-    ↓
-BPMN Executor → Agenda → Execute Agenda
-    ↓
-EventManager → HistoryManager → Transaction commit
+```mermaid
+flowchart TD
+    App["Application"] --> Runtime["RuntimeService"]
+    Runtime --> CmdMgr["CommandManager"]
+    CmdMgr --> TxMgr["TransactionManager"]
+    TxMgr --> Init["CommandContext initialized"]
+    Init --> Execute["StartProcessCmd.execute"]
+    
+    Execute --> CreateDef["Create process definition"]
+    Execute --> CreateExec["Create execution"]
+    Execute --> InitVars["Initialize variables"]
+    Execute --> Trigger["Trigger start event"]
+    
+    CreateDef --> BPMN["BPMN Executor"]
+    CreateExec --> BPMN
+    InitVars --> BPMN
+    Trigger --> BPMN
+    
+    BPMN --> Agenda["Agenda"]
+    Agenda --> ExecAgenda["Execute Agenda"]
+    ExecAgenda --> EventMgr["EventManager"]
+    EventMgr --> HistoryMgr["HistoryManager"]
+    HistoryMgr --> Commit["Transaction commit"]
 ```
 
 ### Task Completion Flow
 
-```
-TaskService.complete() → CommandManager
-    ↓
-CompleteTaskCmd.execute()
-    ↓
-EntityManager (update task, delete task, save variables)
-    ↓
-BPMN Executor (complete activity, take sequence, evaluate gateway)
-    ↓
-Agenda (add next steps) → Execute Agenda
-    ↓
-EventManager (TaskCompletedEvent) → HistoryManager
+```mermaid
+flowchart TD
+    TaskSvc["TaskService.complete"] --> CmdMgr["CommandManager"]
+    CmdMgr --> Execute["CompleteTaskCmd.execute"]
+    Execute --> EntityMgr["EntityManager<br/>update task, delete task, save variables"]
+    EntityMgr --> BPMN["BPMN Executor<br/>complete activity, take sequence, evaluate gateway"]
+    BPMN --> Agenda["Agenda<br/>add next steps"]
+    Agenda --> ExecAgenda["Execute Agenda"]
+    ExecAgenda --> EventMgr["EventManager<br/>TaskCompletedEvent"]
+    EventMgr --> HistoryMgr["HistoryManager"]
 ```
 
 ---
@@ -381,22 +354,28 @@ public class CommandContext implements InMemoryObjectCache {
 
 ### Transaction Boundaries
 
-```
-┌─────────────────────────────────────────┐
-│         Transaction Boundary            │
-│                                         │
-│  ┌───────────────────────────────────┐ │
-│  │   Command Execution               │ │
-│  │                                   │ │
-│  │  1. Begin Transaction             │ │
-│  │  2. Execute Command               │ │
-│  │     - Modify entities             │ │
-│  │     - Create jobs                 │ │
-│  │     - Dispatch events             │ │
-│  │  3. Commit Transaction            │ │
-│  │  4. Async Processing (outside)    │ │
-│  └───────────────────────────────────┘ │
-└─────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph TransactionBoundary["Transaction Boundary"]
+        subgraph CommandExec["Command Execution"]
+            Begin["1. Begin Transaction"]
+            Execute["2. Execute Command"]
+            Modify["   - Modify entities"]
+            CreateJobs["   - Create jobs"]
+            Dispatch["   - Dispatch events"]
+            Commit["3. Commit Transaction"]
+        end
+        Async["4. Async Processing outside transaction"]
+    end
+
+    Begin --> Execute
+    Execute --> Modify
+    Execute --> CreateJobs
+    Execute --> Dispatch
+    Modify --> Commit
+    CreateJobs --> Commit
+    Dispatch --> Commit
+    Commit --> Async
 ```
 
 ---
@@ -405,28 +384,86 @@ public class CommandContext implements InMemoryObjectCache {
 
 ### Command Hierarchy
 
-```
-Command<T>
-├── ReadOnlyCommand<T>
-│   └── Query commands (no DB modifications)
-├── WriteCommand<T>
-│   ├── Process commands
-│   │   ├── StartProcessInstanceCmd
-│   │   ├── CompleteTaskCmd
-│   │   └── SignalEventCmd
-│   ├── Repository commands
-│   │   ├── DeployCmd
-│   │   ├── DeleteDeploymentCmd
-│   │   └── SaveProcessDefinitionCmd
-│   ├── Task commands
-│   │   ├── CreateTaskCmd
-│   │   ├── ClaimTaskCmd
-│   │   └── CompleteTaskCmd
-│   └── Management commands
-│       ├── ExecuteJobsCmd
-│       └── CleanupCmd
-└── ConfigCommand<T>
-    └── Configuration changes
+```mermaid
+classDiagram
+    class Command~T~ {
+        <<interface>>
+        +execute(CommandContext context) T
+    }
+    
+    class ReadOnlyCommand~T~ {
+        <<abstract>>
+        Query commands
+        No DB modifications
+    }
+    
+    class WriteCommand~T~ {
+        <<abstract>>
+        Process commands
+        Repository commands
+        Task commands
+        Management commands
+    }
+    
+    class ConfigCommand~T~ {
+        <<abstract>>
+        Configuration changes
+    }
+    
+    class StartProcessInstanceCmd {
+        +execute() Execution
+    }
+    
+    class CompleteTaskCmd {
+        +execute() void
+    }
+    
+    class SignalEventCmd {
+        +execute() void
+    }
+    
+    class DeployCmd {
+        +execute() Deployment
+    }
+    
+    class DeleteDeploymentCmd {
+        +execute() void
+    }
+    
+    class SaveProcessDefinitionCmd {
+        +execute() ProcessDefinition
+    }
+    
+    class CreateTaskCmd {
+        +execute() Task
+    }
+    
+    class ClaimTaskCmd {
+        +execute() Task
+    }
+    
+    class ExecuteJobsCmd {
+        +execute() int
+    }
+    
+    class CleanupCmd {
+        +execute() void
+    }
+    
+    Command <|-- ReadOnlyCommand
+    Command <|-- WriteCommand
+    Command <|-- ConfigCommand
+    
+    WriteCommand <|-- StartProcessInstanceCmd
+    WriteCommand <|-- CompleteTaskCmd
+    WriteCommand <|-- SignalEventCmd
+    WriteCommand <|-- DeployCmd
+    WriteCommand <|-- DeleteDeploymentCmd
+    WriteCommand <|-- SaveProcessDefinitionCmd
+    WriteCommand <|-- CreateTaskCmd
+    WriteCommand <|-- ClaimTaskCmd
+    WriteCommand <|-- ExecuteJobsCmd
+    WriteCommand <|-- CleanupCmd
 ```
 
 ### Command Implementation Example
@@ -527,20 +564,48 @@ Transaction.commit()
 
 ### Concurrency Control
 
-```
-Main Thread
-    │
-    ├── Service Call 1 ──► Command 1 ──► Transaction 1
-    │
-    ├── Service Call 2 ──► Command 2 ──► Transaction 2
-    │
-    └── Job Executor Threads
-            │
-            ├── Job Thread 1 ──► Async Job 1
-            │
-            ├── Job Thread 2 ──► Async Job 2
-            │
-            └── Job Thread N ──► Async Job N
+```mermaid
+flowchart TD
+    Main["Main Thread"]
+    
+    subgraph ServiceCalls["Service Calls"]
+        Service1["Service Call 1"]
+        Service2["Service Call 2"]
+    end
+    
+    subgraph CommandExecution["Command Execution"]
+        Cmd1["Command 1"]
+        Cmd2["Command 2"]
+    end
+    
+    subgraph Transactions["Transactions"]
+        Tx1["Transaction 1"]
+        Tx2["Transaction 2"]
+    end
+    
+    subgraph JobExecutor["Job Executor Threads"]
+        subgraph JobThreads["Worker Threads"]
+            Job1["Job Thread 1"]
+            Job2["Job Thread 2"]
+            JobN["Job Thread N"]
+        end
+    end
+    
+    subgraph AsyncJobs["Async Jobs"]
+        Async1["Async Job 1"]
+        Async2["Async Job 2"]
+        AsyncN["Async Job N"]
+    end
+    
+    Main --> ServiceCalls
+    Service1 --> Cmd1
+    Service2 --> Cmd2
+    Cmd1 --> Tx1
+    Cmd2 --> Tx2
+    Main --> JobExecutor
+    Job1 --> Async1
+    Job2 --> Async2
+    JobN --> AsyncN
 ```
 
 ---
@@ -604,13 +669,21 @@ public class CustomHistoryProvider implements HistoryProvider {
 
 ### Plugin Architecture
 
-```
-ProcessEngineConfiguration
-    │
-    ├── Plugin 1: HistoryPlugin
-    ├── Plugin 2: AuditPlugin
-    ├── Plugin 3: SecurityPlugin
-    └── Plugin N: CustomPlugin
+```mermaid
+flowchart TD
+    Config["ProcessEngineConfiguration"]
+    
+    subgraph Plugins["Engine Plugins"]
+        History["HistoryPlugin"]
+        Audit["AuditPlugin"]
+        Security["SecurityPlugin"]
+        Custom["CustomPlugin"]
+    end
+    
+    Config --> History
+    Config --> Audit
+    Config --> Security
+    Config --> Custom
 ```
 
 ---

@@ -63,71 +63,44 @@ activiti-bpmn-layout/
 
 ### Layout Pipeline
 
-```
-BPMN Model
-     │
-     ▼
-┌─────────────────┐
-│ Structure       │
-│ Analyzer        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Layout          │
-│ Calculator      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Position        │
-│ Calculator      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Spacing         │
-│ Manager         │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Alignment       │
-│ Strategy        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Collision       │
-│ Detector        │
-└────────┬────────┘
-         │
-         ▼
-Layout Result
+```mermaid
+flowchart TD
+    Model["BPMN Model"]
+    Structure["Structure<br/>Analyzer"]
+    Layout["Layout<br/>Calculator"]
+    Position["Position<br/>Calculator"]
+    Spacing["Spacing<br/>Manager"]
+    Alignment["Alignment<br/>Strategy"]
+    Collision["Collision<br/>Detector"]
+    Result["Layout Result"]
+    
+    Model --> Structure
+    Structure --> Layout
+    Layout --> Position
+    Position --> Spacing
+    Spacing --> Alignment
+    Alignment --> Collision
+    Collision --> Result
 ```
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    LayoutCalculator                         │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐                 │
-│  │ Structure       │  │ Position        │                 │
-│  │ Analyzer        │  │ Calculator      │                 │
-│  └────────┬────────┘  └────────┬────────┘                 │
-│           │                    │                           │
-│           └────────┬───────────┘                           │
-│                    │                                       │
-│                    ▼                                       │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Layout Engine                           │  │
-│  │  - Calculate positions                               │  │
-│  │  - Apply spacing                                     │  │
-│  │  - Ensure alignment                                  │  │
-│  │  - Detect collisions                                 │  │
-│  └─────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph LayoutCalculator["LayoutCalculator"]
+        Structure["Structure<br/>Analyzer"]
+        Position["Position<br/>Calculator"]
+        
+        subgraph LayoutEngine["Layout Engine"]
+            LE1["- Calculate positions"]
+            LE2["- Apply spacing"]
+            LE3["- Ensure alignment"]
+            LE4["- Detect collisions"]
+        end
+    end
+    
+    Structure --> LayoutEngine
+    Position --> LayoutEngine
 ```
 
 ---

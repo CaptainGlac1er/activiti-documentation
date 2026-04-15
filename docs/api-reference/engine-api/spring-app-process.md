@@ -62,58 +62,49 @@ activiti-spring-app-process/
 
 ### Process Application Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│              Spring Application Context                     │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │           ProcessApplication Bean                    │  │
-│  │                                                       │  │
-│  │  ┌──────────────────────────────────────────────┐   │  │
-│  │  │      Process Engine (Embedded)               │   │  │
-│  │  │  - RuntimeService                            │   │  │
-│  │  │  - TaskService                               │   │  │
-│  │  │  - RepositoryService                         │   │  │
-│  │  └──────────────────────────────────────────────┘   │  │
-│  │                                                       │  │
-│  │  ┌──────────────────────────────────────────────┐   │  │
-│  │  │      Process Definitions                     │   │  │
-│  │  │  - Deployed from Spring resources            │   │  │
-│  │  │  - Managed by application                    │   │  │
-│  │  └──────────────────────────────────────────────┘   │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │           Business Beans                              │  │
-│  │  - Service delegates                                 │  │
-│  │  - Event listeners                                   │  │
-│  │  - External integrations                             │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph SpringAppCtx["Spring Application Context"]
+        subgraph ProcessApp["ProcessApplication Bean"]
+            subgraph ProcessEngine["Process Engine Embedded"]
+                E1["- RuntimeService"]
+                E2["- TaskService"]
+                E3["- RepositoryService"]
+            end
+            
+            subgraph ProcessDefs["Process Definitions"]
+                D1["- Deployed from Spring resources"]
+                D2["- Managed by application"]
+            end
+        end
+        
+        subgraph BusinessBeans["Business Beans"]
+            B1["- Service delegates"]
+            B2["- Event listeners"]
+            B3["- External integrations"]
+        end
+    end
+    
+    ProcessEngine --> ProcessDefs
 ```
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│              ProcessApplication                             │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐                 │
-│  │ Process         │  │ Process         │                 │
-│  │ Engine          │  │ Deployment      │                 │
-│  │                 │  │ Manager         │                 │
-│  └────────┬────────┘  └────────┬────────┘                 │
-│           │                    │                           │
-│           └────────┬───────────┘                           │
-│                    │                                       │
-│                    ▼                                       │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Spring Integration                       │  │
-│  │  - Bean factory                                      │  │
-│  │  - Event publishing                                  │  │
-│  │  - Transaction management                            │  │
-│  └─────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ProcessApp["ProcessApplication"]
+        Engine["Process<br/>Engine"]
+        DeployMgr["Process<br/>Deployment<br/>Manager"]
+        
+        subgraph SpringIntegration["Spring Integration"]
+            S1["- Bean factory"]
+            S2["- Event publishing"]
+            S3["- Transaction management"]
+        end
+    end
+    
+    Engine --> SpringIntegration
+    DeployMgr --> SpringIntegration
 ```
 
 ---

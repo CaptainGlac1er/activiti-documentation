@@ -11,25 +11,21 @@ The inventory process handles stock availability checking, item reservation, and
 
 ## Process Overview
 
-```
-Start
-    ↓
-[Check Stock Availability] (Service Task)
-    ↓
-    ├─ In Stock ──→ [Reserve Inventory]
-    │                   ↓
-    │           ┌─ Parallel Split ─────┐
-    │           ↓                      ↓
-    │     [Update Warehouse]    [Notify Supplier]
-    │           ↓                      ↓
-    │           └────→ Parallel Join ←─┘
-    │                   ↓
-    │           End (Inventory Reserved)
-    ↓
-    └─ Out of Stock ──→ [Backorder Approval] (User Task)
-                            ↓
-                            ├─ Approved ──→ End (Backorder Approved)
-                            └─ Rejected ──→ End (Backorder Rejected - Terminate)
+```mermaid
+flowchart TD
+    Start([Start]) --> Check[Check Stock Availability]
+    Check --> StockGateway{In Stock?}
+    StockGateway -->|Yes| Reserve[Reserve Inventory]
+    StockGateway -->|No| Backorder[Backorder Approval]
+    Reserve --> ParallelSplit([Parallel Split])
+    ParallelSplit --> Warehouse[Update Warehouse]
+    ParallelSplit --> Supplier[Notify Supplier]
+    Warehouse --> ParallelJoin([Parallel Join])
+    Supplier --> ParallelJoin
+    ParallelJoin --> Reserved([End: Inventory Reserved])
+    Backorder --> ApprovalGateway{Approved?}
+    ApprovalGateway -->|Yes| Approved([End: Backorder Approved])
+    ApprovalGateway -->|No| Rejected([End: Backorder Rejected])
 ```
 
 ## Key Features

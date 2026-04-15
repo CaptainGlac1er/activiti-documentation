@@ -11,37 +11,11 @@ This document provides complete Java implementations for all 17 service delegate
 
 ## Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    BPMN Process                             │
-│  [Service Task] implementation="serviceName"                │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Spring Container                             │
-│  @Component("serviceName")                                  │
-│  public class ServiceName implements Connector               │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│              ServiceProperties (Configuration)               │
-│  @ConfigurationProperties(prefix = "services")              │
-│  - API URLs                                                 │
-│  - Authentication                                           │
-│  - Business rules                                           │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                External Services                             │
-│  - Credit Bureau API                                        │
-│  - Payment Gateway (Stripe)                                 │
-│  - Inventory System                                         │
-│  - Shipping Provider (FedEx)                                │
-│  - Email Service (SMTP)                                     │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    BPMN["BPMN Process<br/>Service Task"] --> Spring["Spring Container<br/>@Component implements Connector"]
+    Spring --> Config["ServiceProperties<br/>@ConfigurationProperties"]
+    Config --> External["External Services<br/>- Credit Bureau API<br/>- Payment Gateway<br/>- Inventory System<br/>- Shipping Provider<br/>- Email Service"]
 ```
 
 ## Connector Interface

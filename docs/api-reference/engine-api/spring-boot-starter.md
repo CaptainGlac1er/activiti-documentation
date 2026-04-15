@@ -70,70 +70,53 @@ activiti-spring-boot-starter/
 
 ### Auto-Configuration Flow
 
-```
-Application Startup
-       │
-       ▼
-┌─────────────────┐
-│ Spring Boot     │
-│ Context         │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Auto            │
-│ Configuration   │
-│ Scanner         │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Activiti        │
-│ AutoConfig      │
-└────────┬────────┘
-         │
-         ├───────────┐
-         │           │
-         ▼           ▼
-┌─────────────┐ ┌─────────────┐
-│ Process     │ │ Activiti    │
-│ Engine      │ │ Properties  │
-└─────────────┘ └─────────────┘
+```mermaid
+flowchart TD
+    Startup["Application Startup"]
+    Context["Spring Boot<br/>Context"]
+    Scanner["Auto<br/>Configuration<br/>Scanner"]
+    AutoConfig["Activiti<br/>AutoConfig"]
+    Engine["Process<br/>Engine"]
+    Properties["Activiti<br/>Properties"]
+    
+    Startup --> Context
+    Context --> Scanner
+    Scanner --> AutoConfig
+    AutoConfig --> Engine
+    AutoConfig --> Properties
 ```
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Spring Boot Application                    │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              ActivitiAutoConfiguration                │   │
-│  │                                                       │   │
-│  │  @ConditionalOnClass(ProcessEngine.class)            │   │
-│  │  @ConditionalOnProperty(activiti.enabled)            │   │
-│  │                                                       │   │
-│  │  Beans:                                              │   │
-│  │  - ProcessEngine                                     │   │
-│  │  - RuntimeService                                    │   │
-│  │  - TaskService                                       │   │
-│  │  - RepositoryService                                 │   │
-│  │  - HistoryService                                    │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                          │                                   │
-│                          ▼                                   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                ActivitiProperties                     │   │
-│  │                                                       │   │
-│  │  @ConfigurationProperties(activiti)                  │   │
-│  │                                                       │   │
-│  │  Properties:                                         │   │
-│  │  - database-schema-update                            │   │
-│  │  - history-level                                     │   │
-│  │  - async-executor-activate                           │   │
-│  │  - job-executor-threads                              │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph SpringBootApp["Spring Boot Application"]
+        subgraph AutoConfig["ActivitiAutoConfiguration"]
+            AC1["@ConditionalOnClass<br/>(ProcessEngine)"]
+            AC2["@ConditionalOnProperty<br/>(activiti.enabled)"]
+            
+            subgraph Beans["Beans"]
+                B1["- ProcessEngine"]
+                B2["- RuntimeService"]
+                B3["- TaskService"]
+                B4["- RepositoryService"]
+                B5["- HistoryService"]
+            end
+        end
+        
+        subgraph Properties["ActivitiProperties"]
+            P1["@ConfigurationProperties<br/>(activiti)"]
+            
+            subgraph Props["Properties"]
+                PR1["- database-schema-update"]
+                PR2["- history-level"]
+                PR3["- async-executor-activate"]
+                PR4["- job-executor-threads"]
+            end
+        end
+    end
+    
+    AutoConfig --> Properties
 ```
 
 ---

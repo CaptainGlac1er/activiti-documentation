@@ -363,15 +363,32 @@ Call activities pass variables between parent and child processes.
 ```
 
 **Variable flow:**
-```
-Parent Process              Payment Sub-Process
-─────────────              ───────────────────
-orderId ────────────────→  orderId
-orderTotal ────────────→  amount
-customerEmail ─────────→  customerEmail
-                         ↓ (payment processing)
-paymentStatus ─────────←  paymentStatus
-paymentDetails ───────←  paymentResult
+```mermaid
+flowchart LR
+    subgraph Parent["Parent Process"]
+        direction TB
+        P1[orderId]
+        P2[orderTotal]
+        P3[customerEmail]
+        P4[paymentStatus]
+        P5[paymentDetails]
+    end
+    
+    subgraph Payment["Payment Sub-Process"]
+        direction TB
+        M1[orderId]
+        M2[amount]
+        M3[customerEmail]
+        M4[payment processing]
+        M5[paymentStatus]
+        M6[paymentResult]
+    end
+    
+    P1 --> M1
+    P2 --> M2
+    P3 --> M3
+    M5 --> P4
+    M6 --> P5
 ```
 
 **Example: Inventory Process Call Activity**

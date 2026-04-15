@@ -44,21 +44,29 @@ The **activiti-process-validation** module provides comprehensive validation cap
 
 ### Module Structure
 
-```
-activiti-process-validation/
-├── src/main/java/org/activiti/validation/
-│   ├── ProcessValidator.java           # Main validator
-│   ├── rules/
-│   │   ├── SyntaxRule.java
-│   │   ├── SemanticRule.java
-│   │   └── BestPracticeRule.java
-│   ├── reporters/
-│   │   ├── ValidationError.java
-│   │   └── ValidationReport.java
-│   └── custom/
-│       ├── CustomRule.java
-│       └── RuleRegistry.java
-└── src/test/java/
+```mermaid
+flowchart TD
+    subgraph ValidationModule["activiti-process-validation"]
+        subgraph Main["Main Validator"]
+            Validator["ProcessValidator.java<br/>Main validator"]
+        end
+        
+        subgraph Rules["Rules"]
+            Syntax["SyntaxRule.java"]
+            Semantic["SemanticRule.java"]
+            BestPractice["BestPracticeRule.java"]
+        end
+        
+        subgraph Reporters["Reporters"]
+            Error["ValidationError.java"]
+            Report["ValidationReport.java"]
+        end
+        
+        subgraph Custom["Custom"]
+            CustomRule["CustomRule.java"]
+            Registry["RuleRegistry.java"]
+        end
+    end
 ```
 
 ---
@@ -67,68 +75,47 @@ activiti-process-validation/
 
 ### Validation Pipeline
 
-```
-BPMN Model
-     │
-     ▼
-┌─────────────┐
-│ Syntax      │
-│ Validator   │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Semantic    │
-│ Validator   │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Best        │
-│ Practice    │
-│ Validator   │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Custom      │
-│ Validators  │
-└──────┬──────┘
-       │
-       ▼
-Validation Report
+```mermaid
+flowchart TD
+    Model["BPMN Model"]
+    Syntax["Syntax<br/>Validator"]
+    Semantic["Semantic<br/>Validator"]
+    BestPractice["Best<br/>Practice<br/>Validator"]
+    Custom["Custom<br/>Validators"]
+    Report["Validation Report"]
+    
+    Model --> Syntax
+    Syntax --> Semantic
+    Semantic --> BestPractice
+    BestPractice --> Custom
+    Custom --> Report
 ```
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ProcessValidator                         │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐                 │
-│  │ Rule            │  │ Rule            │                 │
-│  │ Registry        │  │ Executor        │                 │
-│  └────────┬────────┘  └────────┬────────┘                 │
-│           │                    │                           │
-│           └────────┬───────────┘                           │
-│                    │                                       │
-│                    ▼                                       │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Validation Rules                        │  │
-│  │  - SyntaxRules                                       │  │
-│  │  - SemanticRules                                     │  │
-│  │  - BestPracticeRules                                 │  │
-│  │  - CustomRules                                       │  │
-│  └─────────────────────────────────────────────────────┘  │
-│                          │                                  │
-│                          ▼                                  │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Error Reporter                          │  │
-│  │  - Collect errors                                    │  │
-│  │  - Generate report                                   │  │
-│  │  - Provide feedback                                  │  │
-│  └─────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ProcessValidator["ProcessValidator"]
+        RuleReg["Rule<br/>Registry"]
+        RuleExec["Rule<br/>Executor"]
+        
+        subgraph ValidationRules["Validation Rules"]
+            VR1["- SyntaxRules"]
+            VR2["- SemanticRules"]
+            VR3["- BestPracticeRules"]
+            VR4["- CustomRules"]
+        end
+        
+        subgraph ErrorReporter["Error Reporter"]
+            ER1["- Collect errors"]
+            ER2["- Generate report"]
+            ER3["- Provide feedback"]
+        end
+    end
+    
+    RuleReg --> ValidationRules
+    RuleExec --> ValidationRules
+    ValidationRules --> ErrorReporter
 ```
 
 ---

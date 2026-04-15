@@ -123,6 +123,10 @@ const config: Config = {
       },
     ],
   ],
+  themes: ['@docusaurus/theme-mermaid'],
+  markdown: {
+    mermaid: true
+  }
 };
 
 export default config;

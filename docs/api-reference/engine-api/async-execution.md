@@ -32,23 +32,30 @@ configuration.setAsyncExecutorMaxAsyncJobsDuePerAcquisition(10);
 
 ### Component Structure
 
-```
-┌─────────────────────────────────────┐
-│        ProcessEngine                │
-├─────────────────────────────────────┤
-│  AsyncExecutor                      │
-│  ├─ Acquisition Threads             │
-│  │   ├─ Async Job Acquisition       │
-│  │   └─ Timer Job Acquisition       │
-│  ├─ Job Worker Threads              │
-│  └─ Retry & Cleanup Mechanism       │
-├─────────────────────────────────────┤
-│  Job Tables                         │
-│  ├─ ACT_RU_JOB (Executable Jobs)    │
-│  ├─ ACT_RU_TIMER_JOB (Timer Jobs)   │
-│  ├─ ACT_RU_SUSPENDED_JOB            │
-│  └─ ACT_GE_JOB_DEFINITION (Dead Letter) │
-└─────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ProcessEngine["ProcessEngine"]
+        subgraph AsyncExecutor["AsyncExecutor"]
+            direction TB
+            subgraph AcquisitionThreads["Acquisition Threads"]
+                AsyncAcq["Async Job Acquisition"]
+                TimerAcq["Timer Job Acquisition"]
+            end
+            WorkerThreads["Job Worker Threads"]
+            RetryMech["Retry & Cleanup Mechanism"]
+        end
+        
+        subgraph JobTables["Job Tables"]
+            ACT_RU_JOB["ACT_RU_JOB<br/>(Executable Jobs)"]
+            ACT_RU_TIMER_JOB["ACT_RU_TIMER_JOB<br/>(Timer Jobs)"]
+            ACT_RU_SUSPENDED["ACT_RU_SUSPENDED_JOB"]
+            ACT_GE_JOB_DEF["ACT_GE_JOB_DEFINITION<br/>(Dead Letter)"]
+        end
+    end
+    
+    AsyncExecutor --> JobTables
+    AcquisitionThreads --> WorkerThreads
+    WorkerThreads --> RetryMech
 ```
 
 ### Job Types
@@ -231,28 +238,20 @@ public void executeJob(Job job) {
 
 ### 4. Job Retry Mechanism
 
-```
-Retry Logic Flow:
-
-Job fails → Catch exception
-    ↓
-Check retries remaining
-    ↓
-┌─────────────────────────────┐
-│ retries > 0?                │
-└─────────────┬───────────────┘
-              │
-         Yes  │  No
-              │
-              ↓              ↓
-    Decrement retries    Move to dead letter
-    Calculate backoff      (ACT_GE_JOB_DEFINITION)
-    Set retry time
-    Reschedule job
-    ↓
-    Wait (retry-wait-time-in-millis)
-    ↓
-    Re-acquire and retry
+```mermaid
+flowchart TD
+    Fail["Job fails → Catch exception"]
+    Fail --> Check["Check retries remaining"]
+    Check --> Decision{retries > 0?}
+    
+    Decision -->|Yes| Decrement["Decrement retries"]
+    Decrement --> Backoff["Calculate backoff"]
+    Backoff --> SetTime["Set retry time"]
+    SetTime --> Reschedule["Reschedule job"]
+    Reschedule --> Wait["Wait retry-wait-time-in-millis"]
+    Wait --> Retry["Re-acquire and retry"]
+    
+    Decision -->|No| DeadLetter["Move to dead letter<br/>(ACT_GE_JOB_DEFINITION)"]
 ```
 
 **Exponential Backoff:**
