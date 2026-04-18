@@ -1,41 +1,66 @@
-# Website
+# Activiti Documentation
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+Comprehensive documentation for the [Activiti](https://github.com/Activiti/Activiti) workflow and BPM engine — covering the Activiti API, BPMN 2.0 elements, architecture, and integration patterns.
 
-## Installation
+> **Community-built & AI-generated.** This documentation is independently maintained by the community and generated with AI assistance. It is not an official Alfresco or Activiti project artifact.
 
-```bash
-yarn
-```
+## What's Covered
 
-## Local Development
+- **BPMN 2.0 Reference** — Elements, events, gateways, subprocesses, and advanced features
+- **API Reference** — Activiti API (Process, Task, Runtime), Core Common, and Engine API
+- **Architecture** — Engine internals and design decisions
+- **Advanced Topics** — Extensions, performance, operations, and implementation patterns
+- **Best Practices** — Guidelines for building reliable workflows
+- **Troubleshooting** — Common issues and resolutions
+- **Examples** — Real-world workflow examples
 
-```bash
-yarn start
-```
+## Tech Stack
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+- [Docusaurus 3](https://docusaurus.io/) — Static site generator
+- TypeScript + SCSS — Frontend tooling
+- Mermaid — Diagrams
+- Local Search — Built-in documentation search
 
-## Build
+## Getting Started
 
-```bash
-yarn build
-```
+### Prerequisites
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+- Node.js >= 20.0
 
-## Deployment
-
-Using SSH:
-
-```bash
-USE_SSH=true yarn deploy
-```
-
-Not using SSH:
+### Installation
 
 ```bash
-GIT_USER=<Your GitHub username> yarn deploy
+npm ci
 ```
 
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+### Local Development
+
+```bash
+npm run start
+```
+
+Starts the dev server at `http://localhost:3000`. Changes are reflected live.
+
+### Build
+
+```bash
+npm run build
+```
+
+Generates static site in the `build/` directory.
+
+## Source of Truth
+
+This documentation is cross-referenced against the [Activiti source code](./Activiti/) (git submodule, version 8.7.1). When discrepancies arise, the source code is authoritative.
+
+## Contributing
+
+Contributions are welcome. Please ensure:
+
+- Documentation is verified against the Activiti source submodule
+- BPMN examples match test BPMN files in the Activiti folder
+- No Camunda-specific content is included
+
+## License
+
+This documentation project is licensed under the [Apache License 2.0](LICENSE.md).
