@@ -332,3 +332,81 @@
 [data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
   background: var(--ifm-color-primary);
 }
+
+/* ============================================
+   ALGOLIA AUTOCOMPLETE THEME OVERRIDES
+   ============================================ */
+
+/* Light theme - Algolia autocomplete */
+:root {
+  /* Text colors */
+  --aa-text-color-rgb: 26, 26, 26 !important;
+  --aa-primary-color-rgb: 38, 189, 115 !important;
+  --aa-muted-color-rgb: 148, 219, 178 !important;
+
+  /* Background colors */
+  --aa-background-color-rgb: 255, 255, 255 !important;
+  --aa-input-background-color-rgb: 255, 255, 255 !important;
+
+  /* Border colors */
+  --aa-panel-border-color-rgb: 38, 189, 115 !important;
+  --aa-input-border-color-rgb: 38, 189, 115 !important;
+
+  /* Selected/highlight */
+  --aa-selected-color-rgb: 38, 189, 115 !important;
+  --aa-selected-color-alpha: 0.1 !important;
+  --aa-description-highlight-background-color-rgb: 38, 189, 115 !important;
+  --aa-description-highlight-background-color-alpha: 0.2 !important;
+
+  /* Icons */
+  --aa-icon-color-rgb: 38, 189, 115 !important;
+
+  /* Overlay */
+  --aa-overlay-color-rgb: 26, 26, 26 !important;
+  --aa-overlay-color-alpha: 0.3 !important;
+
+  /* Shadows */
+  --aa-panel-shadow: 0 0 0 1px rgba(38, 189, 115, 0.1),
+    0 6px 16px -4px rgba(38, 189, 115, 0.15) !important;
+
+  /* Scrollbar */
+  --aa-scrollbar-track-background-color-rgb: 241, 250, 244 !important;
+  --aa-scrollbar-thumb-background-color-rgb: 38, 189, 115 !important;
+}
+
+/* Dark theme - Algolia autocomplete */
+[data-theme='dark'] {
+  /* Text colors */
+  --aa-text-color-rgb: 241, 250, 244 !important;
+  --aa-primary-color-rgb: 148, 219, 178 !important;
+  --aa-muted-color-rgb: 148, 219, 178 !important;
+
+  /* Background colors */
+  --aa-background-color-rgb: 21, 32, 26 !important;
+  --aa-input-background-color-rgb: 21, 32, 26 !important;
+
+  /* Border colors */
+  --aa-panel-border-color-rgb: 148, 219, 178 !important;
+  --aa-input-border-color-rgb: 148, 219, 178 !important;
+
+  /* Selected/highlight */
+  --aa-selected-color-rgb: 148, 219, 178 !important;
+  --aa-selected-color-alpha: 0.15 !important;
+  --aa-description-highlight-background-color-rgb: 148, 219, 178 !important;
+  --aa-description-highlight-background-color-alpha: 0.2 !important;
+
+  /* Icons */
+  --aa-icon-color-rgb: 148, 219, 178 !important;
+
+  /* Overlay */
+  --aa-overlay-color-rgb: 13, 21, 17 !important;
+  --aa-overlay-color-alpha: 0.6 !important;
+
+  /* Shadows */
+  --aa-panel-shadow: inset 1px 1px 0 0 rgba(148, 219, 178, 0.1),
+    0 3px 8px 0 rgba(13, 21, 17, 0.5) !important;
+
+  /* Scrollbar */
+  --aa-scrollbar-track-background-color-rgb: 21, 32, 26 !important;
+  --aa-scrollbar-thumb-background-color-rgb: 148, 219, 178 !important;
+}

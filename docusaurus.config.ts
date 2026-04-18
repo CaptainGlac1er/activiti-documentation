@@ -65,7 +65,6 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
-
   themeConfig: {
     colorMode: {
       defaultMode: 'dark',
