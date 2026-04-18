@@ -242,7 +242,9 @@ spring:
 - `number-of-retries` - Default retry count for failed jobs (default: 3)
 - `retry-wait-time-in-millis` - Wait time between retries (default: 500ms)
 - `max-async-jobs-due-per-acquisition` - Jobs fetched per query (default: 1)
-- `default-async-job-acquire-wait-tim### Programmatic Configuration
+- `default-async-job-acquire-wait-time` - Wait time between acquisitions (ms) (default: 10000)
+
+## Programmatic Configuration
 
 ```java
 import org.activiti.engine.impl.cfg.AsyncExecutor;
@@ -300,15 +302,7 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 | `setRetryWaitTimeInMillis(long)` | Wait between retries (ms) | 500 |
 | `setDefaultQueueSizeFullWaitTimeInMillis(long)` | Wait when queue full (ms) | 1000 |
 | `setResetExpiredJobsInterval(long)` | Expired job check interval (ms) | 0 (disabled) |
-| `setResetExpiredJobsPageSize(int)` | Jobs per expired check | 100 |oolQueueSize(1000);
-    
-    // Configure job acquisition
-    config.setAsyncExecutorMaxAsyncJobsDuePerAcquisition(10);
-    config.setAsyncExecutorDefaultAsyncJobAcquireWaitTime(1000);
-    
-    return config;
-}
-```
+| `setResetExpiredJobsPageSize(int)` | Jobs per expired check | 100 |
 
 ### AsyncExecutor vs JobExecutor
 

@@ -268,10 +268,10 @@ public class ExecutionContextListener implements TaskListener {
         
         // Set process variables via execution
         execution.setVariable("processVar", "value");
-        
+
         // Access engine services
-        ProcessEngine engine = execution.getProcessEngine();
-        RuntimeService runtimeService = engine.getRuntimeService();
+        ProcessEngineConfiguration config = execution.getEngineServices();
+        RuntimeService runtimeService = config.getRuntimeService();
     }
 }
 ```

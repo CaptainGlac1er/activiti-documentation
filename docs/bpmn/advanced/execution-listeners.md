@@ -617,7 +617,7 @@ public void notify(DelegateExecution execution) {
 ```java
 public void notify(DelegateExecution execution) {
     // Get business key
-    String businessKey = execution.getProcessInstance().getBusinessKey();
+    String businessKey = execution.getProcessInstanceBusinessKey();
     
     // Set business key (only at process level)
     if (execution.getRootProcessInstance() != null) {

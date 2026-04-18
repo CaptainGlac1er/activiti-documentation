@@ -12,7 +12,7 @@ The `JavaDelegate` interface is the **primary way to implement custom business l
 ## Overview
 
 ```java
-public interface JavaDelegate extends Serializable {
+public interface JavaDelegate {
     void execute(DelegateExecution execution);
 }
 ```
@@ -242,7 +242,7 @@ public class ExecutionContextDelegate implements JavaDelegate {
         String currentUser = execution.getCurrentUserId();
         
         // Business key
-        String businessKey = execution.getProcessInstance().getBusinessKey();
+        String businessKey = execution.getProcessInstanceBusinessKey();
         
         // Parent execution (for subprocesses)
         DelegateExecution parent = execution.getParent();
@@ -306,10 +306,10 @@ public class ProcessInstanceDelegate implements JavaDelegate {
         // execution.getProcessInstance().setBusinessKey("new-key"); // Not directly available
         
         // Get process engine services
-        ProcessEngine processEngine = execution.getProcessEngine();
-        RuntimeService runtimeService = processEngine.getRuntimeService();
-        TaskService taskService = processEngine.getTaskService();
-        RepositoryService repositoryService = processEngine.getRepositoryService();
+        ProcessEngineConfiguration config = execution.getEngineServices();
+        RuntimeService runtimeService = config.getRuntimeService();
+        TaskService taskService = config.getTaskService();
+        RepositoryService repositoryService = config.getRepositoryService();
     }
 }
 ```

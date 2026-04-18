@@ -72,20 +72,21 @@ import org.springframework.stereotype.Component;
 
 @Component("tagImageConnector")
 public class TagImageConnector implements Connector {
-    
+
     @Autowired
     private ImageService imageService;
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         // Access input variables
         String imageUrl = context.getInBoundVariables().get("imageUrl");
-        
+
         // Business logic
         imageService.tagImage(imageUrl);
-        
+
         // Return output variables
-        return context.withOutBoundVariable("tagged", true);
+        context.addOutBoundVariable("tagged", true);
+        return context;
     }
 }
 ```
@@ -95,13 +96,13 @@ public class TagImageConnector implements Connector {
 ```java
 @Component("tagImageConnector")
 public class TagImageConnector {
-    
-    @Bean("tagImageConnector")
+
     public Connector connector() {
         return integrationContext -> {
             String imageUrl = integrationContext.getInBoundVariables().get("imageUrl");
             // Business logic...
-            return integrationContext.withOutBoundVariable("tagged", true);
+            integrationContext.addOutBoundVariable("tagged", true);
+            return integrationContext;
         };
     }
 }
@@ -171,19 +172,20 @@ import org.springframework.stereotype.Component;
 
 @Component("Movies.getMovieDesc")
 public class MoviesConnector implements Connector {
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         // Access input variables
         String movieId = context.getInBoundVariables().get("movieId");
-        
+
         // Business logic - call external API
         String description = fetchMovieDescription(movieId);
-        
+
         // Return output variables
-        return context.withOutBoundVariable("movieDescription", description);
+        context.addOutBoundVariable("movieDescription", description);
+        return context;
     }
-    
+
     private String fetchMovieDescription(String movieId) {
         // Implementation...
         return "Movie description";
@@ -347,12 +349,13 @@ public class PaymentService implements JavaDelegate {
 public class PaymentService implements Connector {
     @Autowired
     private PaymentGateway gateway;
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         String orderId = context.getInBoundVariables().get("orderId");
         // Business logic...
-        return context.withOutBoundVariable("result", "done");
+        context.addOutBoundVariable("result", "done");
+        return context;
     }
 }
 ```
@@ -391,18 +394,18 @@ public class PaymentService implements JavaDelegate {
 
 ```java
 @Component("orderService")
-public class OrderService implements JavaDelegator {
-    
+public class OrderService implements JavaDelegate {
+
     @Autowired
     private EmailService emailService;
-    
+
     @Value("${order.currency:USD}")
     private String currency;
-    
+
     @Override
-    public void execute() {
+    public void execute(DelegateExecution execution) {
         // Use injected dependencies
-        emailService.sendOrderConfirmation(getVariable("orderId"));
+        emailService.sendOrderConfirmation(execution.getVariable("orderId", String.class));
     }
 }
 ```
@@ -428,21 +431,21 @@ For backward compatibility, Activiti supports field injection via XML:
 
 **Legacy Java Class with Field Injection:**
 ```java
-public class OrderService implements JavaDelegator {
-    
+public class OrderService implements JavaDelegate {
+
     private String emailTemplate;
     private String currency;
-    
+
     @Override
-    public void execute() {
+    public void execute(DelegateExecution execution) {
         // Use injected fields
     }
-    
+
     // Setters required for field injection
     public void setEmailTemplate(String emailTemplate) {
         this.emailTemplate = emailTemplate;
     }
-    
+
     public void setCurrency(String currency) {
         this.currency = currency;
     }
@@ -528,33 +531,35 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 
 @Component("emailConnector")
 public class EmailConnector implements Connector {
-    
+
     @Autowired
     private JavaMailSender mailSender;
-    
+
     @Value("${mail.from.address:noreply@company.com}")
     private String fromAddress;
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         String to = context.getInBoundVariables().get("to");
         String subject = context.getInBoundVariables().get("subject");
         String text = context.getInBoundVariables().get("text");
-        
+
         try {
-            javax.mail.MessagingMessage message = mailSender.createMessage();
+            javax.mail.Message message = mailSender.createMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
             helper.setFrom(fromAddress);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(text);
-            
+
             mailSender.send(message);
-            
-            return context.withOutBoundVariable("emailSent", true);
+
+            context.addOutBoundVariable("emailSent", true);
+            return context;
         } catch (Exception e) {
-            return context.withOutBoundVariable("emailSent", false)
-                         .withOutBoundVariable("error", e.getMessage());
+            context.addOutBoundVariable("emailSent", false);
+            context.addOutBoundVariable("error", e.getMessage());
+            return context;
         }
     }
 }
@@ -841,23 +846,24 @@ Handle exceptions (boundary events are siblings, not children):
 ```java
 @Component("paymentProcessor")
 public class PaymentProcessor implements Connector {
-    
+
     @Autowired
     private PaymentGateway paymentGateway;
-    
+
     @Value("${payment.currency:USD}")
     private String currency;
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         String orderId = context.getInBoundVariables().get("orderId");
         Double amount = context.getInBoundVariables().get("amount");
-        
+
         // Process payment
         PaymentResult result = paymentGateway.process(orderId, amount, currency);
-        
+
         // Configure retry in application.yml or via extension JSON
-        return context.withOutBoundVariable("paymentResult", result);
+        context.addOutBoundVariable("paymentResult", result);
+        return context;
     }
 }
 ```
@@ -910,32 +916,34 @@ public class PaymentProcessor implements Connector {
 ```java
 @Component("emailConnector")
 public class EmailConnector implements Connector {
-    
+
     @Autowired
     private JavaMailSender mailSender;
-    
+
     @Value("${mail.from.address:noreply@company.com}")
     private String fromAddress;
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         String to = context.getInBoundVariables().get("to");
         String subject = context.getInBoundVariables().get("subject");
         String message = context.getInBoundVariables().get("message");
-        
+
         try {
-            javax.mail.MessagingMessage msg = mailSender.createMessage();
+            javax.mail.Message msg = mailSender.createMessage();
             MimeMessageHelper helper = new MimeMessageHelper(msg, true);
             helper.setFrom(fromAddress);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(message);
-            
+
             mailSender.send(msg);
-            return context.withOutBoundVariable("emailSent", true);
+            context.addOutBoundVariable("emailSent", true);
+            return context;
         } catch (Exception e) {
-            return context.withOutBoundVariable("emailSent", false)
-                         .withOutBoundVariable("error", e.getMessage());
+            context.addOutBoundVariable("emailSent", false);
+            context.addOutBoundVariable("error", e.getMessage());
+            return context;
         }
     }
 }
@@ -946,7 +954,8 @@ public class OrderValidator implements Connector {
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         // Validation logic
-        return context.withOutBoundVariable("validationResult", true);
+        context.addOutBoundVariable("validationResult", true);
+        return context;
     }
 }
 
@@ -954,11 +963,12 @@ public class OrderValidator implements Connector {
 public class InventoryService implements Connector {
     @Autowired
     private InventoryRepository inventoryRepo;
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         // Inventory logic
-        return context.withOutBoundVariable("inStock", true);
+        context.addOutBoundVariable("inStock", true);
+        return context;
     }
 }
 ```
@@ -1040,28 +1050,29 @@ If you prefer the built-in mail functionality (legacy syntax only):
 ```java
 @Component("restApiClient")
 public class RestApiClient implements Connector {
-    
+
     @Autowired
     private RestTemplate restTemplate;
-    
+
     @Value("${api.customer.url}")
     private String apiUrl;
-    
+
     @Value("${api.customer.key}")
     private String apiKey;
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         String customerId = context.getInBoundVariables().get("customerId");
-        
+
         // Call REST API
         CustomerData data = restTemplate.getForObject(
-            apiUrl + "/" + customerId, 
+            apiUrl + "/" + customerId,
             CustomerData.class,
             apiKey
         );
-        
-        return context.withOutBoundVariable("customerData", data);
+
+        context.addOutBoundVariable("customerData", data);
+        return context;
     }
 }
 ```
