@@ -13,12 +13,6 @@ This guide provides proven implementation patterns with architectural diagrams, 
 
 > **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
 
-## Target Audience
-
-- **Software Architects** - Designing system architecture
-- **Senior Developers** - Implementing complex workflows
-- **Technical Leads** - Making technology decisions
-
 ## Table of Contents
 
 - [Architecture Patterns](#architecture-patterns)

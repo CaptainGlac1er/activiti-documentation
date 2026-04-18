@@ -8,10 +8,6 @@ description: Core BPMN 2.0 process engine that powers Activiti's workflow and bu
 
 **Module:** `activiti-core/activiti-engine`
 
-**Target Audience:** Senior Software Engineers, System Architects, Integration Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Overview

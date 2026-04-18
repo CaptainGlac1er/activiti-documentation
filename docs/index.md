@@ -7,8 +7,6 @@ description: "Comprehensive documentation for Activiti API 8.7.2-SNAPSHOT. Learn
 
 # Activiti API Documentation
 
-**Version 8.7.2-SNAPSHOT** | **Last Updated: 2026**
-
 **Community-Maintained Documentation**
 
 Welcome to this community-maintained documentation for Activiti API. This comprehensive resource guides developers from initial setup through advanced workflow automation patterns.
@@ -169,30 +167,6 @@ Structured learning paths to guide your journey with Activiti:
 - **Beginner:** Start with the [Quick Start Guide](./quickstart.md)
 - **Intermediate:** Study the [API Reference](./api-reference/overview.md) and [Best Practices](./best-practices/overview.md)
 - **Advanced:** Explore [Implementation Patterns](./advanced/implementation-patterns.md) and [Architecture Overview](./architecture/overview.md)
-
----
-
-## Version Information
-
-### Current Release
-
-| Property | Value |
-|----------|-------|
-| **API Version** | 8.7.2-SNAPSHOT |
-| **Java Version** | 11+ (17+ recommended for production) |
-| **Documentation Updated** | 2026 |
-
-### Compatibility Matrix
-
-Ensure your dependencies align with the following compatibility requirements:
-
-| API Version | Java | Spring Boot | Engine |
-|-------------|------|-------------|--------|
-| 8.7.2+ | 11+ | 3.1+ | 8.7.2+ |
-| 8.6.0+ | 11+ | 3.0+ | 8.6.0+ |
-| 8.5.0+ | 11+ | 2.7+ | 8.5.0+ |
-
-> **Note:** For production deployments, we recommend using the latest stable version with Java 17 or higher for optimal performance and security.
 
 ---
 

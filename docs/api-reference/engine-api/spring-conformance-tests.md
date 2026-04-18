@@ -8,10 +8,6 @@ description: Engine implementation and services.
 
 **Module:** `activiti-core/activiti-spring-conformance-tests`
 
-**Target Audience:** Senior Software Engineers, QA Engineers, Test Specialists
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

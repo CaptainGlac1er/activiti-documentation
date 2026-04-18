@@ -8,10 +8,6 @@ description: Utilities for serializing and deserializing Activiti objects to and
 
 **Module:** `activiti-core/activiti-json-converter`
 
-**Target Audience:** Senior Software Engineers, API Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

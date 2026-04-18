@@ -463,5 +463,4 @@ List<Job> timerJobs = managementService.createJobQuery()
 
 ---
 
-**Version:** 8.7.2-SNAPSHOT  
 **Last Updated: 2026

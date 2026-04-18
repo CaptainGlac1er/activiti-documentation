@@ -8,10 +8,6 @@ description: Complete guide to configuring the Activiti Process Engine for diffe
 
 **Module:** `activiti-core/activiti-engine`
 
-**Target Audience:** Senior Software Engineers, DevOps Engineers, System Architects
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

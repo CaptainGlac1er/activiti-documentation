@@ -1046,17 +1046,6 @@ taskAdminRuntime.assignMultiple(...);
 
 ---
 
-## Version Information
-
-- **Module Version**: 8.7.2-SNAPSHOT
-- **Java Version**: 11+
-- **Dependencies**: 
-  - activiti-api-model-shared
-  - activiti-api-runtime-shared
-  - activiti-api-task-model
-
----
-
 ## Related Documentation
 
 - [Task Model Module](task-model.md)

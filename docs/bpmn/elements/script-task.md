@@ -383,5 +383,4 @@ public class CustomScriptEngine implements ScriptEngine {
 
 ---
 
-**Version:** 8.7.2-SNAPSHOT  
 **Last Updated: 2026

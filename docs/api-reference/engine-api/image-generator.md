@@ -8,10 +8,6 @@ description: Generate visual representations of BPMN process diagrams with highl
 
 **Module:** `activiti-core/activiti-image-generator`
 
-**Target Audience:** Senior Software Engineers, UI/UX Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

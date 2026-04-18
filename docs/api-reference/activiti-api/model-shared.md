@@ -579,14 +579,6 @@ External dependencies:
 
 ---
 
-## Version Information
-
-- **Module Version**: 8.7.2-SNAPSHOT
-- **Java Version**: 11+
-- **Dependencies**: None (foundation module)
-
----
-
 ## Related Documentation
 
 - [API Reference](./api-implementation.md)

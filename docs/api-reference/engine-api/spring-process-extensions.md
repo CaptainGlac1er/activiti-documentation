@@ -8,10 +8,6 @@ description: Engine implementation and services.
 
 **Module:** `activiti-core/activiti-spring-process-extensions`
 
-**Target Audience:** Senior Software Engineers, Extension Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

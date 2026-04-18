@@ -8,10 +8,6 @@ description: Core common utilities and shared modules.
 
 **Module:** `activiti-core-common/activiti-juel-jakarta`
 
-**Target Audience:** Senior Software Engineers, Expression Language Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Overview

@@ -8,10 +8,6 @@ description: Comprehensive validation capabilities for BPMN process definitions 
 
 **Module:** `activiti-core/activiti-process-validation`
 
-**Target Audience:** Senior Software Engineers, BPMN Specialists
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

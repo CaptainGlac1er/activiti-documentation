@@ -8,10 +8,6 @@ description: Concrete implementation of Activiti API interfaces, bridging high-l
 
 **Module:** `activiti-core/activiti-api-impl`
 
-**Target Audience:** Senior Software Engineers, API Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

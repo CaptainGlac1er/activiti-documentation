@@ -733,14 +733,6 @@ public class CustomSecurityProvider implements SecurityManager {
 
 ---
 
-## Version Information
-
-- **Module Version**: 8.7.2-SNAPSHOT
-- **Java Version**: 11+
-- **Dependencies**: activiti-api-model-shared
-
----
-
 ## Related Documentation
 
 - [Model Shared Module](model-shared.md)

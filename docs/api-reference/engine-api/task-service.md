@@ -8,10 +8,6 @@ description: Complete guide to the Task Service for managing user tasks and huma
 
 **Module:** `activiti-core/activiti-engine`
 
-**Target Audience:** Senior Software Engineers, Application Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

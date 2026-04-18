@@ -9,10 +9,6 @@ description: "Comprehensive guide to Activiti Engine architecture, internal comp
 
 **Community-Maintained Guide**
 
-**Target Audience:** Senior Software Engineers, System Architects, Technical Leads
-
-**Version:** 8.7.2-SNAPSHOT
-
 **Purpose:** Understand the internal workings of the Activiti Engine to make informed architectural decisions and effectively extend the platform.
 
 > **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.

@@ -971,17 +971,6 @@ Pageable.of(0, 1000)
 
 ---
 
-## Version Information
-
-- **Module Version**: 8.7.2-SNAPSHOT
-- **Java Version**: 11+
-- **Dependencies**: 
-  - activiti-api-model-shared
-  - activiti-api-runtime-shared
-  - activiti-api-process-model
-
----
-
 ## Related Documentation
 
 - [Process Model Module](./process-model.md)

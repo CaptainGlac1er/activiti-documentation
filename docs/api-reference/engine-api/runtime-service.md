@@ -8,10 +8,6 @@ description: Complete guide to the Runtime Service for executing and managing pr
 
 **Module:** `activiti-core/activiti-engine`
 
-**Target Audience:** Senior Software Engineers, Workflow Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

@@ -8,10 +8,6 @@ description: Core common utilities and shared modules.
 
 **Module:** `activiti-core-common/activiti-expression-language`
 
-**Target Audience:** Senior Software Engineers, BPMN Developers, Integration Architects
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

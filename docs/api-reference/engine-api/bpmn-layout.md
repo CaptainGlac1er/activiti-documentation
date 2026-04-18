@@ -8,10 +8,6 @@ description: Algorithms and utilities for calculating optimal positions and layo
 
 **Module:** `activiti-core/activiti-bpmn-layout`
 
-**Target Audience:** Senior Software Engineers, Diagram Specialists
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

@@ -5,8 +5,6 @@ description: Reference documentation for the Activiti ManagementService - engine
 ---
 
 # Management Service
-
-
 The `ManagementService` provides administrative and maintenance operations for the Activiti process engine. These operations are typically used in operational consoles, monitoring tools, and for engine administration rather than in workflow-driven applications.
 
 ## Table of Contents
@@ -19,8 +17,6 @@ The `ManagementService` provides administrative and maintenance operations for t
 - [API Reference](#api-reference)
 - [Usage Examples](#usage-examples)
 - [Best Practices](#best-practices)
-
-
 
 ## Overview
 

@@ -8,10 +8,6 @@ description: Java object model for BPMN 2.0 diagrams with type-safe classes for 
 
 **Module:** `activiti-core/activiti-bpmn-model`
 
-**Target Audience:** Senior Software Engineers, BPMN Specialists
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

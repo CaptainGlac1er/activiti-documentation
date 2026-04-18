@@ -741,6 +741,5 @@ for (Execution execution : executions) {
 
 ---
 
-**Version:** 8.7.2-SNAPSHOT  
 **Last Updated:** 2026  
 **Source:** `IntermediateCatchLinkEventActivityBehavior.java`, `IntermediateThrowLinkEventActivityBehavior.java`

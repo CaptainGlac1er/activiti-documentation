@@ -8,10 +8,6 @@ description: Complete guide to the Repository Service for managing process defin
 
 **Module:** `activiti-core/activiti-engine`
 
-**Target Audience:** Senior Software Engineers, BPMN Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

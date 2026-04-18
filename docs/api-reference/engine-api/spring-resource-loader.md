@@ -8,10 +8,6 @@ description: Engine implementation and services.
 
 **Module:** `activiti-core/activiti-spring-resource-loader`
 
-**Target Audience:** Senior Software Engineers, Spring Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

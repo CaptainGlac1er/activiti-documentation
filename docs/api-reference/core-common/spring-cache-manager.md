@@ -8,10 +8,6 @@ description: Core common utilities and shared modules.
 
 **Module:** `activiti-core-common/activiti-spring-cache-manager`
 
-**Target Audience:** Senior Software Engineers, Performance Engineers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Overview

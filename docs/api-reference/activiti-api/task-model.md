@@ -960,16 +960,6 @@ taskRuntime.addCandidateUsers(payload);
 
 ---
 
-## Version Information
-
-- **Module Version**: 8.7.2-SNAPSHOT
-- **Java Version**: 11+
-- **Dependencies**: 
-  - activiti-api-model-shared
-  - activiti-api-process-model
-
----
-
 ## Related Documentation
 
 - [Task Runtime Module](task-runtime.md)

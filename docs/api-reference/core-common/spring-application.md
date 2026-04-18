@@ -8,10 +8,6 @@ description: Core common utilities and shared modules.
 
 **Module:** `activiti-core-common/activiti-spring-application`
 
-**Target Audience:** Senior Software Engineers, Application Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Overview

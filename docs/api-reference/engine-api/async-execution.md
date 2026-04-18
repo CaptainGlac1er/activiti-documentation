@@ -773,6 +773,5 @@ spring:
 
 ---
 
-**Version:** 8.7.2-SNAPSHOT  
 **Last Updated:** 2026  
 **Source:** `activiti-engine/impl/asyncexecutor/`, `AsyncExecutorProperties.java`, `ProcessEngineConfigurationImpl.java`

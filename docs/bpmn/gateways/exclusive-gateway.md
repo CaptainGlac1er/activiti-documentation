@@ -236,5 +236,4 @@ List<HistoricSequenceFlowInstance> flows = historyService
 
 ---
 
-**Version:** 8.7.2-SNAPSHOT  
 **Last Updated: 2026

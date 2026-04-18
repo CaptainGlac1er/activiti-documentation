@@ -8,10 +8,6 @@ description: Seamless integration of Activiti workflow engine with Spring Boot a
 
 **Module:** `activiti-core/activiti-spring-boot-starter`
 
-**Target Audience:** Senior Software Engineers, DevOps Engineers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

@@ -8,10 +8,6 @@ description: Deep dive into the Activiti engine architecture, components, and ex
 
 **Module:** `activiti-core/activiti-engine`
 
-**Target Audience:** Senior Software Engineers, System Architects
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

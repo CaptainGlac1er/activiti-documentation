@@ -741,6 +741,5 @@ if (isValidExpression("${orderAmount > 1000}")) {
 
 ---
 
-**Version:** 8.7.2-SNAPSHOT  
 **Last Updated:** 2026  
 **Source:** `DynamicBpmnService.java`

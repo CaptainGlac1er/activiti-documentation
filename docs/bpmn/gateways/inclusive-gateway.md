@@ -392,5 +392,4 @@ for (Execution execution : gatewayExecutions) {
 
 ---
 
-**Version:** 8.7.2-SNAPSHOT  
 **Last Updated: 2026

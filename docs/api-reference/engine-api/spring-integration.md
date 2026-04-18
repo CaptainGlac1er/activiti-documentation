@@ -8,10 +8,6 @@ description: Spring Framework integration for Activiti including transaction man
 
 **Module:** `activiti-core/activiti-spring`
 
-**Target Audience:** Senior Software Engineers, Spring Developers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

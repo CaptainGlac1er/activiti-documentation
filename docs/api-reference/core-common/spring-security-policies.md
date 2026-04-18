@@ -8,10 +8,6 @@ description: Core common utilities and shared modules.
 
 **Module:** `activiti-core-common/activiti-spring-security-policies`
 
-**Target Audience:** Senior Software Engineers, Security Architects, Compliance Officers
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents

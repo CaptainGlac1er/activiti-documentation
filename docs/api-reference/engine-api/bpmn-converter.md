@@ -8,10 +8,6 @@ description: Conversion between BPMN XML files and in-memory Java model with par
 
 **Module:** `activiti-core/activiti-bpmn-converter`
 
-**Target Audience:** Senior Software Engineers, BPMN Specialists
-
-**Version:** 8.7.2-SNAPSHOT
-
 ---
 
 ## Table of Contents
