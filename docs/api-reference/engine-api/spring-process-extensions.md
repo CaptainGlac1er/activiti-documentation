@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Process Extensions
 slug: /api-reference/engine-api/spring-process-extensions
-description: Engine implementation and services.
+description: Spring-based process extensions for custom Activiti engine behavior and configuration.
 ---
 
 # Activiti Spring Process Extensions Module - Technical Documentation

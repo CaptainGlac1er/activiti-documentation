@@ -625,4 +625,3 @@ Add boundary events for rule execution failures:
 
 ---
 
-**Last Updated:** 2026

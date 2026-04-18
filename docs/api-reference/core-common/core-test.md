@@ -1,7 +1,7 @@
 ---
 sidebar_label: Core Test
 slug: /api-reference/core-common/core-test
-description: Core common utilities and shared modules.
+description: Testing utilities and mock support for Activiti process engine integration tests.
 ---
 
 # Activiti Core Test Module - Technical Documentation

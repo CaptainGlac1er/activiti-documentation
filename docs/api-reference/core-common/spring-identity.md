@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Identity
 slug: /api-reference/core-common/spring-identity
-description: Core common utilities and shared modules.
+description: Spring-based identity and user/group management for Activiti process engine.
 ---
 
 # Activiti Spring Identity Module - Technical Documentation

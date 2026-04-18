@@ -874,5 +874,4 @@ execution.setVariable("items", newItems);
 
 ---
 
-**Last Updated:** 2026  
 **Source:** `JavaDelegate.java`

@@ -542,4 +542,3 @@ try {
 
 ---
 
-**Last Updated: 2026

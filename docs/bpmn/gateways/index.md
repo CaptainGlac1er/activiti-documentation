@@ -298,4 +298,3 @@ dynamicBpmnService.addSequenceFlow(processDefinitionId, "gateway1", "newTarget")
 
 ---
 
-**Last Updated: 2026

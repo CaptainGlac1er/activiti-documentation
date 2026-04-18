@@ -1,7 +1,7 @@
 ---
 sidebar_label: Process Model
 slug: /api-reference/activiti-api/process-model
-description: Activiti API module documentation.
+description: Process model definitions for Activiti API including process instances, definitions, and variables.
 ---
 
 # Activiti API Process Model Module
@@ -1043,5 +1043,4 @@ public void onProcessStarted(ProcessStartedEvent event) {
 
 ---
 
-**Last Updated: 2026  
 **Maintained by**: Activiti Community

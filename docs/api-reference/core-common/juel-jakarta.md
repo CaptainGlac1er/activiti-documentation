@@ -1,7 +1,7 @@
 ---
 sidebar_label: Juel Jakarta
 slug: /api-reference/core-common/juel-jakarta
-description: Core common utilities and shared modules.
+description: JUEL Jakarta expression language implementation for Activiti process engine.
 ---
 
 # Activiti JUEL Jakarta Module - Technical Documentation

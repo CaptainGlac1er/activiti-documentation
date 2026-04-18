@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Security Policies
 slug: /api-reference/core-common/spring-security-policies
-description: Core common utilities and shared modules.
+description: Spring-based security policies and authorization rules for Activiti process engine.
 ---
 
 # Activiti Spring Security Policies Module - Technical Documentation

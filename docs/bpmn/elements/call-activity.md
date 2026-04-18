@@ -257,4 +257,3 @@ Object output = runtimeService.getVariable(executionId, "outputData");
 
 ---
 
-**Last Updated: 2026

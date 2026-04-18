@@ -1,7 +1,7 @@
 ---
 sidebar_label: Common Util
 slug: /api-reference/core-common/common-util
-description: Core common utilities and shared modules.
+description: Common utility classes for date formatting, auto-configuration, and shared helpers.
 ---
 
 # Activiti Common Util Module - Technical Documentation

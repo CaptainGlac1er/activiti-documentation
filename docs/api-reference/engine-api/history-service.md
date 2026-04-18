@@ -1076,10 +1076,9 @@ ProcessEngine engine = configuration.buildProcessEngine();
 
 - [Management Service](./management-service.md) - Engine administration
 - [Runtime Service](./runtime-service.md) - Process execution
-- [Engine Configuration](./engine-configuration.md) - Setup and configuration
+- [Engine Configuration](../../../configuration.md) - Setup and configuration
 - [Best Practices](../../best-practices/overview.md) - Performance tips
 
 ---
 
 **Source:** `org.activiti.engine.HistoryService`  
-**Last Updated: 2026

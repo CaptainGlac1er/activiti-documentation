@@ -10,7 +10,6 @@ description: Complete index of Activiti Engine documentation with navigation gui
 
 **Status:** **COMPLETE** - Core documentation created
 
-**Last Updated: 2026
 
 ---
 
@@ -41,7 +40,7 @@ This documentation provides comprehensive technical details for the Activiti Eng
    - Memory management
    - Extension points
 
-3. **[engine-configuration.md](engine-configuration.md)** - Configuration guide
+3. **[Engine Configuration](../../../configuration.md)** - Configuration guide
    - ProcessEngineConfiguration
    - Database configuration
    - Job executor configuration
@@ -165,12 +164,12 @@ This documentation provides comprehensive technical details for the Activiti Eng
 
 ### For New Developers
 1. Start with [README.md](README.md)
-2. Read [engine-configuration.md](engine-configuration.md)
+2. Read [Engine Configuration](../../../configuration.md)
 3. Explore service documentation based on needs
 
 ### For Architects
 1. Study [../../architecture/overview.md](../../architecture/overview.md)
-2. Review [engine-configuration.md](engine-configuration.md)
+2. Review [Engine Configuration](../../../configuration.md)
 3. Examine integration patterns in [README.md](README.md)
 
 ### For Integration Developers
@@ -180,7 +179,7 @@ This documentation provides comprehensive technical details for the Activiti Eng
 
 ### For Compliance/Audit
 1. Focus on [history-service.md](history-service.md)
-2. Review security documentation in [engine-configuration.md](engine-configuration.md)
+2. Review security documentation in [Engine Configuration](../../../configuration.md)
 
 ---
 
@@ -258,6 +257,5 @@ Each documentation file includes:
 
 **Documentation Status:** **In Progress** - Core documentation complete, advanced topics pending
 
-**Last Updated: 2026
 
 **Maintained By:** Activiti Development Team

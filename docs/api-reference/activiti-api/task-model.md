@@ -1,7 +1,7 @@
 ---
 sidebar_label: Task Model
 slug: /api-reference/activiti-api/task-model
-description: Activiti API module documentation.
+description: Task model definitions for Activiti API including tasks, assignments, and task variables.
 ---
 
 # Activiti API Task Model Module
@@ -968,5 +968,4 @@ taskRuntime.addCandidateUsers(payload);
 
 ---
 
-**Last Updated: 2026  
 **Maintained by**: Activiti Community

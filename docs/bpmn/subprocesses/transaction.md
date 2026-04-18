@@ -385,4 +385,3 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 
 ---
 
-**Last Updated: 2026

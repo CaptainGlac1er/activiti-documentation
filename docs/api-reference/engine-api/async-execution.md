@@ -768,10 +768,9 @@ spring:
 
 - [Management Service](./management-service.md) - Job management API reference
 - [Runtime Service](./runtime-service.md) - Process execution and message correlation
-- [Engine Configuration](./engine-configuration.md) - Complete engine setup
+- [Engine Configuration](../../../configuration.md) - Complete engine setup
 - [Scripting Engine](./scripting-engine.md) - Async script execution
 
 ---
 
-**Last Updated:** 2026  
 **Source:** `activiti-engine/impl/asyncexecutor/`, `AsyncExecutorProperties.java`, `ProcessEngineConfigurationImpl.java`

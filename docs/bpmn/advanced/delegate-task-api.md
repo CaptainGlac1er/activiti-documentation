@@ -787,5 +787,4 @@ if (autoAssign) {
 
 ---
 
-**Last Updated:** 2026  
 **Source:** `DelegateTask.java`

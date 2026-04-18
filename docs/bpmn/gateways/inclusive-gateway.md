@@ -390,4 +390,3 @@ for (Execution execution : gatewayExecutions) {
 
 ---
 
-**Last Updated: 2026

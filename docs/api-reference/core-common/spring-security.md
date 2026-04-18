@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Security
 slug: /api-reference/core-common/spring-security
-description: Core common utilities and shared modules.
+description: Spring-based security configuration and authorization for Activiti process engine.
 ---
 
 # Activiti Spring Security Module - Technical Documentation

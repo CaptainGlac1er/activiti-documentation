@@ -1,7 +1,7 @@
 ---
 sidebar_label: Expression Language
 slug: /api-reference/core-common/expression-language
-description: Core common utilities and shared modules.
+description: Expression language support for process variables, conditions, and dynamic evaluations.
 ---
 
 # Activiti Expression Language Module - Technical Documentation

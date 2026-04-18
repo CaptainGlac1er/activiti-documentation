@@ -827,4 +827,3 @@ If process variable `count` is a String, the connector may fail.
 
 ---
 
-**Last Updated: 2026

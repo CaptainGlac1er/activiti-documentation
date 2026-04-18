@@ -64,7 +64,7 @@ This documentation is organized into focused sections for deep understanding:
 
 ### Core Architecture
 1. **[Engine Architecture](../../architecture/overview.md)** - Overall system design and component relationships
-2. **[Process Engine Configuration](./engine-configuration.md)** - Configuration options and best practices
+2. **[Process Engine Configuration](../../../configuration.md)** - Configuration options and best practices
 
 ### Services API
 3. **[Repository Service](./repository-service.md)** - Process definition and deployment management
@@ -74,9 +74,7 @@ This documentation is organized into focused sections for deep understanding:
 
 ### See Also
 - [Engine Architecture Deep Dive](../../architecture/overview.md)
-- [Configuration Best Practices](./engine-configuration.md)
-
----
+- [Configuration Best Practices](../../../../../configuration.md
 
 ## Quick Start
 
@@ -341,8 +339,7 @@ The engine uses the following core tables:
 ## See Also
 
 - [Engine Architecture](../../architecture/overview.md)
-- [Process Engine Configuration](./engine-configuration.md)
-- [Repository Service](./repository-service.md)
+- [Process Engine Configuration](../../../con../../../configuration.mdory Service](./repository-service.md)
 - [Runtime Service](./runtime-service.md)
 - [Task Service](./task-service.md)
 - [History Service](./history-service.md)
@@ -351,5 +348,4 @@ The engine uses the following core tables:
 
 **Next Steps:**
 1. Read [Engine Architecture](../../architecture/overview.md) for deep dive into design
-2. Review [Configuration Guide](./engine-configuration.md) for setup
-3. Explore [Services API](./repository-service.md) for usage patterns
+2. Review [Configuration Guide](../../../configura../../../configuration.mdlore [Services API](./repository-service.md) for usage patterns

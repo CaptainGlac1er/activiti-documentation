@@ -791,7 +791,7 @@ flowchart TD
 
 ## See Also
 
-- [Engine Configuration](../getting-started/configuration.md)
+- [Engine Configuration](../configuration.md)
 - [Engine API Overview](../api-reference/engine-api/README.md)
 - [Repository Service](../api-reference/engine-api/repository-service.md)
 - [Runtime Service](../api-reference/engine-api/runtime-service.md)

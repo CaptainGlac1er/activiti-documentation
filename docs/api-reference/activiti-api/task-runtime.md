@@ -1054,5 +1054,4 @@ taskAdminRuntime.assignMultiple(...);
 
 ---
 
-**Last Updated: 2026  
 **Maintained by**: Activiti Community

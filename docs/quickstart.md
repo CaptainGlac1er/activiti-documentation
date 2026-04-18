@@ -693,7 +693,7 @@ Continue your learning journey with these resources:
 | Topic | Resource | Description |
 |-------|----------|-------------|
 | **BPMN Fundamentals** | [BPMN Documentation](./bpmn/elements/user-task.md) | Learn BPMN 2.0 notation and elements |
-| **Event Handling** | [Implementation Patterns](./advanced/implementation-patterns.md#event-handling-patterns) | Master event-driven architecture |
+| **Event Handling** | [Implementation Patterns](./implementation-patterns.md#event-handling-patterns) | Master event-driven architecture |
 | **Security** | [Security Best Practices](./best-practices/overview.md#security-best-practices) | Implement authentication and authorization |
 | **Connectors** | [Integration Guide](./bpmn/integration/connectors.md) | Integrate with external systems |
 | **Performance** | [Performance Optimization](./best-practices/overview.md#performance-optimization) | Scale your workflows effectively |

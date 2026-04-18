@@ -159,4 +159,3 @@ Process → External System → ... → Callback → Process
 
 ---
 
-**Last Updated: 2026

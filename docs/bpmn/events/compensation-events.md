@@ -785,5 +785,4 @@ public void testCompensationFlow() {
 
 ---
 
-**Last Updated:** 2026  
 **Source:** `BoundaryCompensateEventActivityBehavior.java`, `IntermediateThrowCompensationEventActivityBehavior.java`

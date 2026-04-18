@@ -1140,5 +1140,4 @@ For more complete examples, see:
 
 ---
 
-**Last Updated: 2026  
 **Feature Status:** Production Ready

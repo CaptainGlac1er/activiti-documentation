@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring App Process
 slug: /api-reference/engine-api/spring-app-process
-description: Engine implementation and services.
+description: Spring-based application process engine configuration and auto-configuration.
 ---
 
 # Activiti Spring App Process Module - Technical Documentation

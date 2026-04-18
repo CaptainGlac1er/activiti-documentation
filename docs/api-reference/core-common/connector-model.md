@@ -1,7 +1,7 @@
 ---
 sidebar_label: Connector Model
 slug: /api-reference/core-common/connector-model
-description: Core common utilities and shared modules.
+description: Connector model definitions for integration with external systems and services.
 ---
 
 # Activiti Connector Model Module - Technical Documentation

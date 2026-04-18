@@ -227,7 +227,7 @@ activiti:
   async-executor-activate: true
 ```
 
-**See:** [Configuration Guide](../../getting-started/configuration.md)
+**See:** [Configuration Guide](../../../configuration.md)
 
 ## API Comparison
 
@@ -478,5 +478,5 @@ Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
 ## See Also
 
 - [Activiti API](../activiti-api/README.md) - Modern interface-driven API
-- [Getting Started](../../getting-started/configuration.md) - Quick start guide
+- [Configuration Guide](../../../configuration.md) - Quick start guide
 - [Best Practices](../../best-practices/overview.md) - Performance optimization

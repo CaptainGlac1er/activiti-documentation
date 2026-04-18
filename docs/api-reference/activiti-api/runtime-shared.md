@@ -1,7 +1,7 @@
 ---
 sidebar_label: Runtime Shared
 slug: /api-reference/activiti-api/runtime-shared
-description: Activiti API module documentation.
+description: Shared runtime components for Activiti API including pagination, pages, and pageable interfaces.
 ---
 
 # Activiti API Runtime Shared Module
@@ -742,5 +742,4 @@ public class CustomSecurityProvider implements SecurityManager {
 
 ---
 
-**Last Updated: 2026  
 **Maintained by**: Activiti Community

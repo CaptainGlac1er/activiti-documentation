@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Resource Loader
 slug: /api-reference/engine-api/spring-resource-loader
-description: Engine implementation and services.
+description: Spring-based resource loader for Activiti process definition and deployment management.
 ---
 
 # Activiti Spring Resource Loader Module - Technical Documentation

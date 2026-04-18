@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Cache Manager
 slug: /api-reference/core-common/spring-cache-manager
-description: Core common utilities and shared modules.
+description: Spring-based cache manager implementation for Activiti process engine caching.
 ---
 
 # Activiti Spring Cache Manager Module - Technical Documentation

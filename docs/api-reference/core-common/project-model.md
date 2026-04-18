@@ -1,7 +1,7 @@
 ---
 sidebar_label: Project Model
 slug: /api-reference/core-common/project-model
-description: Core common utilities and shared modules.
+description: Project model definitions for process packaging, deployment, and manifest management.
 ---
 
 # Activiti Project Model Module - Technical Documentation

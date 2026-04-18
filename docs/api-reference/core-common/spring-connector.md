@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Connector
 slug: /api-reference/core-common/spring-connector
-description: Core common utilities and shared modules.
+description: Spring integration for Activiti connector execution and bean management.
 ---
 
 # Activiti Spring Connector Module - Technical Documentation

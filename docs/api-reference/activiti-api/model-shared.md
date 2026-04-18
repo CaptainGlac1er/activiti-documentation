@@ -1,7 +1,7 @@
 ---
 sidebar_label: Model Shared
 slug: /api-reference/activiti-api/model-shared
-description: Activiti API module documentation.
+description: Shared model definitions for Activiti API including process and task data structures.
 ---
 
 # Activiti API Model Shared Module
@@ -587,5 +587,4 @@ External dependencies:
 
 ---
 
-**Last Updated: 2026  
 **Maintained by**: Activiti Community

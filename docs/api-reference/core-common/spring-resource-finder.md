@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Resource Finder
 slug: /api-reference/core-common/spring-resource-finder
-description: Core common utilities and shared modules.
+description: Spring-based resource discovery and classpath scanning for Activiti process definitions.
 ---
 
 # Activiti Spring Resource Finder Module - Technical Documentation

@@ -29,4 +29,3 @@ Activiti supports four types of subprocesses:
 
 ---
 
-**Last Updated: 2026

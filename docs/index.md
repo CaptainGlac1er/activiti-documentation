@@ -30,7 +30,7 @@ Begin here if you're unfamiliar with workflow automation or Activiti:
 | Guide | Description | Time Required |
 |-------|-------------|---------------|
 | [Quick Start Guide](./quickstart.md) | Install Activiti and deploy your first workflow | 15 minutes |
-| [Configuration](./getting-started/configuration.md) | Understand application setup and dependencies | 10 minutes |
+| [Configuration](./configuration.md) | Understand application setup and dependencies | 10 minutes |
 
 ### Experienced Developers
 
@@ -39,7 +39,7 @@ Accelerate your onboarding with these resources:
 | Guide | Description | Focus Areas |
 |-------|-------------|-------------|
 | [API Reference](./api-reference/overview.md) | Complete interface and method documentation | Runtime APIs, Payload builders, Event handlers |
-| [Implementation Patterns](./advanced/implementation-patterns.md) | Architectural guidance for production systems | Microservices, Security, Integration |
+| [Implementation Patterns](./implementation-patterns.md) | Architectural guidance for production systems | Microservices, Security, Integration |
 
 ---
 
@@ -61,7 +61,7 @@ Deep-dive resources for complex scenarios:
 
 | Document | Audience | Topics Covered |
 |----------|----------|----------------|
-| [Implementation Patterns](./advanced/implementation-patterns.md) | Architects, Senior Developers | System design, Integration patterns, Scalability |
+| [Implementation Patterns](./advance./implementation-patterns.mdtects, Senior Developers | System design, Integration patterns, Scalability |
 | [Troubleshooting Guide](./troubleshooting/overview.md) | Developers, Operations | Debugging, Performance optimization, Common issues |
 | [Architecture Overview](./architecture/overview.md) | Technical Leads | System components, Data flow, Deployment models |
 
@@ -147,12 +147,10 @@ Structured learning paths to guide your journey with Activiti:
 |-------|---------------|
 | **Process Management** | [Process Runtime API](./api-reference/overview.md#process-runtime-api) |
 | **Task Management** | [Task Runtime API](./api-reference/overview.md#task-runtime-api) |
-| **Event Handling** | [Event Patterns](./advanced/implementation-patterns.md#event-handling-patterns) |
+| **Event Handling** | [Event Patterns](./advanced/impleme./implementation-patterns.mdtterns) |
 | **Security** | [Security Best Practices](./best-practices/overview.md#security-best-practices) |
 | **Performance** | [Performance Optimization](./best-practices/overview.md#performance-optimization) |
-| **Integration** | [Integration Patterns](./advanced/implementation-patterns.md#integration-patterns) |
-
-### Navigate by Goal
+| **Integration** | [Integration Patterns](./advanced/implementation-p./implementation-patterns.md## Navigate by Goal
 
 | Goal | Recommended Resource |
 |------|---------------------|
@@ -160,13 +158,11 @@ Structured learning paths to guide your journey with Activiti:
 | Look up an API method | [API Reference](./api-reference/overview.md) |
 | Resolve an issue | [Troubleshooting Guide](./troubleshooting/overview.md) |
 | Improve code quality | [Best Practices](./best-practices/overview.md) |
-| Design system architecture | [Implementation Patterns](./advanced/implementation-patterns.md) |
-
-### Navigate by Experience Level
+| Design system architecture | [Implementation Patterns](./implementation-patterns.md) |
 
 - **Beginner:** Start with the [Quick Start Guide](./quickstart.md)
 - **Intermediate:** Study the [API Reference](./api-reference/overview.md) and [Best Practices](./best-practices/overview.md)
-- **Advanced:** Explore [Implementation Patterns](./advanced/implementation-patterns.md) and [Architecture Overview](./architecture/overview.md)
+- **Advanced:** Explore [Implementation Patterns](./implementation-patterns.md) and [Architecture Overview](./architecture/overview.md)
 
 ---
 
@@ -249,7 +245,7 @@ To help us assist you faster, please prepare:
 | [Quick Start](./quickstart.md) | Rapid onboarding guide | Complete |
 | [API Reference](./api-reference/overview.md) | Comprehensive API documentation | Complete |
 | [Best Practices](./best-practices/overview.md) | Production patterns and guidelines | Complete |
-| [Implementation Patterns](./advanced/implementation-patterns.md) | Architectural guidance | Complete |
+| [Implementation Patterns](./implementation-patterns.md) | Architectural guidance | Complete |
 | [Troubleshooting](./troubleshooting/overview.md) | Issue resolution guide | Complete |
 | [Architecture Overview](./architecture/overview.md) | System architecture | Complete |
 
@@ -259,7 +255,7 @@ To help us assist you faster, please prepare:
 
 - **Start Here:** [Quick Start Guide](./quickstart.md)
 - **API Reference:** [Complete API Documentation](./api-reference/overview.md)
-- **Architecture:** [Implementation Patterns](./advanced/implementation-patterns.md)
+- **Architecture:** [Implementation Patterns](./implementation-patterns.md)
 - **Best Practices:** [Production Guidelines](./best-practices/overview.md)
 - **Troubleshooting:** [Issue Resolution](./troubleshooting/overview.md)
 

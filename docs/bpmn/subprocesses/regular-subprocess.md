@@ -320,4 +320,3 @@ runtimeService.setVariable(processInstanceId, "sharedVariable", "value");
 
 ---
 
-**Last Updated: 2026

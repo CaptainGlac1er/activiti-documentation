@@ -667,4 +667,3 @@ List<HistoricVariableUpdate> updates = historyService
 
 ---
 
-**Last Updated: 2026

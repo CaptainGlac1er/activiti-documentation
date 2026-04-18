@@ -22,8 +22,8 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'doc',
-      id: 'getting-started/configuration',
-      label: 'Getting Started',
+      id: 'configuration',
+      label: 'Configuration',
     },
     {
       type: 'category',
@@ -163,8 +163,8 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'doc',
-      id: 'advanced/implementation-patterns',
-      label: 'Advanced Topics',
+      id: 'implementation-patterns',
+      label: 'Implementation Patterns',
     },
     {
       type: 'doc',

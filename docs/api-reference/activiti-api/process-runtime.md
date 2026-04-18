@@ -979,5 +979,4 @@ Pageable.of(0, 1000)
 
 ---
 
-**Last Updated: 2026  
 **Maintained by**: Activiti Community

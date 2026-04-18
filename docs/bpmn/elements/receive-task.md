@@ -462,5 +462,4 @@ for (Task task : receiveTasks) {
 
 ---
 
-**Last Updated:** 2026  
 **Source:** `ReceiveTaskActivityBehavior.java`

@@ -790,9 +790,8 @@ public class SecureScriptFactory extends ActivitiScriptFactory {
 - [Script Task](../../bpmn/elements/script-task.md) - Script task element
 - [DelegateExecution API](../../bpmn/advanced/delegate-execution-api.md) - Execution context
 - [Expression Language](../core-common/expression-language.md) - JUEL expressions
-- [Engine Configuration](./engine-configuration.md) - Script engine setup
+- [Engine Configuration](../../../configuration.md) - Script engine setup
 
 ---
 
-**Last Updated:** 2026  
 **Source:** `activiti-engine/impl/scripting/`

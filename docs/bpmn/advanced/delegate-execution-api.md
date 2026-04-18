@@ -771,5 +771,4 @@ if (activityId != null) {
 
 ---
 
-**Last Updated:** 2026  
 **Source:** `DelegateExecution.java`

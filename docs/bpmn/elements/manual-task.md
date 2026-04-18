@@ -118,4 +118,3 @@ taskService.complete(taskId, Map.of("verified", true, "notes", "All items checke
 
 ---
 
-**Last Updated: 2026

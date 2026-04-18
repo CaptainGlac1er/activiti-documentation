@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Project
 slug: /api-reference/core-common/spring-project
-description: Core common utilities and shared modules.
+description: Spring integration for Activiti project manifest loading and deployment.
 ---
 
 # Activiti Spring Project Module - Technical Documentation

@@ -770,4 +770,3 @@ List<HistoricActivityInstance> errorActivities = historyService
 
 ---
 
-**Last Updated: 2026

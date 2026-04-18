@@ -786,4 +786,4 @@ public class ServiceProperties {
 
 **Related Documentation:**
 - [Service Tasks](../../bpmn/elements/service-task.md)
-- [Configuration Properties](../../getting-started/configuration.md)
+- [Configuration Properties](../../configuration.md)

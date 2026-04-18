@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Conformance Tests
 slug: /api-reference/engine-api/spring-conformance-tests
-description: Engine implementation and services.
+description: Spring-based conformance test suite for Activiti engine compatibility verification.
 ---
 
 # Activiti Spring Conformance Tests Module - Technical Documentation

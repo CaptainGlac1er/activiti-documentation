@@ -347,4 +347,3 @@ public class MyDelegate implements JavaDelegate {
 
 ---
 
-**Last Updated: 2026
