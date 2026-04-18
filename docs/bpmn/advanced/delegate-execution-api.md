@@ -29,9 +29,9 @@ public interface DelegateExecution extends VariableScope {
     
     // Process instance access
     ProcessInstance getProcessInstance();
-    
+
     // Engine access
-    ProcessEngine getProcessEngine();
+    ProcessEngineConfiguration getEngineServices();
 }
 ```
 
@@ -382,13 +382,13 @@ public class ServiceAccessDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) {
         // Get process engine
-        ProcessEngine processEngine = execution.getProcessEngine();
-        
+        ProcessEngineConfiguration config = execution.getEngineServices();
+
         // Access engine services
-        RuntimeService runtimeService = processEngine.getRuntimeService();
-        TaskService taskService = processEngine.getTaskService();
-        RepositoryService repositoryService = processEngine.getRepositoryService();
-        HistoryService historyService = processEngine.getHistoryService();
+        RuntimeService runtimeService = config.getRuntimeService();
+        TaskService taskService = config.getTaskService();
+        RepositoryService repositoryService = config.getRepositoryService();
+        HistoryService historyService = config.getHistoryService();
         ManagementService managementService = processEngine.getManagementService();
         
         // Use services (generally not recommended - prefer injection)
@@ -417,7 +417,7 @@ public class CorrelationDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) {
         // Get correlation key (if set)
-        String correlationKey = execution.getProcessInstance().getBusinessKey();
+        String correlationKey = execution.getProcessInstanceBusinessKey();
         
         // Correlation keys are used for:
         // - Message correlation
@@ -452,10 +452,10 @@ public class ActivityInfoDelegate implements JavaDelegate {
         } else if ("gateway1".equals(activityId)) {
             // Gateway logic
         }
-        
+
         // Get activity from repository (requires service access)
-        ProcessEngine engine = execution.getProcessEngine();
-        // Activity activity = engine... // Not directly available
+        ProcessEngineConfiguration config = execution.getEngineServices();
+        // Activity activity = config... // Not directly available
     }
 }
 ```
@@ -691,7 +691,7 @@ public class InjectedDelegate implements JavaDelegate {
 public class EngineServiceDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) {
-        RuntimeService rs = execution.getProcessEngine().getRuntimeService();
+        RuntimeService rs = execution.getEngineServices().getRuntimeService();
         // Harder to test, couples to engine
     }
 }
@@ -756,7 +756,7 @@ if (activityId != null) {
 | `getProcessDefinitionId()` | Get process definition ID | - |
 | `getActivityId()` | Get current activity ID | - |
 | `getProcessInstance()` | Get process instance | - |
-| `getProcessEngine()` | Get process engine | - |
+| `getEngineServices()` | Get process engine configuration | - |
 | `getParent()` | Get parent execution | - |
 | `getChildExecutions()` | Get child executions | - |
 | `isMultiInstanceRoot()` | Check multi-instance | - |

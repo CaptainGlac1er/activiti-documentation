@@ -68,18 +68,17 @@ managementService.setJobPriority(jobId, 10);
 
 ### Failed Job Retry
 
-Configure retry policy using `failedJobRetryTimeCycle` property:
+Configure retry policy using `failedJobRetryTimeCycle`:
 
 ```xml
 <serviceTask id="retryTask" 
              activiti:async="true">
   
   <!-- Retry 5 times -->
-  <activiti:property name="failedJobRetryTimeCycle" value="R/5"/>
+  <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
   
   <!-- Retry with intervals -->
-  <activiti:property name="failedJobRetryTimeCycle" 
-                     value="R3/PT1M;R2/PT5M"/>
+  <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
   
 </serviceTask>
 ```

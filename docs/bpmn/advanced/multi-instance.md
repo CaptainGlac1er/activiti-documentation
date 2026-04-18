@@ -219,10 +219,10 @@ Multi-instance activities provide these **automatic variables**:
 
 | Variable                 | Description                   | Sequential | Parallel |
 |--------------------------|-------------------------------|------------|----------|
-| `nrOfInstances`          | Total number of instances     |          |        |
-| `nrOfCompletedInstances` | Number of completed instances |          |        |
-| `loopCounter`            | Current iteration (1-based)   |          | ❌        |
-| `elementVariable`        | Current collection element    |          |        |
+| `nrOfInstances`          | Total number of instances     | ✅         | ✅       |
+| `nrOfCompletedInstances` | Number of completed instances | ✅         | ✅       |
+| `loopCounter`            | Current iteration (1-based)   | ✅         | ❌       |
+| `elementVariable`        | Current collection element    | ✅         | ✅       |
 
 ### Using Built-in Variables
 
@@ -446,7 +446,7 @@ Collect results **from** each instance:
   </multiInstanceLoopCharacteristics>
   
   <!-- Retry policy for failed items -->
-  <activiti:property name="failedJobRetryTimeCycle" value="R3/PT1M"/>
+  <activiti:failedJobRetryTimeCycle>R3/PT1M</activiti:failedJobRetryTimeCycle>
   
   <!-- Error handling -->
   <boundaryEvent id="processError" cancelActivity="true">
@@ -539,7 +539,7 @@ Collect results **from** each instance:
   </multiInstanceLoopCharacteristics>
   
   <!-- Each instance runs as async job -->
-  <activiti:property name="failedJobRetryTimeCycle" value="R/3"/>
+  <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
   
 </serviceTask>
 ```
@@ -637,7 +637,7 @@ Collect results **from** each instance:
 <!-- GOOD: Error handling for async MI -->
 <serviceTask id="miTask" activiti:async="true">
   <multiInstanceLoopCharacteristics ... />
-  <activiti:property name="failedJobRetryTimeCycle" value="R/3"/>
+  <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
   <boundaryEvent id="error" ... />
 </serviceTask>
 ```

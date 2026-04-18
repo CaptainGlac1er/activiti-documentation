@@ -293,12 +293,13 @@ public class DmnDecisionConnector implements Connector {
     public IntegrationContext apply(IntegrationContext context) {
         // Get input variables
         Object input = context.getInBoundVariables().get("inputData");
-        
+
         // Evaluate DMN decision
         Object result = dmnEngine.evaluateDecision("creditDecision", input);
-        
+
         // Return output
-        return context.withOutBoundVariable("decisionResult", result);
+        context.addOutBoundVariable("decisionResult", result);
+        return context;
     }
 }
 ```

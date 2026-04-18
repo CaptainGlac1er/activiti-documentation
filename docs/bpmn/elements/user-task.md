@@ -526,8 +526,20 @@ Define form fields:
 ### Example 3: Delegatable Task with Boundary Event
 
 ```xml
-<userTask id="managerTask" 
-          name="Manager De### Task Assignment
+<userTask id="managerTask" name="Manager Delegation">
+  <extensionElements>
+    <activiti:taskListener event="create" class="com.example.DelegationListener"/>
+  </extensionElements>
+</userTask>
+
+<boundaryEvent id="escalationTimer" attachedToRef="managerTask" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT24H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
+```
+
+### Task Assignment
 
 ```java
 import org.activiti.engine.task.IdentityLinkType;
@@ -554,11 +566,6 @@ taskService.addUserIdentityLink(taskId, "bob", "viewer",
 // Add identity link using built-in types
 taskService.addUserIdentityLink(taskId, "manager", IdentityLinkType.OWNER);
 taskService.addGroupIdentityLink(taskId, "auditors", IdentityLinkType.PARTICIPANT);
-```"escalationTimer" attachedToRef="managerTask" cancelActivity="true">
-  <timerEventDefinition>
-    <timeDuration>PT24H</timeDuration>
-  </timerEventDefinition>
-</boundaryEvent>
 ```
 
 ## Runtime API Usage
