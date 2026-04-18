@@ -46,10 +46,10 @@ flowchart TD
         end
         
         subgraph JobTables["Job Tables"]
-            ACT_RU_JOB["ACT_RU_JOB<br/>(Executable Jobs)"]
-            ACT_RU_TIMER_JOB["ACT_RU_TIMER_JOB<br/>(Timer Jobs)"]
+            ACT_RU_JOB["ACT_RU_JOB<br>(Executable Jobs)"]
+            ACT_RU_TIMER_JOB["ACT_RU_TIMER_JOB<br>(Timer Jobs)"]
             ACT_RU_SUSPENDED["ACT_RU_SUSPENDED_JOB"]
-            ACT_GE_JOB_DEF["ACT_GE_JOB_DEFINITION<br/>(Dead Letter)"]
+            ACT_GE_JOB_DEF["ACT_GE_JOB_DEFINITION<br>(Dead Letter)"]
         end
     end
     
@@ -251,7 +251,7 @@ flowchart TD
     Reschedule --> Wait["Wait retry-wait-time-in-millis"]
     Wait --> Retry["Re-acquire and retry"]
     
-    Decision -->|No| DeadLetter["Move to dead letter<br/>(ACT_GE_JOB_DEFINITION)"]
+    Decision -->|No| DeadLetter["Move to dead letter<br>(ACT_GE_JOB_DEFINITION)"]
 ```
 
 **Exponential Backoff:**

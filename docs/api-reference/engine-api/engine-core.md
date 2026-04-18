@@ -63,7 +63,7 @@ activiti-engine/
 This documentation is organized into focused sections for deep understanding:
 
 ### Core Architecture
-1. **[Engine Architecture](./engine-architecture.md)** - Overall system design and component relationships
+1. **[Engine Architecture](../../architecture/overview.md)** - Overall system design and component relationships
 2. **[Process Engine Configuration](./engine-configuration.md)** - Configuration options and best practices
 
 ### Services API
@@ -73,7 +73,7 @@ This documentation is organized into focused sections for deep understanding:
 6. **[History Service](./history-service.md)** - Historical data and auditing
 
 ### See Also
-- [Engine Architecture Deep Dive](./engine-architecture.md)
+- [Engine Architecture Deep Dive](../../architecture/overview.md)
 - [Configuration Best Practices](./engine-configuration.md)
 
 ---
@@ -340,7 +340,7 @@ The engine uses the following core tables:
 
 ## See Also
 
-- [Engine Architecture](./engine-architecture.md)
+- [Engine Architecture](../../architecture/overview.md)
 - [Process Engine Configuration](./engine-configuration.md)
 - [Repository Service](./repository-service.md)
 - [Runtime Service](./runtime-service.md)
@@ -350,6 +350,6 @@ The engine uses the following core tables:
 ---
 
 **Next Steps:**
-1. Read [Engine Architecture](./engine-architecture.md) for deep dive into design
+1. Read [Engine Architecture](../../architecture/overview.md) for deep dive into design
 2. Review [Configuration Guide](./engine-configuration.md) for setup
 3. Explore [Services API](./repository-service.md) for usage patterns

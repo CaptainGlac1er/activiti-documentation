@@ -34,11 +34,11 @@ This guide provides proven implementation patterns with architectural diagrams, 
 ```mermaid
 flowchart TD
     subgraph Monolith["Monolithic Application"]
-        Controller["Controller<br/>Layer"]
-        Service["Service<br/>Layer"]
-        Activiti["Activiti Runtime<br/>(Embedded)"]
+        Controller["Controller<br>Layer"]
+        Service["Service<br>Layer"]
+        Activiti["Activiti Runtime<br>(Embedded)"]
         
-        subgraph Database["Database Layer<br/>(App + Activiti DB)"]
+        subgraph Database["Database Layer<br>(App + Activiti DB)"]
         end
     end
     
@@ -101,14 +101,14 @@ flowchart TD
     Gateway["API Gateway / Load Balancer"]
     
     subgraph Services["Microservices"]
-        Order["Order Service<br/>(Business)"]
-        Task["Task Service<br/>(Workflow)"]
+        Order["Order Service<br>(Business)"]
+        Task["Task Service<br>(Workflow)"]
     end
     
-    subgraph MessageBroker["Message Broker<br/>(Kafka/RabbitMQ)"]
+    subgraph MessageBroker["Message Broker<br>(Kafka/RabbitMQ)"]
     end
     
-    subgraph ProcessEngine["Process Engine<br/>(External)<br/>Database"]
+    subgraph ProcessEngine["Process Engine<br>(External)<br>Database"]
     end
     
     Gateway --> Order
@@ -181,14 +181,14 @@ Supports distributed teams
 ```mermaid
 flowchart TD
     subgraph MainApp["Main Application"]
-        Business["Business Logic Layer<br/>(Controllers, Services, Domain Models)"]
+        Business["Business Logic Layer<br>(Controllers, Services, Domain Models)"]
         
         subgraph Workflow["Workflow Service (Embedded)"]
             Activiti["Activiti Runtime & Engine"]
         end
     end
     
-    subgraph External["External Systems<br/>(Email, Notifications, Integrations)"]
+    subgraph External["External Systems<br>(Email, Notifications, Integrations)"]
     end
     
     Business -->|REST/gRPC| Workflow
@@ -259,8 +259,8 @@ Simplified transaction management
 flowchart TD
     Request["Client Request"]
     Controller["Controller"]
-    Service["Service<br/>(Blocking)"]
-    Runtime["Process<br/>Runtime"]
+    Service["Service<br>(Blocking)"]
+    Runtime["Process<br>Runtime"]
     Response["Response"]
     
     Request --> Controller
@@ -323,15 +323,15 @@ flowchart TD
     
     subgraph ControllerLayer["Controller Layer"]
         Controller["Controller"]
-        Producer["Message<br/>Producer"]
+        Producer["Message<br>Producer"]
     end
     
     subgraph Queue["Message Queue"]
     end
     
     subgraph Worker["Worker Layer"]
-        Consumer["Consumer<br/>(Worker)"]
-        Runtime["Process<br/>Runtime"]
+        Consumer["Consumer<br>(Worker)"]
+        Runtime["Process<br>Runtime"]
     end
     
     Request --> Controller
@@ -418,7 +418,7 @@ flowchart LR
     ServiceA["Service A"]
     EventBus["Event Bus"]
     ServiceB["Service B"]
-    Workflow["Workflow Service<br/>Listens to events"]
+    Workflow["Workflow Service<br>Listens to events"]
     
     ServiceA --> EventBus
     ServiceB --> EventBus
@@ -489,8 +489,8 @@ Supports complex workflows
 ```mermaid
 flowchart TD
     Trigger["Event Trigger"]
-    Listener["Listener<br/>(Sync)"]
-    Logic["Business<br/>Logic"]
+    Listener["Listener<br>(Sync)"]
+    Logic["Business<br>Logic"]
     Return["Return"]
     
     Trigger --> Listener
@@ -544,8 +544,8 @@ flowchart TD
     Trigger["Event Trigger"]
     
     subgraph AsyncLayer["Async Layer"]
-        Listener["Listener<br/>(Async)"]
-        Executor["Task<br/>Executor"]
+        Listener["Listener<br>(Async)"]
+        Executor["Task<br>Executor"]
     end
     
     subgraph Logic["Business Logic"]
@@ -609,9 +609,9 @@ Improves scalability
 ```mermaid
 flowchart LR
     Commands["Commands"]
-    Process["Process<br/>Execution"]
-    Events["Events<br/>Store"]
-    Projections["Projections<br/>(Read Model)"]
+    Process["Process<br>Execution"]
+    Events["Events<br>Store"]
+    Projections["Projections<br>(Read Model)"]
     
     Commands --> Process
     Process --> Events
@@ -681,8 +681,8 @@ Good for compliance
 ```mermaid
 flowchart TD
     User["User"]
-    Roles["Roles<br/>(Admin, User, etc)"]
-    Permissions["Permissions<br/>- Start Process<br/>- Complete Task<br/>- Delete"]
+    Roles["Roles<br>(Admin, User, etc)"]
+    Permissions["Permissions<br>- Start Process<br>- Complete Task<br>- Delete"]
     
     User --> Roles
     Roles --> Permissions
@@ -739,11 +739,11 @@ Well-established pattern
 **Diagram:**
 ```mermaid
 flowchart TD
-    User["User<br/>Attributes"]
-    Resource["Resource<br/>Attributes"]
-    Action["Action<br/>Attributes"]
+    User["User<br>Attributes"]
+    Resource["Resource<br>Attributes"]
+    Action["Action<br>Attributes"]
     
-    Policy["Policy<br/>Engine"]
+    Policy["Policy<br>Engine"]
     
     Decision["Allow/Deny"]
     
@@ -802,7 +802,7 @@ Scalable permissions
 flowchart TD
     subgraph AppServer["Application Server"]
         subgraph Activiti["Embedded Activiti Engine"]
-            Database["Database<br/>(Shared)"]
+            Database["Database<br>(Shared)"]
         end
     end
 ```
@@ -843,12 +843,12 @@ flowchart TD
     LB["Load Balancer"]
     
     subgraph Nodes["Application Nodes"]
-        Node1["Node 1<br/>Activiti"]
-        Node2["Node 2<br/>Activiti"]
-        Node3["Node 3<br/>Activiti"]
+        Node1["Node 1<br>Activiti"]
+        Node2["Node 2<br>Activiti"]
+        Node3["Node 3<br>Activiti"]
     end
     
-    Database["Database<br/>(Shared)"]
+    Database["Database<br>(Shared)"]
     
     LB --> Node1
     LB --> Node2
@@ -929,8 +929,8 @@ Fault tolerance
 
 ```mermaid
 flowchart TD
-    Decision1{"Is your team<br/>&lt; 10 people?"}
-    Decision2{"Is process<br/>complexity high?"}
+    Decision1{"Is your team<br>&lt; 10 people?"}
+    Decision2{"Is process<br>complexity high?"}
     
     Monolithic["Monolithic"]
     Microservices["Microservices"]
@@ -946,9 +946,9 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Decision1{"Is response time<br/>critical &lt; 1s?"}
-    Decision2{"Is volume high<br/>&gt; 1000 req/min?"}
-    Decision3{"Are there<br/>multiple systems?"}
+    Decision1{"Is response time<br>critical &lt; 1s?"}
+    Decision2{"Is volume high<br>&gt; 1000 req/min?"}
+    Decision3{"Are there<br>multiple systems?"}
     
     Sync["Synchronous"]
     Async["Asynchronous"]
@@ -966,8 +966,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Decision1{"Are permissions<br/>simple (roles only)?"}
-    Decision2{"Do you need<br/>context-aware access?"}
+    Decision1{"Are permissions<br>simple (roles only)?"}
+    Decision2{"Do you need<br>context-aware access?"}
     
     RBAC["RBAC"]
     ABAC["ABAC"]

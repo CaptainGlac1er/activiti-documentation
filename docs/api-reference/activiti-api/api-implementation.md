@@ -274,13 +274,13 @@ The **activiti-api-impl** module provides the concrete implementation of the Act
 
 ```mermaid
 flowchart TD
-    subgraph Application["Application Layer<br/>(Your Business Logic)"]
+    subgraph Application["Application Layer<br>(Your Business Logic)"]
     end
     
-    subgraph API["API Layer<br/>(activiti-api interfaces - ProcessRuntime, TaskRuntime)"]
+    subgraph API["API Layer<br>(activiti-api interfaces - ProcessRuntime, TaskRuntime)"]
     end
     
-    subgraph APIImpl["API Implementation Layer<br/>(activiti-api-impl - Concrete implementations)"]
+    subgraph APIImpl["API Implementation Layer<br>(activiti-api-impl - Concrete implementations)"]
         subgraph Impls["Implementations"]
             ProcessImpl["ProcessRuntimeImpl"]
             TaskImpl["TaskRuntimeImpl"]
@@ -288,7 +288,7 @@ flowchart TD
         end
     end
     
-    subgraph Engine["Engine Layer<br/>(activiti-engine - RuntimeService, TaskService, etc.)"]
+    subgraph Engine["Engine Layer<br>(activiti-engine - RuntimeService, TaskService, etc.)"]
     end
     
     Application --> API
@@ -301,15 +301,15 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph APIImpls["API Implementations"]
-        Process["ProcessRuntime<br/>Impl"]
-        Task["TaskRuntime<br/>Impl"]
-        Model["ModelRuntime<br/>Impl"]
+        Process["ProcessRuntime<br>Impl"]
+        Task["TaskRuntime<br>Impl"]
+        Model["ModelRuntime<br>Impl"]
     end
     
-    subgraph Converter["Converter Layer<br/>(Model Translators)"]
+    subgraph Converter["Converter Layer<br>(Model Translators)"]
     end
     
-    subgraph EngineServices["Engine Services<br/>(RuntimeService, etc.)"]
+    subgraph EngineServices["Engine Services<br>(RuntimeService, etc.)"]
     end
     
     Process --> Converter

@@ -44,7 +44,7 @@ The **activiti-process-validation** module provides comprehensive validation cap
 flowchart TD
     subgraph ValidationModule["activiti-process-validation"]
         subgraph Main["Main Validator"]
-            Validator["ProcessValidator.java<br/>Main validator"]
+            Validator["ProcessValidator.java<br>Main validator"]
         end
         
         subgraph Rules["Rules"]
@@ -74,10 +74,10 @@ flowchart TD
 ```mermaid
 flowchart TD
     Model["BPMN Model"]
-    Syntax["Syntax<br/>Validator"]
-    Semantic["Semantic<br/>Validator"]
-    BestPractice["Best<br/>Practice<br/>Validator"]
-    Custom["Custom<br/>Validators"]
+    Syntax["Syntax<br>Validator"]
+    Semantic["Semantic<br>Validator"]
+    BestPractice["Best<br>Practice<br>Validator"]
+    Custom["Custom<br>Validators"]
     Report["Validation Report"]
     
     Model --> Syntax
@@ -92,8 +92,8 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph ProcessValidator["ProcessValidator"]
-        RuleReg["Rule<br/>Registry"]
-        RuleExec["Rule<br/>Executor"]
+        RuleReg["Rule<br>Registry"]
+        RuleExec["Rule<br>Executor"]
         
         subgraph ValidationRules["Validation Rules"]
             VR1["- SyntaxRules"]

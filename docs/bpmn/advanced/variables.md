@@ -119,7 +119,7 @@ execution.setTransientVariable("myVar", "temporary");
 
 ```mermaid
 flowchart TD
-    Root["Process Instance<br/>(Root Execution)"]
+    Root["Process Instance<br>(Root Execution)"]
     
     subgraph ProcessVars["Process Variables global scope"]
         P1["customerName"]

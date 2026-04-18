@@ -108,9 +108,7 @@ Simple OR decision with multiple conditions:
 Add a default flow when no conditions match:
 
 ```xml
-<inclusiveGateway id="decisionGateway" name="Decision">
-  <activiti:default="defaultFlow"/>
-</inclusiveGateway>
+<inclusiveGateway id="decisionGateway" name="Decision" default="defaultFlow"/>
 
 <sequenceFlow id="option1" sourceRef="decisionGateway" targetRef="task1">
   <conditionExpression>${option1}</conditionExpression>

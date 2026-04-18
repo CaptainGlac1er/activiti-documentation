@@ -153,11 +153,6 @@ Repeat at intervals using iCalendar recurrence rules:
 - `R5/PT1D` - Repeat 5 times, every day
 - `RRULE:FREQ=DAILY;INTERVAL=1` - iCalendar format
 
-**With End Date:**
-```xml
-<timeCycle activiti:endDate="${EndDate}">R2/PT5S</timeCycle>
-```
-
 **Timer Event Types Summary:**
 | Type | Element | Description | Example |
 |------|---------|-------------|---------|
@@ -286,21 +281,19 @@ Trigger compensation (undo) operations:
 
 ## Advanced Features
 
-### Non-Interrupting Events
+### Non-Interrupting Boundary Events
 
 Events that don't cancel the current activity:
 
 ```xml
-<businessTask id="longRunningTask" name="Long Running Task">
-  
-  <!-- Non-interrupting timer boundary event -->
+<!-- Non-interrupting timer boundary event on a UserTask -->
+<userTask id="longRunningTask" name="Long Running Task">
   <boundaryEvent id="progressUpdate" cancelActivity="false">
     <timerEventDefinition>
       <timeDuration>PT1H</timeDuration>
     </timerEventDefinition>
   </boundaryEvent>
-  
-</businessTask>
+</userTask>
 ```
 
 ### Multi-Instance with Events

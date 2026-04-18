@@ -63,10 +63,10 @@ activiti-spring-resource-loader/
 ```mermaid
 flowchart TD
     Request["Resource Request"]
-    Detector["Resource<br/>Type<br/>Detector"]
-    Selection["Resource<br/>Loader<br/>Selection"]
-    Loading["Resource<br/>Loading"]
-    Validation["Resource<br/>Validation"]
+    Detector["Resource<br>Type<br>Detector"]
+    Selection["Resource<br>Loader<br>Selection"]
+    Loading["Resource<br>Loading"]
+    Validation["Resource<br>Validation"]
     Result["Loaded Resource"]
     
     Request --> Detector
@@ -81,8 +81,8 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph ResourceLoader["ResourceLoader"]
-        Classpath["Classpath<br/>ResourceLoader"]
-        FileSystem["FileSystem<br/>ResourceLoader"]
+        Classpath["Classpath<br>ResourceLoader"]
+        FileSystem["FileSystem<br>ResourceLoader"]
         
         subgraph Scanner["Resource Scanner"]
             S1["- Pattern matching"]

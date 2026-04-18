@@ -56,12 +56,12 @@ activiti-common-util/
 ```mermaid
 flowchart TD
     subgraph DateUtils["Date Utilities"]
-        subgraph DateFormatter["DateFormatterProvider<br/>(Central Date Utility)"]
-            Config["Configuration:<br/>- dateFormatPattern<br/>- zoneId"]
-            Ops["Operations:<br/>- parse String → Date<br/>- toDate Object → Date"]
+        subgraph DateFormatter["DateFormatterProvider<br>(Central Date Utility)"]
+            Config["Configuration:<br>- dateFormatPattern<br>- zoneId"]
+            Ops["Operations:<br>- parse String → Date<br>- toDate Object → Date"]
         end
         
-        subgraph AutoConfig["ActivitiCoreCommonUtilAutoConfiguration<br/>(Spring Boot Auto-Config)"]
+        subgraph AutoConfig["ActivitiCoreCommonUtilAutoConfiguration<br>(Spring Boot Auto-Config)"]
             AC1["- Creates DateFormatterProvider bean"]
             AC2["- Reads spring.activiti.date-format-pattern"]
             AC3["- Conditional on missing bean"]
@@ -76,7 +76,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     Input["Input Object"]
-    TypeCheck["toDate Object value<br/>Type Check"]
+    TypeCheck["toDate Object value<br>Type Check"]
     
     Input --> TypeCheck
     
@@ -94,7 +94,7 @@ flowchart TD
     LocalDateTime -->|atZone| Result
     ZonedDateTime -->|"toInstant()"| Result
     
-    Result["Date<br/>(Result)"]
+    Result["Date<br>(Result)"]
 ```
 
 ---

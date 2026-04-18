@@ -1,5 +1,5 @@
 ---
-sidebar_label: Overview
+sidebar_label: Troubleshooting
 slug: /troubleshooting/overview
 title: "Troubleshooting Guide"
 description: "Comprehensive guide for diagnosing and resolving common issues with Activiti API in development and production environments."

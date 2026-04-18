@@ -30,7 +30,7 @@ This documentation provides comprehensive technical details for the Activiti Eng
    - Quick start examples
    - Performance characteristics
 
-2. **[engine-architecture.md](engine-architecture.md)** - Deep dive into architecture
+2. **[../../architecture/overview.md](../../architecture/overview.md)** - Deep dive into architecture
    - System overview
    - Core components
    - Component interactions
@@ -169,7 +169,7 @@ This documentation provides comprehensive technical details for the Activiti Eng
 3. Explore service documentation based on needs
 
 ### For Architects
-1. Study [engine-architecture.md](engine-architecture.md)
+1. Study [../../architecture/overview.md](../../architecture/overview.md)
 2. Review [engine-configuration.md](engine-configuration.md)
 3. Examine integration patterns in [README.md](README.md)
 

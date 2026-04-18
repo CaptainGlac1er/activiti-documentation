@@ -41,9 +41,9 @@ The Order Management Workflow handles complete e-commerce order processing:
 
 ```mermaid
 flowchart TD
-    Main["Order Management Process<br/>- Customer validation<br/>- Credit check<br/>- Parallel operations"] --> Payment["Payment Process<br/>Sub-process"]
-    Main --> Inventory["Inventory Process<br/>Sub-process"]
-    Main --> Shipping["Shipping Process<br/>Sub-process"]
+    Main["Order Management Process<br>- Customer validation<br>- Credit check<br>- Parallel operations"] --> Payment["Payment Process<br>Sub-process"]
+    Main --> Inventory["Inventory Process<br>Sub-process"]
+    Main --> Shipping["Shipping Process<br>Sub-process"]
 ```
 
 ## Process Breakdown

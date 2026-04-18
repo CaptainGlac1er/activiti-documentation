@@ -108,11 +108,11 @@ Asynchronous execution allows activities to run in the **background** using Acti
 ```mermaid
 flowchart TD
     Process["Process Execution"]
-    Async["Async Activity<br/>activiti:async = true"]
-    JobCreated["Job Created<br/>(Persisted to Database)"]
-    Continue["Process Continues<br/>(Non-blocking)"]
-    JobExecutor["Job Executor<br/>(Background Thread)"]
-    JobExecuted["Job Executed<br/>(Retry if fail)"]
+    Async["Async Activity<br>activiti:async = true"]
+    JobCreated["Job Created<br>(Persisted to Database)"]
+    Continue["Process Continues<br>(Non-blocking)"]
+    JobExecutor["Job Executor<br>(Background Thread)"]
+    JobExecuted["Job Executed<br>(Retry if fail)"]
     
     Process --> Async
     Async --> JobCreated

@@ -69,11 +69,11 @@ activiti-spring-boot-starter/
 ```mermaid
 flowchart TD
     Startup["Application Startup"]
-    Context["Spring Boot<br/>Context"]
-    Scanner["Auto<br/>Configuration<br/>Scanner"]
-    AutoConfig["Activiti<br/>AutoConfig"]
-    Engine["Process<br/>Engine"]
-    Properties["Activiti<br/>Properties"]
+    Context["Spring Boot<br>Context"]
+    Scanner["Auto<br>Configuration<br>Scanner"]
+    AutoConfig["Activiti<br>AutoConfig"]
+    Engine["Process<br>Engine"]
+    Properties["Activiti<br>Properties"]
     
     Startup --> Context
     Context --> Scanner
@@ -88,8 +88,8 @@ flowchart TD
 flowchart TD
     subgraph SpringBootApp["Spring Boot Application"]
         subgraph AutoConfig["ActivitiAutoConfiguration"]
-            AC1["@ConditionalOnClass<br/>(ProcessEngine)"]
-            AC2["@ConditionalOnProperty<br/>(activiti.enabled)"]
+            AC1["@ConditionalOnClass<br>(ProcessEngine)"]
+            AC2["@ConditionalOnProperty<br>(activiti.enabled)"]
             
             subgraph Beans["Beans"]
                 B1["- ProcessEngine"]
@@ -101,7 +101,7 @@ flowchart TD
         end
         
         subgraph Properties["ActivitiProperties"]
-            P1["@ConfigurationProperties<br/>(activiti)"]
+            P1["@ConfigurationProperties<br>(activiti)"]
             
             subgraph Props["Properties"]
                 PR1["- database-schema-update"]

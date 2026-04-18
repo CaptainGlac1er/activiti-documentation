@@ -1419,6 +1419,6 @@ log.info("Engine configured: history={}, async={}, query-limit={}",
 ## See Also
 
 - [Parent Documentation](README.md)
-- [Engine Architecture](engine-architecture.md)
+- [Engine Architecture](../../architecture/overview.md)
 - [BPMN Execution](./engine-configuration.md)
 - [Best Practices](../../best-practices/overview.md)

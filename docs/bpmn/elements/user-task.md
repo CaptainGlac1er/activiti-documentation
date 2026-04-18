@@ -1,5 +1,6 @@
 ---
 sidebar_label: User Task
+title: User Task
 slug: /bpmn/elements/user-task
 description: Complete guide to UserTask elements with Activiti customizations for human interaction
 ---

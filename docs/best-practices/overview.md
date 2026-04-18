@@ -133,7 +133,7 @@ flowchart TD
         Payment["Payment Context"]
         Shipping["Shipping Context"]
         
-        subgraph Orchestrating["Orchestrating Process<br/>(Order Fulfillment)"]
+        subgraph Orchestrating["Orchestrating Process<br>(Order Fulfillment)"]
         end
     end
     

@@ -1,5 +1,6 @@
 ---
 sidebar_label: Engine Configuration
+title: Engine Configuration
 slug: /getting-started/configuration
 description: Complete guide to configuring the Activiti Process Engine for different environments.
 ---
@@ -1418,6 +1419,6 @@ log.info("Engine configured: history={}, async={}, query-limit={}",
 
 ## See Also
 
-- [Engine Architecture](../api-reference/engine-api/engine-architecture.md)
+- [Engine Architecture](../architecture/overview.md)
 - [BPMN Execution](../getting-started/configuration.md)
 - [Best Practices](../best-practices/overview.md)

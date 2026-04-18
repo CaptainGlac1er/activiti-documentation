@@ -750,7 +750,7 @@ Standard → /
 ```mermaid
 flowchart TD
     subgraph Input["Input from main process"]
-        InVars["orderId, customerAddress,<br/>orderItems, shippingMethod"]
+        InVars["orderId, customerAddress,<br>orderItems, shippingMethod"]
     end
     
     subgraph Prepare["Prepare Shipment"]

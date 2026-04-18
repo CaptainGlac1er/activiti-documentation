@@ -13,9 +13,9 @@ This document provides complete Java implementations for all 17 service delegate
 
 ```mermaid
 flowchart TD
-    BPMN["BPMN Process<br/>Service Task"] --> Spring["Spring Container<br/>@Component implements Connector"]
-    Spring --> Config["ServiceProperties<br/>@ConfigurationProperties"]
-    Config --> External["External Services<br/>- Credit Bureau API<br/>- Payment Gateway<br/>- Inventory System<br/>- Shipping Provider<br/>- Email Service"]
+    BPMN["BPMN Process<br>Service Task"] --> Spring["Spring Container<br>@Component implements Connector"]
+    Spring --> Config["ServiceProperties<br>@ConfigurationProperties"]
+    Config --> External["External Services<br>- Credit Bureau API<br>- Payment Gateway<br>- Inventory System<br>- Shipping Provider<br>- Email Service"]
 ```
 
 ## Connector Interface

@@ -63,11 +63,11 @@ activiti-bpmn-converter/
 ```mermaid
 flowchart TD
     XMLFile["BPMN XML File"]
-    Parser["XML Parser<br/>(StAX)"]
-    Importer["XMLImporter<br/>(DOM Build)"]
-    Model["BpmnModel<br/>(Java Obj)"]
-    Validator["Validator<br/>(Check)"]
-    Result["Result<br/>(Model+Err)"]
+    Parser["XML Parser<br>(StAX)"]
+    Importer["XMLImporter<br>(DOM Build)"]
+    Model["BpmnModel<br>(Java Obj)"]
+    Validator["Validator<br>(Check)"]
+    Result["Result<br>(Model+Err)"]
     
     XMLFile --> Parser
     Parser --> Importer
@@ -81,10 +81,10 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph BpmnConverter["BpmnConverter"]
-        XMLImporter["XMLImporter<br/>- parse()<br/>- import()"]
-        XMLExporter["XMLExporter<br/>- export()<br/>- serialize()"]
+        XMLImporter["XMLImporter<br>- parse()<br>- import()"]
+        XMLExporter["XMLExporter<br>- export()<br>- serialize()"]
         
-        subgraph BpmnModel["BpmnModel<br/>(In-Memory)"]
+        subgraph BpmnModel["BpmnModel<br>(In-Memory)"]
         end
     end
     

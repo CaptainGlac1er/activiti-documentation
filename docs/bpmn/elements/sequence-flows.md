@@ -133,30 +133,55 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 
 ## Default Flows
 
-When using gateways with multiple outgoing flows, specify a **default flow** for when no conditions match:
+A default flow specifies the sequence flow to take when no condition expressions on outgoing flows evaluate to `true`. The `default` attribute is placed on the **gateway element** (not the sequence flow) and references the `id` of the target sequence flow.
+
+**BPMN 2.0 Standard:** Fully Supported  
+**Namespace:** BPMN 2.0 (standard attribute, not an Activiti extension)
+
+### Exclusive Gateway with Default Flow
 
 ```xml
-<exclusiveGateway id="decisionGateway" 
-                  name="Decision Point" 
-                  activiti:default="defaultFlow">
-  
+<exclusiveGateway id="decisionGateway" name="Decision Point" default="elseFlow">
+
   <sequenceFlow id="approvedFlow" targetRef="approveTask">
     <conditionExpression>${approved == true}</conditionExpression>
   </sequenceFlow>
-  
+
   <sequenceFlow id="rejectedFlow" targetRef="rejectTask">
     <conditionExpression>${approved == false}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="defaultFlow" targetRef="escalateTask"/>
-  
+
+  <sequenceFlow id="elseFlow" targetRef="escalateTask"/>
+
 </exclusiveGateway>
 ```
 
-**Important:**
-- Only one default flow per gateway
-- Default flow should NOT have a condition expression
-- Used when all other conditions evaluate to false or null
+**Behavior:**
+- If `approved == true` → takes `approvedFlow`
+- If `approved == false` → takes `rejectedFlow`
+- If neither condition matches (e.g., `approved` is `null`) → takes `elseFlow` (the default)
+
+### Inclusive Gateway with Default Flow
+
+```xml
+<inclusiveGateway id="notificationGateway" name="Send Notifications" default="logFlow">
+
+  <sequenceFlow id="emailFlow" targetRef="sendEmail">
+    <conditionExpression>${sendEmail}</conditionExpression>
+  </sequenceFlow>
+
+  <sequenceFlow id="smsFlow" targetRef="sendSMS">
+    <conditionExpression>${sendSMS}</conditionExpression>
+  </sequenceFlow>
+
+  <sequenceFlow id="logFlow" targetRef="logNoNotifications"/>
+
+</inclusiveGateway>
+```
+
+**Behavior:**
+- If `sendEmail` or `sendSMS` is true → activates corresponding path(s)
+- If both are false → takes `logFlow` (the default)
 
 ## Complete Examples
 
@@ -169,9 +194,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
   
   <serviceTask id="validateOrder" name="Validate Order"/>
   
-  <exclusiveGateway id="validationCheck" 
-                    name="Valid?" 
-                    activiti:default="rejectOrder">
+  <exclusiveGateway id="validationCheck" name="Valid?">
     
     <sequenceFlow id="validFlow" 
                   sourceRef="validationCheck" 
@@ -189,9 +212,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
   
   <serviceTask id="checkInventory" name="Check Inventory"/>
   
-  <exclusiveGateway id="inventoryCheck" 
-                    name="In Stock?" 
-                    activiti:default="backorder">
+  <exclusiveGateway id="inventoryCheck" name="In Stock?">
     
     <sequenceFlow id="inStockFlow" 
                   sourceRef="inventoryCheck" 
@@ -226,90 +247,84 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
 ### Example 2: Amount-Based Routing
 
 ```xml
-<exclusiveGateway id="amountGateway" 
-                  name="Order Amount" 
-                  activiti:default="standardProcessing">
-  
-  <sequenceFlow id="smallOrder" 
-                sourceRef="amountGateway" 
+<exclusiveGateway id="amountGateway" name="Order Amount">
+
+  <sequenceFlow id="smallOrder"
+                sourceRef="amountGateway"
                 targetRef="autoApprove">
     <conditionExpression>${orderAmount < 1000}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="mediumOrder" 
-                sourceRef="amountGateway" 
+
+  <sequenceFlow id="mediumOrder"
+                sourceRef="amountGateway"
                 targetRef="managerApproval">
     <conditionExpression>${orderAmount >= 1000 && orderAmount < 10000}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="largeOrder" 
-                sourceRef="amountGateway" 
+
+  <sequenceFlow id="largeOrder"
+                sourceRef="amountGateway"
                 targetRef="directorApproval">
     <conditionExpression>${orderAmount >= 10000}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="defaultOrder" 
-                sourceRef="amountGateway" 
+
+  <sequenceFlow id="defaultOrder"
+                sourceRef="amountGateway"
                 targetRef="standardProcessing"/>
-  
+
 </exclusiveGateway>
 ```
 
 ### Example 3: Multi-Criteria Decision
 
 ```xml
-<exclusiveGateway id="priorityGateway" 
-                  name="Priority Check" 
-                  activiti:default="normalQueue">
-  
-  <sequenceFlow id="vipFlow" 
-                sourceRef="priorityGateway" 
+<exclusiveGateway id="priorityGateway" name="Priority Check">
+
+  <sequenceFlow id="vipFlow"
+                sourceRef="priorityGateway"
                 targetRef="vipProcessing">
     <conditionExpression>${customer.vip == true && orderAmount > 5000}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="urgentFlow" 
-                sourceRef="priorityGateway" 
+
+  <sequenceFlow id="urgentFlow"
+                sourceRef="priorityGateway"
                 targetRef="urgentProcessing">
     <conditionExpression>${order.urgent == true}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="highValueFlow" 
-                sourceRef="priorityGateway" 
+
+  <sequenceFlow id="highValueFlow"
+                sourceRef="priorityGateway"
                 targetRef="highValueProcessing">
     <conditionExpression>${orderAmount > 10000}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="normalFlow" 
-                sourceRef="priorityGateway" 
+
+  <sequenceFlow id="normalFlow"
+                sourceRef="priorityGateway"
                 targetRef="normalQueue"/>
-  
+
 </exclusiveGateway>
 ```
 
 ### Example 4: Using SpEL Methods
 
 ```xml
-<exclusiveGateway id="validationGateway" 
-                  name="Complex Validation" 
-                  activiti:default="manualReview">
-  
-  <sequenceFlow id="autoApproveFlow" 
-                sourceRef="validationGateway" 
+<exclusiveGateway id="validationGateway" name="Complex Validation">
+
+  <sequenceFlow id="autoApproveFlow"
+                sourceRef="validationGateway"
                 targetRef="autoApprove">
     <conditionExpression>#{#validationService.canAutoApprove(order)}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="autoRejectFlow" 
-                sourceRef="validationGateway" 
+
+  <sequenceFlow id="autoRejectFlow"
+                sourceRef="validationGateway"
                 targetRef="autoReject">
     <conditionExpression>#{#validationService.shouldAutoReject(order)}</conditionExpression>
   </sequenceFlow>
-  
-  <sequenceFlow id="manualFlow" 
-                sourceRef="validationGateway" 
+
+  <sequenceFlow id="manualFlow"
+                sourceRef="validationGateway"
                 targetRef="manualReview"/>
-  
+
 </exclusiveGateway>
 ```
 
@@ -412,7 +427,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
 
 ```xml
 <!-- GOOD: Has default flow -->
-<exclusiveGateway activiti:default="elseFlow">
+<exclusiveGateway>
   <sequenceFlow><conditionExpression>${condition1}</conditionExpression></sequenceFlow>
   <sequenceFlow><conditionExpression>${condition2}</conditionExpression></sequenceFlow>
   <sequenceFlow id="elseFlow"/> <!-- Default -->
@@ -461,7 +476,7 @@ When using gateways with multiple outgoing flows, specify a **default flow** for
 <!-- What happens if approved == false or null? Process stalls! -->
 
 <!-- GOOD: Add default -->
-<exclusiveGateway id="gateway" activiti:default="defaultFlow">
+<exclusiveGateway id="gateway">
   <sequenceFlow id="flow1">
     <conditionExpression>${approved == true}</conditionExpression>
   </sequenceFlow>

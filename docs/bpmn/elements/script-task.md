@@ -22,6 +22,8 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 
 ## Supported Script Formats
 
+> **Note:** Script formats are resolved via JSR-223 `ScriptEngineManager`. Only languages with registered script engines will work. Common options include `javascript` (via Nashorn or GraalVM) and `groovy` (if Groovy is on the classpath).
+
 ### 1. JavaScript (Nashorn/GraalVM)
 
 ```xml
@@ -44,34 +46,7 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 </scriptTask>
 ```
 
-### 3. Java
-
-```xml
-<scriptTask id="javaScript" name="Java Code" 
-            activiti:scriptFormat="java">
-  String orderId = (String) execution.getVariable("orderId");
-  double amount = (Double) execution.getVariable("amount");
-  execution.setVariable("processed", true);
-</scriptTask>
-```
-
-### 4. JUEL (Java Unified Expression Language)
-
-```xml
-<scriptTask id="juelScript" name="JUEL Expression" 
-            activiti:scriptFormat="juel">
-  ${orderService.processOrder(order)}
-</scriptTask>
-```
-
-### 5. Beanshell
-
-```xml
-<scriptTask id="bshScript" name="BeanShell Script" 
-            activiti:scriptFormat="beanshell">
-  execution.setVariable("result", order.calculateTotal());
-</scriptTask>
-```
+> **Note:** `activiti:scriptFormat="java"`, `activiti:scriptFormat="juel"`, and `activiti:scriptFormat="beanshell"` are **not supported** by default. Java code should use Service Tasks with `activiti:class` instead. JUEL is used for expression language (`${...}`) but is not a script engine. BeanShell requires additional setup and is not included by default.
 
 ## Configuration Options
 
@@ -94,11 +69,9 @@ Specify if script is inline or external:
 <scriptTask activiti:scriptFormat="javascript">
   // script code here
 </scriptTask>
-
-<!-- External resource -->
-<scriptTask activiti:scriptFormat="groovy" 
-            activiti:resource="scripts/process.groovy"/>
 ```
+
+> **Note:** The `activiti:resource` attribute is **not supported** for ScriptTasks in Activiti. Scripts must be defined inline.
 
 ### Result Variable
 

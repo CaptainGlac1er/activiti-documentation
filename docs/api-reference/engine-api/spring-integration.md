@@ -289,16 +289,16 @@ flowchart TD
     subgraph SpringContainer["Spring Container"]
         subgraph SpringProcessEngine["Spring ProcessEngine"]
             subgraph ActivitiEngine["Activiti Engine Core"]
-                Runtime["Runtime<br/>Service"]
-                Task["Task<br/>Service"]
+                Runtime["Runtime<br>Service"]
+                Task["Task<br>Service"]
             end
         end
         
         subgraph IntegrationLayer["Spring Integration Layer"]
             direction LR
-            TxMgr["Transaction<br/>Manager"]
-            BeanFactory["Bean<br/>Factory"]
-            EventPub["Event<br/>Publisher"]
+            TxMgr["Transaction<br>Manager"]
+            BeanFactory["Bean<br>Factory"]
+            EventPub["Event<br>Publisher"]
         end
     end
     
@@ -310,9 +310,9 @@ flowchart TD
 ```mermaid
 flowchart TD
     SpringCtx["Spring Application Context"]
-    Config["ProcessEngine<br/>Configuration"]
-    TxSync["Transaction<br/>Synchronization"]
-    BeanProxy["Bean Factory<br/>Proxy"]
+    Config["ProcessEngine<br>Configuration"]
+    TxSync["Transaction<br>Synchronization"]
+    BeanProxy["Bean Factory<br>Proxy"]
     
     SpringCtx --> Config
     Config --> TxSync

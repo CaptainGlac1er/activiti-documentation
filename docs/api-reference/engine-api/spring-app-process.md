@@ -89,8 +89,8 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph ProcessApp["ProcessApplication"]
-        Engine["Process<br/>Engine"]
-        DeployMgr["Process<br/>Deployment<br/>Manager"]
+        Engine["Process<br>Engine"]
+        DeployMgr["Process<br>Deployment<br>Manager"]
         
         subgraph SpringIntegration["Spring Integration"]
             S1["- Bean factory"]

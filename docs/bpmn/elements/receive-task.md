@@ -7,7 +7,7 @@ description: "Complete guide to Receive Tasks in Activiti - waiting for external
 
 # Receive Task
 
-Receive Tasks represent activities that **wait for an external message** before continuing. They are similar to intermediate message catch events but are modeled as tasks, making them visible in task lists and assignable to users or systems.
+Receive Tasks represent activities that **wait for an external message** before continuing. They are similar to intermediate message catch events but are modeled as tasks, making them visible in task lists.
 
 ## Overview
 
@@ -16,15 +16,10 @@ Receive Tasks represent activities that **wait for an external message** before 
 <receiveTask id="waitForMessage" name="Wait for External Message">
   <messageEventDefinition messageRef="externalMessage"/>
 </receiveTask>
-
-<!-- Receive task with initialization -->
-<receiveTask id="waitForApproval" name="Wait for Approval" activiti:initializeVariables="true">
-  <messageEventDefinition messageRef="approvalMessage"/>
-</receiveTask>
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Variable initialization, async support
+**Activiti Extensions:** Async support
 
 ## Key Features
 
@@ -34,8 +29,6 @@ Receive Tasks represent activities that **wait for an external message** before 
 |---------|-------------|
 | **Message Waiting** | Pauses execution until message arrives |
 | **Task Visibility** | Appears in task list (unlike intermediate events) |
-| **Assignable** | Can have assignee/candidates |
-| **Variable Init** | Can initialize variables on creation |
 | **Async Support** | Can run asynchronously |
 
 ### Differences from Service Task
@@ -81,60 +74,7 @@ processRuntime.receiveMessage(processInstanceId, new ReceiveMessagePayloadBuilde
     .build());
 ```
 
-### 2. Receive Task with Variable Initialization
-
-Initialize variables when task is created:
-
-```xml
-<receiveTask id="waitForPayment" name="Wait for Payment" 
-             activiti:initializeVariables="true">
-  <messageEventDefinition messageRef="paymentMessage"/>
-  
-  <extensionElements>
-    <!-- Variables to initialize -->
-    <activiti:field name="variables">
-      <activiti:map>
-        <entry key="waitStarted" value="${new Date()}"/>
-        <entry key="paymentTimeout" value="PT24H"/>
-      </activiti:map>
-    </activiti:field>
-  </extensionElements>
-</receiveTask>
-```
-
-**Behavior:**
-- `initializeVariables="true"` creates task variables on receive task creation
-- Useful for tracking when wait started
-- Can set default timeout values
-
-### 3. Receive Task with Assignee
-
-Assign to a user or group (for monitoring):
-
-```xml
-<receiveTask id="waitForApproval" name="Wait for Manager Approval" 
-             activiti:assignee="${managerId}"
-             activiti:initializeVariables="true">
-  <messageEventDefinition messageRef="approvalMessage"/>
-  
-  <potentialOwners>
-    <resourceRole idRef="approvalRole"/>
-  </potentialOwners>
-</receiveTask>
-
-<resourceRole id="approvalRole" name="Approvers">
-  <assignment>
-    <formalExpression>${approvalGroup}</formalExpression>
-  </assignment>
-</resourceRole>
-```
-
-**Use Case:**
-- Task appears in assignee's task list
-- Shows what's waiting
-- Can be claimed/reassigned if needed
-
-### 4. Async Receive Task
+### 2. Async Receive Task
 
 Run receive task asynchronously:
 
@@ -150,7 +90,7 @@ Run receive task asynchronously:
 - Message correlation happens in async job executor
 - Better for long waits
 
-### 5. Receive Task with Timer Boundary
+### 3. Receive Task with Timer Boundary
 
 Add timeout handling:
 
@@ -189,17 +129,8 @@ Add timeout handling:
   </serviceTask>
   
   <!-- Wait for acknowledgment -->
-  <receiveTask id="waitForAck" name="Wait for Acknowledgment" 
-               activiti:initializeVariables="true">
+  <receiveTask id="waitForAck" name="Wait for Acknowledgment">
     <messageEventDefinition messageRef="ackMessage"/>
-    
-    <extensionElements>
-      <activiti:field name="variables">
-        <activiti:map>
-          <entry key="requestTime" value="${new Date()}"/>
-        </activiti:map>
-      </activiti:field>
-    </extensionElements>
   </receiveTask>
   
   <!-- Timeout handling -->
@@ -253,9 +184,7 @@ runtimeService.messageEventReceived("ackMessage", processInstanceId);
                activiti:class="com.example.DataSubmitter"/>
   
   <!-- Step 2: Wait for validation -->
-  <receiveTask id="waitForValidation" name="Wait for Validation" 
-               activiti:assignee="${validatorUser}"
-               activiti:initializeVariables="true">
+  <receiveTask id="waitForValidation" name="Wait for Validation">
     <messageEventDefinition messageRef="validationComplete"/>
   </receiveTask>
   
@@ -264,8 +193,7 @@ runtimeService.messageEventReceived("ackMessage", processInstanceId);
                activiti:class="com.example.DataProcessor"/>
   
   <!-- Step 4: Wait for approval -->
-  <receiveTask id="waitForApproval" name="Wait for Approval" 
-               activiti:candidateGroups="${approvalGroup}">
+  <receiveTask id="waitForApproval" name="Wait for Approval">
     <messageEventDefinition messageRef="approvalReceived"/>
   </receiveTask>
   
@@ -288,10 +216,10 @@ runtimeService.messageEventReceived("ackMessage", processInstanceId);
 </process>
 ```
 
-### Example 3: Receive Task with Correlation
+### Example 3: Receive Task with Async
 
 ```xml
-<process id="correlatedProcess" name="Correlated Message Process">
+<process id="asyncProcess" name="Async Receive Process">
   
   <startEvent id="start"/>
   
@@ -314,14 +242,7 @@ runtimeService.messageEventReceived("ackMessage", processInstanceId);
   <sequenceFlow id="flow4" sourceRef="processConfirmation" targetRef="end"/>
   
   <!-- Message with correlation key -->
-  <message id="orderConfirmation" name="Order Confirmation">
-    <itemBasedOperation>
-      <dataInputAssociation>
-        <sourceRef>Message</sourceRef>
-        <targetRef>orderData</targetRef>
-      </dataInputAssociation>
-    </itemBasedOperation>
-  </message>
+  <message id="orderConfirmation" name="Order Confirmation"/>
   
 </process>
 ```
@@ -425,24 +346,7 @@ for (Task task : receiveTasks) {
 </receiveTask>
 ```
 
-### 4. Initialize Variables for Tracking
-
-```xml
-<!-- GOOD: Track when wait started -->
-<receiveTask id="waitForData" name="Wait for Data" 
-             activiti:initializeVariables="true">
-  <messageEventDefinition messageRef="dataReceived"/>
-  <extensionElements>
-    <activiti:field name="variables">
-      <activiti:map>
-        <entry key="waitStarted" value="${new Date()}"/>
-      </activiti:map>
-    </activiti:field>
-  </extensionElements>
-</receiveTask>
-```
-
-### 5. Clear Message Names
+### 4. Clear Message Names
 
 ```xml
 <!-- GOOD: Descriptive -->
@@ -531,10 +435,9 @@ for (Task task : receiveTasks) {
 | Aspect | Receive Task | Intermediate Message Catch Event |
 |--------|--------------|----------------------------------|
 | **Task List** | Visible | Not visible |
-| **Assignable** | Yes | No |
+| **Assignable** | No | No |
 | **Human Monitoring** | Yes | No |
 | **Use Case** | Monitored waits | Pure system waits |
-| **Variables** | Can initialize | No initialization |
 
 ### When to Use Each
 

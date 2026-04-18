@@ -62,12 +62,12 @@ activiti-bpmn-layout/
 ```mermaid
 flowchart TD
     Model["BPMN Model"]
-    Structure["Structure<br/>Analyzer"]
-    Layout["Layout<br/>Calculator"]
-    Position["Position<br/>Calculator"]
-    Spacing["Spacing<br/>Manager"]
-    Alignment["Alignment<br/>Strategy"]
-    Collision["Collision<br/>Detector"]
+    Structure["Structure<br>Analyzer"]
+    Layout["Layout<br>Calculator"]
+    Position["Position<br>Calculator"]
+    Spacing["Spacing<br>Manager"]
+    Alignment["Alignment<br>Strategy"]
+    Collision["Collision<br>Detector"]
     Result["Layout Result"]
     
     Model --> Structure
@@ -84,8 +84,8 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph LayoutCalculator["LayoutCalculator"]
-        Structure["Structure<br/>Analyzer"]
-        Position["Position<br/>Calculator"]
+        Structure["Structure<br>Analyzer"]
+        Position["Position<br>Calculator"]
         
         subgraph LayoutEngine["Layout Engine"]
             LE1["- Calculate positions"]

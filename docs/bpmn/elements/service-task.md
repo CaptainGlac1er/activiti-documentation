@@ -1,5 +1,6 @@
 ---
 sidebar_label: Service Task
+title: Service Task
 slug: /bpmn/elements/service-task
 description: Complete guide to ServiceTask elements with Activiti customizations for automated processing
 ---
@@ -1243,15 +1244,21 @@ public class PaymentServiceTest {
 
 ### Pattern 3: Compensation
 
+> **Note:** Activiti does not support `activiti:forCompensation` on ServiceTasks. Compensation is handled via BPMN compensation boundary events with `compensateEventDefinition`.
+
 ```xml
+<!-- Mark task as compensable via compensation boundary event -->
 <serviceTask id="reserveResource" 
-             activiti:class="com.example.ResourceReserver"
-             activiti:forCompensation="true"/>
+             activiti:class="com.example.ResourceReserver"/>
+
+<!-- Compensation handler triggered via boundary event -->
+<boundaryEvent id="compensationBoundary" attachedToRef="reserveResource" 
+               cancelActivity="false">
+  <compensateEventDefinition activityRef="reserveResource"/>
+</boundaryEvent>
 
 <serviceTask id="compensateReservation" 
-             activiti:class="com.example.ResourceCompensator">
-  <activiti:property name="compensates" value="reserveResource"/>
-</serviceTask>
+             activiti:class="com.example.ResourceCompensator"/>
 ```
 
 ## Related Documentation

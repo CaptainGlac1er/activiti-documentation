@@ -30,7 +30,6 @@ Start Events **initiate process instances** and define how a process can be star
 
 ### Activiti Customizations
 - **Form Key** - Startup form
-- **Candidate Starters** - Who can start
 - **Initiator** - Automatic variable
 - **Multiple Start Events** - Any can trigger
 - **Async Timer** - Background scheduling
@@ -157,21 +156,6 @@ runtimeService.signalEventReceived("processTrigger");
 - Collect initial data
 - User-friendly process initiation
 - Dynamic variable input
-
-### Candidate Starters
-
-```xml
-<startEvent id="candidateStart" name="Restricted Start">
-  <activiti:candidateUsers>
-    <activiti:user>admin</activiti:user>
-    <activiti:user>manager</activiti:user>
-  </activiti:candidateUsers>
-  
-  <activiti:candidateGroups>
-    <activiti:group>process_starters</activiti:group>
-  </activiti:candidateGroups>
-</startEvent>
-```
 
 ### Initiator Variable
 

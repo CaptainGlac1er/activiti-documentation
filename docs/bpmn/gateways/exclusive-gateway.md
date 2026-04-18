@@ -43,9 +43,9 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 ### With Default Flow
 
 ```xml
-<exclusiveGateway id="amountCheck" 
+<exclusiveGateway id="amountCheck"
                   name="Check Amount"
-                  activiti:defaultFlow="defaultPath"/>
+                  default="defaultPath"/>
 ```
 
 ### As Divergence (Decision Point)

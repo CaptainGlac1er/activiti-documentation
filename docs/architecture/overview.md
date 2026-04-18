@@ -1,5 +1,5 @@
 ---
-sidebar_label: Overview
+sidebar_label: Architecture
 slug: /architecture/overview
 title: "Architecture Overview"
 description: "Comprehensive guide to Activiti Engine architecture, internal components, design patterns, and extension mechanisms."
@@ -7,11 +7,23 @@ description: "Comprehensive guide to Activiti Engine architecture, internal comp
 
 # Activiti Engine Architecture
 
-**Community-Maintained Guide**
+**Module:** `activiti-core/activiti-engine`
 
-**Purpose:** Understand the internal workings of the Activiti Engine to make informed architectural decisions and effectively extend the platform.
+---
 
-> **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
+## Table of Contents
+
+- [System Overview](#system-overview)
+- [Core Components](#core-components)
+- [Component Interactions](#component-interactions)
+- [Execution Flow](#execution-flow)
+- [Command Pattern](#command-pattern)
+- [Transaction Management](#transaction-management)
+- [Threading Model](#threading-model)
+- [Memory Management](#memory-management)
+- [Extension Points](#extension-points)
+
+---
 
 ## System Overview
 
@@ -30,42 +42,77 @@ The Activiti Engine is built on a layered architecture that separates concerns a
 
 ```mermaid
 flowchart TD
-    subgraph ApplicationLayer["Application Layer"]
-        App["Your Business Application<br/>- Service layer<br/>- Controllers<br/>- Integration code"]
+    subgraph App["Application Layer"]
+        AppCode["Your Business Application\n- Service layer\n- Controllers\n- Integration code"]
     end
 
-    subgraph EngineAPILayer["Engine API Layer"]
-        direction TB
-        subgraph Services["Services"]
-            Repo["Repository<br/>Service"] --- Runtime["Runtime<br/>Service"] --- Task["Task<br/>Service"] --- History["History<br/>Service"] --- Mgmt["Management<br/>Service"]
-        end
-        CmdMgr["Command Manager<br/>(Central Gateway)"]
+    subgraph PE["ProcessEngine"]
+        PEImpl["ProcessEngineImpl\n- Service provider\n- Lifecycle management\n- Global registry"]
     end
 
-    subgraph EngineCoreLayer["Engine Core Layer"]
-        Context["Process Engine Context<br/>- Thread-local engine state<br/>- Current command execution<br/>- Transaction context"]
-        
+    subgraph Services["Engine API Layer\n(all services extend ServiceImpl)"]
+        direction LR
+        Repo["RepositoryService\n- Deployments\n- Process definitions\n- Model queries"]
+        Runtime["RuntimeService\n- Process instance execution\n- Variable management\n- Process correlation"]
+        Task["TaskService\n- User task management\n- Claim/complete tasks\n- Task variables"]
+        History["HistoryService\n- Historical queries\n- Audit data\n- Cleanup operations"]
+        Mgmt["ManagementService\n- Job management\n- Database metadata\n- Custom SQL"]
+        Dynamic["DynamicBpmnService\n- Runtime BPMN changes"]
+    end
+
+    subgraph CmdLayer["Command Execution Layer"]
+        CmdExec["CommandExecutor\n- Interceptor chain\n- LogInterceptor\n- TransactionInterceptor\n- CommandContextInterceptor\n- CommandInvoker"]
+    end
+
+    subgraph Core["Engine Core Layer"]
+        Context["CommandContext\n- Thread-local scope\n- Session management\n- Entity cache"]
+
         subgraph Managers["Managers"]
-            EntityMgr["Entity<br/>Manager"] --- HistoryMgr["History<br/>Manager"] --- EventMgr["Event<br/>Manager"]
+            EntityMgr["EntityManager\n- CRUD for executions/tasks/variables"]
+            HistoryMgr["HistoryManager\n- History recording\n- Cleanup"]
+            EventMgr["EventManager\n- Event dispatching\n- Listener management"]
         end
-        
-        BPMN["BPMN Execution Engine<br/>- Activity Behavior Handlers<br/>- Agenda & Execution Management"]
-        JobExec["Job Executor<br/>- Async job processing<br/>- Timer management<br/>- Multi-tenant support"]
+
+        BPMN["BPMN Executor\n- Activity behaviors\n- Gateway evaluation\n- Event handling"]
+        Agenda["Agenda\n- Priority-queued execution tasks"]
+        JobExec["Job Executor\n- Async job processing\n- Timer management"]
     end
 
-    subgraph PersistenceLayer["Persistence Layer"]
-        DAO["Database Access Objects<br/>- EntityMapper MyBatis<br/>- DAO implementations<br/>- Connection management"]
-        DB["Database<br/>(PostgreSQL, etc)"]
+    subgraph Persistence["Persistence Layer"]
+        Sessions["Sessions\n- DbSqlSession\n- EntityCache\n- IdentityMgmtSession"]
+        DataMgrs["Data Managers\n- MybatisTaskDataManager\n- MybatisExecutionDataManager\n- MybatisVariableDataManager"]
+        MyBatis["MyBatis SqlSessionFactory\n- SQL mapping\n- Result mapping"]
+        DS["DataSource / JDBC"]
+        DB["Database\n(PostgreSQL, MySQL, etc.)"]
     end
 
-    ApplicationLayer --> EngineAPILayer
-    Services --> CmdMgr
-    CmdMgr --> Context
+    AppCode --> PEImpl
+    PEImpl --> Repo
+    PEImpl --> Runtime
+    PEImpl --> Task
+    PEImpl --> History
+    PEImpl --> Mgmt
+    PEImpl --> Dynamic
+
+    Repo --- CmdExec
+    Runtime --- CmdExec
+    Task --- CmdExec
+    History --- CmdExec
+    Mgmt --- CmdExec
+    Dynamic --- CmdExec
+
+    CmdExec --> Context
     Context --> Managers
     Managers --> BPMN
+    BPMN --> Agenda
+    Agenda --> BPMN
     BPMN --> JobExec
-    JobExec --> DAO
-    DAO --> DB
+
+    Context --> Sessions
+    Sessions --> DataMgrs
+    DataMgrs --> MyBatis
+    MyBatis --> DS
+    DS --> DB
 ```
 
 ---
@@ -84,12 +131,15 @@ flowchart TD
 
 **Key Methods:**
 ```java
+public String getName();
+public void close();
 public RepositoryService getRepositoryService();
 public RuntimeService getRuntimeService();
 public TaskService getTaskService();
 public HistoryService getHistoryService();
 public ManagementService getManagementService();
-public void close();
+public DynamicBpmnService getDynamicBpmnService();
+public ProcessEngineConfiguration getProcessEngineConfiguration();
 ```
 
 **Design Pattern:** Service Locator + Singleton
@@ -120,6 +170,9 @@ setHistoryLevel(), setEnableHistoryAudit()
 
 // Security
 setAuthorizationManager(), setPermissionFactory()
+
+// Custom
+setCustomLogger(), setCustomTaskListener()
 ```
 
 **Design Pattern:** Builder + Configuration
@@ -232,6 +285,25 @@ VariableCreatedEvent, VariableUpdatedEvent
 - Manage parallel execution
 - Process business rules
 
+**Components:**
+
+```mermaid
+flowchart LR
+    subgraph BPMNExecutor["BPMN Executor"]
+        direction TB
+        StartHandler["Start<br>Handler"]
+        ActivityHandlers["Activity<br>Handlers"]
+        GatewayHandler["Gateway<br>Handler"]
+        EventHandlers["Event<br>Handlers"]
+        SequenceFlowHandler["Sequence<br>Flow Handler"]
+        SignalMessageHandler["Signal/<br>Message<br>Handler"]
+    end
+
+    StartHandler --> ActivityHandlers
+    GatewayHandler --> EventHandlers
+    SequenceFlowHandler --> SignalMessageHandler
+```
+
 **Design Pattern:** Strategy + Chain of Responsibility
 
 ### 8. Agenda
@@ -276,6 +348,18 @@ VariableCreatedEvent, VariableUpdatedEvent
 - Job - Generic async job
 ```
 
+**Threading Model:**
+
+```mermaid
+flowchart LR
+    subgraph ThreadPool["Job Executor Thread Pool"]
+        direction TB
+        TenantA["Job Executor 1<br>(Tenant A)"]
+        TenantB["Job Executor 2<br>(Tenant B)"]
+        Shared["Job Executor 3<br>(Shared)"]
+    end
+```
+
 **Design Pattern:** Thread Pool + Worker
 
 ---
@@ -286,41 +370,41 @@ VariableCreatedEvent, VariableUpdatedEvent
 
 ```mermaid
 flowchart TD
-    App["Application"] --> Runtime["RuntimeService"]
-    Runtime --> CmdMgr["CommandManager"]
-    CmdMgr --> TxMgr["TransactionManager"]
-    TxMgr --> Init["CommandContext initialized"]
-    Init --> Execute["StartProcessCmd.execute"]
+    App["Application"] --> Runtime["RuntimeService<br>startProcessInstance()"]
+    Runtime --> CmdMgr["CommandExecutor<br>new StartProcessInstanceCmd()"]
+    CmdMgr --> TxMgr["TransactionManager<br>begin()"]
+    TxMgr --> Context["CommandContext<br>initialized"]
+    Context --> Execute["StartProcessCmd<br>execute()"]
     
     Execute --> CreateDef["Create process definition"]
     Execute --> CreateExec["Create execution"]
     Execute --> InitVars["Initialize variables"]
     Execute --> Trigger["Trigger start event"]
     
-    CreateDef --> BPMN["BPMN Executor"]
+    CreateDef --> BPMN["BPMN Executor<br>executeStartEvent()"]
     CreateExec --> BPMN
     InitVars --> BPMN
     Trigger --> BPMN
     
-    BPMN --> Agenda["Agenda"]
-    Agenda --> ExecAgenda["Execute Agenda"]
-    ExecAgenda --> EventMgr["EventManager"]
-    EventMgr --> HistoryMgr["HistoryManager"]
-    HistoryMgr --> Commit["Transaction commit"]
+    BPMN --> Agenda["Agenda<br>add tasks"]
+    Agenda --> ExecAgenda["Execute Agenda<br>process items"]
+    ExecAgenda --> EventMgr["EventManager<br>dispatch events"]
+    EventMgr --> HistoryMgr["HistoryManager<br>record history"]
+    HistoryMgr --> Commit["TransactionManager<br>commit()"]
 ```
 
 ### Task Completion Flow
 
 ```mermaid
 flowchart TD
-    TaskSvc["TaskService.complete"] --> CmdMgr["CommandManager"]
-    CmdMgr --> Execute["CompleteTaskCmd.execute"]
-    Execute --> EntityMgr["EntityManager<br/>update task, delete task, save variables"]
-    EntityMgr --> BPMN["BPMN Executor<br/>complete activity, take sequence, evaluate gateway"]
-    BPMN --> Agenda["Agenda<br/>add next steps"]
-    Agenda --> ExecAgenda["Execute Agenda"]
-    ExecAgenda --> EventMgr["EventManager<br/>TaskCompletedEvent"]
-    EventMgr --> HistoryMgr["HistoryManager"]
+    TaskComplete["Task Complete"] --> TaskSvc["TaskService<br>complete()"]
+    TaskSvc --> CmdMgr["CommandExecutor<br>CompleteTaskCmd"]
+    CmdMgr --> EntityMgr["EntityManager<br>update task, delete task, save variables"]
+    EntityMgr --> BPMN["BPMN Executor<br>complete activity, take sequence, evaluate gateway"]
+    BPMN --> Agenda["Agenda<br>add next steps"]
+    Agenda --> ExecAgenda["Execute Agenda<br>until idle"]
+    ExecAgenda --> EventMgr["EventManager<br>TaskCompletedEvent"]
+    EventMgr --> HistoryMgr["HistoryManager<br>record completion"]
 ```
 
 ---
@@ -382,18 +466,18 @@ flowchart TD
 
 ```mermaid
 classDiagram
-    class Command~T~ {
+    class Command {
         <<interface>>
         +execute(CommandContext context) T
     }
     
-    class ReadOnlyCommand~T~ {
+    class ReadOnlyCommand {
         <<abstract>>
         Query commands
         No DB modifications
     }
     
-    class WriteCommand~T~ {
+    class WriteCommand {
         <<abstract>>
         Process commands
         Repository commands
@@ -401,7 +485,7 @@ classDiagram
         Management commands
     }
     
-    class ConfigCommand~T~ {
+    class ConfigCommand {
         <<abstract>>
         Configuration changes
     }
@@ -524,16 +608,12 @@ public interface TransactionStrategy {
 
 ### Transaction Propagation
 
-```
-Service Layer (@Transactional REQUIRED)
-    ↓
-CommandManager.execute()
-    ↓
-Transaction.begin()
-    ↓
-Command.execute() (in transaction)
-    ↓
-Transaction.commit()
+```mermaid
+flowchart TD
+    ServiceLayer["Service Layer<br/>@Transactional (REQUIRED)"] --> CmdMgr["CommandExecutor<br/>execute()"]
+    CmdMgr --> TxBegin["Transaction<br/>begin()"]
+    TxBegin --> CmdExec["Command.execute()<br/>(in transaction)"]
+    CmdExec --> TxCommit["Transaction<br/>commit()"]
 ```
 
 ---
@@ -712,5 +792,8 @@ flowchart TD
 ## See Also
 
 - [Engine Configuration](../getting-started/configuration.md)
-- [Core Services](../core-services/)
+- [Engine API Overview](../api-reference/engine-api/README.md)
+- [Repository Service](../api-reference/engine-api/repository-service.md)
+- [Runtime Service](../api-reference/engine-api/runtime-service.md)
+- [Task Service](../api-reference/engine-api/task-service.md)
 - [Best Practices](../best-practices/overview.md)

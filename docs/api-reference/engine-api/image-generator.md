@@ -53,39 +53,39 @@ This module is essential for:
 flowchart TD
     subgraph ImageGenerator["activiti-image-generator"]
         subgraph Main["Main API"]
-            ImgGen["ImageGenerator.java<br/>Main generation API"]
+            ImgGen["ImageGenerator.java<br>Main generation API"]
         end
         
         subgraph Renderers["Renderers"]
-            Png["PngRenderer.java<br/>PNG output"]
-            Svg["SvgRenderer.java<br/>SVG output"]
-            Pdf["PdfRenderer.java<br/>PDF output"]
-            Conn["ConnectionRenderer.java<br/>Flow rendering"]
+            Png["PngRenderer.java<br>PNG output"]
+            Svg["SvgRenderer.java<br>SVG output"]
+            Pdf["PdfRenderer.java<br>PDF output"]
+            Conn["ConnectionRenderer.java<br>Flow rendering"]
         end
         
         subgraph Styles["Styles"]
-            StyleTpl["StyleTemplate.java<br/>Configuration"]
-            Default["DefaultStyle.java<br/>Default"]
-            Custom["CustomStyle.java<br/>Custom"]
-            Highlight["HighlightStyle.java<br/>Highlight"]
+            StyleTpl["StyleTemplate.java<br>Configuration"]
+            Default["DefaultStyle.java<br>Default"]
+            Custom["CustomStyle.java<br>Custom"]
+            Highlight["HighlightStyle.java<br>Highlight"]
         end
         
         subgraph Highlight["Highlight"]
-            HlMgr["HighlightManager.java<br/>Control"]
-            Path["PathHighlighter.java<br/>Calculation"]
-            HlData["HighlightData.java<br/>Information"]
+            HlMgr["HighlightManager.java<br>Control"]
+            Path["PathHighlighter.java<br>Calculation"]
+            HlData["HighlightData.java<br>Information"]
         end
         
         subgraph Utils["Utils"]
-            DiagCalc["DiagramCalculator.java<br/>Metrics"]
-            ImgUtils["ImageUtils.java<br/>Utilities"]
-            Text["TextRenderer.java<br/>Text"]
+            DiagCalc["DiagramCalculator.java<br>Metrics"]
+            ImgUtils["ImageUtils.java<br>Utilities"]
+            Text["TextRenderer.java<br>Text"]
         end
         
         subgraph Model["Model"]
-            Elem["DiagramElement.java<br/>Element"]
-            ConnModel["DiagramConnection.java<br/>Connection"]
-            DiagData["DiagramData.java<br/>Complete data"]
+            Elem["DiagramElement.java<br>Element"]
+            ConnModel["DiagramConnection.java<br>Connection"]
+            DiagData["DiagramData.java<br>Complete data"]
         end
     end
 ```
