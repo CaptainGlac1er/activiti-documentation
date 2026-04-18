@@ -1,68 +1,131 @@
 /**
  * Global CSS - Activiti Documentation
  * Uses CSS variables for easy theming and maintenance
+ *
+ * Architecture:
+ *   --activiti-*       = source of truth (defined once per theme)
+ *   --ifm-*            = Docusaurus variables, reference --activiti-*
+ *   --aa-*             = Algolia variables, reference --activiti-*
+ *
+ * To change a color, update only the --activiti-* variable.
  */
 
 /* ============================================
    CSS VARIABLES - Light Theme (Default)
    ============================================ */
 :root {
-  /* Primary Colors */
-  --ifm-color-primary: #26BD73;
-  --ifm-color-primary-dark: #21a865;
-  --ifm-color-primary-darker: #1f9e5e;
-  --ifm-color-primary-darkest: #18844e;
-  --ifm-color-primary-light: #2bd081;
-  --ifm-color-primary-lighter: #2ed688;
-  --ifm-color-primary-lightest: #3be09a;
+  /* ==========================================
+     SOURCE OF TRUTH - Activiti Brand Colors
+     ========================================== */
 
-  /* Secondary Colors */
-  --ifm-color-secondary: #94DBB2;
-  --ifm-color-secondary-dark: #7cc9a0;
-  --ifm-color-secondary-light: #a4e5c2;
+  /* Primary green */
+  --activiti-primary: #26BD73;
+  --activiti-primary-dark: #21a865;
+  --activiti-primary-darker: #1f9e5e;
+  --activiti-primary-darkest: #18844e;
+  --activiti-primary-light: #2bd081;
+  --activiti-primary-lighter: #2ed688;
+  --activiti-primary-lightest: #3be09a;
+  --activiti-primary-rgb: 38, 189, 115;
+
+  /* Secondary green */
+  --activiti-secondary: #94DBB2;
+  --activiti-secondary-dark: #7cc9a0;
+  --activiti-secondary-light: #a4e5c2;
+  --activiti-secondary-rgb: 148, 219, 178;
 
   /* Backgrounds */
-  --ifm-background-color: #F1FAF4;
-  --ifm-background-surface-color: #ffffff;
-  --ifm-card-background-color: #ffffff;
-  --ifm-navbar-background-color: #ffffff;
-  --ifm-footer-background-color: #ffffff;
-  --ifm-table-background-color: #ffffff;
+  --activiti-background: #F1FAF4;
+  --activiti-surface: #ffffff;
+  --activiti-background-rgb: 241, 250, 244;
+  --activiti-surface-rgb: 255, 255, 255;
 
-  /* Text Colors */
-  --ifm-font-color-base: #1a1a1a;
-  --ifm-heading-color: #26BD73;
-  --ifm-menu-color: #333333;
-  --ifm-menu-color-active: #26BD73;
-  --ifm-navbar-item-color: #1a1a1a;
-  --ifm-navbar-item-hover-color: #26BD73;
-  --ifm-footer-color: #1a1a1a;
+  /* Text */
+  --activiti-text: #1a1a1a;
+  --activiti-text-rgb: 26, 26, 26;
+  --activiti-text-muted: #333333;
 
-  /* Links */
-  --ifm-link-color: #26BD73;
-  --ifm-link-hover-color: #21a865;
+  /* ==========================================
+     Docusaurus (--ifm-*) references
+     ========================================== */
+  --ifm-color-primary: var(--activiti-primary);
+  --ifm-color-primary-dark: var(--activiti-primary-dark);
+  --ifm-color-primary-darker: var(--activiti-primary-darker);
+  --ifm-color-primary-darkest: var(--activiti-primary-darkest);
+  --ifm-color-primary-light: var(--activiti-primary-light);
+  --ifm-color-primary-lighter: var(--activiti-primary-lighter);
+  --ifm-color-primary-lightest: var(--activiti-primary-lightest);
 
-  /* Code */
-  --ifm-code-font-size: 95%;
-  --ifm-code-color: #26BD73;
+  --ifm-color-secondary: var(--activiti-secondary);
+  --ifm-color-secondary-dark: var(--activiti-secondary-dark);
+  --ifm-color-secondary-light: var(--activiti-secondary-light);
+
+  --ifm-background-color: var(--activiti-background);
+  --ifm-background-surface-color: var(--activiti-surface);
+  --ifm-card-background-color: var(--activiti-surface);
+  --ifm-navbar-background-color: var(--activiti-surface);
+  --ifm-footer-background-color: var(--activiti-surface);
+  --ifm-table-background-color: var(--activiti-surface);
+
+  --ifm-font-color-base: var(--activiti-text);
+  --ifm-heading-color: var(--activiti-primary);
+  --ifm-menu-color: var(--activiti-text-muted);
+  --ifm-menu-color-active: var(--activiti-primary);
+  --ifm-navbar-item-color: var(--activiti-text);
+  --ifm-navbar-item-hover-color: var(--activiti-primary);
+  --ifm-footer-color: var(--activiti-text);
+
+  --ifm-link-color: var(--activiti-primary);
+  --ifm-link-hover-color: var(--activiti-primary-dark);
+
+  --ifm-code-color: var(--activiti-primary);
   --ifm-code-background: #f5f5f5;
-  --docusaurus-highlighted-code-line-bg: rgba(38, 189, 115, 0.1);
+  --docusaurus-highlighted-code-line-bg: rgba(var(--activiti-primary-rgb), 0.1);
 
-  /* Buttons */
-  --ifm-button-color: #ffffff;
-  --ifm-button-bg-color: #26BD73;
-  --ifm-button-hover-color: #ffffff;
-  --ifm-button-hover-bg-color: #21a865;
+  --ifm-button-color: var(--activiti-surface);
+  --ifm-button-bg-color: var(--activiti-primary);
+  --ifm-button-hover-color: var(--activiti-surface);
+  --ifm-button-hover-bg-color: var(--activiti-primary-dark);
 
-  /* Components */
-  --ifm-menu-link-sublist-bg: rgba(38, 189, 115, 0.1);
-  --ifm-table-border-color: rgba(38, 189, 115, 0.2);
-  --ifm-table-stripe-background: rgba(38, 189, 115, 0.05);
-  --ifm-alert-background-color: rgba(38, 189, 115, 0.1);
-  --ifm-alert-background-color-highlight: rgba(38, 189, 115, 0.2);
-  --ifm-color-emphasis-300: rgba(38, 189, 115, 0.3);
+  --ifm-menu-link-sublist-bg: rgba(var(--activiti-primary-rgb), 0.1);
+  --ifm-table-border-color: rgba(var(--activiti-primary-rgb), 0.2);
+  --ifm-table-stripe-background: rgba(var(--activiti-primary-rgb), 0.05);
+  --ifm-alert-background-color: rgba(var(--activiti-primary-rgb), 0.1);
+  --ifm-alert-background-color-highlight: rgba(var(--activiti-primary-rgb), 0.2);
+  --ifm-color-emphasis-300: rgba(var(--activiti-primary-rgb), 0.3);
 
-  /* Hero Section */
+  /* ==========================================
+     Algolia autocomplete (--aa-*) references
+     ========================================== */
+  --aa-text-color-rgb: 26, 26, 26 !important;
+  --aa-primary-color-rgb: var(--activiti-primary-rgb) !important;
+  --aa-muted-color-rgb: var(--activiti-secondary-rgb) !important;
+
+  --aa-background-color-rgb: 255, 255, 255 !important;
+  --aa-input-background-color-rgb: 255, 255, 255 !important;
+
+  --aa-panel-border-color-rgb: var(--activiti-primary-rgb) !important;
+  --aa-input-border-color-rgb: var(--activiti-primary-rgb) !important;
+
+  --aa-selected-color-rgb: var(--activiti-primary-rgb) !important;
+  --aa-selected-color-alpha: 0.1 !important;
+  --aa-description-highlight-background-color-rgb: var(--activiti-primary-rgb) !important;
+  --aa-description-highlight-background-color-alpha: 0.2 !important;
+
+  --aa-icon-color-rgb: var(--activiti-primary-rgb) !important;
+
+  --aa-overlay-color-rgb: 26, 26, 26 !important;
+  --aa-overlay-color-alpha: 0.3 !important;
+
+  --aa-panel-shadow: 0 0 0 1px rgba(var(--activiti-primary-rgb), 0.1),
+    0 6px 16px -4px rgba(var(--activiti-primary-rgb), 0.15) !important;
+
+  --aa-scrollbar-track-background-color-rgb: var(--activiti-background-rgb) !important;
+  --aa-scrollbar-thumb-background-color-rgb: var(--activiti-primary-rgb) !important;
+
+  /* ==========================================
+     Hero Section
+     ========================================== */
   --hero-title-color: var(--ifm-heading-color);
   --hero-subtitle-color: var(--ifm-font-color-base);
   --hero-description-color: rgba(255, 255, 255, 0.9);
@@ -74,63 +137,114 @@
    CSS VARIABLES - Dark Theme
    ============================================ */
 [data-theme='dark'] {
-  /* Primary Colors */
-  --ifm-color-primary: #94DBB2;
-  --ifm-color-primary-dark: #7cc9a0;
-  --ifm-color-primary-darker: #6fc096;
-  --ifm-color-primary-darkest: #5aa87d;
-  --ifm-color-primary-light: #a4e5c2;
-  --ifm-color-primary-lighter: #afebd6;
-  --ifm-color-primary-lightest: #c5f0e0;
+  /* ==========================================
+     SOURCE OF TRUTH - Activiti Brand Colors
+     ========================================== */
+  --activiti-primary: #94DBB2;
+  --activiti-primary-dark: #7cc9a0;
+  --activiti-primary-darker: #6fc096;
+  --activiti-primary-darkest: #5aa87d;
+  --activiti-primary-light: #a4e5c2;
+  --activiti-primary-lighter: #afebd6;
+  --activiti-primary-lightest: #c5f0e0;
+  --activiti-primary-rgb: 148, 219, 178;
 
-  /* Secondary Colors */
-  --ifm-color-secondary: #26BD73;
-  --ifm-color-secondary-dark: #21a865;
-  --ifm-color-secondary-light: #2bd081;
+  --activiti-secondary: #26BD73;
+  --activiti-secondary-dark: #21a865;
+  --activiti-secondary-light: #2bd081;
+  --activiti-secondary-rgb: 38, 189, 115;
 
-  /* Backgrounds */
-  --ifm-background-color: #0d1511;
-  --ifm-background-surface-color: #15201a;
-  --ifm-card-background-color: #15201a;
-  --ifm-navbar-background-color: #15201a;
-  --ifm-footer-background-color: #0d1511;
-  --ifm-table-background-color: #15201a;
+  --activiti-background: #0d1511;
+  --activiti-surface: #15201a;
+  --activiti-background-rgb: 13, 21, 17;
+  --activiti-surface-rgb: 21, 32, 26;
 
-  /* Text Colors */
-  --ifm-font-color-base: #F1FAF4;
-  --ifm-heading-color: #94DBB2;
-  --ifm-menu-color: #F1FAF4;
-  --ifm-menu-color-active: #94DBB2;
-  --ifm-navbar-item-color: #F1FAF4;
-  --ifm-navbar-item-hover-color: #94DBB2;
-  --ifm-footer-color: #F1FAF4;
+  --activiti-text: #F1FAF4;
+  --activiti-text-muted: #F1FAF4;
 
-  /* Links */
-  --ifm-link-color: #94DBB2;
-  --ifm-link-hover-color: #a4e5c2;
+  /* ==========================================
+     Docusaurus (--ifm-*) references
+     ========================================== */
+  --ifm-color-primary: var(--activiti-primary);
+  --ifm-color-primary-dark: var(--activiti-primary-dark);
+  --ifm-color-primary-darker: var(--activiti-primary-darker);
+  --ifm-color-primary-darkest: var(--activiti-primary-darkest);
+  --ifm-color-primary-light: var(--activiti-primary-light);
+  --ifm-color-primary-lighter: var(--activiti-primary-lighter);
+  --ifm-color-primary-lightest: var(--activiti-primary-lightest);
 
-  /* Code */
-  --ifm-code-color: #94DBB2;
-  --ifm-code-background: rgba(38, 189, 115, 0.15);
-  --docusaurus-highlighted-code-line-bg: rgba(148, 219, 178, 0.2);
+  --ifm-color-secondary: var(--activiti-secondary);
+  --ifm-color-secondary-dark: var(--activiti-secondary-dark);
+  --ifm-color-secondary-light: var(--activiti-secondary-light);
 
-  /* Buttons */
-  --ifm-button-color: #0d1511;
-  --ifm-button-bg-color: #94DBB2;
-  --ifm-button-hover-color: #0d1511;
-  --ifm-button-hover-bg-color: #a4e5c2;
+  --ifm-background-color: var(--activiti-background);
+  --ifm-background-surface-color: var(--activiti-surface);
+  --ifm-card-background-color: var(--activiti-surface);
+  --ifm-navbar-background-color: var(--activiti-surface);
+  --ifm-footer-background-color: var(--activiti-background);
+  --ifm-table-background-color: var(--activiti-surface);
 
-  /* Components */
-  --ifm-menu-link-sublist-bg: rgba(38, 189, 115, 0.1);
-  --ifm-table-border-color: rgba(148, 219, 178, 0.2);
-  --ifm-table-stripe-background: rgba(38, 189, 115, 0.05);
-  --ifm-alert-background-color: rgba(38, 189, 115, 0.15);
-  --ifm-alert-background-color-highlight: rgba(38, 189, 115, 0.25);
-  --ifm-color-emphasis-300: rgba(148, 219, 178, 0.3);
+  --ifm-font-color-base: var(--activiti-text);
+  --ifm-heading-color: var(--activiti-primary);
+  --ifm-menu-color: var(--activiti-text);
+  --ifm-menu-color-active: var(--activiti-primary);
+  --ifm-navbar-item-color: var(--activiti-text);
+  --ifm-navbar-item-hover-color: var(--activiti-primary);
+  --ifm-footer-color: var(--activiti-text);
 
-  /* Hero Section */
-  --hero-subtitle-color: #F1FAF4;
-  --hero-description-color: #F1FAF4;
+  --ifm-link-color: var(--activiti-primary);
+  --ifm-link-hover-color: var(--activiti-primary-light);
+
+  --ifm-code-color: var(--activiti-primary);
+  --ifm-code-background: rgba(var(--activiti-primary-rgb), 0.15);
+  --docusaurus-highlighted-code-line-bg: rgba(var(--activiti-primary-rgb), 0.2);
+
+  --ifm-button-color: var(--activiti-background);
+  --ifm-button-bg-color: var(--activiti-primary);
+  --ifm-button-hover-color: var(--activiti-background);
+  --ifm-button-hover-bg-color: var(--activiti-primary-light);
+
+  --ifm-menu-link-sublist-bg: rgba(var(--activiti-primary-rgb), 0.1);
+  --ifm-table-border-color: rgba(var(--activiti-primary-rgb), 0.2);
+  --ifm-table-stripe-background: rgba(var(--activiti-primary-rgb), 0.05);
+  --ifm-alert-background-color: rgba(var(--activiti-primary-rgb), 0.15);
+  --ifm-alert-background-color-highlight: rgba(var(--activiti-primary-rgb), 0.25);
+  --ifm-color-emphasis-300: rgba(var(--activiti-primary-rgb), 0.3);
+
+  /* ==========================================
+     Algolia autocomplete (--aa-*) references
+     ========================================== */
+  --aa-text-color-rgb: 241, 250, 244 !important;
+  --aa-primary-color-rgb: var(--activiti-primary-rgb) !important;
+  --aa-muted-color-rgb: var(--activiti-primary-rgb) !important;
+
+  --aa-background-color-rgb: var(--activiti-surface-rgb, 21, 32, 26) !important;
+  --aa-input-background-color-rgb: var(--activiti-surface-rgb, 21, 32, 26) !important;
+
+  --aa-panel-border-color-rgb: var(--activiti-primary-rgb) !important;
+  --aa-input-border-color-rgb: var(--activiti-primary-rgb) !important;
+
+  --aa-selected-color-rgb: var(--activiti-primary-rgb) !important;
+  --aa-selected-color-alpha: 0.15 !important;
+  --aa-description-highlight-background-color-rgb: var(--activiti-primary-rgb) !important;
+  --aa-description-highlight-background-color-alpha: 0.2 !important;
+
+  --aa-icon-color-rgb: var(--activiti-primary-rgb) !important;
+
+  --aa-overlay-color-rgb: var(--activiti-background-rgb) !important;
+  --aa-overlay-color-alpha: 0.6 !important;
+
+  --aa-panel-shadow: inset 1px 1px 0 0 rgba(var(--activiti-primary-rgb), 0.1),
+    0 3px 8px 0 rgba(var(--activiti-background-rgb), 0.5) !important;
+
+  --aa-scrollbar-track-background-color-rgb: var(--activiti-surface-rgb, 21, 32, 26) !important;
+  --aa-scrollbar-thumb-background-color-rgb: var(--activiti-primary-rgb) !important;
+
+  /* ==========================================
+     Hero Section
+     ========================================== */
+  --hero-subtitle-color: var(--activiti-text);
+  --hero-description-color: var(--activiti-text);
   --hero-subtitle-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
   --hero-description-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
@@ -331,82 +445,4 @@
 
 [data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
   background: var(--ifm-color-primary);
-}
-
-/* ============================================
-   ALGOLIA AUTOCOMPLETE THEME OVERRIDES
-   ============================================ */
-
-/* Light theme - Algolia autocomplete */
-:root {
-  /* Text colors */
-  --aa-text-color-rgb: 26, 26, 26 !important;
-  --aa-primary-color-rgb: 38, 189, 115 !important;
-  --aa-muted-color-rgb: 148, 219, 178 !important;
-
-  /* Background colors */
-  --aa-background-color-rgb: 255, 255, 255 !important;
-  --aa-input-background-color-rgb: 255, 255, 255 !important;
-
-  /* Border colors */
-  --aa-panel-border-color-rgb: 38, 189, 115 !important;
-  --aa-input-border-color-rgb: 38, 189, 115 !important;
-
-  /* Selected/highlight */
-  --aa-selected-color-rgb: 38, 189, 115 !important;
-  --aa-selected-color-alpha: 0.1 !important;
-  --aa-description-highlight-background-color-rgb: 38, 189, 115 !important;
-  --aa-description-highlight-background-color-alpha: 0.2 !important;
-
-  /* Icons */
-  --aa-icon-color-rgb: 38, 189, 115 !important;
-
-  /* Overlay */
-  --aa-overlay-color-rgb: 26, 26, 26 !important;
-  --aa-overlay-color-alpha: 0.3 !important;
-
-  /* Shadows */
-  --aa-panel-shadow: 0 0 0 1px rgba(38, 189, 115, 0.1),
-    0 6px 16px -4px rgba(38, 189, 115, 0.15) !important;
-
-  /* Scrollbar */
-  --aa-scrollbar-track-background-color-rgb: 241, 250, 244 !important;
-  --aa-scrollbar-thumb-background-color-rgb: 38, 189, 115 !important;
-}
-
-/* Dark theme - Algolia autocomplete */
-[data-theme='dark'] {
-  /* Text colors */
-  --aa-text-color-rgb: 241, 250, 244 !important;
-  --aa-primary-color-rgb: 148, 219, 178 !important;
-  --aa-muted-color-rgb: 148, 219, 178 !important;
-
-  /* Background colors */
-  --aa-background-color-rgb: 21, 32, 26 !important;
-  --aa-input-background-color-rgb: 21, 32, 26 !important;
-
-  /* Border colors */
-  --aa-panel-border-color-rgb: 148, 219, 178 !important;
-  --aa-input-border-color-rgb: 148, 219, 178 !important;
-
-  /* Selected/highlight */
-  --aa-selected-color-rgb: 148, 219, 178 !important;
-  --aa-selected-color-alpha: 0.15 !important;
-  --aa-description-highlight-background-color-rgb: 148, 219, 178 !important;
-  --aa-description-highlight-background-color-alpha: 0.2 !important;
-
-  /* Icons */
-  --aa-icon-color-rgb: 148, 219, 178 !important;
-
-  /* Overlay */
-  --aa-overlay-color-rgb: 13, 21, 17 !important;
-  --aa-overlay-color-alpha: 0.6 !important;
-
-  /* Shadows */
-  --aa-panel-shadow: inset 1px 1px 0 0 rgba(148, 219, 178, 0.1),
-    0 3px 8px 0 rgba(13, 21, 17, 0.5) !important;
-
-  /* Scrollbar */
-  --aa-scrollbar-track-background-color-rgb: 21, 32, 26 !important;
-  --aa-scrollbar-thumb-background-color-rgb: 148, 219, 178 !important;
 }
