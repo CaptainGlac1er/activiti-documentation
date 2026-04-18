@@ -194,6 +194,15 @@
   background-color: var(--ifm-card-background-color);
 }
 
+/* Quick Start highlighted item */
+.hero-quickstart a {
+  font-weight: 600;
+}
+
+[data-theme='dark'] .hero-quickstart a {
+  color: var(--ifm-color-primary);
+}
+
 /* ============================================
    TABLE OF CONTENTS
    ============================================ */

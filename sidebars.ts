@@ -7,7 +7,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
  * - Clear separation of concepts, guides, and API reference
  */
 const sidebars: SidebarsConfig = {
-  tutorialSidebar: [
+  activitiDocsSidebar: [
     {
       type: 'doc',
       id: 'quickstart',
@@ -16,27 +16,28 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Architecture',
+      collapsible: true,
+      label: '🏗️ Architecture',
       link: {type: 'doc', id: 'architecture/overview'},
-      items: [
-        'architecture/overview',
-      ],
+      items: [],
     },
     {
       type: 'category',
-          label: 'Getting Started',   link: {type: 'doc', id: 'getting-started/configuration'},
-      items: [
-        'getting-started/configuration',
-      ],
+      collapsible: true,
+      label: '🚀 Getting Started',
+      link: {type: 'doc', id: 'getting-started/configuration'},
+      items: [],
     },
     {
       type: 'category',
-          label: 'BPMN Elements',   link: {type: 'doc', id: 'bpmn/index'},
+      collapsible: true,
+      label: '📋 BPMN Elements',
+      link: {type: 'doc', id: 'bpmn/index'},
       items: [
         {
           type: 'category',
-          label: 'Elements',
-          link: {type: 'generated-index'},
+          label: '⚡ Tasks',
+          link: {type: 'generated-index', title: 'Task Elements Overview'},
           items: [
             'bpmn/elements/user-task',
             'bpmn/elements/service-task',
@@ -50,8 +51,8 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Events',
-          link: {type: 'doc', id: 'bpmn/events/index'},
+          label: '🔔 Events',
+          link: {type: 'generated-index', title: 'Events Overview'},
           items: [
             'bpmn/events/index',
             'bpmn/events/start-event',
@@ -64,8 +65,8 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Gateways',
-          link: {type: 'doc', id: 'bpmn/gateways/index'},
+          label: '🚪 Gateways',
+          link: {type: 'generated-index', title: 'Gateways Overview'},
           items: [
             'bpmn/gateways/index',
             'bpmn/gateways/exclusive-gateway',
@@ -77,8 +78,8 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'SubProcesses',
-          link: {type: 'doc', id: 'bpmn/subprocesses/index'},
+          label: '📦 Subprocesses',
+          link: {type: 'generated-index', title: 'Subprocesses Overview'},
           items: [
             'bpmn/subprocesses/index',
             'bpmn/subprocesses/regular-subprocess',
@@ -90,8 +91,8 @@ const sidebars: SidebarsConfig = {
         'bpmn/common-features',
         {
           type: 'category',
-          label: 'Advanced Topics',
-          link: {type: 'generated-index'},
+          label: '⚙️ Advanced BPMN',
+          link: {type: 'generated-index', title: 'Advanced BPMN Overview'},
           items: [
             'bpmn/advanced/async-execution',
             'bpmn/advanced/multi-instance',
@@ -107,8 +108,8 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Integration',
-          link: {type: 'doc', id: 'bpmn/integration/index'},
+          label: '🔌 Integration',
+          link: {type: 'generated-index', title: 'Integration Overview'},
           items: [
             'bpmn/integration/index',
             'bpmn/integration/connectors',
@@ -118,108 +119,76 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Core Services',
-      link: {type: 'generated-index', title: 'Engine Services Overview'},
-      items: [
-        'api-reference/engine-api/repository-service',
-        'api-reference/engine-api/runtime-service',
-        'api-reference/engine-api/task-service',
-        'api-reference/engine-api/history-service',
-        'api-reference/engine-api/management-service',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'API Reference',
+      collapsible: true,
+      label: '📚 API Reference',
       link: {type: 'doc', id: 'api-reference/overview'},
       items: [
         {
           type: 'category',
-          label: 'Activiti API',
-          link: {type: 'doc', id: 'api-reference/activiti-api/README'},
+          label: '📖 Activiti API',
+          link: {type: 'generated-index', title: 'Activiti API Overview'},
           items: [
-            'api-reference/activiti-api/process-model',
-            'api-reference/activiti-api/task-model',
-            'api-reference/activiti-api/process-runtime',
-            'api-reference/activiti-api/task-runtime',
-            'api-reference/activiti-api/runtime-shared',
-            'api-reference/activiti-api/model-shared',
-            'api-reference/activiti-api/api-implementation',
+            {
+              type: 'autogenerated',
+              dirName: 'api-reference/activiti-api',
+            },
           ],
         },
         {
           type: 'category',
-          label: 'Core Common',
-          link: {type: 'doc', id: 'api-reference/core-common/README'},
+          label: '🔧 Core Common',
+          link: {type: 'generated-index', title: 'Core Common Overview'},
           items: [
-            'api-reference/core-common/common-util',
-            'api-reference/core-common/expression-language',
-            'api-reference/core-common/connector-model',
-            'api-reference/core-common/spring-application',
-            'api-reference/core-common/spring-connector',
-            'api-reference/core-common/spring-identity',
-            'api-reference/core-common/spring-security',
-            'api-reference/core-common/project-model',
+            {
+              type: 'autogenerated',
+              dirName: 'api-reference/core-common',
+            },
           ],
         },
         {
           type: 'category',
-          label: 'Engine API',
-          link: {type: 'doc', id: 'api-reference/engine-api/README'},
+          label: '⚙️ Engine API',
+          link: {type: 'generated-index', title: 'Engine API Overview'},
           items: [
-            'api-reference/engine-api/engine-core',
-            'api-reference/engine-api/bpmn-model',
-            'api-reference/engine-api/bpmn-converter',
-            'api-reference/engine-api/bpmn-layout',
-            'api-reference/engine-api/engine-configuration',
-            'api-reference/engine-api/engine-architecture',
-            'api-reference/engine-api/api-implementation',
-            'api-reference/engine-api/async-execution',
-            'api-reference/engine-api/dynamic-bpmn-service',
-            'api-reference/engine-api/scripting-engine',
-            'api-reference/engine-api/image-generator',
-            'api-reference/engine-api/process-validation',
-            'api-reference/engine-api/spring-integration',
-            'api-reference/engine-api/spring-resource-loader',
-            'api-reference/engine-api/spring-boot-starter',
-            'api-reference/engine-api/spring-app-process',
+            {
+              type: 'autogenerated',
+              dirName: 'api-reference/engine-api',
+            },
           ],
         },
       ],
     },
     {
       type: 'category',
-      label: 'Advanced Topics',
+      collapsible: true,
+      label: '🔬 Advanced Topics',
       link: {type: 'doc', id: 'advanced/implementation-patterns'},
-      items: [
-        'advanced/implementation-patterns',
-      ],
+      items: [],
     },
     {
       type: 'category',
-      label: 'Best Practices',
+      collapsible: true,
+      label: '✅ Best Practices',
       link: {type: 'doc', id: 'best-practices/overview'},
-      items: [
-        'best-practices/overview',
-      ],
+      items: [],
     },
     {
       type: 'category',
-      label: 'Troubleshooting',
+      collapsible: true,
+      label: '🔍 Troubleshooting',
       link: {type: 'doc', id: 'troubleshooting/overview'},
-      items: [
-        'troubleshooting/overview',
-      ],
+      items: [],
     },
     {
       type: 'category',
-      label: 'Examples',
+      collapsible: true,
+      label: '💡 Examples',
       link: {type: 'generated-index', title: 'Complete Working Examples'},
       items: [
         {
           type: 'category',
-          label: 'Order Management Workflow',
-          link: {type: 'doc', id: 'examples/order-management-workflow/summary'},
+          label: '📦 Order Management Workflow',
+          link: {type: 'generated-index', title: 'Order Management Workflow'},
           items: [
             'examples/order-management-workflow/summary',
             'examples/order-management-workflow/main-process',

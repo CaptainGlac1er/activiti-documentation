@@ -10,14 +10,230 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 
 ## Table of Contents
 
+- [Quick Reference](#quick-reference)
+  - [Task Elements](#task-elements)
+  - [Gateway Elements](#gateway-elements)
+  - [Event Elements](#event-elements)
+  - [SubProcess Elements](#subprocess-elements)
+  - [Data & Artifact Elements](#data--artifact-elements)
+- [Quick Selection Guides](#quick-selection-guides)
+  - [Task Selection Guide](#task-selection-guide)
+  - [Gateway Selection Guide](#gateway-selection-guide)
+  - [Event Selection Guide](#event-selection-guide)
+- [Feature Matrix](#feature-matrix)
+- [Common Activiti Extensions](#common-activiti-extensions)
 - [Overview](#overview)
 - [Activiti Extensions](#activiti-extensions)
-- [Task Elements](#task-elements)
-- [Gateway Elements](#gateway-elements)
-- [Event Elements](#event-elements)
+- [Task Elements (Detailed)](#task-elements-detailed)
+- [Gateway Elements (Detailed)](#gateway-elements-detailed)
+- [Event Elements (Detailed)](#event-elements-detailed)
 - [SubProcesses](#subprocesses)
 - [Data Objects](#data-objects)
 - [Common Features](#common-features)
+- [Next Steps](#next-steps)
+- [Tools and Integration](#tools-and-integration)
+
+---
+
+## Quick Reference
+
+### Task Elements
+
+| Element | Description | Activiti Extensions | Documentation |
+|---------|-------------|---------------------|---------------|
+| **User Task** | Human-performed work | Assignee, candidates, forms, listeners | [User Task](./elements/user-task.md) |
+| **Service Task** | Automated system work | Class, delegate, expression, connectors | [Service Task](./elements/service-task.md) |
+| **Script Task** | Execute scripts | Multiple languages, async | [Script Task](./elements/script-task.md) |
+| **Business Rule Task** | Execute business rules | DMN, Drools integration | [Business Rule Task](./elements/business-rule-task.md) |
+| **Manual Task** | External manual work | Documentation, listeners | [Manual Task](./elements/manual-task.md) |
+| **Call Activity** | Reference sub-process | Variable mapping, cases | [Call Activity](./elements/call-activity.md) |
+
+### Gateway Elements
+
+| Element | Description | Symbol | Documentation |
+|---------|-------------|--------|---------------|
+| **Exclusive Gateway** | XOR - one path | X | [Exclusive Gateway](./gateways/exclusive-gateway.md) |
+| **Parallel Gateway** | AND - all paths | ⊞ | [Parallel Gateway](./gateways/parallel-gateway.md) |
+| **Inclusive Gateway** | OR - one or more | ⦿ | [Inclusive Gateway](./gateways/inclusive-gateway.md) |
+| **Event-Based Gateway** | Route by events | ⏣ | [Event-Based Gateway](./gateways/event-gateway.md) |
+| **Complex Gateway** | Advanced conditions | ⊟ | [Complex Gateway](./gateways/complex-gateway.md) |
+
+### Event Elements
+
+#### Start Events
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| **None** | Standard start | Manual process initiation |
+| **Message** | Wait for message | Event-driven processes |
+| **Timer** | Time-based start | Scheduled processes |
+| **Signal** | Global signal | Broadcast triggers |
+| **Conditional** | Condition met | Dynamic starts |
+
+#### Intermediate Events
+
+| Type | Catch/Throw | Description | Documentation |
+|------|-------------|-------------|---------------|
+| **Message** | Both | Communication | [Intermediate Events](./events/intermediate-events.md) |
+| **Timer** | Catch | Wait for time | [Intermediate Events](./events/intermediate-events.md) |
+| **Signal** | Both | Broadcast | [Intermediate Events](./events/intermediate-events.md) |
+| **Conditional** | Catch | Wait for condition | [Intermediate Events](./events/intermediate-events.md) |
+| **Error** | Catch | Exception handling | [Intermediate Events](./events/intermediate-events.md) |
+| **Link** | Both | Internal jumps | [Intermediate Events](./events/intermediate-events.md) |
+| **Compensate** | Throw | Compensation | [Intermediate Events](./events/intermediate-events.md) |
+| **Escalation** | Both | Escalation | [Intermediate Events](./events/intermediate-events.md) |
+
+#### End Events
+
+| Type | Description | Use Case | Documentation |
+|------|-------------|----------|---------------|
+| **None** | Normal completion | Standard end | [End Event](./events/end-event.md) |
+| **Error** | End with error | Exception end | [End Event](./events/end-event.md) |
+| **Signal** | Send signal | Notification | [End Event](./events/end-event.md) |
+| **Message** | Send message | Communication | [End Event](./events/end-event.md) |
+| **Terminate** | End all | Force termination | [End Event](./events/end-event.md) |
+
+#### Boundary Events
+
+| Type | Interrupting | Description | Documentation |
+|------|--------------|-------------|---------------|
+| **Error** | Yes | Exception handling | [Boundary Event](./events/boundary-event.md) |
+| **Timer** | Both | Timeout handling | [Boundary Event](./events/boundary-event.md) |
+| **Message** | Both | External trigger | [Boundary Event](./events/boundary-event.md) |
+| **Signal** | Both | Global event | [Boundary Event](./events/boundary-event.md) |
+| **Compensate** | No | Compensation | [Boundary Event](./events/boundary-event.md) |
+
+### SubProcess Elements
+
+| Element | Description | Documentation |
+|---------|-------------|---------------|
+| **Regular SubProcess** | Embedded flow | [Regular SubProcess](./subprocesses/regular-subprocess.md) |
+| **Event SubProcess** | Event-triggered | [Event SubProcess](./subprocesses/event-subprocess.md) |
+| **Ad-hoc SubProcess** | Arbitrary order | [Ad-hoc SubProcess](./subprocesses/adhoc-subprocess.md) |
+| **Transaction** | Atomic unit | [Transaction](./subprocesses/transaction.md) |
+
+### Data & Artifact Elements
+
+| Element | Description |
+|---------|-------------|
+| **Data Object** | Process data |
+| **Data Store** | External data |
+| **Input Data** | Activity input |
+| **Output Data** | Activity output |
+| **Data Association** | Data flow |
+| **Group** | Visual grouping |
+| **Annotation** | Documentation |
+| **Association** | Relationships |
+| **Lane** | Swimlane division |
+| **Pool** | Participant separation |
+
+---
+
+## Quick Selection Guides
+
+### Task Selection Guide
+
+| Use Case | Recommended Element |
+|----------|-------------------|
+| Human approval | User Task |
+| API call | Service Task (class/delegate) |
+| Simple calculation | Script Task |
+| Business rules | Business Rule Task (DMN) |
+| External system | Service Task (connector) |
+| Email sending | Service Task (mail) |
+| Sub-process | Call Activity |
+| Manual work | Manual Task |
+
+### Gateway Selection Guide
+
+| Decision Type | Recommended Gateway |
+|---------------|-------------------|
+| If-then-else | Exclusive Gateway |
+| Parallel work | Parallel Gateway |
+| Multiple options | Inclusive Gateway |
+| Event-based | Event-Based Gateway |
+| Complex logic | Complex Gateway |
+
+### Event Selection Guide
+
+| Trigger Type | Recommended Event |
+|--------------|------------------|
+| External message | Message Event |
+| Time-based | Timer Event |
+| Global broadcast | Signal Event |
+| Condition | Conditional Event |
+| Exception | Error Event |
+| Timeout | Timer Boundary Event |
+
+---
+
+## Feature Matrix
+
+| Feature | User Task | Service Task | Script Task | Gateway | Event |
+|---------|-----------|--------------|-------------|---------|-------|
+| Async Execution | | | | ❌ | (catch) |
+| Multi-Instance | | | | ❌ | ❌ |
+| Boundary Events | | | | ❌ | ❌ |
+| Execution Listeners | | | | | |
+| Skip Expression | | | | ❌ | ❌ |
+| Field Injection | ❌ | | ❌ | ❌ | ❌ |
+| Form Integration | | ❌ | ❌ | ❌ | ❌ |
+| Retry Configuration | ❌ | | | ❌ | ❌ |
+
+---
+
+## Common Activiti Extensions
+
+### Available on All Activities
+
+| Extension | Description | Example |
+|-----------|-------------|---------|
+| **async** | Background execution | `activiti:async="true"` |
+| **exclusive** | Locking mode | `activiti:exclusive="true"` |
+| **skipExpression** | Conditional skip | `activiti:skipExpression="${flag}"` |
+| **executionListener** | Lifecycle hooks | `<activiti:executionListener/>` |
+| **multiInstance** | Iteration | `<multiInstanceLoopCharacteristics/>` |
+| **boundaryEvents** | Exception handling | `<boundaryEvent/>` |
+| **extensionElements** | Custom metadata | `<extensionElements/>` |
+
+**Note:** Job expiry and priority are configured via Management Service at runtime, not through BPMN attributes.
+
+### User Task Extensions
+
+| Extension | Description |
+|-----------|-------------|
+| **assignee** | Direct assignment |
+| **owner** | Task owner |
+| **candidateUsers** | Potential users |
+| **candidateGroups** | Potential groups |
+| **formKey** | Form integration |
+| **dueDate** | Deadline |
+| **priority** | Importance |
+| **taskListener** | Task lifecycle |
+| **formProperty** | Form fields |
+
+### Service Task Extensions
+
+| Extension | Description |
+|-----------|-------------|
+| **class** | Java class |
+| **delegateExpression** | Spring bean |
+| **expression** | EL/SpEL |
+| **resultVariable** | Output variable |
+| **field** | Dependency injection |
+| **type** | Connector type |
+| **operationRef** | Operation reference |
+
+### Script Task Extensions
+
+| Extension | Description |
+|-----------|-------------|
+| **scriptFormat** | Language |
+| **script** | Inline code |
+| **resource** | External script |
+| **resultVariable** | Output |
+
+---
 
 ## Overview
 
@@ -123,7 +339,7 @@ Configure retry policies for failed jobs:
 </serviceTask>
 ```
 
-## Task Elements
+## Task Elements (Detailed)
 
 Tasks represent work performed in a process. Activiti supports all standard BPMN task types:
 
@@ -185,7 +401,7 @@ Reference and execute global tasks or sub-processes.
 - Case support
 - Dynamic process selection
 
-## Gateway Elements
+## Gateway Elements (Detailed)
 
 Gateways control the divergence and convergence of sequence flows.
 
@@ -225,7 +441,7 @@ Advanced routing with conditions and dependencies.
 - Activation conditions
 - Completion conditions
 
-## Event Elements
+## Event Elements (Detailed)
 
 Events represent something that happens during process execution.
 
@@ -337,7 +553,7 @@ Execute activities multiple times:
 **Using Collection (Activiti Extension):**
 ```xml
 <userTask id="task1" name="Review">
-  <multiInstanceLoopCharacteristics 
+  <multiInstanceLoopCharacteristics
     isSequential="false"
     activiti:collection="${reviewers}"
     activiti:elementVariable="reviewer">
@@ -397,6 +613,12 @@ Define variables, mappings, and constants separately from BPMN:
 - **Process Validation** - Deploy-time checks
 - **Image Generator** - Visual diagram rendering
 - **Dynamic BPMN** - Runtime process modification
+
+## Related Resources
+
+- [BPMN 2.0 Specification](https://www.omg.org/spec/BPMN/2.0/)
+- [Activiti BPMN Model API](../api-reference/engine-api/bpmn-model.md)
+- [Process Validation](../api-reference/engine-api/process-validation.md)
 
 ---
 
