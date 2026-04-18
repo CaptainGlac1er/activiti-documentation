@@ -444,16 +444,16 @@ Collect results **from** each instance:
     </outputDataItem>
     
   </multiInstanceLoopCharacteristics>
-  
-  <!-- Retry policy for failed items -->
-  <activiti:failedJobRetryTimeCycle>R3/PT1M</activiti:failedJobRetryTimeCycle>
-  
-  <!-- Error handling -->
-  <boundaryEvent id="processError" cancelActivity="true">
-    <errorEventDefinition errorRef="BatchError"/>
-  </boundaryEvent>
-  
+  <extensionElements>
+    <!-- Retry policy for failed items (must be in extensionElements) -->
+    <activiti:failedJobRetryTimeCycle>R3/PT1M</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
 </serviceTask>
+
+<!-- Boundary event as sibling of serviceTask, not inside it -->
+<boundaryEvent id="processError" attachedToRef="batchProcess" cancelActivity="true">
+  <errorEventDefinition errorRef="BatchError"/>
+</boundaryEvent>
 ```
 
 ### Example 4: Multi-Instance SubProcess
@@ -537,14 +537,16 @@ Collect results **from** each instance:
     <completionCondition>${nrOfCompletedInstances == nrOfInstances}</completionCondition>
     
   </multiInstanceLoopCharacteristics>
-  
-  <!-- Each instance runs as async job -->
-  <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
-  
+  <extensionElements>
+    <!-- Each instance runs as async job -->
+    <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
 </serviceTask>
 ```
 
 ### Multi-Instance with Listeners
+
+Listeners must be inside `extensionElements`:
 
 ```xml
 <userTask id="miWithListeners" name="Tracked Multi-Instance">
@@ -554,13 +556,12 @@ Collect results **from** each instance:
     activiti:elementVariable="item">
     
   </multiInstanceLoopCharacteristics>
-  
-  <!-- Track when multi-instance starts -->
-  <activiti:executionListener event="start" class="com.example.MIStartListener"/>
-  
-  <!-- Track when multi-instance completes -->
-  <activiti:executionListener event="end" class="com.example.MIEndListener"/>
-  
+  <extensionElements>
+    <!-- Track when multi-instance starts -->
+    <activiti:executionListener event="start" class="com.example.MIStartListener"/>
+    <!-- Track when multi-instance completes -->
+    <activiti:executionListener event="end" class="com.example.MIEndListener"/>
+  </extensionElements>
 </userTask>
 ```
 
@@ -637,9 +638,12 @@ Collect results **from** each instance:
 <!-- GOOD: Error handling for async MI -->
 <serviceTask id="miTask" activiti:async="true">
   <multiInstanceLoopCharacteristics ... />
-  <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
-  <boundaryEvent id="error" ... />
+  <extensionElements>
+    <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
 </serviceTask>
+<!-- Boundary event as sibling -->
+<boundaryEvent id="error" attachedToRef="miTask" ... />
 ```
 
 ### 5. Monitor Performance

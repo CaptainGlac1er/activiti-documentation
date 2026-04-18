@@ -7,6 +7,10 @@ description: Complete guide to configuring the Activiti Process Engine for diffe
 
 # Process Engine Configuration
 
+> **API Paradigm Notice:** This document covers the **Engine API** configuration (`ProcessEngineConfiguration`, `ProcessEngine`, `RepositoryService`, etc.). The Engine API is the lower-level API that sits beneath the Activiti API. Most Activiti 8 applications should use the **Activiti API** (`ProcessRuntime`, `TaskRuntime`) instead, which is configured via Spring Boot auto-configuration properties (see [Quick Start - Configuration](./quickstart.md#applicationproperties-configuration) for the recommended approach).
+>
+> The Engine API is primarily used when you need fine-grained control over engine internals, custom engine behavior, or are migrating from Activiti 5/6.
+
 **Module:** `activiti-core/activiti-engine`
 
 ---

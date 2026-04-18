@@ -6,7 +6,7 @@ description: Overview of core common utilities and shared modules.
 
 # Core Common API Reference
 
-Core common modules provide shared utilities and Spring integration support.
+Core common modules provide shared utilities, connectors, and Spring integration support for the Activiti platform. These modules are used internally by the Activiti API and Engine API layers.
 
 ## Modules
 
@@ -38,6 +38,20 @@ Core common modules provide shared utilities and Spring integration support.
 - **Connectors**: Build custom integrations with connector framework
 - **Security**: Integrate with Spring Security
 - **Caching**: Enable performance optimization
+
+## Module Dependencies
+
+The core common modules are dependencies for both the Activiti API and Engine API. Most application developers interact with these modules indirectly through the higher-level APIs.
+
+### When to Use Core Common Directly
+
+| Scenario | Module |
+|----------|--------|
+| Custom expression language | `expression-language` |
+| Custom connector implementation | `connector-model`, `spring-connector` |
+| Custom security policies | `spring-security-policies` |
+| Custom resource loading | `spring-resource-finder` |
+| Unit testing Activiti components | `core-test` |
 
 ---
 

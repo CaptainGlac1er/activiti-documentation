@@ -165,7 +165,7 @@ Respond to global signals:
 <serviceTask id="processingTask" name="Process Data" activiti:class="com.example.DataProcessor">
   
   <!-- Signal boundary event for emergency stop -->
-  <boundaryEvent id="emergencyStop" cancelActivity="true">
+  <boundaryEvent id="emergencyStop" attachedToRef="processingTask" cancelActivity="true">
     <signalEventDefinition signalRef="emergencySignal"/>
   </boundaryEvent>
   
@@ -185,8 +185,7 @@ Respond to global signals:
 Trigger compensation (undo):
 
 ```xml
-<serviceTask id="bookFlight" name="Book Flight" activiti:class="com.example.FlightBookingService" 
-             activiti:cancelEndDefinition="true">
+<serviceTask id="bookFlight" name="Book Flight" activiti:class="com.example.FlightBookingService">
   
   <!-- Compensation boundary event -->
   <boundaryEvent id="compensateBooking" cancelActivity="false">
@@ -242,20 +241,22 @@ Attach multiple boundary events to one activity:
 
 ### Boundary Event on Multi-Instance
 
+Boundary events attach to the multi-instance activity as a whole, not inside `multiInstanceLoopCharacteristics`:
+
 ```xml
 <userTask id="reviewTask" name="Review">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${reviewers}">
-    
-    <boundaryEvent id="reviewTimeout" cancelActivity="true">
-      <timerEventDefinition>
-        <timeDuration>PT4H</timeDuration>
-      </timerEventDefinition>
-    </boundaryEvent>
-    
   </multiInstanceLoopCharacteristics>
 </userTask>
+
+<!-- Boundary event as sibling of the userTask, not inside multiInstanceLoopCharacteristics -->
+<boundaryEvent id="reviewTimeout" attachedToRef="reviewTask" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT4H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 **Behavior:**
@@ -265,22 +266,25 @@ Attach multiple boundary events to one activity:
 
 ### Nested Boundary Events
 
+Boundary events inside subprocesses must be siblings of the activity within the subprocess, not nested inside it:
+
 ```xml
 <subProcess id="subProcess1" name="Sub Process">
   <startEvent id="subStart"/>
   
-  <userTask id="subTask" name="Sub Task">
-    <boundaryEvent id="subTimeout" cancelActivity="true">
-      <timerEventDefinition>
-        <timeDuration>PT1H</timeDuration>
-      </timerEventDefinition>
-    </boundaryEvent>
-  </userTask>
+  <userTask id="subTask" name="Sub Task"/>
+  
+  <!-- Boundary event as sibling of userTask within the subprocess -->
+  <boundaryEvent id="subTimeout" attachedToRef="subTask" cancelActivity="true">
+    <timerEventDefinition>
+      <timeDuration>PT1H</timeDuration>
+    </timerEventDefinition>
+  </boundaryEvent>
   
   <endEvent id="subEnd"/>
   
-  <!-- Boundary event on subprocess -->
-  <boundaryEvent id="subProcessTimeout" cancelActivity="true">
+  <!-- Boundary event on subprocess itself -->
+  <boundaryEvent id="subProcessTimeout" attachedToRef="subProcess1" cancelActivity="true">
     <timerEventDefinition>
       <timeDuration>PT8H</timeDuration>
     </timerEventDefinition>
@@ -362,8 +366,7 @@ Attach multiple boundary events to one activity:
   <startEvent id="start"/>
   
   <serviceTask id="reserveFunds" name="Reserve Funds" 
-               activiti:class="com.example.FundsReservation"
-               activiti:cancelEndDefinition="true">
+               activiti:class="com.example.FundsReservation">
     
     <boundaryEvent id="reservationError" cancelActivity="true">
       <errorEventDefinition errorRef="ReservationError"/>
@@ -371,8 +374,7 @@ Attach multiple boundary events to one activity:
   </serviceTask>
   
   <serviceTask id="processPayment" name="Process Payment"
-               activiti:class="com.example.PaymentProcessor"
-               activiti:cancelEndDefinition="true">
+               activiti:class="com.example.PaymentProcessor">
     
     <boundaryEvent id="paymentError" cancelActivity="true">
       <errorEventDefinition errorRef="PaymentError"/>

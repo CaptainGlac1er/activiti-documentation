@@ -230,8 +230,8 @@ public void deployProcess() {
 ```yaml
 spring:
   activiti:
-    bpmn-default-location: classpath:bpmn/
-    deployment-enabled: true
+    process-definition-location-prefix: classpath:processes/
+    check-process-definitions: true
 ```
 
 **Solution 3: Add Deployment Listener**

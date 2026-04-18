@@ -61,7 +61,7 @@ Deep-dive resources for complex scenarios:
 
 | Document | Audience | Topics Covered |
 |----------|----------|----------------|
-| [Implementation Patterns](./advance./implementation-patterns.mdtects, Senior Developers | System design, Integration patterns, Scalability |
+| [Implementation Patterns](./implementation-patterns.md) | Senior Developers | System design, Integration patterns, Scalability |
 | [Troubleshooting Guide](./troubleshooting/overview.md) | Developers, Operations | Debugging, Performance optimization, Common issues |
 | [Architecture Overview](./architecture/overview.md) | Technical Leads | System components, Data flow, Deployment models |
 
@@ -147,10 +147,12 @@ Structured learning paths to guide your journey with Activiti:
 |-------|---------------|
 | **Process Management** | [Process Runtime API](./api-reference/overview.md#process-runtime-api) |
 | **Task Management** | [Task Runtime API](./api-reference/overview.md#task-runtime-api) |
-| **Event Handling** | [Event Patterns](./advanced/impleme./implementation-patterns.mdtterns) |
+| **Event Handling** | [Event Patterns](./implementation-patterns.md#event-handling) |
 | **Security** | [Security Best Practices](./best-practices/overview.md#security-best-practices) |
 | **Performance** | [Performance Optimization](./best-practices/overview.md#performance-optimization) |
-| **Integration** | [Integration Patterns](./advanced/implementation-p./implementation-patterns.md## Navigate by Goal
+| **Integration** | [Integration Patterns](./implementation-patterns.md) |
+
+### Navigate by Goal
 
 | Goal | Recommended Resource |
 |------|---------------------|

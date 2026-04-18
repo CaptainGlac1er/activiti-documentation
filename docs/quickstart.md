@@ -445,14 +445,13 @@ spring.h2.console.enabled=true
 spring.h2.console.path=/h2-console
 
 # Activiti Configuration
-spring.activiti.bpmn-enable-history-level=full
-spring.activiti.db-schema-update=true
+spring.activiti.history-level=full
+spring.activiti.database-schema-update=true
 spring.activiti.async-executor-activate=true
-spring.activiti.deployment-enabled=true
+spring.activiti.check-process-definitions=true
 
 # Logging Configuration
 logging.level.org.activiti=INFO
-logging.level.org.flowable=INFO
 logging.level.com.example.workflow=DEBUG
 
 # Production: Use PostgreSQL/MySQL instead

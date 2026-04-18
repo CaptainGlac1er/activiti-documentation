@@ -12,7 +12,7 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 ## Overview
 
 ```xml
-<scriptTask id="script1" name="Calculate Total" activiti:scriptFormat="javascript">
+<scriptTask id="script1" name="Calculate Total" scriptFormat="javascript">
   total = quantity * price;
 </scriptTask>
 ```
@@ -28,7 +28,7 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 
 ```xml
 <scriptTask id="jsScript" name="JavaScript Calculation" 
-            activiti:scriptFormat="javascript">
+            scriptFormat="javascript">
   var total = quantity * price;
   var discount = total * 0.1;
   result = total - discount;
@@ -39,7 +39,7 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 
 ```xml
 <scriptTask id="groovyScript" name="Groovy Processing" 
-            activiti:scriptFormat="groovy">
+            scriptFormat="groovy">
   def order = execution.getVariable('order')
   def validated = order.validate()
   execution.setVariable('validated', validated)
@@ -55,7 +55,7 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 Define the scripting language:
 
 ```xml
-<scriptTask activiti:scriptFormat="javascript"/>
+<scriptTask scriptFormat="javascript"/>
 ```
 
 **Default:** `javascript`
@@ -66,7 +66,7 @@ Specify if script is inline or external:
 
 ```xml
 <!-- Inline (default) -->
-<scriptTask activiti:scriptFormat="javascript">
+<scriptTask scriptFormat="javascript">
   // script code here
 </scriptTask>
 ```
@@ -79,8 +79,8 @@ Store script output:
 
 ```xml
 <scriptTask id="calculation" 
-            activiti:scriptFormat="javascript"
-            activiti:resultVariable="calculationResult">
+            scriptFormat="javascript"
+            activiti:resultVariableName="calculationResult">
   result = input1 + input2;
 </scriptTask>
 ```
@@ -105,7 +105,7 @@ Run scripts asynchronously:
 ```xml
 <scriptTask id="asyncScript" 
             name="Long Running Script"
-            activiti:scriptFormat="groovy"
+            scriptFormat="groovy"
             activiti:async="true">
   // Script code
 </scriptTask>
@@ -117,7 +117,7 @@ Conditionally skip script:
 
 ```xml
 <scriptTask id="optionalScript" 
-            activiti:scriptFormat="javascript"
+            scriptFormat="javascript"
             activiti:skipExpression="${!runScript}">
   // Script code
 </scriptTask>
@@ -129,7 +129,7 @@ Hook into script execution:
 
 ```xml
 <scriptTask id="trackedScript" 
-            activiti:scriptFormat="javascript">
+            scriptFormat="javascript">
   <extensionElements>
     <activiti:executionListener event="start" class="com.example.ScriptStartListener"/>
     <activiti:executionListener event="end" class="com.example.ScriptEndListener"/>
@@ -139,17 +139,23 @@ Hook into script execution:
 
 ### Boundary Events
 
-Handle script exceptions:
+Boundary events must be **siblings** of the script task (not nested inside it):
 
 ```xml
-<scriptTask id="riskyScript" 
-            activiti:scriptFormat="javascript">
-  // Script that might fail
+<process id="processWithBoundary">
+  <!-- Script task -->
+  <scriptTask id="riskyScript" name="Risky Script" scriptFormat="javascript">
+    // Script that might fail
+  </scriptTask>
   
-  <boundaryEvent id="scriptError" cancelActivity="true">
+  <!-- Boundary event as sibling, not child -->
+  <boundaryEvent id="scriptError" attachedToRef="riskyScript" cancelActivity="true">
     <errorEventDefinition errorRef="ScriptError"/>
   </boundaryEvent>
-</scriptTask>
+  
+  <sequenceFlow id="flow1" sourceRef="riskyScript" targetRef="riskyScript"/>
+  <sequenceFlow id="flow2" sourceRef="scriptError" targetRef="errorEnd"/>
+</process>
 ```
 
 ## Complete Examples
@@ -159,8 +165,8 @@ Handle script exceptions:
 ```xml
 <scriptTask id="transformData" 
             name="Transform Order Data"
-            activiti:scriptFormat="groovy"
-            activiti:resultVariable="transformedOrder">
+            scriptFormat="groovy"
+            activiti:resultVariableName="transformedOrder">
   
   def order = execution.getVariable('order')
   
@@ -182,8 +188,8 @@ Handle script exceptions:
 ```xml
 <scriptTask id="calculatePricing" 
             name="Calculate Final Price"
-            activiti:scriptFormat="javascript"
-            activiti:resultVariable="finalPrice">
+            scriptFormat="javascript"
+            activiti:resultVariableName="finalPrice">
   
   var basePrice = execution.getVariable('basePrice');
   var quantity = execution.getVariable('quantity');
@@ -209,7 +215,7 @@ Handle script exceptions:
 ```xml
 <scriptTask id="callExternalAPI" 
             name="Fetch External Data"
-            activiti:scriptFormat="groovy">
+            scriptFormat="groovy">
   
   def url = "https://api.example.com/data/${execution.getVariable('id')}"
   def response = new URL(url).text
@@ -225,7 +231,7 @@ Handle script exceptions:
 ```xml
 <scriptTask id="validateData" 
             name="Validate Input"
-            activiti:scriptFormat="javascript">
+            scriptFormat="javascript">
   
   var input = execution.getVariable('inputData');
   var errors = [];
@@ -257,30 +263,22 @@ Handle script exceptions:
 ```xml
 <!-- JavaScript for simple calculations -->
 <scriptTask id="jsCalc" 
-            activiti:scriptFormat="javascript"
-            activiti:resultVariable="sum">
+            scriptFormat="javascript"
+            activiti:resultVariableName="sum">
   result = a + b + c;
 </scriptTask>
 
 <!-- Groovy for complex object manipulation -->
 <scriptTask id="groovyProcess" 
-            activiti:scriptFormat="groovy">
+            scriptFormat="groovy">
   def list = execution.getVariable('items')
   def filtered = list.findAll { it.active }
   def sorted = filtered.sort { it.name }
   execution.setVariable('processedItems', sorted)
 </scriptTask>
-
-<!-- Java for type-safe operations -->
-<scriptTask id="javaLogic" 
-            activiti:scriptFormat="java">
-  List<Order> orders = (List<Order>) execution.getVariable("orders");
-  double total = orders.stream()
-      .mapToDouble(Order::getAmount)
-      .sum();
-  execution.setVariable("totalAmount", total);
-</scriptTask>
 ```
+
+> **Note:** `activiti:scriptFormat="java"`, `activiti:scriptFormat="juel"`, and `activiti:scriptFormat="beanshell"` are **not supported** by default. Java code should use Service Tasks with `activiti:class` instead. JUEL is used for expression language (`${...}`) but is not a script engine. BeanShell requires additional setup and is not included by default.
 
 ## Runtime API Usage
 
@@ -335,7 +333,7 @@ public class CustomScriptEngine implements ScriptEngine {
 
 ```xml
 <!-- Avoid executing untrusted code -->
-<scriptTask id="safeScript" activiti:scriptFormat="javascript">
+<scriptTask id="safeScript" scriptFormat="javascript">
   // Only use trusted variables
   var result = execution.getVariable('trustedInput');
 </scriptTask>
