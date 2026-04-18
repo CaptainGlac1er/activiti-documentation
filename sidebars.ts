@@ -1,10 +1,11 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 /**
- * Restructured sidebar for better navigation
+ * Sidebar configuration for Activiti Documentation
  * - Maximum 3 levels of nesting
  * - Logical grouping by topic
  * - Clear separation of concepts, guides, and API reference
+ * - Collapsible categories with sensible defaults
  */
 const sidebars: SidebarsConfig = {
   activitiDocsSidebar: [
@@ -15,28 +16,25 @@ const sidebars: SidebarsConfig = {
       className: 'hero-quickstart',
     },
     {
-      type: 'category',
-      collapsible: true,
-      label: '🏗️ Architecture',
-      link: {type: 'doc', id: 'architecture/overview'},
-      items: [],
+      type: 'doc',
+      id: 'architecture/overview',
+      label: 'Architecture',
+    },
+    {
+      type: 'doc',
+      id: 'getting-started/configuration',
+      label: 'Getting Started',
     },
     {
       type: 'category',
       collapsible: true,
-      label: '🚀 Getting Started',
-      link: {type: 'doc', id: 'getting-started/configuration'},
-      items: [],
-    },
-    {
-      type: 'category',
-      collapsible: true,
-      label: '📋 BPMN Elements',
+      collapsed: true,
+      label: 'BPMN Elements',
       link: {type: 'doc', id: 'bpmn/index'},
       items: [
         {
           type: 'category',
-          label: '⚡ Tasks',
+          label: 'Tasks',
           link: {type: 'generated-index', title: 'Task Elements Overview'},
           items: [
             'bpmn/elements/user-task',
@@ -51,7 +49,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: '🔔 Events',
+          label: 'Events',
           link: {type: 'generated-index', title: 'Events Overview'},
           items: [
             'bpmn/events/index',
@@ -65,7 +63,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: '🚪 Gateways',
+          label: 'Gateways',
           link: {type: 'generated-index', title: 'Gateways Overview'},
           items: [
             'bpmn/gateways/index',
@@ -78,7 +76,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: '📦 Subprocesses',
+          label: 'Subprocesses',
           link: {type: 'generated-index', title: 'Subprocesses Overview'},
           items: [
             'bpmn/subprocesses/index',
@@ -88,10 +86,14 @@ const sidebars: SidebarsConfig = {
             'bpmn/subprocesses/transaction',
           ],
         },
-        'bpmn/common-features',
+        {
+          type: 'doc',
+          id: 'bpmn/common-features',
+          label: 'Common Features',
+        },
         {
           type: 'category',
-          label: '⚙️ Advanced BPMN',
+          label: 'Advanced BPMN',
           link: {type: 'generated-index', title: 'Advanced BPMN Overview'},
           items: [
             'bpmn/advanced/async-execution',
@@ -108,7 +110,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: '🔌 Integration',
+          label: 'Integration',
           link: {type: 'generated-index', title: 'Integration Overview'},
           items: [
             'bpmn/integration/index',
@@ -120,12 +122,13 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       collapsible: true,
-      label: '📚 API Reference',
+      collapsed: true,
+      label: 'API Reference',
       link: {type: 'doc', id: 'api-reference/overview'},
       items: [
         {
           type: 'category',
-          label: '📖 Activiti API',
+          label: 'Activiti API',
           link: {type: 'generated-index', title: 'Activiti API Overview'},
           items: [
             {
@@ -136,7 +139,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: '🔧 Core Common',
+          label: 'Core Common',
           link: {type: 'generated-index', title: 'Core Common Overview'},
           items: [
             {
@@ -147,7 +150,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: '⚙️ Engine API',
+          label: 'Engine API',
           link: {type: 'generated-index', title: 'Engine API Overview'},
           items: [
             {
@@ -159,35 +162,30 @@ const sidebars: SidebarsConfig = {
       ],
     },
     {
-      type: 'category',
-      collapsible: true,
-      label: '🔬 Advanced Topics',
-      link: {type: 'doc', id: 'advanced/implementation-patterns'},
-      items: [],
+      type: 'doc',
+      id: 'advanced/implementation-patterns',
+      label: 'Advanced Topics',
+    },
+    {
+      type: 'doc',
+      id: 'best-practices/overview',
+      label: 'Best Practices',
+    },
+    {
+      type: 'doc',
+      id: 'troubleshooting/overview',
+      label: 'Troubleshooting',
     },
     {
       type: 'category',
       collapsible: true,
-      label: '✅ Best Practices',
-      link: {type: 'doc', id: 'best-practices/overview'},
-      items: [],
-    },
-    {
-      type: 'category',
-      collapsible: true,
-      label: '🔍 Troubleshooting',
-      link: {type: 'doc', id: 'troubleshooting/overview'},
-      items: [],
-    },
-    {
-      type: 'category',
-      collapsible: true,
-      label: '💡 Examples',
+      collapsed: true,
+      label: 'Examples',
       link: {type: 'generated-index', title: 'Complete Working Examples'},
       items: [
         {
           type: 'category',
-          label: '📦 Order Management Workflow',
+          label: 'Order Management Workflow',
           link: {type: 'generated-index', title: 'Order Management Workflow'},
           items: [
             'examples/order-management-workflow/summary',

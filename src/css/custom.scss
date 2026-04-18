@@ -190,8 +190,46 @@
 /* ============================================
    SIDEBAR
    ============================================ */
+
+/* Sidebar container background */
+.theme-doc-sidebar-container {
+  transition: background-color 0.3s ease;
+}
+
 [data-theme='dark'] .theme-doc-sidebar-menu {
   background-color: var(--ifm-card-background-color);
+}
+
+/* Active item left border accent */
+.theme-doc-sidebar-item-link.theme-doc-sidebar-item-link-level-1
+  .theme-doc-sidebar-item-link-content--active,
+.theme-doc-sidebar-item-link.theme-doc-sidebar-item-link-level-1
+  a:active {
+  border-left: 3px solid var(--ifm-color-primary);
+  padding-left: 9px;
+}
+
+/* Subtle hover background on sidebar items */
+.theme-doc-sidebar-menu .menu__link:hover {
+  background-color: var(--ifm-menu-link-sublist-bg);
+}
+
+/* Active link styling */
+.theme-doc-sidebar-menu .menu__link--active {
+  font-weight: 600;
+  border-left: 3px solid var(--ifm-color-primary);
+  padding-left: 9px;
+}
+
+/* Indentation for deeper sidebar levels */
+.theme-doc-sidebar-menu .menu__list .menu__list {
+  margin-left: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .theme-doc-sidebar-menu .menu__list .menu__list {
+  border-left-color: var(--ifm-color-primary-darkest);
 }
 
 /* Quick Start highlighted item */
@@ -201,6 +239,24 @@
 
 [data-theme='dark'] .hero-quickstart a {
   color: var(--ifm-color-primary);
+}
+
+/* Sidebar scrollbar styling */
+.theme-doc-sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-thumb {
+  background: var(--ifm-color-emphasis-300);
+  border-radius: 3px;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--ifm-menu-color-active);
 }
 
 /* ============================================
