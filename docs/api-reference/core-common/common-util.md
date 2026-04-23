@@ -34,7 +34,7 @@ The **activiti-common-util** module provides essential utility classes for date 
 - **Type Conversion**: Convert between various date/time types
 - **Timezone Awareness**: ZoneId support for proper timezone handling
 - **Spring Boot Integration**: Auto-configuration with customizable patterns
-- **Thread-Safe**: Utilities designed for concurrent use
+- **NOT Thread-Safe**: `DateFormatterProvider` has mutable setters (`setDateFormatPattern`, `setZoneId`) — do not share instances across threads without synchronization
 - **Exception Handling**: Robust error handling for invalid dates
 
 ### Module Structure
@@ -128,7 +128,7 @@ flowchart TD
 
 **Design Pattern:** Provider pattern with configurable behavior
 
-**Thread Safety:** Thread-safe (immutable configuration after construction)
+**Thread Safety:** NOT thread-safe. The class has mutable setter methods (`setDateFormatPattern`, `setZoneId`) that can change the configuration at any time. If shared across threads, external synchronization is required, or each thread should use its own instance.
 
 **Example:**
 ```java
@@ -445,37 +445,30 @@ public class ProcessVariableDateHandler {
 
 ### Timezone-Aware Operations
 
+**Important:** `DateFormatterProvider` is NOT thread-safe due to its mutable `setZoneId` method. Never use a `setZoneId`/restore pattern on a shared Spring bean — it will cause race conditions. Instead, create a new instance for each timezone-specific operation:
+
 ```java
 @Service
 public class TimezoneAwareDateService {
-    
+
     @Autowired
     private DateFormatterProvider dateFormatterProvider;
-    
+
     public Date parseWithTimezone(String dateStr, String timezone) {
-        // Temporarily change timezone
-        ZoneId originalZone = dateFormatterProvider.getZoneId();
-        dateFormatterProvider.setZoneId(ZoneId.of(timezone));
-        
-        try {
-            return dateFormatterProvider.parse(dateStr);
-        } finally {
-            // Restore original timezone
-            dateFormatterProvider.setZoneId(originalZone);
-        }
+        // Create a new instance for the different timezone
+        DateFormatterProvider provider = new DateFormatterProvider(
+            dateFormatterProvider.getDateFormatPattern()
+        );
+        provider.setZoneId(ZoneId.of(timezone));
+        return provider.parse(dateStr);
     }
-    
+
     public Date convertToUtc(String dateStr, String sourceTimezone) {
         DateFormatterProvider provider = new DateFormatterProvider(
             dateFormatterProvider.getDateFormatPattern()
         );
         provider.setZoneId(ZoneId.of(sourceTimezone));
-        
-        Date sourceDate = provider.parse(dateStr);
-        
-        // Convert to UTC
-        provider.setZoneId(ZoneOffset.UTC);
-        return provider.toDate(sourceDate);
+        return provider.parse(dateStr);
     }
 }
 ```
@@ -803,5 +796,5 @@ public Date convert(Object value) {
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Spring Application](../core-common/spring-application.md)
-- [Expression Language](../core-common/expression-language.md)
+- [Spring Application](./spring-application.md)
+- [Expression Language](./expression-language.md)

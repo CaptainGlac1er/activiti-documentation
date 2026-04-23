@@ -36,9 +36,14 @@ private ApplicationUpgradeContextService upgradeService;
 public void checkUpgrade() throws IOException {
     if (upgradeService.hasProjectManifest()) {
         ProjectManifest manifest = upgradeService.loadProjectManifest();
-        log.info("Loaded manifest: {} v{}", manifest.getName(), manifest.getVersion());
+        // manifest fields: id, name, version, description, createdBy, lastModifiedBy, creationDate, lastModifiedDate
     }
-    
+
+    if (upgradeService.hasEnforcedAppVersion()) {
+        Integer enforced = upgradeService.getEnforcedAppVersion();
+        log.info("Enforced version: {}", enforced);
+    }
+
     if (upgradeService.isRollbackDeployment()) {
         log.warn("Rollback deployment detected");
     }
@@ -62,32 +67,33 @@ ApplicationUpgradeContextService
 
 ```java
 public class ApplicationUpgradeContextService {
-    
+
     private String projectManifestFilePath;
     private Integer enforcedAppVersion;
     private boolean isRollbackDeployment;
     private final ObjectMapper objectMapper;
     private ResourcePatternResolver resourceLoader;
-    
+
     public ProjectManifest loadProjectManifest() throws IOException {
         Optional<Resource> resourceOptional = retrieveResource();
-        
-        Resource resource = resourceOptional
-            .orElseThrow(() -> new FileNotFoundException(
-                "'" + projectManifestFilePath + "' manifest not found."));
-        
-        try (InputStream inputStream = resource.getInputStream()) {
-            return read(inputStream);
-        }
+
+        return read(resourceOptional
+            .orElseThrow(() -> new FileNotFoundException("'" + projectManifestFilePath + "' manifest not found."))
+            .getInputStream());
     }
-    
+
     private Optional<Resource> retrieveResource() {
         Resource resource = resourceLoader.getResource(projectManifestFilePath);
-        return resource.exists() ? Optional.of(resource) : Optional.empty();
+        if (resource.exists()) {
+            return Optional.of(resource);
+        } else {
+            return Optional.empty();
+        }
     }
-    
+
     private ProjectManifest read(InputStream inputStream) throws IOException {
-        return objectMapper.readValue(inputStream, ProjectManifest.class);
+        return objectMapper.readValue(inputStream,
+            ProjectManifest.class);
     }
 }
 ```
@@ -96,30 +102,24 @@ public class ApplicationUpgradeContextService {
 
 ## Version Enforcement
 
+`hasEnforcedAppVersion()` returns `true` when the configured `application.version` property is greater than 0. It does **not** check a boolean flag — it compares the integer value:
+
 ```java
-@Service
-public class VersionEnforcementService {
-    
-    @Autowired
-    private ApplicationUpgradeContextService upgradeService;
-    
-    public boolean shouldEnforceVersion() {
-        return upgradeService.hasEnforcedAppVersion();
-    }
-    
-    public Integer getEnforcedVersion() {
-        return upgradeService.getEnforcedAppVersion();
-    }
-    
-    public void checkVersionCompatibility(String currentVersion) {
-        if (shouldEnforceVersion()) {
-            Integer enforced = getEnforcedVersion();
-            if (!isCompatible(currentVersion, enforced)) {
-                throw new IncompatibleVersionException(
-                    "Version " + currentVersion + 
-                    " is not compatible with enforced version " + enforced);
-            }
-        }
+public boolean hasEnforcedAppVersion() {
+    return this.enforcedAppVersion > 0;
+}
+```
+
+When `application.version` is set to `0` (the default) or is negative, version enforcement is disabled.
+
+```java
+@Autowired
+private ApplicationUpgradeContextService upgradeService;
+
+public void checkVersion() {
+    if (upgradeService.hasEnforcedAppVersion()) {
+        Integer enforced = upgradeService.getEnforcedAppVersion();
+        log.info("Enforced application version: {}", enforced);
     }
 }
 ```
@@ -128,29 +128,19 @@ public class VersionEnforcementService {
 
 ## Rollback Deployment
 
+The `isRollbackDeployment()` method is driven by the `activiti.deploy.after-rollback` property (default `false`). When set to `true`, it indicates the current deployment is a rollback scenario.
+
 ```java
-@Service
-public class RollbackHandler {
-    
-    @Autowired
-    private ApplicationUpgradeContextService upgradeService;
-    
-    public void handleDeployment() {
-        if (upgradeService.isRollbackDeployment()) {
-            log.info("Executing rollback deployment");
-            performRollback();
-        } else {
-            log.info("Executing forward deployment");
-            performDeployment();
-        }
-    }
-    
-    private void performRollback() {
-        // Rollback logic
-    }
-    
-    private void performDeployment() {
-        // Normal deployment logic
+@Autowired
+private ApplicationUpgradeContextService upgradeService;
+
+public void handleDeployment() {
+    if (upgradeService.isRollbackDeployment()) {
+        log.info("Rollback deployment detected");
+        // Handle rollback logic
+    } else {
+        log.info("Forward deployment");
+        // Handle normal deployment logic
     }
 }
 ```
@@ -159,13 +149,26 @@ public class RollbackHandler {
 
 ## Configuration
 
+The following Spring properties are configured in `ApplicationUpgradeContextAutoConfiguration`:
+
+| Property | Default Value | Description |
+|----------|--------------|-------------|
+| `project.manifest.file.path` | `classpath:/default-app.json` | Path to the project manifest file |
+| `application.version` | `0` | Enforced application version (integer > 0 enables enforcement) |
+| `activiti.deploy.after-rollback` | `false` | Whether this is a rollback deployment |
+
+Example `application.yml`:
+
 ```yaml
-# application.yml
+project:
+  manifest:
+    file:
+      path: classpath:/default-app.json
+application:
+  version: 1
 activiti:
-  project:
-    manifest-path: classpath:project/MANIFEST.json
-    enforced-version: 1
-    rollback: false
+  deploy:
+    after-rollback: false
 ```
 
 ---
@@ -183,12 +186,22 @@ activiti:
 
 ### ApplicationUpgradeContextService
 
+**Constructor:**
+
+```java
+public ApplicationUpgradeContextService(String path,
+                                        Integer enforcedAppVersion,
+                                        Boolean isRollbackDeployment,
+                                        ObjectMapper objectMapper,
+                                        ResourcePatternResolver resourceLoader)
+```
+
 **Methods:**
 
 ```java
 ProjectManifest loadProjectManifest() throws IOException;
 boolean hasProjectManifest();
-boolean hasEnforcedAppVersion();
+boolean hasEnforcedAppVersion();  // Returns true when enforcedAppVersion > 0
 Integer getEnforcedAppVersion();
 boolean isRollbackDeployment();
 ```
@@ -199,16 +212,16 @@ boolean isRollbackDeployment();
 
 ### Manifest Not Found
 
-**Problem:** FileNotFoundException when loading manifest
+**Problem:** `FileNotFoundException` with message `"'" + projectManifestFilePath + "' manifest not found."` when calling `loadProjectManifest()`.
 
 **Solution:**
-1. Check manifest path is correct
-2. Verify manifest file exists
-3. Ensure proper file permissions
+1. Verify the `project.manifest.file.path` property points to an existing resource
+2. Default value is `classpath:/default-app.json`
+3. Always call `hasProjectManifest()` before attempting to load
 
 ```java
 if (!upgradeService.hasProjectManifest()) {
-    log.error("Project manifest not found at: {}", manifestPath);
+    log.error("Project manifest not found. Check project.manifest.file.path property.");
 }
 ```
 
@@ -217,5 +230,5 @@ if (!upgradeService.hasProjectManifest()) {
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Project Model](../core-common/project-model.md)
-- [Spring Application](../core-common/spring-application.md)
+- [Project Model](./project-model.md)
+- [Spring Application](./spring-application.md)

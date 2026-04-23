@@ -79,14 +79,16 @@ flowchart TD
                activiti:assignee="paymentProcessor">
   <bpmn:incoming>flowToEnterPayment</bpmn:incoming>
   <bpmn:outgoing>flowToValidatePayment</bpmn:outgoing>
-  <bpmn:property id="paymentMethod" name="paymentMethod"/>
-  <bpmn:property id="cardNumber" name="cardNumber"/>
+  <bpmn:extensionElements>
+    <activiti:formProperty id="paymentMethod" name="paymentMethod" type="string"/>
+    <activiti:formProperty id="cardNumber" name="cardNumber" type="string"/>
+  </bpmn:extensionElements>
 </bpmn:userTask>
 ```
 
 **Purpose:** Human task for entering or confirming payment information.
 
-**Task Properties:**
+**Form Properties:**
 - `paymentMethod` - Credit card, PayPal, etc.
 - `cardNumber` - Payment card details (masked)
 
@@ -99,10 +101,13 @@ flowchart TD
 
 **Runtime Completion:**
 ```java
-taskService.complete(taskId, Map.of(
-    "paymentMethod", "CREDIT_CARD",
-    "cardNumber", "****-****-****-1234"
-));
+taskRuntime.complete(
+    TaskPayloadBuilder.complete()
+        .withTaskId(taskId)
+        .withVariable("paymentMethod", "CREDIT_CARD")
+        .withVariable("cardNumber", "****-****-****-1234")
+        .build()
+);
 ```
 
 ---
@@ -210,18 +215,18 @@ public class PaymentValidationService implements Connector {
                   activiti:async="true">
   <bpmn:incoming>flowToProcessPayment</bpmn:incoming>
   <bpmn:outgoing>flowToPaymentResultGateway</bpmn:outgoing>
-  
-  <!-- Timer boundary event -->
-  <bpmn:boundaryEvent id="paymentTimeoutEvent" 
-                      name="Payment Timeout" 
-                      attachedToRef="processPaymentTask" 
-                      cancelActivity="true">
-    <bpmn:outgoing>flowToRetryPayment</bpmn:outgoing>
-    <bpmn:timerEventDefinition>
-      <bpmn:timeDuration>PT2M</timeDuration>
-    </bpmn:timerEventDefinition>
-  </bpmn:boundaryEvent>
 </bpmn:serviceTask>
+
+<!-- Timer boundary event (sibling, not child of the serviceTask) -->
+<bpmn:boundaryEvent id="paymentTimeoutEvent" 
+                    name="Payment Timeout" 
+                    attachedToRef="processPaymentTask" 
+                    cancelActivity="true">
+  <bpmn:outgoing>flowToRetryPayment</bpmn:outgoing>
+  <bpmn:timerEventDefinition>
+    <bpmn:timeDuration>PT2M</timeDuration>
+  </bpmn:timerEventDefinition>
+</bpmn:boundaryEvent>
 ```
 
 **Key Features:**
@@ -349,10 +354,7 @@ services:
   <bpmn:incoming>flowToRetryPayment</bpmn:incoming>
   <bpmn:outgoing>flowToRetryValidation</bpmn:outgoing>
   
-  <bpmn:multiInstanceLoopCharacteristics 
-    isSequential="true" 
-    activiti:collection="${retryAttempts}" 
-    activiti:elementVariable="attempt">
+  <bpmn:multiInstanceLoopCharacteristics isSequential="true">
     <bpmn:loopCardinality>3</bpmn:loopCardinality>
   </bpmn:multiInstanceLoopCharacteristics>
 </bpmn:userTask>
@@ -364,15 +366,11 @@ services:
 |-----------|-------|---------|
 | `isSequential` | `true` | One retry at a time |
 | `loopCardinality` | `3` | Maximum 3 retry attempts |
-| `activiti:collection` | `${retryAttempts}` | Collection to iterate (EL expression) |
-| `activiti:elementVariable` | `attempt` | Current retry attempt variable name |
 
 **Alternative with completion condition:**
 ```xml
-<bpmn:multiInstanceLoopCharacteristics 
-  isSequential="true" 
-  activiti:collection="${retryAttempts}" 
-  activiti:elementVariable="attempt">
+<bpmn:multiInstanceLoopCharacteristics isSequential="true">
+  <bpmn:loopCardinality>3</bpmn:loopCardinality>
   <bpmn:completionCondition>${nrOfCompletedInstances >= 1}</bpmn:completionCondition>
 </bpmn:multiInstanceLoopCharacteristics>
 ```
@@ -617,10 +615,7 @@ public class AccountingNotificationService implements Connector {
 ### 3. Multi-Instance Retry
 
 ```xml
-<multiInstanceLoopCharacteristics 
-  isSequential="true" 
-  activiti:collection="${retryAttempts}" 
-  activiti:elementVariable="attempt">
+<multiInstanceLoopCharacteristics isSequential="true">
   <loopCardinality>3</loopCardinality>
   <completionCondition>${nrOfCompletedInstances >= 1}</completionCondition>
 </multiInstanceLoopCharacteristics>

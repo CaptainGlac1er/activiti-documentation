@@ -19,6 +19,7 @@ flowchart TD
         Task["TaskService"]
         History["HistoryService"]
         Mgmt["ManagementService"]
+        DynamicBpmn["DynamicBpmnService"]
     end
 ```
 
@@ -43,10 +44,10 @@ public interface ProcessEngine {
     TaskService getTaskService();
     HistoryService getHistoryService();
     ManagementService getManagementService();
-    
+    DynamicBpmnService getDynamicBpmnService();
     ProcessEngineConfiguration getProcessEngineConfiguration();
     String getName();
-    String getId();
+    void close();
 }
 ```
 
@@ -222,12 +223,13 @@ spring:
     username: activiti
     password: activiti
 
-activiti:
-  database-schema-update: true
-  async-executor-activate: true
+spring:
+  activiti:
+    database-schema-update: true
+    async-executor-activate: true
 ```
 
-**See:** [Configuration Guide](../../../configuration.md)
+**See:** [Configuration Guide](../../configuration.md)
 
 ## API Comparison
 
@@ -478,5 +480,5 @@ Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
 ## See Also
 
 - [Activiti API](../activiti-api/README.md) - Modern interface-driven API
-- [Configuration Guide](../../../configuration.md) - Quick start guide
+- [Configuration Guide](../../configuration.md) - Quick start guide
 - [Best Practices](../../best-practices/overview.md) - Performance optimization

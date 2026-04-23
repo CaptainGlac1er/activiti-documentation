@@ -582,8 +582,8 @@ External dependencies:
 ## Related Documentation
 
 - [API Reference](./api-implementation.md)
-- [Main Module Docs](../overview.md)
-- [Runtime Shared Module](runtime-shared.md)
+- [Main Module Docs](./README.md)
+- [Runtime Shared Module](./runtime-shared.md)
 
 ---
 

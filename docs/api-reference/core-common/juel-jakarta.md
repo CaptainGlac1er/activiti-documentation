@@ -198,7 +198,7 @@ ValueExpression expr = factory.createValueExpression(
 
 ---
 
-### TreeBuilder
+### TreeBuilder / Builder
 
 **Purpose:** Parses expression strings and builds AST trees.
 
@@ -209,15 +209,16 @@ ValueExpression expr = factory.createValueExpression(
 - Handle operator precedence
 - Generate parse errors
 
-**Features:**
-- `METHOD_INVOCATIONS`: Support `${foo.bar()}`
-- `VARARGS`: Support variable arguments
-- `NULL_PROPERTIES`: Support `${foo[null]}`
+**Key Classes:**
+- `TreeBuilder` - Interface defining `build(String expression)` and `isEnabled(Feature feature)`
+- `Builder` - Implementation class in `org.activiti.core.el.juel.tree.impl.Builder`
+- `Builder.Feature` - Enum defining features: `METHOD_INVOCATIONS`, `VARARGS`, `NULL_PROPERTIES`, `IGNORE_RETURN_TYPE`
+
+**Note:** The `Builder` class is the implementation of the `TreeBuilder` interface. Features are enabled via constructor, not via a `setFeature()` method.
 
 **Example:**
 ```java
-TreeBuilder builder = new TreeBuilder();
-builder.setFeature(TreeBuilder.Feature.METHOD_INVOCATIONS, true);
+Builder builder = new Builder(Builder.Feature.METHOD_INVOCATIONS, Builder.Feature.VARARGS);
 Tree tree = builder.build("${math:add(1, 2)}");
 ```
 
@@ -587,7 +588,13 @@ public ExpressionFactoryImpl()
 public ExpressionFactoryImpl(Properties properties)
 public ExpressionFactoryImpl(Profile profile)
 public ExpressionFactoryImpl(Profile profile, Properties properties)
+public ExpressionFactoryImpl(Properties properties, TypeConverter converter)
+public ExpressionFactoryImpl(Profile profile, Properties properties, TypeConverter converter)
+public ExpressionFactoryImpl(TreeStore store)
+public ExpressionFactoryImpl(TreeStore store, TypeConverter converter)
 ```
+
+**Note:** The `TreeStore`-based constructors allow full control over the expression caching and parsing infrastructure. The `TypeConverter`-based constructors allow custom type conversion behavior.
 
 **Static Methods:**
 
@@ -623,24 +630,36 @@ public TypeConverter getTypeConverter()
 
 ---
 
-### TreeBuilder
+### TreeBuilder / Builder
 
-**Features:**
+**Interface (`TreeBuilder`):**
 
 ```java
-public enum Feature {
-    METHOD_INVOCATIONS,
-    VARARGS,
-    NULL_PROPERTIES
+public interface TreeBuilder {
+    Tree build(String expression) throws TreeBuilderException;
+    boolean isEnabled(Feature feature);
 }
 ```
 
-**Methods:**
+**Implementation (`Builder`):**
 
 ```java
-public void setFeature(Feature feature, boolean enabled)
-public Tree build(String expression)
-public boolean isFeatureEnabled(Feature feature)
+public class Builder implements TreeBuilder {
+    public enum Feature {
+        METHOD_INVOCATIONS,
+        VARARGS,
+        NULL_PROPERTIES,
+        IGNORE_RETURN_TYPE
+    }
+
+    // Constructors
+    public Builder()
+    public Builder(Feature... features)
+
+    // Methods
+    public Tree build(String expression)
+    public boolean isEnabled(Feature feature)
+}
 ```
 
 ---
@@ -710,5 +729,5 @@ if (result != null) {
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Expression Language](../core-common/expression-language.md)
-- [Common Utilities](../core-common/common-util.md)
+- [Expression Language](./expression-language.md)
+- [Common Utilities](./common-util.md)

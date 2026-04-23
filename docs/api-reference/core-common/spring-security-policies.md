@@ -27,36 +27,36 @@ description: Spring-based security policies and authorization rules for Activiti
 
 ## Overview
 
-The **activiti-spring-security-policies** module provides fine-grained security policy management for Activiti applications. It enables defining and enforcing access control policies at the process definition and process instance level, supporting role-based and group-based access control.
+The **activiti-spring-security-policies** module provides fine-grained security policy management for Activiti applications. It enables defining and enforcing access control policies at the process definition and process instance level, supporting role-based and group-based access control through key-based restrictions.
 
 ### Key Features
 
 - **Policy-Based Access Control**: Define granular security policies
-- **Process Definition Restrictions**: Control who can see/start processes
-- **Process Instance Restrictions**: Control who can access instances
-- **Service-Level Policies**: Apply policies to specific services
-- **Key-Based Access**: Restrict access by business keys
-- **Auto-Configuration**: Spring Boot integration
+- **Process Definition Restrictions**: Control which process definitions a user can access
+- **Process Instance Restrictions**: Control which process instances a user can see
+- **Service-Level Policies**: Apply policies scoped to specific application services
+- **Key-Based Access**: Restrict access by process definition keys
+- **Auto-Configuration**: Spring Boot integration via `@AutoConfiguration`
 
 ### Module Structure
 
 ```
 activiti-spring-security-policies/
 └── src/main/java/org/activiti/core/common/spring/security/policies/
-    ├── SecurityPolicy.java                           # Policy model
-    ├── SecurityPolicyAccess.java                     # Access levels
-    ├── SecurityPoliciesManager.java                  # Policy manager interface
-    ├── BaseSecurityPoliciesManagerImpl.java          # Base implementation
-    ├── ProcessSecurityPoliciesManager.java           # Process policies
-    ├── ProcessSecurityPoliciesManagerImpl.java       # Process implementation
-    ├── SecurityPoliciesRestrictionApplier.java       # Restriction applier
-    ├── SecurityPoliciesProcessDefinitionRestrictionApplier.java # Def applier
-    ├── SecurityPoliciesProcessInstanceRestrictionApplier.java    # Instance applier
-    ├── ActivitiForbiddenException.java               # Security exception
-    └── conf/
-        └── SecurityPoliciesProperties.java           # Configuration properties
+    ├── SecurityPolicy.java
+    ├── SecurityPolicyAccess.java
+    ├── SecurityPoliciesManager.java
+    ├── BaseSecurityPoliciesManagerImpl.java
+    ├── ProcessSecurityPoliciesManager.java
+    ├── ProcessSecurityPoliciesManagerImpl.java
+    ├── SecurityPoliciesRestrictionApplier.java
+    ├── SecurityPoliciesProcessDefinitionRestrictionApplier.java
+    ├── SecurityPoliciesProcessInstanceRestrictionApplier.java
+    ├── ActivitiForbiddenException.java
+    ├── conf/
+    │   └── SecurityPoliciesProperties.java
     └── config/
-        └── ActivitiSpringSecurityPoliciesAutoConfiguration.java # Auto-config
+        └── ActivitiSpringSecurityPoliciesAutoConfiguration.java
 ```
 
 ---
@@ -72,45 +72,53 @@ activiti-spring-security-policies/
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │           SecurityPoliciesManager                    │   │
 │  │         (Policy Management Interface)                │   │
-│  │  - getPolicy(name)                                   │   │
-│  │  - hasAccess(policy, user)                           │   │
-│  │  - applyRestrictions()                               │   │
+│  │  - canRead(key, serviceName)                         │   │
+│  │  - canWrite(key, serviceName)                        │   │
+│  │  - canRead(key)                                      │   │
+│  │  - canWrite(key)                                     │   │
+│  │  - arePoliciesDefined()                              │   │
+│  │  - getAllowedKeys(SecurityPolicyAccess...)           │   │
 │  └────────────────────┬────────────────────────────────┘   │
 │                       │                                     │
-│                       │ extends                             │
+│                       │ extended by                         │
 │                       ▼                                     │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │      ProcessSecurityPoliciesManager                 │   │
 │  │     (Process-Specific Policies)                     │   │
-│  │  - getProcessDefinitionPolicies()                   │   │
-│  │  - getProcessInstancePolicies()                     │   │
+│  │  - restrictProcessDefQuery(SecurityPolicyAccess)    │   │
+│  │  - restrictProcessInstQuery(SecurityPolicyAccess)   │   │
 │  └────────────────────┬────────────────────────────────┘   │
 │                       │                                     │
 │                       │ implemented by                      │
 │                       ▼                                     │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │   ProcessSecurityPoliciesManagerImpl               │   │
+│  │   extends BaseSecurityPoliciesManagerImpl          │   │
 │  │                                                      │   │
 │  │  Uses RestrictionAppliers to enforce policies      │   │
+│  │  on GetProcessDefinitionsPayload and              │   │
+│  │  GetProcessInstancesPayload                       │   │
 │  └────────────────────┬────────────────────────────────┘   │
 │                       │                                     │
-│           ┌───────────┼───────────┐                         │
-│           │           │           │                         │
-│           ▼           ▼           ▼                         │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐       │
-│  │ Process     │ │ Process     │ │ Service         │       │
-│  │ Definition  │ │ Instance    │ │ Level           │       │
-│  │ Restriction │ │ Restriction │ │ Restriction     │       │
-│  │ Applier     │ │ Applier     │ │ Applier         │       │
-│  └─────────────┘ └─────────────┘ └─────────────────┘       │
+│           ┌───────────┴───────────┐                         │
+│           ▼                       ▼                         │
+│  ┌─────────────────────────┐ ┌─────────────────────────┐   │
+│  │ SecurityPoliciesProcess │ │ SecurityPoliciesProcess │   │
+│  │ DefinitionRestriction   │ │ InstanceRestriction     │   │
+│  │ Applier                 │ │ Applier                 │   │
+│  │                         │ │                         │   │
+│  │ implements              │ │ implements              │   │
+│  │ RestrictionApplier<T>   │ │ RestrictionApplier<T>   │   │
+│  └─────────────────────────┘ └─────────────────────────┘   │
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │              SecurityPolicy                         │   │
 │  │  - name: String                                     │   │
-│  │  - groups: List<String>                            │   │
-│  │  - users: List<String>                             │   │
-│  │  - access: SecurityPolicyAccess                    │   │
-│  │  - keys: List<String>                              │   │
+│  │  - groups: List<String>                             │   │
+│  │  - users: List<String>                              │   │
+│  │  - serviceName: String                              │   │
+│  │  - access: SecurityPolicyAccess                     │   │
+│  │  - keys: List<String>                               │   │
 │  └─────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -118,44 +126,47 @@ activiti-spring-security-policies/
 ### Policy Enforcement Flow
 
 ```
-Process Access Request
+Process Query
     │
     ▼
 ┌─────────────────────────────┐
 │  ProcessSecurityPolicies    │
 │  Manager                    │
 └──────────┬──────────────────┘
-           │
-           ▼
+            │
+            ▼
 ┌─────────────────────────────┐
-│  Get Applicable Policies     │
-│  - By process definition     │
-│  - By process instance       │
-│  - By service                │
+│  restrictProcessDefQuery    │
+│  or                         │
+│  restrictProcessInstQuery   │
+│  (SecurityPolicyAccess)     │
 └──────────┬──────────────────┘
-           │
-           ▼
+            │
+            ▼
 ┌─────────────────────────────┐
-│  Check User Access           │
-│  - Is user in allowed groups?│
-│  - Is user in allowed list?  │
-│  - Does user have role?      │
+│  Are policies defined?      │
+│  - No → allowAll()          │
+│  - Yes → evaluate           │
 └──────────┬──────────────────┘
-           │
-           ├───────────┬───────────┐
-           │           │           │
-           ▼           ▼           ▼
-      Allowed      Denied    Restricted
-           │           │           │
-           └───────────┼───────────┘
-                       │
-                       ▼
-            ┌────────────────────┐
-            │  Restriction       │
-            │  Applier           │
-            │  - Filter results  │
-            │  - Hide data       │
-            └────────────────────┘
+            │
+            ▼
+┌─────────────────────────────┐
+│  getAllowedKeys()           │
+│  - Check user in policy     │
+│  - Check groups in policy   │
+│  - Match access level       │
+│  - Collect allowed keys     │
+└──────────┬──────────────────┘
+            │
+            ├───────────┬───────────┐
+            │           │           │
+            ▼           ▼           ▼
+        Wildcard      Keys        No keys
+        found         found       match
+            │           │           │
+            ▼           ▼           ▼
+       allowAll()  restrictTo   denyAll()
+                  (keys)
 ```
 
 ---
@@ -164,25 +175,23 @@ Process Access Request
 
 ### SecurityPolicy
 
-**Purpose:** Represents a security policy definition.
+**Purpose:** Represents a security policy definition that controls access to process definitions by key.
 
 **Responsibilities:**
-- Define policy identity
-- Specify allowed groups
-- Specify allowed users
-- Set access level
-- Define service scope
-- Restrict by keys
+- Define policy identity via `name`
+- Specify allowed groups via `groups`
+- Specify allowed users via `users`
+- Set access level via `access` (`NONE`, `READ`, or `WRITE`)
+- Define service scope via `serviceName`
+- Restrict by process definition keys via `keys`
 
 **Fields:**
 - `name` (`String`): Policy identifier
 - `groups` (`List<String>`): Allowed groups
 - `users` (`List<String>`): Allowed users
-- `serviceName` (`String`): Target service
-- `access` (SecurityPolicyAccess): Access level
-- `keys` (`List<String>`): Business keys for restriction
-
-**When to Use:** When defining access control policies.
+- `serviceName` (`String`): Target service/application name
+- `access` (`SecurityPolicyAccess`): Access level
+- `keys` (`List<String>`): Process definition keys for restriction
 
 **Design Pattern:** Value object pattern
 
@@ -192,76 +201,78 @@ SecurityPolicy policy = new SecurityPolicy();
 policy.setName("HR_PROCESS_ACCESS");
 policy.setGroups(Arrays.asList("HR", "MANAGEMENT"));
 policy.setUsers(Arrays.asList("hr.admin"));
-policy.setAccess(SecurityPolicyAccess.READ_WRITE);
-policy.setKeys(Arrays.asList("HR-2024-*"));
+policy.setServiceName("hr-service");
+policy.setAccess(SecurityPolicyAccess.WRITE);
+policy.setKeys(Arrays.asList("onboarding-process", "leave-request"));
 ```
 
 ---
 
 ### SecurityPolicyAccess
 
-**Purpose:** Defines access levels for policies.
-
-**Responsibilities:**
-- Specify permission granularity
-- Define read/write/delete access
-- Control policy enforcement
+**Purpose:** Defines access levels for security policies.
 
 **Values:**
-- `READ`: Read-only access
-- `READ_WRITE`: Read and write access
-- `FULL`: Full access including deletion
-
-**When to Use:** When setting policy permissions.
+- `NONE`: No access
+- `READ`: Read access (also grants implicit write-level visibility in `getAllowedKeys`)
+- `WRITE`: Write access
 
 **Design Pattern:** Enum pattern
 
 **Example:**
 ```java
-policy.setAccess(SecurityPolicyAccess.READ_WRITE);
+policy.setAccess(SecurityPolicyAccess.READ);
 ```
 
 ---
 
 ### SecurityPoliciesManager
 
-**Purpose:** Interface for security policy management.
-
-**Responsibilities:**
-- Retrieve policies
-- Check access permissions
-- Apply policy restrictions
-- Manage policy lifecycle
+**Purpose:** Core interface for security policy management. Determines whether a user can read or write process definitions based on configured policies.
 
 **Key Methods:**
-- `getPolicy(String name)` - Get policy by name
-- `hasAccess(SecurityPolicy policy, String userId)` - Check access
-- `applyRestrictions(Collection items)` - Apply restrictions
-- `getApplicablePolicies(String context)` - Get applicable policies
+- `canRead(String processDefinitionKey, String serviceName)` - Check read access with service scope
+- `canWrite(String processDefinitionKey, String serviceName)` - Check write access with service scope
+- `canRead(String processDefinitionKey)` - Check read access for current application
+- `canWrite(String processDefinitionKey)` - Check write access for current application
+- `arePoliciesDefined()` - Check if any security policies are configured
+- `getAllowedKeys(SecurityPolicyAccess... securityPolicyAccess)` - Get map of service names to allowed keys
 
-**When to Use:** For policy operations.
+**Design Pattern:** Manager/Interface pattern
 
-**Design Pattern:** Manager pattern
+---
+
+### BaseSecurityPoliciesManagerImpl
+
+**Purpose:** Abstract base implementation of `SecurityPoliciesManager`. Contains shared policy evaluation logic.
+
+**Key Methods:**
+- `arePoliciesDefined()` - Returns `true` if `securityPoliciesProperties.getPolicies()` is not empty
+- `getAllowedKeys(SecurityPolicyAccess...)` - Evaluates current user against all policies, returns `Map<String, Set<String>>` of service name to allowed keys
+- `canRead(String processDefinitionKey, String appName)` - Delegates to `hasPermission` with `READ`
+- `canWrite(String processDefinitionKey, String appName)` - Delegates to `hasPermission` with `WRITE`
+- `hasPermission(String processDefinitionKey, SecurityPolicyAccess, String appName)` - Core permission check
+- `anEntryInSetStartsKey(Set<String>, String)` - Protected, `startsWith` matching for key lookup
+
+**Permission Evaluation Logic:**
+1. If no policies defined → allow everything
+2. If user has `ACTIVITI_ADMIN` role → allow everything
+3. Otherwise, call `getAllowedKeys()` to collect keys for the user, then check if the requested key matches (via `anEntryInSetStartsKey`) or if wildcard is present
+
+**Example of `getAllowedKeys` behavior:**
+- If `READ` is requested and policy has `READ` or `WRITE` access → keys included
+- If `WRITE` is requested and policy has `WRITE` access → keys included
+- If `NONE` is requested → no keys included
 
 ---
 
 ### ProcessSecurityPoliciesManager
 
-**Purpose:** Manages security policies for processes.
-
-**Responsibilities:**
-- Get process definition policies
-- Get process instance policies
-- Check process access
-- Apply process restrictions
+**Purpose:** Extends `SecurityPoliciesManager` with process-specific query restriction methods. Returns payload objects that can be used to filter process definition and instance queries.
 
 **Key Methods:**
-- `getProcessDefinitionPolicies(String definitionKey)` - Get definition policies
-- `getProcessInstancePolicies(String instanceId)` - Get instance policies
-- `canStartProcess(String userId, String definitionKey)` - Check start permission
-- `canAccessInstance(String userId, String instanceId)` - Check instance access
-
-**When to Use:** For process-level security.
+- `restrictProcessDefQuery(SecurityPolicyAccess)` - Returns `GetProcessDefinitionsPayload` restricted to allowed keys
+- `restrictProcessInstQuery(SecurityPolicyAccess)` - Returns `GetProcessInstancesPayload` restricted to allowed keys
 
 **Design Pattern:** Specialized manager pattern
 
@@ -269,102 +280,77 @@ policy.setAccess(SecurityPolicyAccess.READ_WRITE);
 
 ### ProcessSecurityPoliciesManagerImpl
 
-**Purpose:** Implementation of process security policies manager.
+**Purpose:** Implementation of `ProcessSecurityPoliciesManager`. Extends `BaseSecurityPoliciesManagerImpl` and uses restriction appliers to produce query payloads.
 
-**Responsibilities:**
-- Load policies from configuration
-- Evaluate policy conditions
-- Enforce access restrictions
-- Integrate with Spring Security
+**Constructor:**
+```java
+ProcessSecurityPoliciesManagerImpl(
+    SecurityManager securityManager,
+    SecurityPoliciesProperties securityPoliciesProperties,
+    SecurityPoliciesRestrictionApplier<GetProcessDefinitionsPayload> processDefinitionRestrictionApplier,
+    SecurityPoliciesRestrictionApplier<GetProcessInstancesPayload> processInstanceRestrictionApplier
+)
+```
 
 **Key Methods:**
-- `checkAccess(String userId, SecurityPolicy policy)` - Check access
-- `filterByPolicy(Collection items, SecurityPolicy policy)` - Filter items
-- `applyRestrictions(Object target)` - Apply restrictions
-
-**When to Use:** Automatically configured.
-
-**Design Pattern:** Implementation pattern
+- `restrictProcessDefQuery(SecurityPolicyAccess)` → `GetProcessDefinitionsPayload`
+- `restrictProcessInstQuery(SecurityPolicyAccess)` → `GetProcessInstancesPayload`
+- `canRead(String processDefinitionKey)` - Read access check; allows if `READ` OR `WRITE` permission exists
+- `canWrite(String processDefinitionKey)` - Write access check
+- `definitionKeysAllowedForApplicationPolicy(SecurityPolicyAccess)` - Private; filters `getAllowedKeys()` results to current application by matching `serviceName` (ignoring hyphens and case)
+- `restrictQuery(RestrictionApplier<T>, SecurityPolicyAccess)` - Private; core logic: if no policies → `allowAll()`, if keys found and wildcard present → `allowAll()`, if keys found → `restrictToKeys(keys)`, if policies exist but no match → `denyAll()`
+- `anEntryInSetStartsKey(Set<String>, String)` - Overrides base to use **exact** case-insensitive matching (not `startsWith`)
 
 ---
 
 ### SecurityPoliciesRestrictionApplier
 
-**Purpose:** Applies security policy restrictions.
+**Purpose:** Generic interface for applying security restrictions. Parameterized by the payload type it produces.
 
-**Responsibilities:**
-- Filter collections by policy
-- Hide restricted items
-- Enforce access control
-- Apply to query results
+**Methods:**
+- `T restrictToKeys(Set<String> keys)` - Restrict query to the given set of process definition keys
+- `T denyAll()` - Produce a payload that returns no results
+- `T allowAll()` - Produce an unrestricted payload
 
-**Key Methods:**
-- `applyRestrictions(Collection items)` - Apply to collection
-- `isRestricted(Object item, SecurityPolicy policy)` - Check restriction
-- `filterItems(Collection items, String userId)` - Filter by user
-
-**When to Use:** For result filtering.
-
-**Design Pattern:** Applier/Strategy pattern
+**Design Pattern:** Strategy/Generic pattern
 
 ---
 
 ### SecurityPoliciesProcessDefinitionRestrictionApplier
 
-**Purpose:** Applies restrictions to process definitions.
+**Purpose:** Implements `SecurityPoliciesRestrictionApplier<GetProcessDefinitionsPayload>`.
 
-**Responsibilities:**
-- Filter visible process definitions
-- Hide restricted definitions
-- Enforce definition-level policies
-
-**Key Methods:**
-- `applyRestrictions(List<ProcessDefinition> definitions)` - Apply to definitions
-- `canSeeDefinition(String userId, String definitionKey)` - Check visibility
-
-**When to Use:** For process definition security.
-
-**Design Pattern:** Specialized applier pattern
+**Behavior:**
+- `restrictToKeys(keys)` - Builds `GetProcessDefinitionsPayload` with `withProcessDefinitionKeys(keys)`
+- `denyAll()` - Builds payload with a random unsatisfiable key (`missing-<uuid>`)
+- `allowAll()` - Builds empty/unfiltered payload via `ProcessPayloadBuilder.processDefinitions().build()`
 
 ---
 
 ### SecurityPoliciesProcessInstanceRestrictionApplier
 
-**Purpose:** Applies restrictions to process instances.
+**Purpose:** Implements `SecurityPoliciesRestrictionApplier<GetProcessInstancesPayload>`.
 
-**Responsibilities:**
-- Filter visible process instances
-- Hide restricted instances
-- Enforce instance-level policies
-
-**Key Methods:**
-- `applyRestrictions(List<ProcessInstance> instances)` - Apply to instances
-- `canSeeInstance(String userId, String instanceId)` - Check visibility
-
-**When to Use:** For process instance security.
-
-**Design Pattern:** Specialized applier pattern
+**Behavior:**
+- `restrictToKeys(keys)` - Builds `GetProcessInstancesPayload` with `withProcessDefinitionKeys(keys)`
+- `denyAll()` - Builds payload with a random unsatisfiable key (`missing-<uuid>`)
+- `allowAll()` - Builds empty/unfiltered payload via `ProcessPayloadBuilder.processInstances().build()`
 
 ---
 
 ### ActivitiForbiddenException
 
-**Purpose:** Exception for access denied scenarios.
+**Purpose:** Exception thrown when access is denied. Extends `RuntimeException`.
 
-**Responsibilities:**
-- Signal access violations
-- Provide error context
-- Enable error handling
-
-**When to Use:** Thrown when access is denied.
-
-**Design Pattern:** Exception pattern
+**Constructors:**
+- `ActivitiForbiddenException(String message)`
+- `ActivitiForbiddenException(String message, Throwable cause)`
 
 **Example:**
 ```java
-if (!hasAccess(userId, policy)) {
+if (!processSecurityPoliciesManager.canRead(processKey)) {
     throw new ActivitiForbiddenException(
-        "User " + userId + " is not authorized");
+        "User is not authorized to read process: " + processKey);
 }
 ```
 
@@ -379,38 +365,66 @@ public class SecurityPolicy {
     private String name;                    // Policy identifier
     private List<String> groups;            // Allowed groups
     private List<String> users;             // Allowed users
-    private String serviceName;             // Target service
-    private SecurityPolicyAccess access;    // Access level
-    private List<String> keys;              // Business keys
+    private String serviceName;             // Target service/application name
+    private SecurityPolicyAccess access;    // Access level: NONE, READ, WRITE
+    private List<String> keys;              // Process definition keys
 }
 ```
 
 ### Policy Evaluation Logic
 
+The core evaluation in `BaseSecurityPoliciesManagerImpl.hasPermission()`:
+
 ```java
-public boolean hasAccess(String userId, SecurityPolicy policy) {
-    // Check if user is explicitly allowed
-    if (policy.getUsers() != null && policy.getUsers().contains(userId)) {
+public boolean hasPermission(String processDefinitionKey,
+                             SecurityPolicyAccess securityPolicyAccess,
+                             String appName) {
+    // No security policies defined - allow everything
+    if (securityPoliciesProperties.getPolicies().isEmpty()) {
         return true;
     }
-    
-    // Check if user is in allowed groups
-    List<String> userGroups = userGroupManager.getUserGroups(userId);
-    if (policy.getGroups() != null) {
-        for (String group : policy.getGroups()) {
-            if (userGroups.contains(group)) {
-                return true;
-            }
-        }
+
+    // ACTIVITI_ADMIN role bypasses all policies
+    if (securityManager.getAuthenticatedUserRoles().contains("ACTIVITI_ADMIN")) {
+        return true;
     }
-    
-    // Check business key restrictions
-    if (policy.getKeys() != null) {
-        // Apply key-based filtering
-        return matchesKeyRestriction(userId, policy.getKeys());
+
+    // Get allowed keys for the requested access level
+    Map<String, Set<String>> policiesMap = getAllowedKeys(securityPolicyAccess);
+    Set<String> keys = new HashSet<>();
+
+    if (policiesMap.get(appName) != null) {
+        keys.addAll(policiesMap.get(appName));
     }
-    
-    return false;
+    // Also check normalized name (strips hyphens, lowercases)
+    // for env-var compatibility
+    if (appName != null && policiesMap.get(appName.replaceAll("-", "").toLowerCase()) != null) {
+        keys.addAll(policiesMap.get(appName.replaceAll("-", "").toLowerCase()));
+    }
+
+    // Check if key matches or wildcard is present
+    return anEntryInSetStartsKey(keys, processDefinitionKey)
+        || keys.contains(securityPoliciesProperties.getWildcard());
+}
+```
+
+### Key Matching in `getAllowedKeys()`
+
+When collecting keys for a user, access level matching works as follows:
+
+```java
+// If WRITE is requested, only include policies with WRITE access
+if (securityPolicyAccesses.contains(SecurityPolicyAccess.WRITE)) {
+    if (ssp.getAccess().equals(SecurityPolicyAccess.WRITE)) {
+        definitionKeysAllowedByPolicy.get(ssp.getServiceName()).addAll(ssp.getKeys());
+    }
+}
+// If READ is requested, include policies with READ or WRITE access
+else if (securityPolicyAccesses.contains(SecurityPolicyAccess.READ)) {
+    if (ssp.getAccess().equals(SecurityPolicyAccess.READ)
+        || ssp.getAccess().equals(SecurityPolicyAccess.WRITE)) {
+        definitionKeysAllowedByPolicy.get(ssp.getServiceName()).addAll(ssp.getKeys());
+    }
 }
 ```
 
@@ -420,114 +434,134 @@ public boolean hasAccess(String userId, SecurityPolicy policy) {
 
 ### Process Definition Level
 
+The `ProcessSecurityPoliciesManager.restrictProcessDefQuery(READ)` method returns a `GetProcessDefinitionsPayload` that restricts which process definitions the current user can see. The payload is consumed by the process API layer.
+
 ```java
 @Service
 public class ProcessDefinitionSecurityService {
-    
+
     @Autowired
     private ProcessSecurityPoliciesManager policyManager;
-    
-    public List<ProcessDefinition> getVisibleDefinitions(String userId) {
-        List<ProcessDefinition> allDefinitions = 
-            processEngine.getProcessDefinitions();
-        
-        List<SecurityPolicy> policies = 
-            policyManager.getProcessDefinitionPolicies();
-        
-        return allDefinitions.stream()
-            .filter(def -> policyManager.canAccessDefinition(
-                userId, def.getKey(), policies))
-            .collect(Collectors.toList());
+
+    public GetProcessDefinitionsPayload getRestrictedDefinitionsPayload() {
+        return policyManager.restrictProcessDefQuery(SecurityPolicyAccess.READ);
     }
 }
 ```
 
 ### Process Instance Level
 
+Similarly, `restrictProcessInstQuery(READ)` returns a `GetProcessInstancesPayload` that restricts visible instances.
+
 ```java
 @Service
 public class ProcessInstanceSecurityService {
-    
+
     @Autowired
     private ProcessSecurityPoliciesManager policyManager;
-    
-    public List<ProcessInstance> getVisibleInstances(String userId) {
-        List<ProcessInstance> allInstances = 
-            processEngine.getProcessInstances();
-        
-        return allInstances.stream()
-            .filter(inst -> policyManager.canAccessInstance(
-                userId, inst.getId()))
-            .collect(Collectors.toList());
+
+    public GetProcessInstancesPayload getRestrictedInstancesPayload() {
+        return policyManager.restrictProcessInstQuery(SecurityPolicyAccess.READ);
     }
 }
 ```
+
+### Direct Permission Checks
+
+The manager also provides direct boolean checks for individual keys:
+
+```java
+@Service
+public class ProcessAccessService {
+
+    @Autowired
+    private ProcessSecurityPoliciesManager policyManager;
+
+    public boolean canReadProcess(String processDefinitionKey) {
+        return policyManager.canRead(processDefinitionKey);
+    }
+
+    public boolean canWriteProcess(String processDefinitionKey) {
+        return policyManager.canWrite(processDefinitionKey);
+    }
+}
+```
+
+Note: `canRead(key)` in `ProcessSecurityPoliciesManagerImpl` returns `true` if the user has either `READ` or `WRITE` permission for the key. `canWrite(key)` only returns `true` for `WRITE` permission.
 
 ---
 
 ## Restriction Appliers
 
-### Filtering Results
+### How Restriction Appliers Work
 
-```java
-@Component
-public class SecurityAwareProcessRepository {
-    
-    @Autowired
-    private SecurityPoliciesRestrictionApplier restrictionApplier;
-    
-    public List<ProcessInstance> findByUserId(String userId) {
-        List<ProcessInstance> allInstances = 
-            repository.findAll();
-        
-        return restrictionApplier.applyRestrictions(allInstances, userId);
-    }
-}
+Each applier implements `SecurityPoliciesRestrictionApplier<T>` and produces a query payload:
+
+**`SecurityPoliciesProcessDefinitionRestrictionApplier`:**
+- `restrictToKeys(keys)` → `ProcessPayloadBuilder.processDefinitions().withProcessDefinitionKeys(keys).build()`
+- `denyAll()` → Payload with unsatisfiable random key → returns empty results
+- `allowAll()` → `ProcessPayloadBuilder.processDefinitions().build()` → no restriction
+
+**`SecurityPoliciesProcessInstanceRestrictionApplier`:**
+- `restrictToKeys(keys)` → `ProcessPayloadBuilder.processInstances().withProcessDefinitionKeys(keys).build()`
+- `denyAll()` → Payload with unsatisfiable random key → returns empty results
+- `allowAll()` → `ProcessPayloadBuilder.processInstances().build()` → no restriction
+
+### Decision Flow in `restrictQuery()`
+
 ```
-
-### Custom Restriction Logic
-
-```java
-@Component
-public class CustomRestrictionApplier implements SecurityPoliciesRestrictionApplier {
-    
-    @Override
-    public <T> Collection<T> applyRestrictions(
-            Collection<T> items, String userId) {
-        
-        return items.stream()
-            .filter(item -> {
-                SecurityPolicy policy = getPolicyForItem(item);
-                return policyManager.hasAccess(userId, policy);
-            })
-            .collect(Collectors.toList());
-    }
-    
-    private SecurityPolicy getPolicyForItem(Object item) {
-        // Custom policy resolution logic
-        return policyRepository.findPolicy(item);
-    }
-}
+restrictQuery(applier, access)
+    │
+    ├─ arePoliciesDefined() == false ──────────────► applier.allowAll()
+    │
+    ├─ keys = definitionKeysAllowedForApplicationPolicy(access)
+    │   │
+    │   ├─ keys contains wildcard (*) ─────────────► applier.allowAll()
+    │   ├─ keys not empty ─────────────────────────► applier.restrictToKeys(keys)
+    │   └─ keys empty AND policies exist ──────────► applier.denyAll()
+    │
+    └─ policies list is empty ─────────────────────► applier.allowAll()
 ```
 
 ---
 
 ## Configuration
 
-### Properties Configuration
+### YAML Configuration
+
+The properties prefix is `activiti.security`. The `SecurityPoliciesProperties` class exposes only `policies` and `wildcard`.
 
 ```yaml
 # application.yml
 activiti:
   security:
+    wildcard: "*"
     policies:
-      enabled: true
-      default-access: READ
-      enforce-on-definitions: true
-      enforce-on-instances: true
-      restriction-appliers:
-        - process-definition
-        - process-instance
+      - name: "HR_POLICY"
+        groups:
+          - HR
+          - MANAGEMENT
+        users:
+          - hr.admin
+        serviceName: "hr-service"
+        access: WRITE
+        keys:
+          - onboarding-process
+          - leave-request
+      - name: "FINANCE_POLICY"
+        groups:
+          - FINANCE
+        serviceName: "finance-service"
+        access: READ
+        keys:
+          - invoice-approval
+      - name: "ADMIN_POLICY"
+        users:
+          - system.admin
+        serviceName: "hr-service"
+        access: READ
+        keys:
+          - "*"
 ```
 
 ### Java Configuration
@@ -535,138 +569,145 @@ activiti:
 ```java
 @Configuration
 public class SecurityPoliciesConfig {
-    
-    @Bean
-    public SecurityPoliciesProperties securityPoliciesProperties() {
-        SecurityPoliciesProperties props = new SecurityPoliciesProperties();
-        props.setEnabled(true);
-        props.setDefaultAccess(SecurityPolicyAccess.READ);
-        return props;
-    }
-    
+
     @Bean
     public List<SecurityPolicy> securityPolicies() {
-        return Arrays.asList(
-            createHRPolicy(),
-            createFinancePolicy(),
-            createAdminPolicy()
-        );
-    }
-    
-    private SecurityPolicy createHRPolicy() {
-        SecurityPolicy policy = new SecurityPolicy();
-        policy.setName("HR_ACCESS");
-        policy.setGroups(Arrays.asList("HR", "MANAGEMENT"));
-        policy.setAccess(SecurityPolicyAccess.READ_WRITE);
-        policy.setKeys(Arrays.asList("HR-*"));
-        return policy;
+        SecurityPolicy hrPolicy = new SecurityPolicy();
+        hrPolicy.setName("HR_ACCESS");
+        hrPolicy.setGroups(Arrays.asList("HR", "MANAGEMENT"));
+        hrPolicy.setServiceName("hr-service");
+        hrPolicy.setAccess(SecurityPolicyAccess.WRITE);
+        hrPolicy.setKeys(Arrays.asList("onboarding-process", "leave-request"));
+
+        SecurityPolicy financePolicy = new SecurityPolicy();
+        financePolicy.setName("FINANCE_ACCESS");
+        financePolicy.setGroups(Arrays.asList("FINANCE"));
+        financePolicy.setServiceName("finance-service");
+        financePolicy.setAccess(SecurityPolicyAccess.READ);
+        financePolicy.setKeys(Arrays.asList("invoice-approval"));
+
+        return Arrays.asList(hrPolicy, financePolicy);
     }
 }
 ```
+
+### Auto-Configuration
+
+`ActivitiSpringSecurityPoliciesAutoConfiguration` automatically registers:
+- `ProcessSecurityPoliciesManager` bean (via `ProcessSecurityPoliciesManagerImpl`)
+- `SecurityPoliciesRestrictionApplier<GetProcessInstancesPayload>` bean (named `processInstanceRestrictionApplier`)
+- `SecurityPoliciesRestrictionApplier<GetProcessDefinitionsPayload>` bean (named `processDefinitionRestrictionApplier`)
+
+All beans use `@ConditionalOnMissingBean`, allowing custom replacements.
 
 ---
 
 ## Usage Examples
 
-### Defining Security Policies
+### Defining Security Policies via YAML
 
-```java
-@Configuration
-public class SecurityPolicyConfiguration {
-    
-    @Bean
-    public List<SecurityPolicy> processSecurityPolicies() {
-        return Arrays.asList(
-            // HR Process Policy
-            createPolicy("HR_PROCESS", 
-                Arrays.asList("HR", "MANAGEMENT"),
-                Arrays.asList("hr.admin"),
-                SecurityPolicyAccess.READ_WRITE,
-                Arrays.asList("HR-*")),
-            
-            // Finance Process Policy
-            createPolicy("FINANCE_PROCESS",
-                Arrays.asList("FINANCE", "ACCOUNTING"),
-                Arrays.asList("finance.admin"),
-                SecurityPolicyAccess.READ_WRITE,
-                Arrays.asList("FIN-*")),
-            
-            // Public Process Policy
-            createPolicy("PUBLIC_PROCESS",
-                Arrays.asList("*"),  // All groups
-                Collections.emptyList(),
-                SecurityPolicyAccess.READ,
-                Collections.emptyList())
-        );
-    }
-    
-    private SecurityPolicy createPolicy(String name, 
-            List<String> groups, List<String> users,
-            SecurityPolicyAccess access, List<String> keys) {
-        SecurityPolicy policy = new SecurityPolicy();
-        policy.setName(name);
-        policy.setGroups(groups);
-        policy.setUsers(users);
-        policy.setAccess(access);
-        policy.setKeys(keys);
-        return policy;
-    }
-}
+```yaml
+activiti:
+  security:
+    policies:
+      - name: "HR_PROCESS"
+        groups:
+          - HR
+          - MANAGEMENT
+        users:
+          - hr.admin
+        serviceName: "myapp"
+        access: WRITE
+        keys:
+          - HR-onboarding
+          - HR-leave
+      - name: "FINANCE_PROCESS"
+        groups:
+          - FINANCE
+          - ACCOUNTING
+        users:
+          - finance.admin
+        serviceName: "myapp"
+        access: READ
+        keys:
+          - FIN-invoice
+      - name: "PUBLIC_PROCESS"
+        groups:
+          - "*all"
+        serviceName: "myapp"
+        access: READ
+        keys:
+          - public-request
 ```
 
-### Checking Process Access
+### Checking Read/Write Access
 
 ```java
 @Service
 public class ProcessAccessService {
-    
+
     @Autowired
     private ProcessSecurityPoliciesManager policyManager;
-    
-    @Autowired
-    private LocalSpringSecurityManager securityManager;
-    
-    public boolean canStartProcess(String processKey) {
-        String userId = securityManager.getCurrentUserIdentity();
-        return policyManager.canStartProcess(userId, processKey);
+
+    public boolean canReadProcess(String processDefinitionKey) {
+        return policyManager.canRead(processDefinitionKey);
     }
-    
-    public boolean canViewInstance(String instanceId) {
-        String userId = securityManager.getCurrentUserIdentity();
-        return policyManager.canAccessInstance(userId, instanceId);
+
+    public boolean canWriteProcess(String processDefinitionKey) {
+        return policyManager.canWrite(processDefinitionKey);
     }
-    
-    public List<ProcessInstance> getAccessibleInstances() {
-        String userId = securityManager.getCurrentUserIdentity();
-        return policyManager.getAccessibleInstances(userId);
+
+    public boolean arePoliciesEnabled() {
+        return policyManager.arePoliciesDefined();
     }
 }
 ```
 
-### Applying Restrictions to Queries
+### Getting Restricted Query Payloads
 
 ```java
-@Repository
-public class SecurityAwareProcessInstanceRepository {
-    
+@Service
+public class ProcessQueryService {
+
     @Autowired
-    private SecurityPoliciesRestrictionApplier restrictionApplier;
-    
+    private ProcessSecurityPoliciesManager policyManager;
+
     @Autowired
-    private LocalSpringSecurityManager securityManager;
-    
-    public List<ProcessInstance> findByStatus(String status) {
-        String userId = securityManager.getCurrentUserIdentity();
-        
-        List<ProcessInstance> allInstances = 
-            queryAllInstancesByStatus(status);
-        
-        return restrictionApplier.applyRestrictions(allInstances, userId);
+    private ProcessRuntime processRuntime;
+
+    public List<ProcessDefinition> getVisibleProcessDefinitions() {
+        GetProcessDefinitionsPayload payload =
+            policyManager.restrictProcessDefQuery(SecurityPolicyAccess.READ);
+        return processRuntime.getProcessDefinitions(payload);
     }
-    
-    private List<ProcessInstance> queryAllInstancesByStatus(String status) {
-        // Query database without restrictions
-        return processInstanceQuery().processVariableValueEquals("status", status).list();
+
+    public List<ProcessInstance> getVisibleProcessInstances() {
+        GetProcessInstancesPayload payload =
+            policyManager.restrictProcessInstQuery(SecurityPolicyAccess.READ);
+        return processRuntime.getProcessInstances(payload);
+    }
+}
+```
+
+### Getting Allowed Keys for Current User
+
+```java
+@Service
+public class PolicyInspectionService {
+
+    @Autowired
+    private ProcessSecurityPoliciesManager policyManager;
+
+    public Map<String, Set<String>> getReadAllowedKeys() {
+        return policyManager.getAllowedKeys(SecurityPolicyAccess.READ);
+    }
+
+    public Map<String, Set<String>> getWriteAllowedKeys() {
+        return policyManager.getAllowedKeys(SecurityPolicyAccess.WRITE);
+    }
+
+    public Map<String, Set<String>> getReadWriteAllowedKeys() {
+        return policyManager.getAllowedKeys(SecurityPolicyAccess.READ, SecurityPolicyAccess.WRITE);
     }
 }
 ```
@@ -676,30 +717,50 @@ public class SecurityAwareProcessInstanceRepository {
 ```java
 @Service
 public class CustomPolicyEnforcer {
-    
+
     @Autowired
     private ProcessSecurityPoliciesManager policyManager;
-    
-    public void enforceProcessDefinitionPolicy(String userId, String definitionKey) {
-        List<SecurityPolicy> policies = 
-            policyManager.getProcessDefinitionPolicies(definitionKey);
-        
-        boolean hasAccess = policies.stream()
-            .anyMatch(policy -> policyManager.hasAccess(userId, policy));
-        
-        if (!hasAccess) {
+
+    public void enforceReadAccess(String processDefinitionKey) {
+        if (!policyManager.canRead(processDefinitionKey)) {
             throw new ActivitiForbiddenException(
-                "User " + userId + " cannot access process " + definitionKey);
+                "User cannot read process: " + processDefinitionKey);
         }
     }
-    
-    public void enforceBusinessKeyPolicy(String userId, String businessKey) {
-        SecurityPolicy policy = policyManager.getPolicyForKey(businessKey);
-        
-        if (policy != null && !policyManager.hasAccess(userId, policy)) {
+
+    public void enforceWriteAccess(String processDefinitionKey) {
+        if (!policyManager.canWrite(processDefinitionKey)) {
             throw new ActivitiForbiddenException(
-                "User " + userId + " cannot access business key " + businessKey);
+                "User cannot write process: " + processDefinitionKey);
         }
+    }
+}
+```
+
+### Custom Restriction Applier
+
+```java
+@Component
+public class CustomProcessDefinitionRestrictionApplier
+    implements SecurityPoliciesRestrictionApplier<GetProcessDefinitionsPayload> {
+
+    @Override
+    public GetProcessDefinitionsPayload restrictToKeys(Set<String> keys) {
+        return ProcessPayloadBuilder.processDefinitions()
+            .withProcessDefinitionKeys(keys)
+            .build();
+    }
+
+    @Override
+    public GetProcessDefinitionsPayload denyAll() {
+        return ProcessPayloadBuilder.processDefinitions()
+            .withProcessDefinitionKey("missing-" + UUID.randomUUID().toString())
+            .build();
+    }
+
+    @Override
+    public GetProcessDefinitionsPayload allowAll() {
+        return ProcessPayloadBuilder.processDefinitions().build();
     }
 }
 ```
@@ -711,74 +772,48 @@ public class CustomPolicyEnforcer {
 ### 1. Use Least Privilege
 
 ```java
-// GOOD - Minimal required access
+// GOOD - READ access for viewers
 SecurityPolicy policy = new SecurityPolicy();
 policy.setAccess(SecurityPolicyAccess.READ);
 policy.setGroups(Arrays.asList("HR_VIEWERS"));
 
-// BAD - Excessive permissions
-policy.setAccess(SecurityPolicyAccess.FULL);
-policy.setGroups(Arrays.asList("*"));
+// BAD - WRITE access for read-only roles
+policy.setAccess(SecurityPolicyAccess.WRITE);
 ```
 
-### 2. Define Explicit User Lists
+### 2. Scope Policies to Services
 
 ```java
-// GOOD - Explicit users for sensitive operations
-policy.setUsers(Arrays.asList("admin.user", "security.officer"));
-policy.setGroups(Arrays.asList("ADMIN"));
+// GOOD - Explicit service name
+policy.setServiceName("hr-service");
 
-// BAD - Relying only on groups
-policy.setUsers(Collections.emptyList());
+// BAD - Missing service name (policy will not match any application)
 ```
 
 ### 3. Use Business Key Restrictions
 
 ```java
-// GOOD - Restrict by business key pattern
-policy.setKeys(Arrays.asList("HR-2024-*", "HR-EMP-*"));
+// GOOD - Restrict to specific process definitions
+policy.setKeys(Arrays.asList("HR-onboarding", "HR-leave"));
 
-// BAD - No key restrictions
-policy.setKeys(Collections.emptyList());
+// GOOD - Use wildcard to allow all definitions for a group
+policy.setKeys(Arrays.asList("*"));
 ```
 
 ### 4. Log Access Denials
 
 ```java
-// GOOD
 try {
-    policyManager.enforceAccess(userId, policy);
+    policyManager.enforceReadAccess(processKey);
 } catch (ActivitiForbiddenException e) {
-    auditLog.logAccessDenied(userId, policy.getName(), e);
+    auditLog.logAccessDenied(policyManager, processKey, e);
     throw e;
 }
-
-// BAD
-policyManager.enforceAccess(userId, policy);
-// No audit trail
 ```
 
-### 5. Validate Policies on Startup
+### 5. Admin Role Bypass
 
-```java
-@Component
-public class PolicyValidator implements ApplicationRunner {
-    
-    @Autowired
-    private ProcessSecurityPoliciesManager policyManager;
-    
-    @Override
-    public void run(ApplicationArguments args) {
-        List<SecurityPolicy> policies = policyManager.getAllPolicies();
-        
-        policies.forEach(policy -> {
-            if (policy.getGroups() == null && policy.getUsers() == null) {
-                log.warn("Policy {} has no access restrictions", policy.getName());
-            }
-        });
-    }
-}
-```
+Users with the `ACTIVITI_ADMIN` role bypass all security policies. Use this role sparingly and monitor its usage.
 
 ---
 
@@ -786,13 +821,15 @@ public class PolicyValidator implements ApplicationRunner {
 
 ### SecurityPolicy
 
+**Package:** `org.activiti.core.common.spring.security.policies`
+
 **Fields:**
 - `name` (`String`): Policy identifier
 - `groups` (`List<String>`): Allowed groups
 - `users` (`List<String>`): Allowed users
-- `serviceName` (`String`): Target service
-- `access` (`SecurityPolicyAccess`): Access level
-- `keys` (`List<String>`): Business keys
+- `serviceName` (`String`): Target service/application name
+- `access` (`SecurityPolicyAccess`): Access level (`NONE`, `READ`, `WRITE`)
+- `keys` (`List<String>`): Process definition keys
 
 **Methods:**
 - `getName()` / `setName(String)`
@@ -806,108 +843,197 @@ public class PolicyValidator implements ApplicationRunner {
 
 ### SecurityPolicyAccess
 
+**Package:** `org.activiti.core.common.spring.security.policies`
+
 **Values:**
-- `READ`: Read-only access
-- `READ_WRITE`: Read and write access
-- `FULL`: Full access including deletion
+- `NONE`: No access — keys from policies with this access level are never included
+- `READ`: Read access — when requested, includes keys from policies with `READ` or `WRITE`
+- `WRITE`: Write access — when requested, only includes keys from policies with `WRITE`
+
+---
+
+### SecurityPoliciesManager
+
+**Package:** `org.activiti.core.common.spring.security.policies`
+
+**Interface methods:**
+
+```java
+// Check read access for a process definition key and service
+boolean canRead(String processDefinitionKey, String serviceName);
+
+// Check write access for a process definition key and service
+boolean canWrite(String processDefinitionKey, String serviceName);
+
+// Check read access using current application name
+boolean canRead(String processDefinitionKey);
+
+// Check write access using current application name
+boolean canWrite(String processDefinitionKey);
+
+// Whether any security policies are configured
+boolean arePoliciesDefined();
+
+// Get allowed keys grouped by service name for given access level(s)
+Map<String, Set<String>> getAllowedKeys(SecurityPolicyAccess... securityPolicyAccess);
+```
 
 ---
 
 ### ProcessSecurityPoliciesManager
 
-**Methods:**
+**Package:** `org.activiti.core.common.spring.security.policies`
+
+**Interface methods:**
 
 ```java
-/**
- * Get process definition policies.
- */
-List<SecurityPolicy> getProcessDefinitionPolicies(String definitionKey);
+// Returns a payload that restricts process definition queries to allowed keys
+GetProcessDefinitionsPayload restrictProcessDefQuery(SecurityPolicyAccess securityPolicyAccess);
 
-/**
- * Get process instance policies.
- */
-List<SecurityPolicy> getProcessInstancePolicies(String instanceId);
+// Returns a payload that restricts process instance queries to allowed keys
+GetProcessInstancesPayload restrictProcessInstQuery(SecurityPolicyAccess securityPolicyAccess);
+```
 
-/**
- * Check if user can start process.
- */
-boolean canStartProcess(String userId, String definitionKey);
+Extends all methods from `SecurityPoliciesManager`.
 
-/**
- * Check if user can access instance.
- */
-boolean canAccessInstance(String userId, String instanceId);
+---
 
-/**
- * Check policy access.
- */
-boolean hasAccess(String userId, SecurityPolicy policy);
+### ProcessSecurityPoliciesManagerImpl
+
+**Package:** `org.activiti.core.common.spring.security.policies`
+
+Extends `BaseSecurityPoliciesManagerImpl`, implements `ProcessSecurityPoliciesManager`.
+
+**Additional methods:**
+```java
+// Override: uses exact case-insensitive matching (not startsWith)
+protected boolean anEntryInSetStartsKey(Set<String> keys, String processDefinitionKey);
+```
+
+**Note:** `canRead(String)` in this implementation returns `true` if the user has either `READ` or `WRITE` permission for the key (it checks `hasPermission(key, READ, appName) || hasPermission(key, WRITE, appName)`).
+
+---
+
+### BaseSecurityPoliciesManagerImpl
+
+**Package:** `org.activiti.core.common.spring.security.policies`
+
+Abstract class implementing `SecurityPoliciesManager`.
+
+**Protected methods available for subclasses:**
+```java
+// startsWith matching for key lookup (override in subclass if needed)
+protected boolean anEntryInSetStartsKey(Set<String> keys, String processDefinitionKey);
+
+// Access to configuration
+protected SecurityPoliciesProperties getSecurityPoliciesProperties();
+
+// Core permission check
+public boolean hasPermission(String processDefinitionKey,
+                             SecurityPolicyAccess securityPolicyAccess,
+                             String appName);
 ```
 
 ---
 
 ### SecurityPoliciesRestrictionApplier
 
-**Methods:**
+**Package:** `org.activiti.core.common.spring.security.policies`
+
+**Generic interface:** `SecurityPoliciesRestrictionApplier<T>`
 
 ```java
-/**
- * Apply restrictions to collection.
- */
-<T> Collection<T> applyRestrictions(Collection<T> items, String userId);
+// Restrict query to specific keys
+T restrictToKeys(Set<String> keys);
 
-/**
- * Check if item is restricted.
- */
-boolean isRestricted(Object item, String userId, SecurityPolicy policy);
+// Deny all access (returns unsatisfiable query)
+T denyAll();
 
-/**
- * Filter items by user.
- */
-<T> List<T> filterItems(Collection<T> items, String userId);
+// Allow all access (returns unrestricted query)
+T allowAll();
 ```
+
+**Implementations:**
+- `SecurityPoliciesProcessDefinitionRestrictionApplier` — `T` = `GetProcessDefinitionsPayload`
+- `SecurityPoliciesProcessInstanceRestrictionApplier` — `T` = `GetProcessInstancesPayload`
+
+---
+
+### ActivitiForbiddenException
+
+**Package:** `org.activiti.core.common.spring.security.policies`
+
+Extends `RuntimeException`.
+
+```java
+ActivitiForbiddenException(String message)
+ActivitiForbiddenException(String message, Throwable cause)
+```
+
+---
+
+### SecurityPoliciesProperties
+
+**Package:** `org.activiti.core.common.spring.security.policies.conf`
+
+**Configuration prefix:** `activiti.security`
+
+**Properties:**
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `policies` | `List<SecurityPolicy>` | `[]` | List of security policies |
+| `wildcard` | `String` | `"*"` | Wildcard key value that grants access to all definitions |
 
 ---
 
 ## Troubleshooting
 
-### Policy Not Enforced
+### Policies Not Being Applied
 
-**Problem:** Security policies not being applied
+**Problem:** Security policies not being enforced.
 
 **Solution:**
-1. Check if policies are enabled in configuration
-2. Verify policy beans are registered
-3. Ensure restriction appliers are configured
+1. Verify policies are configured under `activiti.security.policies` in `application.yml`
+2. Check that `SecurityPoliciesProperties` is enabled via `@EnableConfigurationProperties`
+3. Confirm the `serviceName` in policies matches the `spring.application.name` (hyphens and case are ignored)
 
 ```yaml
-# Enable policies
 activiti:
   security:
     policies:
-      enabled: true
+      - name: "my-policy"
+        serviceName: "myapp"
+        access: READ
+        keys:
+          - my-process
 ```
 
 ### Access Denied for Valid User
 
-**Problem:** User with correct group cannot access
+**Problem:** User with correct group cannot access process definitions.
 
 **Solution:**
 1. Verify group names match exactly
-2. Check policy access level
-3. Ensure business key restrictions match
+2. Check that `serviceName` matches the application name
+3. Ensure the policy's `access` level matches what's being requested
+4. Confirm keys in the policy match process definition keys
 
 ```java
-// Debug
-System.out.println("User groups: " + userGroups);
-System.out.println("Policy groups: " + policy.getGroups());
-System.out.println("Match: " + userGroups.containsAll(policy.getGroups()));
+// Debug: check what keys the user is allowed
+Map<String, Set<String>> allowedKeys = policyManager.getAllowedKeys(SecurityPolicyAccess.READ);
+System.out.println("Allowed keys by service: " + allowedKeys);
 ```
+
+### Wildcard Not Working
+
+**Problem:** Setting `keys: ["*"]` does not grant access.
+
+**Solution:** The wildcard value is configurable via `activiti.security.wildcard` (defaults to `"*"`). Ensure the key in the policy matches the configured wildcard value exactly.
 
 ---
 
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Spring Security](../core-common/spring-security.md)
-- [Spring Identity](../core-common/spring-identity.md)
+- [Spring Security](./spring-security.md)
+- [Spring Identity](./spring-identity.md)

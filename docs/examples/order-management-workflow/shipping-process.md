@@ -75,7 +75,9 @@ flowchart TD
                activiti:assignee="${warehouseTeam}">
   <bpmn:incoming>flowToPrepareShipment</bpmn:incoming>
   <bpmn:outgoing>flowToGenerateLabel</bpmn:outgoing>
-  <bpmn:property id="packageDetails" name="packageDetails"/>
+  <bpmn:extensionElements>
+    <activiti:formProperty id="packageDetails" name="packageDetails" type="string"/>
+  </bpmn:extensionElements>
 </bpmn:userTask>
 ```
 
@@ -83,21 +85,24 @@ flowchart TD
 
 **Assignee:** `${warehouseTeam}` - Warehouse team role or group
 
-**Task Property:**
+**Form Property:**
 - `packageDetails` - Package dimensions, weight, special handling
 
 **Runtime Completion:**
 ```java
-taskService.complete(taskId, Map.of(
-    "packageDetails", Map.of(
-        "weight", "2.5 kg",
-        "dimensions", "30x20x15 cm",
-        "fragile", false,
-        "packageCount", 1
-    ),
-    "packedBy", "warehouse.staff.001",
-    "packDate", ZonedDateTime.now()
-));
+taskRuntime.complete(
+    TaskPayloadBuilder.complete()
+        .withTaskId(taskId)
+        .withVariable("packageDetails", Map.of(
+            "weight", "2.5 kg",
+            "dimensions", "30x20x15 cm",
+            "fragile", false,
+            "packageCount", 1
+        ))
+        .withVariable("packedBy", "warehouse.staff.001")
+        .withVariable("packDate", ZonedDateTime.now())
+        .build()
+);
 ```
 
 **Why a user task?**
@@ -406,12 +411,15 @@ public class RegularPickupService implements Connector {
 
 **Runtime Completion:**
 ```java
-taskService.complete(taskId, Map.of(
-    "notificationSent", true,
-    "notificationMethod", "EMAIL",
-    "storeLocation", "Downtown Store - 123 Main St",
-    "pickupDeadline", "2024-02-20"
-));
+taskRuntime.complete(
+    TaskPayloadBuilder.complete()
+        .withTaskId(taskId)
+        .withVariable("notificationSent", true)
+        .withVariable("notificationMethod", "EMAIL")
+        .withVariable("storeLocation", "Downtown Store - 123 Main St")
+        .withVariable("pickupDeadline", "2024-02-20")
+        .build()
+);
 ```
 
 **Why a user task?**
@@ -536,17 +544,16 @@ public class TrackingUpdateService implements Connector {
 // When carrier sends delivery confirmation
 processRuntime.receive(
     MessagePayloadBuilder.receive("ShipmentDelivered")
-        .withBusinessKey(orderId)
+        .withCorrelationKey(orderId)
         .withVariable("deliveredAt", ZonedDateTime.now())
         .withVariable("signedBy", "J. Smith")
         .build()
 );
 ```
 
-**Correlation Options:**
-1. **Business Key** - Match by process business key (e.g., orderId)
-2. **Correlation Key** - Match by correlation key variable defined in BPMN
-3. **Process Instance** - Direct process instance ID (if available)
+**Correlation:**
+- **Correlation Key** - `ReceiveMessagePayloadBuilder` uses `withCorrelationKey()` to match the subscription's stored configuration value. The engine finds the event subscription by message name and correlation key, then delivers the message to that specific execution.
+- Note: `withBusinessKey()` is only available on `StartMessagePayloadBuilder` (for starting processes by message), not on `ReceiveMessagePayloadBuilder` (for intermediate message catch events).
 
 **External Triggers:**
 - Carrier webhook (FedEx, UPS, DHL)
@@ -823,7 +830,7 @@ flowchart TD
 
 ## Message Correlation
 
-### Correlation by Business Key
+### Correlation by Correlation Key
 
 ```java
 // Carrier webhook receives delivery confirmation
@@ -831,7 +838,7 @@ flowchart TD
 public void handleDeliveryWebhook(@RequestBody DeliveryEvent event) {
     processRuntime.receive(
         MessagePayloadBuilder.receive("ShipmentDelivered")
-            .withBusinessKey(event.getOrderId())
+            .withCorrelationKey(event.getOrderId())
             .withVariable("deliveredAt", event.getDeliveredAt())
             .withVariable("signedBy", event.getSignedBy())
             .build()
@@ -854,16 +861,8 @@ public void handleTrackingWebhook(@RequestBody TrackingEvent event) {
 }
 ```
 
-**BPMN Correlation Key Definition:**
-```xml
-<bpmn:intermediateCatchEvent id="waitForDeliveryEvent">
-  <bpmn:messageEventDefinition messageRef="shipmentDeliveredMessage"/>
-</bpmn:intermediateCatchEvent>
-
-<bpmn:message id="shipmentDeliveredMessage" name="ShipmentDelivered">
-  <bpmn:correlationKey>trackingNumber</bpmn:correlationKey>
-</bpmn:message>
-```
+**Correlation at Runtime:**
+The correlation key is provided when sending the message via `withCorrelationKey("trackingNumber")`. The engine matches it against the event subscription's stored configuration. There is no `<bpmn:correlationKey>` child element on `<bpmn:message>` in BPMN 2.0 — correlation is handled entirely at runtime by the API.
 
 ---
 

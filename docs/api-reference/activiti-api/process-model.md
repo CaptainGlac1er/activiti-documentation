@@ -472,6 +472,43 @@ public class ProcessPayloadBuilder {
 
 **Design Pattern**: Static factory with fluent builders.
 
+### CreateProcessInstancePayload
+
+**File**: `CreateProcessInstancePayload.java`
+
+```java
+public class CreateProcessInstancePayload implements Payload {
+    private String processDefinitionId;
+    private String processDefinitionKey;
+    private String name;
+    private String businessKey;
+}
+```
+
+**Purpose**: Payload for creating a process instance (without starting it).
+
+**Key Fields**:
+
+1. **Process Identification**
+   - `processDefinitionId`: Full ID (e.g., "order:1:abc123")
+   - `processDefinitionKey`: Logical key (e.g., "order")
+   - Either one must be provided
+
+2. **Instance Metadata**
+   - `name`: Custom instance name
+   - `businessKey`: Business identifier
+
+**Usage Example**:
+```java
+CreateProcessInstancePayload payload = ProcessPayloadBuilder.create()
+    .withProcessDefinitionKey("orderProcess")
+    .withBusinessKey("ORDER-123")
+    .withName("New Order")
+    .build();
+
+ProcessInstance instance = processRuntime.create(payload);
+```
+
 ### StartProcessPayload
 
 **File**: `StartProcessPayload.java`
@@ -486,7 +523,7 @@ public class StartProcessPayload implements Payload {
 }
 ```
 
-**Purpose**: Payload for starting a process instance.
+**Purpose**: Payload for starting a process instance. Extends creation with initial variables.
 
 **Key Fields**:
 

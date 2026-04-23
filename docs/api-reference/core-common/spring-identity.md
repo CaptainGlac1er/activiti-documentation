@@ -192,34 +192,35 @@ public List<String> getUserGroups(String username) {
 - Manage user authorities
 - Provide list of all users
 - Provide list of all groups
-- Support user creation and deletion
+- Support user creation
 
 **Key Methods:**
-- `loadUserByUsername(String username)` - Load user details
+- `loadUserByUsername(String username)` - Load user details (inherited from parent)
 - `getUsers()` - Get all usernames
 - `getGroups()` - Get all group names
-- `createUser(User user)` - Create new user
-- `deleteUser(String username)` - Delete user
+- `createUser(UserDetails user)` - Create new user (overrides parent `InMemoryUserDetailsManager`)
 
 **When to Use:** For testing and development environments without external user store.
 
 **Design Pattern:** Extension of Spring Security's InMemoryUserDetailsManager
 
-**Thread Safety:** Not thread-safe (uses concurrent collections internally)
+**Thread Safety:** Parent `InMemoryUserDetailsManager` uses `ConcurrentHashMap` and is thread-safe, but the subclass's `users` and `groups` fields use non-concurrent `ArrayList` and are NOT thread-safe.
+
+**Note:** The inherited `deleteUser(String username)` from `InMemoryUserDetailsManager` does NOT update the subclass's `users` list, so `getUsers()` will return stale data after deletions.
 
 **Example:**
 ```java
 @Bean
 public UserDetailsService userDetailsService() {
-    ExtendedInMemoryUserDetailsManager manager = 
+    ExtendedInMemoryUserDetailsManager manager =
         new ExtendedInMemoryUserDetailsManager();
-    
+
     manager.createUser(User.withUsername("john")
         .password(passwordEncoder.encode("password"))
         .roles("USER")
-        .groups("HR")
+        .authorities("GROUP_HR")
         .build());
-    
+
     return manager;
 }
 ```
@@ -247,13 +248,11 @@ public UserDetailsService userDetailsService() {
 
 **Example:**
 ```java
-@Configuration
-@ConditionalOnClass(UserDetailsService.class)
-@ConditionalOnBean(UserDetailsService.class)
+@AutoConfiguration
 public class ActivitiSpringIdentityAutoConfiguration {
-    
+
     @Bean
-    @ConditionalOnMissingBean(UserGroupManager.class)
+    @ConditionalOnMissingBean
     public UserGroupManager userGroupManager(
             UserDetailsService userDetailsService) {
         return new ActivitiUserGroupManagerImpl(userDetailsService);
@@ -332,13 +331,13 @@ public class SecurityConfig {
         manager.createUser(User.withUsername("john")
             .password(passwordEncoder.encode("password123"))
             .roles("USER")
-            .groups("HR", "MANAGEMENT")
+            .authorities("GROUP_HR", "GROUP_MANAGEMENT")
             .build());
-        
+
         manager.createUser(User.withUsername("jane")
             .password(passwordEncoder.encode("password456"))
             .roles("ADMIN", "USER")
-            .groups("IT", "MANAGEMENT")
+            .authorities("GROUP_IT", "GROUP_MANAGEMENT")
             .build());
         
         return manager;
@@ -410,21 +409,15 @@ public class JdbcSecurityConfig {
 
 The auto-configuration is applied when:
 
-1. `UserDetailsService` bean exists
-2. `UserGroupManager` bean doesn't exist
-3. Spring Security is on classpath
+1. No `UserGroupManager` bean exists (`@ConditionalOnMissingBean`)
+2. A `UserDetailsService` bean is on the classpath (required as a method parameter)
 
 ```java
-@Configuration
-@ConditionalOnClass({
-    UserDetailsService.class,
-    UserGroupManager.class
-})
-@ConditionalOnBean(UserDetailsService.class)
-@ConditionalOnMissingBean(UserGroupManager.class)
+@AutoConfiguration
 public class ActivitiSpringIdentityAutoConfiguration {
-    
+
     @Bean
+    @ConditionalOnMissingBean
     public UserGroupManager userGroupManager(
             UserDetailsService userDetailsService) {
         return new ActivitiUserGroupManagerImpl(userDetailsService);
@@ -571,21 +564,21 @@ public class ActivitiIdentityApplication {
         manager.createUser(User.withUsername("hr.manager")
             .password(passwordEncoder.encode("hr123"))
             .roles("USER", "MANAGER")
-            .groups("HR")
+            .authorities("GROUP_HR")
             .build());
-        
+
         // IT Admin
         manager.createUser(User.withUsername("it.admin")
             .password(passwordEncoder.encode("it123"))
             .roles("ADMIN", "USER")
-            .groups("IT", "ADMINISTRATION")
+            .authorities("GROUP_IT", "GROUP_ADMINISTRATION")
             .build());
-        
+
         // Regular user
         manager.createUser(User.withUsername("employee1")
             .password(passwordEncoder.encode("emp123"))
             .roles("USER")
-            .groups("HR", "SALES")
+            .authorities("GROUP_HR", "GROUP_SALES")
             .build());
         
         return manager;
@@ -603,13 +596,13 @@ public class ActivitiIdentityApplication {
 // GOOD - Consistent naming
 User.withUsername("john")
     .roles("USER", "EMPLOYEE")
-    .groups("HR", "FLOOR_3")
+    .authorities("GROUP_HR", "GROUP_FLOOR_3")
     .build();
 
 // BAD - Inconsistent naming
 User.withUsername("john")
-    .roles("user", "EMPLOYEE")  // Mixed case
-    .groups("hr", "FLOOR_3")    // Mixed case
+    .roles("user", "EMPLOYEE")    // Mixed case
+    .authorities("GROUP_hr", "GROUP_FLOOR_3")  // Mixed case
     .build();
 ```
 
@@ -618,8 +611,8 @@ User.withUsername("john")
 ```java
 // GOOD - Roles for permissions, groups for organization
 User.withUsername("john")
-    .roles("USER")              // Permission level
-    .groups("HR", "MANAGEMENT") // Organizational units
+    .roles("USER")                        // Permission level
+    .authorities("GROUP_HR", "GROUP_MANAGEMENT") // Organizational units
     .build();
 
 // BAD - Mixing concerns
@@ -739,31 +732,37 @@ public ActivitiUserGroupManagerImpl(UserDetailsService userDetailsService)
 
 ### ExtendedInMemoryUserDetailsManager
 
-**Methods:**
+**Extends:** `org.springframework.security.provisioning.InMemoryUserDetailsManager`
+
+**Methods defined in this class:**
 
 ```java
 /**
- * Get all usernames.
+ * Get all usernames (tracks users created via createUser).
+ * NOTE: Does not reflect deletions made via inherited deleteUser().
  */
 List<String> getUsers();
 
 /**
- * Get all group names.
+ * Get all group authorities (as raw authority strings, e.g. "GROUP_HR").
+ * NOTE: Overwrites on each createUser call — only reflects groups from the last user created.
  */
 List<String> getGroups();
 
 /**
  * Create a new user.
+ * Overrides InMemoryUserDetailsManager.createUser(UserDetails).
  */
-void createUser(User user);
-
-/**
- * Delete a user.
- */
-void deleteUser(String username);
+void createUser(UserDetails user);
 ```
 
-**Thread Safety:** Not thread-safe (use in single-threaded contexts or tests)
+**Inherited methods (from `InMemoryUserDetailsManager`):**
+- `deleteUser(String username)` — removes user from internal map, but does NOT update this class's `users` list
+- `userExists(String username)` — checks if user exists
+- `updateUser(UserDetails user)` — updates existing user
+- `updatePassword(String username, String password)` — updates password
+
+**Thread Safety:** Parent class is thread-safe. Subclass `users` and `groups` fields use `ArrayList` and are NOT thread-safe. Additionally, `getGroups()` only reflects the last user created, not all groups from all users.
 
 ---
 
@@ -827,5 +826,5 @@ public class ForceIdentityConfig {
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Spring Security Module](../core-common/spring-security.md)
-- [Common Utilities](../core-common/common-util.md)
+- [Spring Security Module](./spring-security.md)
+- [Common Utilities](./common-util.md)

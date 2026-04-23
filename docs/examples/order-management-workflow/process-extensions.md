@@ -15,20 +15,18 @@ Each BPMN process has a corresponding extension JSON file:
 
 | Process | Extension File |
 |---------|---------------|
-| Order Management | `orderManagementProcess-extension.json` |
-| Payment | `paymentProcess-extension.json` |
-| Inventory | `inventoryProcess-extension.json` |
-| Shipping | `shippingProcess-extension.json` |
+| Order Management | `orderManagementProcess-extensions.json` |
+| Payment | `paymentProcess-extensions.json` |
+| Inventory | `inventoryProcess-extensions.json` |
+| Shipping | `shippingProcess-extensions.json` |
 
 ## Extension JSON Structure
 
 ```json
 {
   "id": "processId",
-  "name": "Process Name",
-  "type": "PROCESS",
   "extensions": {
-    "Process_processId": {
+    "processId": {
       "properties": { },
       "mappings": { },
       "constants": { }
@@ -83,7 +81,7 @@ Properties define process variables with type safety and validation.
 | `folder` | `Map` | `{}` | Folder references |
 | `content` | `Map` | `{}` | Content references |
 
-**Source:** These types are registered in the [`ProcessExtensionsAutoConfiguration.variableTypeMap()`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/conf/ProcessExtensionsAutoConfiguration.java#L93-L108) method:
+**Source:** These types are registered in `ProcessExtensionsAutoConfiguration.variableTypeMap()` in the `activiti-spring-process-extensions` module:
 
 ```java
 @Bean
@@ -106,10 +104,10 @@ public Map<String, VariableType> variableTypeMap(ObjectMapper objectMapper,
 ```
 
 **Variable Type Implementations:**
-- [`JavaObjectVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/JavaObjectVariableType.java) - For primitive types (string, integer, boolean)
-- [`BigDecimalVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/BigDecimalVariableType.java) - For precise decimal calculations
-- [`JsonObjectVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/JsonObjectVariableType.java) - For complex JSON structures
-- [`DateVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/DateVariableType.java) - For date/time values
+- `JavaObjectVariableType` - For primitive types (string, integer, boolean)
+- `BigDecimalVariableType` - For precise decimal calculations
+- `JsonObjectVariableType` - For complex JSON structures
+- `DateVariableType` - For date/time values
 
 ### Order Management Process Variables
 
@@ -253,8 +251,9 @@ Mappings define how variables flow into and out of activities (tasks, call activ
 ```
 
 **Mapping Types:**
-- `variable` - Map from another process variable
-- `value` - Constant literal value
+- `variable` - Map from another process variable (enum: `VARIABLE`)
+- `value` - Constant literal value (enum: `VALUE`)
+- `jsonpatch` - JSON Patch transformation (enum: `JSONPATCH`)
 
 ### Input Mappings
 
@@ -647,7 +646,7 @@ export STRIPE_API_KEY="sk_live_..."
 
 ## Complete Extension File Example
 
-Here's the complete `orderManagementProcess-extension.json`:
+Here's the complete `orderManagementProcess-extensions.json`:
 
 ```json
 {
@@ -655,7 +654,7 @@ Here's the complete `orderManagementProcess-extension.json`:
   "name": "Order Management Workflow",
   "type": "PROCESS",
   "extensions": {
-    "Process_orderManagementProcess": {
+    "orderManagementProcess": {
       "properties": {
         "orderId-id": {
           "id": "orderId-id",

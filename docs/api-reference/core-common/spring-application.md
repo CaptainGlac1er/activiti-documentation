@@ -24,11 +24,12 @@ The **activiti-spring-application** module provides Spring integration for Activ
 
 ### Key Classes
 
-- `ApplicationService` - Application management service
-- `ApplicationDeployer` - Deploys applications
+- `ApplicationService` - Loads applications from discovered resources
+- `ApplicationDeployer` - Deploys applications using entry deployers
 - `ApplicationDiscovery` - Discovers applications
-- `ApplicationEntry` - Represents application entry point
+- `ApplicationEntry` - Represents an application entry point
 - `ApplicationContent` - Manages application content
+- `ApplicationEntryDeployer` - Interface for deploying application entries
 
 ### Usage Example
 
@@ -36,12 +37,8 @@ The **activiti-spring-application** module provides Spring integration for Activ
 @Autowired
 private ApplicationService applicationService;
 
-public void deployApplication(String applicationId) {
-    applicationService.deploy(applicationId);
-}
-
-public List<ApplicationEntry> getApplications() {
-    return applicationService.getApplications();
+public List<ApplicationContent> loadApplications() {
+    return applicationService.loadApplications();
 }
 ```
 
@@ -50,21 +47,21 @@ public List<ApplicationEntry> getApplications() {
 ## Architecture
 
 ```
-ApplicationService
-    ├── ApplicationDeployer (deployment)
-    ├── ApplicationDiscovery (discovery)
-    ├── ApplicationEntry (entry points)
-    └── ApplicationContent (content management)
+ApplicationDeployer
+    ├── ApplicationService (loadApplications)
+    └── List<ApplicationEntryDeployer> (deployEntries)
+            └── ApplicationContent (getFileContents)
+                    └── FileContent (getName, getContent)
 ```
 
 ---
 
 ## Best Practices
 
-1. **Use ApplicationService for all operations**
-2. **Handle deployment exceptions**
-3. **Cache application entries**
-4. **Validate before deployment**
+1. **Use ApplicationDeployer for deployment** - It coordinates loading and deploying all applications
+2. **Implement ApplicationEntryDeployer for custom entry types**
+3. **Use ApplicationService.loadApplications() to get all discovered applications**
+4. **Filter entries by type using ApplicationContent.getFileContents(type)**
 
 ---
 
@@ -73,24 +70,73 @@ ApplicationService
 ### ApplicationService
 
 ```java
-void deploy(String applicationId);
-List<ApplicationEntry> getApplications();
-ApplicationEntry getApplication(String id);
-void undeploy(String applicationId);
+List<ApplicationContent> loadApplications();
 ```
+
+Loads all discovered applications by iterating over resources found by `ApplicationDiscovery`, reading each via `ApplicationReader`.
+
+### ApplicationDeployer
+
+```java
+public ApplicationDeployer(ApplicationService applicationLoader,
+                          List<ApplicationEntryDeployer> deployers);
+
+void deploy();
+```
+
+Deploys all applications. Calls `ApplicationService.loadApplications()` and iterates each `ApplicationEntryDeployer` over every `ApplicationContent`.
+
+### ApplicationEntryDeployer
+
+```java
+void deployEntries(ApplicationContent application);
+```
+
+Interface for deploying entries of a specific type from an `ApplicationContent`.
 
 ### ApplicationEntry
 
 ```java
-String getId();
-String getName();
-String getVersion();
-List<FileContent> getContent();
+public ApplicationEntry(String type, FileContent fileContent);
+
+String getType();
+FileContent getFileContent();
 ```
+
+Represents a single application entry with a type and associated file content.
+
+### ApplicationContent
+
+```java
+void add(ApplicationEntry entry);
+List<FileContent> getFileContents(String entryType);
+```
+
+Aggregates application entries grouped by type. Adds entries and retrieves file contents for a specific entry type.
+
+### FileContent
+
+```java
+public FileContent(String name, byte[] content);
+
+String getName();
+byte[] getContent();
+```
+
+Represents a single file with its name and binary content.
+
+### ApplicationEntryDiscovery
+
+```java
+Predicate<ZipEntry> filter(ZipEntry entry);
+String getEntryType();
+```
+
+Interface for discovering application entries within zip files. Provides a filter predicate and declares the entry type.
 
 ---
 
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Project Model](../core-common/project-model.md)
+- [Project Model](./project-model.md)

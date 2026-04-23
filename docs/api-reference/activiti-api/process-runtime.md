@@ -106,19 +106,36 @@ public interface ProcessRuntime {
 
 ```java
 public interface ProcessAdminRuntime {
-    // Similar to ProcessRuntime but without authorization checks
-    // Can access any process instance
-    // Can perform administrative operations
+    ProcessDefinition processDefinition(String processDefinitionId);
+    Page<ProcessDefinition> processDefinitions(Pageable pageable);
+    Page<ProcessDefinition> processDefinitions(Pageable pageable, GetProcessDefinitionsPayload getProcessDefinitionsPayload);
+    ProcessInstance start(StartProcessPayload startProcessPayload);
+    Page<ProcessInstance> processInstances(Pageable pageable);
+    Page<ProcessInstance> processInstances(Pageable pageable, GetProcessInstancesPayload getProcessInstancesPayload);
+    ProcessInstance processInstance(String processInstanceId);
+    ProcessInstance delete(DeleteProcessPayload deleteProcessPayload);
+    void signal(SignalPayload signalPayload);
+    ProcessInstance suspend(SuspendProcessPayload suspendProcessPayload);
+    ProcessInstance resume(ResumeProcessPayload resumeProcessPayload);
+    ProcessInstance update(UpdateProcessPayload updateProcessPayload);
+    void setVariables(SetProcessVariablesPayload setProcessVariablesPayload);
+    void removeVariables(RemoveProcessVariablesPayload removeProcessVariablesPayload);
+    List<VariableInstance> variables(GetVariablesPayload getVariablesPayload);
+    void receive(ReceiveMessagePayload messagePayload);
+    ProcessInstance start(StartMessagePayload messagePayload);
 }
 ```
 
-**Purpose**: Administrative process operations with elevated privileges.
+**Purpose**: Administrative process operations with elevated privileges. This is a standalone interface — it does **not** extend `ProcessRuntime`.
 
-**Key Differences from ProcessRuntime**:
-- No authorization checks
-- Access to all process instances
-- Additional administrative operations
-- System-level visibility
+**Compared to ProcessRuntime**, `ProcessAdminRuntime` omits:
+- `configuration()`
+- `processDefinitions(Pageable, List<String> include)` — variants with `include` parameter
+- `startCreatedProcess(String, StartProcessPayload)`
+- `create(CreateProcessInstancePayload)`
+- `processDefinitionMeta(String)`
+- `processInstanceMeta(String)`
+- `selectLatestDeployment()`
 
 ---
 
@@ -675,9 +692,8 @@ public interface Connector extends Function<IntegrationContext, IntegrationConte
 **Implementation Example**:
 ```java
 @Component
-@ConnectorAlias("emailConnector")
 public class EmailConnector implements Connector {
-    
+
     @Autowired
     private EmailService emailService;
     

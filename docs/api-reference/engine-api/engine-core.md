@@ -30,14 +30,15 @@ The **activiti-engine** is the core BPMN 2.0 process engine that powers Activiti
 
 ```
 activiti-engine/
-├── api/                          # Public API interfaces
+├── org/activiti/engine/          # Public API interfaces (flat)
 │   ├── RepositoryService.java    # Process definition management
 │   ├── RuntimeService.java       # Process instance execution
 │   ├── TaskService.java          # User task management
 │   ├── HistoryService.java       # Historical data access
 │   ├── ManagementService.java    # Engine administration
-│   └── DynamicBpmnService.java   # Runtime BPMN modification
-├── impl/                         # Core engine implementation
+│   ├── DynamicBpmnService.java   # Runtime BPMN modification
+│   └── ProcessEngineConfiguration.java
+├── org/activiti/engine/impl/     # Core engine implementation
 │   ├── bpmn/                     # BPMN parsing and execution
 │   │   ├── behavior/             # Activity behavior handlers
 │   │   ├── parser/               # BPMN XML parsing
@@ -46,14 +47,12 @@ activiti-engine/
 │   ├── asyncexecutor/            # Asynchronous job processing
 │   ├── persistence/              # Database operations
 │   └── context/                  # Engine context management
-├── cfg/                          # Configuration
-│   └── ProcessEngineConfiguration.java
-├── event/                        # Event system
-├── history/                      # History management
-├── repository/                   # Deployment management
-├── runtime/                      # Process execution
-├── task/                         # Task management
-└── management/                   # Engine administration
+├── org/activiti/engine/event/    # Event system
+├── org/activiti/engine/history/  # History management
+├── org/activiti/engine/repository/  # Deployment management
+├── org/activiti/engine/runtime/  # Process execution
+├── org/activiti/engine/task/     # Task management
+└── org/activiti/engine/management/  # Engine administration
 ```
 
 ---
@@ -64,7 +63,7 @@ This documentation is organized into focused sections for deep understanding:
 
 ### Core Architecture
 1. **[Engine Architecture](../../architecture/overview.md)** - Overall system design and component relationships
-2. **[Process Engine Configuration](../../../configuration.md)** - Configuration options and best practices
+2. **[Process Engine Configuration](../../configuration.md)** - Configuration options and best practices
 
 ### Services API
 3. **[Repository Service](./repository-service.md)** - Process definition and deployment management
@@ -74,7 +73,7 @@ This documentation is organized into focused sections for deep understanding:
 
 ### See Also
 - [Engine Architecture Deep Dive](../../architecture/overview.md)
-- [Configuration Best Practices](../../../../../configuration.md
+- [Configuration Best Practices](../../configuration.md)
 
 ## Quick Start
 
@@ -122,7 +121,7 @@ List<HistoricProcessInstance> history = engine.getHistoryService()
 # application.yml
 spring:
   datasource:
-    url: jdbcpostgresql://localhost:5432/activiti
+    url: jdbc:postgresql://localhost:5432/activiti
     username: activiti
     password: activiti
   flyway:
@@ -339,7 +338,8 @@ The engine uses the following core tables:
 ## See Also
 
 - [Engine Architecture](../../architecture/overview.md)
-- [Process Engine Configuration](../../../con../../../configuration.mdory Service](./repository-service.md)
+- [Process Engine Configuration](../../configuration.md)
+- [Repository Service](./repository-service.md)
 - [Runtime Service](./runtime-service.md)
 - [Task Service](./task-service.md)
 - [History Service](./history-service.md)
@@ -348,4 +348,5 @@ The engine uses the following core tables:
 
 **Next Steps:**
 1. Read [Engine Architecture](../../architecture/overview.md) for deep dive into design
-2. Review [Configuration Guide](../../../configura../../../configuration.mdlore [Services API](./repository-service.md) for usage patterns
+2. Review [Configuration Guide](../../configuration.md)
+3. Explore [Services API](./repository-service.md) for usage patterns

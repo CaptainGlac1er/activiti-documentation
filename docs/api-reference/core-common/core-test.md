@@ -1,7 +1,7 @@
 ---
 sidebar_label: Core Test
 slug: /api-reference/core-common/core-test
-description: Testing utilities and mock support for Activiti process engine integration tests.
+description: Testing utilities and assertion support for Activiti process engine integration tests.
 ---
 
 # Activiti Core Test Module - Technical Documentation
@@ -14,47 +14,88 @@ description: Testing utilities and mock support for Activiti process engine inte
 
 - [Overview](#overview)
 - [Architecture](#architecture)
+- [Module Structure](#module-structure)
 - [Key Classes and Their Responsibilities](#key-classes-and-their-responsibilities)
-- [Test Assertions](#test-assertions)
+- [Assertions API](#assertions-api)
 - [Matchers](#matchers)
-- [Test Operations](#test-operations)
-- [Local Runtime Testing](#local-runtime-testing)
+- [Operations API](#operations-api)
+- [Await Patterns](#await-patterns)
+- [Local Runtime](#local-runtime)
 - [Usage Examples](#usage-examples)
-- [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 
 ---
 
 ## Overview
 
-The **activiti-core-test** module provides a comprehensive testing framework for Activiti applications. It offers fluent assertions, matchers, and test utilities that simplify writing tests for BPMN processes, tasks, and workflow behavior.
+The **activiti-core-test** module provides a comprehensive testing framework for Activiti applications. It offers a matcher-based assertion model, BPMN activity matchers, and event-based verification that simplify writing tests for processes, tasks, and workflow behavior.
 
 ### Key Features
 
-- **Fluent Assertions**: Type-safe, readable test assertions
-- **BPMN Matchers**: Verify process structure and behavior
-- **Await Patterns**: Wait for async process completion
-- **Local Runtime**: In-memory testing without full engine
+- **Matcher-Based Assertions**: Verify process results, task state, and runtime events using composable matchers
+- **BPMN Activity Matchers**: Start/end event, gateway, task, and sequence flow matchers
+- **Event-Based Verification**: Assert on `OperationScopeMatcher` event predicates
+- **Await Patterns**: Automatic async-aware assertions via `AwaitProcessInstanceAssertions`
 - **Spring Integration**: Auto-configuration for Spring Boot tests
-- **Task Operations**: Simplified task testing API
-- **Process Operations**: Streamlined process instance testing
+- **Process Operations**: Payload-based process start and signal operations
+- **Task Operations**: Payload-based task claim and complete operations
 
 ### Module Structure
 
 ```
 activiti-core-test/
-├── activiti-core-test-assertions/        # Core assertion APIs
-│   ├── src/main/java/org/activiti/test/
-│   │   ├── assertions/                   # Assertion interfaces
-│   │   ├── matchers/                     # Hamcrest matchers
-│   │   ├── operations/                   # Test operations
-│   │   └── conf/                         # Auto-configuration
+├── activiti-core-test-assertions/        # Core assertion APIs and matchers
+│   └── src/main/java/org/activiti/test/
+│       ├── assertions/                   # Assertion interfaces and implementations
+│       │   ├── ProcessInstanceAssertions.java
+│       │   ├── ProcessInstanceAssertionsImpl.java
+│       │   ├── TaskAssertions.java
+│       │   ├── TaskAssertionsImpl.java
+│       │   ├── SignalAssertions.java
+│       │   ├── SignalAssertionsImpl.java
+│       │   ├── AwaitProcessInstanceAssertions.java
+│       │   ├── AwaitTaskAssertions.java
+│       │   └── AwaitSignalAssertions.java
+│       ├── matchers/                     # Matcher classes
+│       │   ├── ActivityMatchers.java
+│       │   ├── BPMNStartEventMatchers.java
+│       │   ├── EndEventMatchers.java
+│       │   ├── ExclusiveGatewayMatchers.java
+│       │   ├── InclusiveGatewayMatchers.java
+│       │   ├── IntermediateCatchEventMatchers.java
+│       │   ├── ManualTaskMatchers.java
+│       │   ├── ThrowEventMatchers.java
+│       │   ├── ProcessInstanceMatchers.java
+│       │   ├── ProcessVariableMatchers.java
+│       │   ├── ProcessTaskMatchers.java
+│       │   ├── SequenceFlowMatchers.java
+│       │   ├── SignalMatchers.java
+│       │   ├── TaskMatchers.java
+│       │   ├── OperationScope.java
+│       │   ├── OperationScopeImpl.java
+│       │   ├── OperationScopeMatcher.java
+│       │   ├── ProcessResultMatcher.java
+│       │   ├── ProcessTaskMatcher.java
+│       │   └── TaskResultMatcher.java
+│       ├── operations/                   # Test operations
+│       │   ├── ProcessOperations.java
+│       │   ├── TaskOperations.java
+│       │   ├── AwaitableProcessOperations.java
+│       │   └── AwaitableTaskOperations.java
+│       ├── EventSource.java              # Event source interface
+│       ├── TaskSource.java               # Task source interface
+│       └── conf/                         # Auto-configuration
+│           └── AssertionsAPIAutoConfiguration.java
 │   └── src/test/java/
 ├── activiti-core-test-local-runtime/     # Local runtime implementation
-│   ├── src/main/java/org/activiti/test/
-│   │   ├── config/                       # Configuration
-│   │   ├── operations/                   # Runtime operations
-│   │   └── LocalEventSource.java         # Event source
+│   └── src/main/java/org/activiti/test/
+│       ├── config/                       # Configuration
+│       │   └── ActivitiAssertionsAutoConfiguration.java
+│       ├── operations/                   # Runtime operations
+│       │   ├── ProcessRuntimeOperations.java
+│       │   └── TaskRuntimeOperations.java
+│       ├── LocalEventSource.java         # In-memory event collection
+│       └── LocalTaskSource.java          # Task source implementation
 │   └── src/test/java/
 └── pom.xml
 ```
@@ -72,55 +113,38 @@ activiti-core-test/
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
-│                  Test Assertions                            │
-│  (ProcessInstanceAssertions, TaskAssertions, etc.)          │
+│                  Operations API                             │
+│  (ProcessOperations.start(payload),                         │
+│   TaskOperations.claim(payload))                            │
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
-│                    Matchers                                 │
-│  (ActivityMatchers, TaskMatchers, etc.)                     │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                  Test Operations                            │
-│  (ProcessOperations, TaskOperations)                        │
+│                  Assertion Wrappers                         │
+│  (ProcessInstanceAssertions, TaskAssertions, SignalAssertions)│
+│                                                             │
+│  expectFields(matchers...)  → ProcessResultMatcher /        │
+│                                 TaskResultMatcher            │
+│  expectEvents(matchers...)  → OperationScopeMatcher          │
+│  expect(matchers...)        → ProcessTaskMatcher             │
+│  andReturn()                → underlying domain object       │
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
 │                  Local Runtime                              │
-│  (In-memory process execution)                              │
+│  (ProcessRuntime, TaskRuntime, EventSource, TaskSource)     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Component Diagram
+### Assertion Flow
+
+Operations return assertion wrappers. The caller chains `expectFields()`, `expectEvents()`, or `expect()` with matchers to verify process state, task state, and event history.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Test Framework                           │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │ ProcessInstance │  │   Task          │  │  Signal     │ │
-│  │  Assertions     │  │   Assertions    │  │  Assertions │ │
-│  └────────┬────────┘  └────────┬────────┘  └──────┬──────┘ │
-│           │                    │                   │        │
-│           └────────────────────┼───────────────────┘        │
-│                                │                            │
-│                   ┌────────────▼────────────┐               │
-│                   │      Matchers           │               │
-│                   │  (Hamcrest Matchers)    │               │
-│                   └────────────┬────────────┘               │
-│                                │                            │
-│                   ┌────────────▼────────────┐               │
-│                   │    Test Operations      │               │
-│                   │ (Process/Task Ops)      │               │
-│                   └────────────┬────────────┘               │
-│                                │                            │
-└────────────────────────────────┼────────────────────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │   Local Runtime         │
-                    │  (In-memory Engine)     │
-                    └─────────────────────────┘
+processOperations.start(payload)
+  → ProcessInstanceAssertions
+    .expectFields(processInstanceMatchers.status(RUNNING))
+    .expectEvents(processInstanceMatchers.hasBeenStarted())
+    .andReturn()
 ```
 
 ---
@@ -129,340 +153,291 @@ activiti-core-test/
 
 ### ProcessInstanceAssertions
 
-**Purpose:** Provides fluent assertions for process instances.
+**Package:** `org.activiti.test.assertions`
+
+**Purpose:** Fluent assertion wrapper for a `ProcessInstance` result.
 
 **Responsibilities:**
-- Asserting process instance existence
-- Verifying process state (active, completed, suspended)
-- Checking process variables
-- Validating business keys
-- Asserting process definition
+- Assert process instance field values via `ProcessResultMatcher`
+- Assert runtime events via `OperationScopeMatcher`
+- Assert task-related state via `ProcessTaskMatcher`
+- Return the underlying `ProcessInstance` for further use
 
 **Key Methods:**
-- `exists()` - Assert process instance exists
-- `isActive()` - Assert process is active
-- `isCompleted()` - Assert process has completed
-- `hasVariable(String name)` - Assert variable exists
-- `hasVariableValue(String name, Object value)` - Assert variable value
-- `hasBusinessKey(String key)` - Assert business key
-- `withProcessDefinition(String key)` - Filter by definition
+- `expectFields(ProcessResultMatcher... matchers)` - Assert field values on the process instance
+- `expectEvents(OperationScopeMatcher... matchers)` - Assert events from the event source
+- `expect(ProcessTaskMatcher... matchers)` - Assert task-related state
+- `andReturn()` - Return the underlying `ProcessInstance`
 
-**When to Use:** In tests to verify process instance behavior and state.
-
-**Design Pattern:** Fluent interface with Hamcrest matchers
+**Design Pattern:** Builder / wrapper
 
 **Example:**
 ```java
-processInstance("myProcess")
-    .exists()
-    .isActive()
-    .hasVariable("orderId", "12345");
-```
+import static org.activiti.test.matchers.ProcessInstanceMatchers.*;
 
----
+ProcessInstance instance = processOperations
+    .start(StartProcessPayloadBuilder.start()
+        .withProcessDefinitionKey("orderProcess")
+        .withBusinessKey("ORD-123")
+        .build())
+    .expectFields(
+        status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+        businessKey("ORD-123")
+    )
+    .expectEvents(
+        processInstance().hasBeenStarted()
+    )
+    .andReturn();
+```
 
 ### TaskAssertions
 
-**Purpose:** Provides fluent assertions for user tasks.
+**Package:** `org.activiti.test.assertions`
+
+**Purpose:** Fluent assertion wrapper for a `Task` result.
 
 **Responsibilities:**
-- Asserting task existence
-- Verifying task state (claimed, unclaimed, completed)
-- Checking task assignee
-- Validating task variables
-- Asserting task name and description
+- Assert task field values via `TaskResultMatcher`
+- Assert task-related runtime events via `OperationScopeMatcher`
+- Assert process-level task state via `ProcessTaskMatcher`
+- Return the underlying `Task` for further use
 
 **Key Methods:**
-- `exists()` - Assert task exists
-- `isClaimed()` - Assert task is claimed
-- `isUnclaimed()` - Assert task is unclaimed
-- `hasAssignee(String assignee)` - Assert assignee
-- `hasName(String name)` - Assert task name
-- `hasVariable(String name)` - Assert variable exists
-- `withProcessInstanceId(String id)` - Filter by process instance
+- `expectFields(TaskResultMatcher... matchers)` - Assert field values on the task
+- `expectEvents(OperationScopeMatcher... matchers)` - Assert events from the event source
+- `expect(ProcessTaskMatcher... matchers)` - Assert process-level task state
+- `andReturn()` - Return the underlying `Task`
 
-**When to Use:** In tests to verify task behavior and state.
-
-**Design Pattern:** Fluent interface with Hamcrest matchers
+**Design Pattern:** Builder / wrapper
 
 **Example:**
 ```java
-task()
-    .exists()
-    .hasAssignee("john.doe")
-    .hasName("Review Order")
-    .hasVariable("priority", "HIGH");
-```
+import static org.activiti.test.matchers.TaskMatchers.*;
 
----
+Task claimedTask = taskOperations
+    .claim(ClaimTaskPayloadBuilder.claim(taskId)
+        .withAssignee("john.doe")
+        .build())
+    .expectFields(
+        withAssignee("john.doe")
+    )
+    .expectEvents(
+        task().hasBeenAssigned()
+    )
+    .andReturn();
+```
 
 ### SignalAssertions
 
-**Purpose:** Provides assertions for signal events.
+**Package:** `org.activiti.test.assertions`
+
+**Purpose:** Fluent assertion wrapper for signal operations.
 
 **Responsibilities:**
-- Asserting signal reception
-- Verifying signal data
-- Checking signal timing
-- Validating signal propagation
+- Assert signal-related events on a specific process instance
 
 **Key Methods:**
-- `received(String signalName)` - Assert signal received
-- `hasData(Object data)` - Assert signal data
-- `awaitReceived(String signalName, Duration timeout)` - Wait for signal
-- `withProcessInstanceId(String id)` - Filter by process instance
+- `expectEventsOnProcessInstance(ProcessInstance processInstance, OperationScopeMatcher... matchers)` - Assert events on a process instance
 
-**When to Use:** In tests involving signal events and asynchronous communication.
-
-**Design Pattern:** Fluent interface with await patterns
+**Design Pattern:** Builder / wrapper
 
 **Example:**
 ```java
-signal()
-    .awaitReceived("ORDER_APPROVED", Duration.ofSeconds(10))
-    .hasData(approvalData);
+import static org.activiti.test.matchers.SignalMatchers.*;
+
+processOperations
+    .signal(SignalPayloadBuilder.signal("ORDER_APPROVED")
+        .withProcessDefinitionId(processDefinitionId)
+        .build())
+    .expectEventsOnProcessInstance(instance,
+        signal("ORDER_APPROVED").hasBeenReceived()
+    );
 ```
-
----
-
-### ActivityMatchers
-
-**Purpose:** Provides Hamcrest matchers for BPMN activities.
-
-**Responsibilities:**
-- Matching activity types
-- Verifying activity properties
-- Checking activity state
-- Validating activity transitions
-
-**Key Methods:**
-- `activityType(ActivityType type)` - Match by type
-- `activityName(String name)` - Match by name
-- `activityId(String id)` - Match by ID
-- `isActive()` - Match active activities
-- `isCompleted()` - Match completed activities
-
-**When to Use:** In combination with assertions for detailed activity verification.
-
-**Design Pattern:** Hamcrest matcher pattern
-
-**Example:**
-```java
-assertThat(currentActivity(), activityName("Review Order"));
-assertThat(activityState(), isActive());
-```
-
----
-
-### ProcessInstanceMatchers
-
-**Purpose:** Provides Hamcrest matchers for process instances.
-
-**Responsibilities:**
-- Matching process instance properties
-- Verifying process state
-- Checking process variables
-- Validating business keys
-
-**Key Methods:**
-- `processDefinitionKey(String key)` - Match by definition key
-- `processInstanceId(String id)` - Match by ID
-- `businessKey(String key)` - Match by business key
-- `isActive()` - Match active instances
-- `isCompleted()` - Match completed instances
-
-**When to Use:** For detailed process instance verification in tests.
-
-**Design Pattern:** Hamcrest matcher pattern
-
-**Example:**
-```java
-assertThat(processInstance, processDefinitionKey("orderProcess"));
-assertThat(processInstance, businessKey("ORD-123"));
-```
-
----
-
-### TaskMatchers
-
-**Purpose:** Provides Hamcrest matchers for tasks.
-
-**Responsibilities:**
-- Matching task properties
-- Verifying task state
-- Checking task assignee
-- Validating task variables
-
-**Key Methods:**
-- `taskName(String name)` - Match by name
-- `taskAssignee(String assignee)` - Match by assignee
-- `taskCandidateUser(String user)` - Match by candidate
-- `isClaimed()` - Match claimed tasks
-- `isUnclaimed()` - Match unclaimed tasks
-
-**When to Use:** For detailed task verification in tests.
-
-**Design Pattern:** Hamcrest matcher pattern
-
-**Example:**
-```java
-assertThat(task, taskName("Approve Request"));
-assertThat(task, taskAssignee("manager"));
-```
-
----
 
 ### ProcessOperations
 
-**Purpose:** Provides high-level operations for process testing.
+**Package:** `org.activiti.test.operations`
+
+**Purpose:** Primary interface for process test operations.
 
 **Responsibilities:**
-- Starting process instances
-- Sending signals and messages
-- Querying process state
-- Managing process lifecycle
+- Start process instances
+- Send signal events
 
 **Key Methods:**
-- `startProcess(String key)` - Start new process
-- `sendSignal(String name)` - Send signal event
-- `sendMessage(String name)` - Send message event
-- `getProcessInstance(String id)` - Get process instance
-- `completeProcess(String id)` - Complete process
+- `ProcessInstanceAssertions start(StartProcessPayload payload)` - Start a new process instance
+- `SignalAssertions signal(SignalPayload payload)` - Send a signal event
 
-**When to Use:** For orchestrating process tests.
-
-**Design Pattern:** Facade pattern
+**Implementations:**
+- `ProcessRuntimeOperations` (in `activiti-core-test-local-runtime`) - delegates to `ProcessRuntime`
+- `AwaitableProcessOperations` - wraps any `ProcessOperations` with await behavior
 
 **Example:**
 ```java
-ProcessInstance instance = processOperations.startProcess("orderProcess");
-processOperations.sendSignal("ORDER_CREATED");
+ProcessInstance instance = processOperations
+    .start(StartProcessPayloadBuilder.start()
+        .withProcessDefinitionKey("orderProcess")
+        .withBusinessKey("ORD-123")
+        .build())
+    .andReturn();
 ```
-
----
 
 ### TaskOperations
 
-**Purpose:** Provides high-level operations for task testing.
+**Package:** `org.activiti.test.operations`
+
+**Purpose:** Primary interface for task test operations.
 
 **Responsibilities:**
-- Claiming tasks
-- Completing tasks
-- Assigning tasks
-- Querying tasks
+- Claim tasks
+- Complete tasks
 
 **Key Methods:**
-- `claimTask(String taskId, String assignee)` - Claim task
-- `completeTask(String taskId)` - Complete task
-- `assignTask(String taskId, String assignee)` - Assign task
-- `getTasks(String processInstanceId)` - Get tasks
-- `getTask(String taskId)` - Get specific task
+- `TaskAssertions claim(ClaimTaskPayload payload)` - Claim a task
+- `TaskAssertions complete(CompleteTaskPayload payload)` - Complete a task
 
-**When to Use:** For orchestrating task tests.
-
-**Design Pattern:** Facade pattern
+**Implementations:**
+- `TaskRuntimeOperations` (in `activiti-core-test-local-runtime`) - delegates to `TaskRuntime`
+- `AwaitableTaskOperations` - wraps any `TaskOperations` with await behavior
 
 **Example:**
 ```java
-taskOperations.claimTask(taskId, "john.doe");
-taskOperations.completeTask(taskId, variables);
+Task completedTask = taskOperations
+    .complete(CompleteTaskPayloadBuilder.complete(taskId)
+        .withVariable("approved", true)
+        .build())
+    .expectFields(withAssignee("john.doe"))
+    .andReturn();
 ```
-
----
 
 ### AwaitProcessInstanceAssertions
 
-**Purpose:** Provides await patterns for asynchronous process testing.
+**Package:** `org.activiti.test.assertions`
+
+**Purpose:** Wraps a `ProcessInstanceAssertions` to add awaitility-based async support.
 
 **Responsibilities:**
-- Waiting for process completion
-- Polling process state
-- Timeout handling
-- Retry logic
+- Delegates all `ProcessInstanceAssertions` methods through `await().untilAsserted(...)`
+- Does not introduce new methods — same interface as `ProcessInstanceAssertions`
 
-**Key Methods:**
-- `awaitCompletion(Duration timeout)` - Wait for completion
-- `awaitState(ProcessState state, Duration timeout)` - Wait for state
-- `awaitVariable(String name, Duration timeout)` - Wait for variable
-- `withPollInterval(Duration interval)` - Set poll interval
+**Key Methods:** (inherited from `ProcessInstanceAssertions`)
+- `expectFields(ProcessResultMatcher... matchers)` — wrapped with await
+- `expectEvents(OperationScopeMatcher... matchers)` — wrapped with await
+- `expect(ProcessTaskMatcher... matchers)` — wrapped with await
+- `andReturn()` — delegates to inner assertions
 
-**When to Use:** For testing asynchronous processes with timeouts.
-
-**Design Pattern:** Awaitility pattern
+**Enabled via:** `activiti.assertions.await.enabled=true` property
 
 **Example:**
 ```java
-await()
-    .atMost(10, SECONDS)
-    .until(processInstance("myProcess"), isCompleted());
+// When await is enabled, all assertions poll until they pass
+ProcessInstance instance = processOperations
+    .start(StartProcessPayloadBuilder.start()
+        .withProcessDefinitionKey("asyncProcess")
+        .build())
+    .expectEvents(
+        processInstance().hasBeenCompleted()
+    )
+    .andReturn();
 ```
 
----
+### AwaitTaskAssertions
+
+**Package:** `org.activiti.test.assertions`
+
+**Purpose:** Wraps a `TaskAssertions` to add awaitility-based async support.
+
+**Key Methods:** (inherited from `TaskAssertions`)
+- `expectFields(TaskResultMatcher... matchers)` — wrapped with await
+- `expectEvents(OperationScopeMatcher... matchers)` — wrapped with await
+- `expect(ProcessTaskMatcher... matchers)` — wrapped with await
+- `andReturn()` — delegates to inner assertions
+
+### AwaitSignalAssertions
+
+**Package:** `org.activiti.test.assertions`
+
+**Purpose:** Wraps a `SignalAssertions` to add awaitility-based async support.
+
+**Key Methods:** (inherited from `SignalAssertions`)
+- `expectEventsOnProcessInstance(ProcessInstance, OperationScopeMatcher... matchers)` — wrapped with await
 
 ### LocalEventSource
 
-**Purpose:** Provides local event source for in-memory testing.
+**Package:** `org.activiti.test`
+
+**Purpose:** In-memory event collector that listens for runtime events and stores them for assertion matching.
 
 **Responsibilities:**
-- Publishing test events
-- Managing event lifecycle
-- Event filtering
-- Event delivery
+- Collect events from BPMN element, process runtime, task runtime, and variable listeners
+- Provide event queries for test verification
 
 **Key Methods:**
-- `publish(Event event)` - Publish event
-- `subscribe(Class<T> type, Consumer<T> handler)` - Subscribe to events
-- `getEvents(Class<T> type)` - Get events by type
-- `clearEvents()` - Clear all events
-
-**When to Use:** For testing event-driven processes without external systems.
-
-**Design Pattern:** Event source pattern
-
-**Example:**
-```java
-localEventSource.publish(new OrderCreatedEvent(orderId));
-List<OrderCreatedEvent> events = localEventSource.getEvents(OrderCreatedEvent.class);
-```
+- `addCollectedEvents(RuntimeEvent<?, ?> event)` - Add a collected event
+- `getEvents()` - Get all collected events
+- `getEvents(Class<T> eventType)` - Get events filtered by type class
+- `getEvents(Enum<?>... eventTypes)` - Get events filtered by event type enums
+- `clearEvents()` - Clear all collected events
+- `getTaskEvents()` - Get only task-related events
+- `getProcessInstanceEvents()` - Get only process instance events
+- `getTimerFiredEvents()` - Get timer fired events
+- `getTimerScheduledEvents()` - Get timer scheduled events
+- `getTimerCancelledEvents()` - Get timer cancelled events
 
 ---
 
-## Test Assertions
+## Assertions API
 
 ### Process Instance Assertions
 
 ```java
-@SpringBootTest
+import static org.activiti.test.matchers.ProcessInstanceMatchers.*;
+
 class OrderProcessTest {
-    
+
     @Autowired
-    private ProcessInstanceAssertions processInstance;
-    
+    private ProcessOperations processOperations;
+
     @Test
-    void testOrderProcessCreation() {
-        // Start process
-        ProcessInstance instance = startOrderProcess();
-        
-        // Assert process exists and is active
-        processInstance
-            .withProcessInstanceId(instance.getId())
-            .exists()
-            .isActive()
-            .hasBusinessKey(instance.getBusinessKey())
-            .hasVariable("orderId", instance.getBusinessKey())
-            .hasVariable("orderStatus", "CREATED");
+    void testOrderProcessStart() {
+        ProcessInstance instance = processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("orderProcess")
+                .withBusinessKey("ORD-123")
+                .withVariable("customerId", "CUST-456")
+                .build())
+            .expectFields(
+                status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+                businessKey("ORD-123")
+            )
+            .expectEvents(
+                processInstance().hasBeenStarted()
+            )
+            .andReturn();
+
+        // Use the instance for further operations
+        assertThat(instance.getId()).isNotNull();
     }
-    
+
     @Test
-    void testOrderProcessCompletion() {
-        // Start and complete process
-        ProcessInstance instance = startAndCompleteOrderProcess();
-        
-        // Assert process is completed
-        processInstance
-            .withProcessInstanceId(instance.getId())
-            .isCompleted()
-            .hasVariable("orderStatus", "COMPLETED");
+    void testProcessCompletion() {
+        ProcessInstance instance = processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("simpleProcess")
+                .build())
+            .expectEvents(
+                processInstance().hasBeenCompleted()
+            )
+            .andReturn();
+
+        ProcessInstance completed = processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("simpleProcess")
+                .build())
+            .expectFields(
+                status(ProcessInstance.ProcessInstanceStatus.COMPLETED)
+            )
+            .andReturn();
     }
 }
 ```
@@ -470,37 +445,52 @@ class OrderProcessTest {
 ### Task Assertions
 
 ```java
-@SpringBootTest
+import static org.activiti.test.matchers.TaskMatchers.*;
+
 class TaskTest {
-    
+
     @Autowired
-    private TaskAssertions task;
-    
+    private ProcessOperations processOperations;
+
+    @Autowired
+    private TaskOperations taskOperations;
+
     @Test
-    void testTaskCreation() {
-        // Start process that creates task
-        ProcessInstance instance = startProcess();
-        
-        // Assert task exists
-        task
-            .withProcessInstanceId(instance.getId())
-            .exists()
-            .hasName("Review Order")
-            .isUnclaimed()
-            .hasVariable("orderId", instance.getBusinessKey());
-    }
-    
-    @Test
-    void testTaskClaim() {
-        // Get task and claim it
-        Task task = getFirstTask();
-        claimTask(task.getId(), "john.doe");
-        
-        // Assert task is claimed
-        this.task
-            .withTaskId(task.getId())
-            .isClaimed()
-            .hasAssignee("john.doe");
+    void testTaskClaimAndComplete() {
+        // Start process with a task
+        ProcessInstance instance = processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("taskProcess")
+                .build())
+            .andReturn();
+
+        // Get the task via TaskRuntime
+        Task task = taskRuntime.tasks()
+            .processInstanceId(instance.getId())
+            .singleResult();
+
+        // Claim and assert
+        Task claimedTask = taskOperations
+            .claim(ClaimTaskPayloadBuilder.claim(task.getId())
+                .withAssignee("john.doe")
+                .build())
+            .expectFields(
+                withAssignee("john.doe")
+            )
+            .expectEvents(
+                task().hasBeenAssigned()
+            )
+            .andReturn();
+
+        // Complete and assert
+        Task completedTask = taskOperations
+            .complete(CompleteTaskPayloadBuilder.complete(task.getId())
+                .withVariable("approved", true)
+                .build())
+            .expectEvents(
+                task().hasBeenCompleted()
+            )
+            .andReturn();
     }
 }
 ```
@@ -508,25 +498,28 @@ class TaskTest {
 ### Signal Assertions
 
 ```java
-@SpringBootTest
+import static org.activiti.test.matchers.SignalMatchers.*;
+
 class SignalTest {
-    
+
     @Autowired
-    private SignalAssertions signal;
-    
+    private ProcessOperations processOperations;
+
     @Test
     void testSignalReception() {
-        // Start process waiting for signal
-        ProcessInstance instance = startProcess();
-        
-        // Send signal
-        sendSignal("ORDER_APPROVED");
-        
-        // Assert signal was received
-        signal
-            .withProcessInstanceId(instance.getId())
-            .received("ORDER_APPROVED")
-            .hasData(approvalData);
+        ProcessInstance instance = processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("signalProcess")
+                .build())
+            .andReturn();
+
+        processOperations
+            .signal(SignalPayloadBuilder.signal("ORDER_APPROVED")
+                .withProcessDefinitionId(instance.getProcessDefinitionId())
+                .build())
+            .expectEventsOnProcessInstance(instance,
+                signal("ORDER_APPROVED").hasBeenReceived()
+            );
     }
 }
 ```
@@ -537,228 +530,461 @@ class SignalTest {
 
 ### Activity Matchers
 
+`ActivityMatchers` is an abstract base class. Each BPMN element type has its own concrete matcher class. All activity matchers provide:
+
+- `hasBeenStarted()` — returns an `OperationScopeMatcher` that asserts the activity was started
+- `hasBeenCompleted()` — returns an `OperationScopeMatcher` that asserts the activity was started and completed
+
+Available activity matcher classes:
+
+| Class | Static Factory | Activity Type |
+|---|---|---|
+| `BPMNStartEventMatchers` | `startEvent(String definitionKey)` | `startEvent` |
+| `EndEventMatchers` | `endEvent(String definitionKey)` | `endEvent` |
+| `ManualTaskMatchers` | `manualTask(String definitionKey)` | `manualTask` |
+| `IntermediateCatchEventMatchers` | `intermediateCatchEvent(String definitionKey)` | `intermediateCatchEvent` |
+| `ExclusiveGatewayMatchers` | `exclusiveGateway(String definitionKey)` | `exclusiveGateway` |
+| `InclusiveGatewayMatchers` | `inclusiveGateway(String definitionKey)` | `inclusiveGateway` |
+| `ThrowEventMatchers` | `throwEvent(String definitionKey)` | `throwEvent` |
+
 ```java
-import static org.activiti.test.matchers.ActivityMatchers.*;
+import static org.activiti.test.matchers.BPMNStartEventMatchers.startEvent;
+import static org.activiti.test.matchers.EndEventMatchers.endEvent;
+import static org.activiti.test.matchers.ManualTaskMatchers.manualTask;
+import static org.activiti.test.matchers.IntermediateCatchEventMatchers.intermediateCatchEvent;
+import static org.activiti.test.matchers.ExclusiveGatewayMatchers.exclusiveGateway;
+import static org.activiti.test.matchers.InclusiveGatewayMatchers.inclusiveGateway;
+import static org.activiti.test.matchers.ThrowEventMatchers.throwEvent;
+import static org.activiti.test.matchers.SequenceFlowMatchers.sequenceFlow;
+import static org.activiti.test.matchers.ProcessInstanceMatchers.processInstance;
 
 class ActivityMatcherTest {
-    
+
+    @Autowired
+    private ProcessOperations processOperations;
+
     @Test
     void testActivityMatchers() {
-        // Match activity by name
-        assertThat(currentActivity(), activityName("Review Order"));
-        
-        // Match activity by type
-        assertThat(currentActivity(), activityType(UserTask.class));
-        
-        // Match activity state
-        assertThat(activityState(), isActive());
-        assertThat(activityState(), isCompleted());
-        
-        // Match activity ID
-        assertThat(currentActivity(), activityId("task_1"));
+        processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("orderProcess")
+                .build())
+            .expectEvents(
+                startEvent("start_1").hasBeenStarted(),
+                manualTask("manual_1").hasBeenCompleted(),
+                exclusiveGateway("gw_1").hasBeenStarted(),
+                sequenceFlow("flow_1").hasBeenTaken(),
+                endEvent("end_1").hasBeenCompleted(),
+                processInstance().hasBeenCompleted()
+            );
     }
 }
 ```
 
 ### Process Instance Matchers
 
+`ProcessInstanceMatchers` provides both field matchers (`ProcessResultMatcher`) and event matchers (`OperationScopeMatcher`):
+
+**Field matchers (used with `expectFields`):**
+- `status(ProcessInstance.ProcessInstanceStatus status)` — assert process status
+- `name(String name)` — assert process name
+- `businessKey(String businessKey)` — assert business key
+- `hasTask(String taskName, Task.TaskStatus taskStatus, TaskResultMatcher... matchers)` — returns a `ProcessTaskMatcher` to assert task existence
+
+**Event matchers (used with `expectEvents`):**
+- `processInstance().hasBeenStarted()` — assert the process was started
+- `processInstance().hasBeenCompleted()` — assert the process was completed
+
 ```java
 import static org.activiti.test.matchers.ProcessInstanceMatchers.*;
 
 class ProcessInstanceMatcherTest {
-    
+
+    @Autowired
+    private ProcessOperations processOperations;
+
     @Test
     void testProcessInstanceMatchers() {
-        ProcessInstance instance = getProcessInstance();
-        
-        // Match by definition key
-        assertThat(instance, processDefinitionKey("orderProcess"));
-        
-        // Match by business key
-        assertThat(instance, businessKey("ORD-123"));
-        
-        // Match by ID
-        assertThat(instance, processInstanceId("instance-123"));
-        
-        // Match state
-        assertThat(instance, isActive());
-        assertThat(instance, isCompleted());
+        processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("orderProcess")
+                .withBusinessKey("ORD-123")
+                .build())
+            .expectFields(
+                status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+                businessKey("ORD-123")
+            )
+            .expectEvents(
+                processInstance().hasBeenStarted()
+            )
+            .expect(
+                hasTask("Review Order", Task.TaskStatus.CREATED)
+            );
     }
 }
 ```
 
 ### Task Matchers
 
+`TaskMatchers` provides:
+
+**Field matchers (used with `expectFields`):**
+- `assignee(String assignee)` — assert task assignee (returns `withAssignee(assignee)` matcher)
+- `withAssignee(String assignee)` — static factory for assignee matcher
+
+**Event matchers (used with `expectEvents`):**
+- `task().hasBeenAssigned()` — assert the task was assigned
+- `task().hasBeenCompleted()` — assert the task was completed
+
 ```java
 import static org.activiti.test.matchers.TaskMatchers.*;
 
 class TaskMatcherTest {
-    
+
+    @Autowired
+    private TaskOperations taskOperations;
+
     @Test
     void testTaskMatchers() {
-        Task task = getTask();
-        
-        // Match by name
-        assertThat(task, taskName("Review Order"));
-        
-        // Match by assignee
-        assertThat(task, taskAssignee("john.doe"));
-        
-        // Match by candidate user
-        assertThat(task, taskCandidateUser("jane.doe"));
-        
-        // Match state
-        assertThat(task, isClaimed());
-        assertThat(task, isUnclaimed());
+        taskOperations
+            .claim(ClaimTaskPayloadBuilder.claim(taskId)
+                .withAssignee("john.doe")
+                .build())
+            .expectFields(
+                withAssignee("john.doe")
+            )
+            .expectEvents(
+                task().hasBeenAssigned()
+            );
+
+        taskOperations
+            .complete(CompleteTaskPayloadBuilder.complete(taskId)
+                .build())
+            .expectEvents(
+                task().hasBeenCompleted()
+            );
     }
+}
+```
+
+### Process Variable Matchers
+
+`ProcessVariableMatchers` provides:
+
+- `processVariable(String variableName, Object value).hasBeenCreated()` — returns an `OperationScopeMatcher` asserting a process variable was created with the given value
+
+```java
+import static org.activiti.test.matchers.ProcessVariableMatchers.*;
+
+class VariableMatcherTest {
+
+    @Autowired
+    private ProcessOperations processOperations;
+
+    @Test
+    void testProcessVariableMatchers() {
+        processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("orderProcess")
+                .withVariable("orderId", "ORD-123")
+                .build())
+            .expectEvents(
+                processVariable("orderId", "ORD-123").hasBeenCreated()
+            );
+    }
+}
+```
+
+### Sequence Flow Matchers
+
+`SequenceFlowMatchers` provides:
+
+- `sequenceFlow(String definitionKey).hasBeenTaken()` — returns an `OperationScopeMatcher` asserting the sequence flow was taken
+
+```java
+import static org.activiti.test.matchers.SequenceFlowMatchers.*;
+
+class SequenceFlowMatcherTest {
+
+    @Autowired
+    private ProcessOperations processOperations;
+
+    @Test
+    void testSequenceFlowMatchers() {
+        processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("orderProcess")
+                .build())
+            .expectEvents(
+                sequenceFlow("approved_flow").hasBeenTaken()
+            );
+    }
+}
+```
+
+### Process Task Matchers
+
+`ProcessTaskMatchers` provides:
+
+- `taskWithName(String taskName).hasBeenCreated()` — assert a task with the given name was created (implies activity start)
+- `taskWithName(String taskName).hasBeenAssigned()` — assert a task with the given name was assigned
+
+```java
+import static org.activiti.test.matchers.ProcessTaskMatchers.*;
+
+class ProcessTaskMatcherTest {
+
+    @Autowired
+    private ProcessOperations processOperations;
+
+    @Test
+    void testProcessTaskMatchers() {
+        processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("orderProcess")
+                .build())
+            .expectEvents(
+                taskWithName("Review Order").hasBeenCreated()
+            );
+    }
+}
+```
+
+### Signal Matchers
+
+`SignalMatchers` provides:
+
+- `signal(String signalName).hasBeenReceived()` — returns an `OperationScopeMatcher` asserting the signal was received
+
+```java
+import static org.activiti.test.matchers.SignalMatchers.*;
+
+class SignalMatcherTest {
+
+    @Autowired
+    private ProcessOperations processOperations;
+
+    @Test
+    void testSignalMatchers() {
+        ProcessInstance instance = processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("signalProcess")
+                .build())
+            .andReturn();
+
+        processOperations
+            .signal(SignalPayloadBuilder.signal("ORDER_APPROVED")
+                .withProcessDefinitionId(instance.getProcessDefinitionId())
+                .build())
+            .expectEventsOnProcessInstance(instance,
+                signal("ORDER_APPROVED").hasBeenReceived()
+            );
+    }
+}
+```
+
+### Matcher Interfaces
+
+The matcher system is built on three core interfaces:
+
+**`ProcessResultMatcher`** — asserts on a `ProcessInstance` object
+```java
+interface ProcessResultMatcher {
+    void match(ProcessInstance processInstance);
+}
+```
+
+**`TaskResultMatcher`** — asserts on a `Task` object
+```java
+interface TaskResultMatcher {
+    void match(Task task);
+}
+```
+
+**`OperationScopeMatcher`** — asserts on a scope (process instance or task) against collected events
+```java
+interface OperationScopeMatcher {
+    void match(OperationScope operationScope, List<RuntimeEvent<?, ?>> events);
+}
+```
+
+**`ProcessTaskMatcher`** — asserts on tasks for a process instance
+```java
+interface ProcessTaskMatcher {
+    void match(String processInstanceId, List<TaskSource> taskSources);
 }
 ```
 
 ---
 
-## Test Operations
+## Operations API
 
 ### Process Operations
 
+`ProcessOperations` is the primary entry point for process-level test actions.
+
 ```java
-@SpringBootTest
-class ProcessOperationsTest {
-    
-    @Autowired
-    private ProcessOperations processOperations;
-    
-    @Test
-    void testProcessOperations() {
-        // Start process
-        ProcessInstance instance = processOperations.startProcess("orderProcess");
-        
-        // Send signal
-        processOperations.sendSignal("ORDER_CREATED");
-        
-        // Send message
-        processOperations.sendMessage("APPROVE_ORDER");
-        
-        // Get process instance
-        ProcessInstance retrieved = processOperations.getProcessInstance(instance.getId());
-        
-        // Complete process
-        processOperations.completeProcess(instance.getId());
-    }
+interface ProcessOperations {
+    ProcessInstanceAssertions start(StartProcessPayload payload);
+    SignalAssertions signal(SignalPayload payload);
 }
+```
+
+**`ProcessRuntimeOperations`** (local runtime implementation):
+- Delegates `start()` to `ProcessRuntime.start()`
+- Delegates `signal()` to `ProcessRuntime.signal()`
+- Wraps results in assertion implementations backed by `EventSource` and `TaskSource`
+
+```java
+@Autowired
+private ProcessOperations processOperations;
+
+ProcessInstance instance = processOperations
+    .start(StartProcessPayloadBuilder.start()
+        .withProcessDefinitionKey("orderProcess")
+        .withBusinessKey("ORD-123")
+        .withVariable("amount", 100.0)
+        .build())
+    .expectFields(
+        businessKey("ORD-123"),
+        status(ProcessInstance.ProcessInstanceStatus.RUNNING)
+    )
+    .andReturn();
+
+processOperations
+    .signal(SignalPayloadBuilder.signal("PROCEED")
+        .withProcessDefinitionId(instance.getProcessDefinitionId())
+        .build())
+    .expectEventsOnProcessInstance(instance,
+        signal("PROCEED").hasBeenReceived()
+    );
 ```
 
 ### Task Operations
 
+`TaskOperations` is the primary entry point for task-level test actions.
+
 ```java
-@SpringBootTest
-class TaskOperationsTest {
-    
-    @Autowired
-    private TaskOperations taskOperations;
-    
-    @Test
-    void testTaskOperations() {
-        // Get tasks for process instance
-        List<Task> tasks = taskOperations.getTasks(processInstanceId);
-        
-        // Claim task
-        taskOperations.claimTask(taskId, "john.doe");
-        
-        // Complete task
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("approved", true);
-        taskOperations.completeTask(taskId, variables);
-        
-        // Assign task
-        taskOperations.assignTask(taskId, "jane.doe");
-    }
+interface TaskOperations {
+    TaskAssertions claim(ClaimTaskPayload payload);
+    TaskAssertions complete(CompleteTaskPayload payload);
+}
+```
+
+**`TaskRuntimeOperations`** (local runtime implementation):
+- Delegates `claim()` to `TaskRuntime.claim()`
+- Delegates `complete()` to `TaskRuntime.complete()`
+- Wraps results in assertion implementations backed by `EventSource` and `TaskSource`
+
+```java
+@Autowired
+private TaskOperations taskOperations;
+
+Task claimedTask = taskOperations
+    .claim(ClaimTaskPayloadBuilder.claim(taskId)
+        .withAssignee("john.doe")
+        .build())
+    .expectFields(withAssignee("john.doe"))
+    .expectEvents(task().hasBeenAssigned())
+    .andReturn();
+
+Task completedTask = taskOperations
+    .complete(CompleteTaskPayloadBuilder.complete(taskId)
+        .withVariable("approved", true)
+        .build())
+    .expectEvents(task().hasBeenCompleted())
+    .andReturn();
+```
+
+---
+
+## Await Patterns
+
+The `AwaitProcessInstanceAssertions`, `AwaitTaskAssertions`, and `AwaitSignalAssertions` classes wrap their respective assertion interfaces to add awaitility-based polling. When enabled, every `expectFields()`, `expectEvents()`, and `expect()` call is wrapped with `await().untilAsserted(...)`.
+
+### Enabling Await
+
+Set the property `activiti.assertions.await.enabled=true` in your test configuration:
+
+```yaml
+# application-test.yml
+activiti:
+  assertions:
+    await:
+      enabled: true
+```
+
+### How It Works
+
+The auto-configuration in `AssertionsAPIAutoConfiguration` wraps the base operations:
+
+```java
+@Bean
+public ProcessOperations processOperations(ProcessOperations processRuntimeOperations,
+                                           @Value("${activiti.assertions.await.enabled:false}") boolean awaitEnabled) {
+    return new AwaitableProcessOperations(processRuntimeOperations, awaitEnabled);
+}
+```
+
+When `awaitEnabled` is `true`, `AwaitableProcessOperations.start()` wraps the returned `ProcessInstanceAssertions` in `AwaitProcessInstanceAssertions`. The same applies to `signal()`, `claim()`, and `complete()`.
+
+### Await with Process Operations
+
+```java
+@Test
+void testAsyncProcessWithAwait() {
+    // When await is enabled, assertions poll until they pass
+    ProcessInstance instance = processOperations
+        .start(StartProcessPayloadBuilder.start()
+            .withProcessDefinitionKey("asyncProcess")
+            .build())
+        .expectEvents(
+            processInstance().hasBeenCompleted()
+        )
+        .andReturn();
+}
+```
+
+### Await with Task Operations
+
+```java
+@Test
+void testTaskCompletionWithAwait() {
+    taskOperations
+        .complete(CompleteTaskPayloadBuilder.complete(taskId)
+            .build())
+        .expectEvents(
+            task().hasBeenCompleted()
+        )
+        .andReturn();
 }
 ```
 
 ---
 
-## Local Runtime Testing
+## Local Runtime
 
-### In-Memory Testing
+### Event Source Configuration
 
-```java
-@ExtendWith(ActivitiTestExtension.class)
-class LocalRuntimeTest {
-    
-    @Autowired
-    private ProcessRuntime processRuntime;
-    
-    @Autowired
-    private TaskRuntime taskRuntime;
-    
-    @Autowired
-    private ProcessInstanceAssertions processInstance;
-    
-    @Test
-    void testProcessInMemory() {
-        // Start process
-        ProcessInstance instance = processRuntime.start(
-            StartProcessPayloadBuilder.start()
-                .withProcessDefinitionKey("testProcess")
-                .build()
-        );
-        
-        // Assert process exists
-        processInstance
-            .withProcessInstanceId(instance.getId())
-            .exists()
-            .isActive();
-        
-        // Complete task
-        Task task = taskRuntime.tasks()
-            .processInstanceId(instance.getId())
-            .list()
-            .get(0);
-        
-        taskRuntime.complete(
-            CompleteTaskPayloadBuilder.complete(task.getId())
-                .build()
-        );
-        
-        // Assert process completed
-        processInstance
-            .withProcessInstanceId(instance.getId())
-            .isCompleted();
-    }
-}
-```
+`ActivitiAssertionsAutoConfiguration` registers listeners for all BPMN element, process, task, variable, signal, timer, and error events. Events are collected into a `LocalEventSource` instance, which is injected into assertion implementations.
 
-### Event-Driven Testing
+### Registered Event Listeners
 
-```java
-@ExtendWith(ActivitiTestExtension.class)
-class EventDrivenTest {
-    
-    @Autowired
-    private LocalEventSource eventSource;
-    
-    @Autowired
-    private ProcessInstanceAssertions processInstance;
-    
-    @Test
-    void testEventDrivenProcess() {
-        // Start process
-        ProcessInstance instance = startProcess();
-        
-        // Publish event
-        eventSource.publish(new OrderCreatedEvent("ORD-123"));
-        
-        // Wait for process to react
-        await()
-            .atMost(5, SECONDS)
-            .until(processInstance.withProcessInstanceId(instance.getId()), isCompleted());
-        
-        // Verify events
-        List<OrderCreatedEvent> events = eventSource.getEvents(OrderCreatedEvent.class);
-        assertEquals(1, events.size());
-    }
-}
-```
+- **BPMN Element Events:** `BPMNActivityStartedEvent`, `BPMNActivityCompletedEvent`, `BPMNActivityCancelledEvent`, `BPMNSequenceFlowTakenEvent`, `BPMNSignalReceivedEvent`, `BPMNTimerScheduledEvent`, `BPMNTimerFiredEvent`, `BPMNTimerExecutedEvent`, `BPMNTimerFailedEvent`, `BPMNTimerCancelledEvent`, `BPMNErrorReceivedEvent`
+- **Process Events:** `ProcessCreatedEvent`, `ProcessStartedEvent`, `ProcessCompletedEvent`, `ProcessResumedEvent`, `ProcessSuspendedEvent`, `ProcessCancelledEvent`
+- **Task Events:** `TaskCreatedEvent`, `TaskUpdatedEvent`, `TaskCompletedEvent`, `TaskSuspendedEvent`, `TaskAssignedEvent`, `TaskCancelledEvent`
+- **Variable Events:** `VariableCreatedEvent`, `VariableDeletedEvent`, `VariableUpdatedEvent`
+
+### Spring Auto-Configuration Beans
+
+| Bean Name | Type | Package |
+|---|---|---|
+| `handledEvents` | `LocalEventSource` | `activiti-core-test-local-runtime` |
+| `localTaskProvider` | `LocalTaskSource` (implements `TaskSource`) | `activiti-core-test-local-runtime` |
+| `processRuntimeOperations` | `ProcessRuntimeOperations` (implements `ProcessOperations`) | `activiti-core-test-local-runtime` |
+| `taskRuntimeOperations` | `TaskRuntimeOperations` (implements `TaskOperations`) | `activiti-core-test-local-runtime` |
+| `processOperations` | `AwaitableProcessOperations` (wraps `ProcessOperations`) | `activiti-core-test-assertions` |
+| `taskOperations` | `AwaitableTaskOperations` (wraps `TaskOperations`) | `activiti-core-test-assertions` |
 
 ---
 
@@ -770,201 +996,127 @@ class EventDrivenTest {
 @SpringBootTest
 @AutoConfigureTestDatabase
 class OrderProcessIntegrationTest {
-    
+
     @Autowired
-    private ProcessRuntime processRuntime;
-    
+    private ProcessOperations processOperations;
+
+    @Autowired
+    private TaskOperations taskOperations;
+
     @Autowired
     private TaskRuntime taskRuntime;
-    
-    @Autowired
-    private ProcessInstanceAssertions processInstance;
-    
-    @Autowired
-    private TaskAssertions task;
-    
+
     @Test
     void testCompleteOrderProcess() {
-        // 1. Start order process
-        ProcessInstance instance = processRuntime.start(
-            StartProcessPayloadBuilder.start()
+        // 1. Start order process and assert
+        ProcessInstance instance = processOperations
+            .start(StartProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .withBusinessKey("ORD-123")
                 .withVariable("customerId", "CUST-456")
                 .withVariable("orderAmount", 1000.0)
-                .build()
-        );
-        
-        // 2. Assert process started
-        processInstance
-            .withProcessInstanceId(instance.getId())
-            .exists()
-            .isActive()
-            .hasBusinessKey("ORD-123")
-            .hasVariable("customerId", "CUST-456");
-        
-        // 3. Get and claim task
+                .build())
+            .expectFields(
+                status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+                businessKey("ORD-123")
+            )
+            .expectEvents(
+                processInstance().hasBeenStarted(),
+                processVariable("customerId", "CUST-456").hasBeenCreated()
+            )
+            .andReturn();
+
+        // 2. Get the review task
         Task reviewTask = taskRuntime.tasks()
             .processInstanceId(instance.getId())
-            .taskName("Review Order")
             .singleResult();
-        
-        taskRuntime.claim(
-            ClaimTaskPayloadBuilder.claim(reviewTask.getId())
+
+        // 3. Claim task and assert
+        taskOperations
+            .claim(ClaimTaskPayloadBuilder.claim(reviewTask.getId())
                 .withAssignee("manager")
-                .build()
-        );
-        
-        // 4. Assert task claimed
-        task
-            .withTaskId(reviewTask.getId())
-            .isClaimed()
-            .hasAssignee("manager");
-        
-        // 5. Complete task
-        Map<String, Object> completionVars = new HashMap<>();
-        completionVars.put("approved", true);
-        completionVars.put("approvalDate", Instant.now());
-        
-        taskRuntime.complete(
-            CompleteTaskPayloadBuilder.complete(reviewTask.getId())
-                .withVariables(completionVars)
-                .build()
-        );
-        
-        // 6. Assert process completed
-        processInstance
-            .withProcessInstanceId(instance.getId())
-            .isCompleted()
-            .hasVariable("approved", true);
+                .build())
+            .expectFields(withAssignee("manager"))
+            .expectEvents(task().hasBeenAssigned());
+
+        // 4. Complete task and assert
+        taskOperations
+            .complete(CompleteTaskPayloadBuilder.complete(reviewTask.getId())
+                .withVariable("approved", true)
+                .build())
+            .expectEvents(task().hasBeenCompleted());
+
+        // 5. Assert process completed
+        ProcessInstance completedInstance = processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("orderProcess")
+                .build())
+            .expectEvents(processInstance().hasBeenCompleted())
+            .andReturn();
     }
 }
 ```
 
-### Async Process Testing
+### Activity Matching Example
 
 ```java
 @SpringBootTest
-class AsyncProcessTest {
-    
+class ActivityMatchingTest {
+
     @Autowired
-    private ProcessRuntime processRuntime;
-    
-    @Autowired
-    private AwaitProcessInstanceAssertions awaitProcess;
-    
+    private ProcessOperations processOperations;
+
     @Test
-    void testAsyncProcess() {
-        // Start async process
-        ProcessInstance instance = processRuntime.start(
-            StartProcessPayloadBuilder.start()
-                .withProcessDefinitionKey("asyncProcess")
-                .build()
-        );
-        
-        // Wait for completion with timeout
-        awaitProcess
-            .withProcessInstanceId(instance.getId())
-            .awaitCompletion(Duration.ofSeconds(30))
-            .withPollInterval(Duration.ofMillis(500));
-        
-        // Assert completed
-        assertThat(instance, isCompleted());
+    void testActivityFlow() {
+        processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("orderProcess")
+                .build())
+            .expectEvents(
+                startEvent("startOrder").hasBeenStarted(),
+                manualTask("createOrderRecord").hasBeenCompleted(),
+                exclusiveGateway("checkAmount").hasBeenStarted(),
+                sequenceFlow("approveFlow").hasBeenTaken(),
+                taskWithName("Review Order").hasBeenCreated(),
+                endEvent("endOrder").hasBeenCompleted(),
+                processInstance().hasBeenCompleted()
+            );
     }
 }
 ```
 
----
-
-## Best Practices
-
-### 1. Use Fluent Assertions
+### Signal and Event Matching Example
 
 ```java
-// GOOD
-processInstance
-    .withProcessInstanceId(id)
-    .exists()
-    .isActive()
-    .hasVariable("status", "ACTIVE");
+@SpringBootTest
+class SignalMatchingTest {
 
-// BAD
-ProcessInstance pi = getProcessInstance(id);
-assertNotNull(pi);
-assertTrue(pi.isActive());
-assertEquals("ACTIVE", pi.getVariable("status"));
-```
+    @Autowired
+    private ProcessOperations processOperations;
 
-### 2. Use Matchers for Complex Conditions
+    @Test
+    void testSignalFlow() {
+        ProcessInstance instance = processOperations
+            .start(StartProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("signalProcess")
+                .build())
+            .expectEvents(
+                intermediateCatchEvent("catchSignal").hasBeenStarted()
+            )
+            .andReturn();
 
-```java
-// GOOD
-assertThat(task, allOf(
-    taskName("Review Order"),
-    taskAssignee("manager"),
-    isClaimed()
-));
-
-// BAD
-assertEquals("Review Order", task.getName());
-assertEquals("manager", task.getAssignee());
-assertTrue(task.isClaimed());
-```
-
-### 3. Use Await Patterns for Async Tests
-
-```java
-// GOOD
-await()
-    .atMost(10, SECONDS)
-    .until(processInstance(id), isCompleted());
-
-// BAD
-Thread.sleep(10000);
-assertThat(processInstance(id), isCompleted());
-```
-
-### 4. Keep Tests Independent
-
-```java
-// GOOD - Each test starts fresh
-@Test
-void testProcess1() {
-    ProcessInstance instance = startProcess();
-    // ...
+        processOperations
+            .signal(SignalPayloadBuilder.signal("ORDER_APPROVED")
+                .withProcessDefinitionId(instance.getProcessDefinitionId())
+                .build())
+            .expectEventsOnProcessInstance(instance,
+                signal("ORDER_APPROVED").hasBeenReceived(),
+                intermediateCatchEvent("catchSignal").hasBeenCompleted(),
+                endEvent("endProcess").hasBeenCompleted(),
+                processInstance().hasBeenCompleted()
+            );
+    }
 }
-
-@Test
-void testProcess2() {
-    ProcessInstance instance = startProcess();
-    // ...
-}
-
-// BAD - Tests depend on each other
-private ProcessInstance sharedInstance;
-
-@Before
-void setup() {
-    sharedInstance = startProcess();
-}
-```
-
-### 5. Use Descriptive Test Names
-
-```java
-// GOOD
-@Test
-void testOrderProcess_CompletesWhenApproved() { ... }
-
-@Test
-void testOrderProcess_WaitsForManagerApproval() { ... }
-
-// BAD
-@Test
-void test1() { ... }
-
-@Test
-void testProcess() { ... }
 ```
 
 ---
@@ -973,36 +1125,74 @@ void testProcess() { ... }
 
 ### Assertion Interfaces
 
-- `ProcessInstanceAssertions` - Process instance assertions
-- `TaskAssertions` - Task assertions
-- `SignalAssertions` - Signal assertions
-- `AwaitProcessInstanceAssertions` - Await patterns
+| Interface | Package | Methods |
+|---|---|---|
+| `ProcessInstanceAssertions` | `org.activiti.test.assertions` | `expectFields(ProcessResultMatcher...)`, `expectEvents(OperationScopeMatcher...)`, `expect(ProcessTaskMatcher...)`, `andReturn()` |
+| `TaskAssertions` | `org.activiti.test.assertions` | `expectFields(TaskResultMatcher...)`, `expectEvents(OperationScopeMatcher...)`, `expect(ProcessTaskMatcher...)`, `andReturn()` |
+| `SignalAssertions` | `org.activiti.test.assertions` | `expectEventsOnProcessInstance(ProcessInstance, OperationScopeMatcher...)` |
+| `AwaitProcessInstanceAssertions` | `org.activiti.test.assertions` | Same as `ProcessInstanceAssertions` (wrapped with await) |
+| `AwaitTaskAssertions` | `org.activiti.test.assertions` | Same as `TaskAssertions` (wrapped with await) |
+| `AwaitSignalAssertions` | `org.activiti.test.assertions` | Same as `SignalAssertions` (wrapped with await) |
 
 ### Matcher Classes
 
-- `ActivityMatchers` - Activity matchers
-- `ProcessInstanceMatchers` - Process instance matchers
-- `TaskMatchers` - Task matchers
-- `SignalMatchers` - Signal matchers
+| Class | Static Factory Methods | Key Matchers Returned |
+|---|---|---|
+| `ProcessInstanceMatchers` | `processInstance()` | `hasBeenStarted()`, `hasBeenCompleted()`, `status(...)`, `name(...)`, `businessKey(...)`, `hasTask(...)` |
+| `TaskMatchers` | `task()` | `hasBeenAssigned()`, `hasBeenCompleted()`, `assignee(...)`, `withAssignee(...)` |
+| `SignalMatchers` | `signal(String name)` | `hasBeenReceived()` |
+| `ProcessVariableMatchers` | `processVariable(String name, Object value)` | `hasBeenCreated()` |
+| `SequenceFlowMatchers` | `sequenceFlow(String definitionKey)` | `hasBeenTaken()` |
+| `ProcessTaskMatchers` | `taskWithName(String taskName)` | `hasBeenCreated()`, `hasBeenAssigned()` |
+| `BPMNStartEventMatchers` | `startEvent(String definitionKey)` | `hasBeenStarted()`, `hasBeenCompleted()` |
+| `EndEventMatchers` | `endEvent(String definitionKey)` | `hasBeenStarted()`, `hasBeenCompleted()` |
+| `ManualTaskMatchers` | `manualTask(String definitionKey)` | `hasBeenStarted()`, `hasBeenCompleted()` |
+| `IntermediateCatchEventMatchers` | `intermediateCatchEvent(String definitionKey)` | `hasBeenStarted()`, `hasBeenCompleted()` |
+| `ExclusiveGatewayMatchers` | `exclusiveGateway(String definitionKey)` | `hasBeenStarted()`, `hasBeenCompleted()` |
+| `InclusiveGatewayMatchers` | `inclusiveGateway(String definitionKey)` | `hasBeenStarted()`, `hasBeenCompleted()` |
+| `ThrowEventMatchers` | `throwEvent(String definitionKey)` | `hasBeenStarted()`, `hasBeenCompleted()` |
+
+### Matcher Interfaces
+
+| Interface | Package | Method |
+|---|---|---|
+| `ProcessResultMatcher` | `org.activiti.test.matchers` | `match(ProcessInstance)` |
+| `TaskResultMatcher` | `org.activiti.test.matchers` | `match(Task)` |
+| `OperationScopeMatcher` | `org.activiti.test.matchers` | `match(OperationScope, List<RuntimeEvent<?, ?>>)` |
+| `ProcessTaskMatcher` | `org.activiti.test.matchers` | `match(String processInstanceId, List<TaskSource>)` |
+| `OperationScope` | `org.activiti.test.matchers` | `getProcessInstanceId()`, `getTaskId()` |
 
 ### Operation Interfaces
 
-- `ProcessOperations` - Process operations
-- `TaskOperations` - Task operations
-- `AwaitableProcessOperations` - Awaitable operations
-- `AwaitableTaskOperations` - Awaitable task operations
+| Interface/Class | Package | Methods |
+|---|---|---|
+| `ProcessOperations` | `org.activiti.test.operations` | `start(StartProcessPayload)`, `signal(SignalPayload)` |
+| `TaskOperations` | `org.activiti.test.operations` | `claim(ClaimTaskPayload)`, `complete(CompleteTaskPayload)` |
+| `AwaitableProcessOperations` | `org.activiti.test.operations` | Wraps `ProcessOperations` with await |
+| `AwaitableTaskOperations` | `org.activiti.test.operations` | Wraps `TaskOperations` with await |
+| `ProcessRuntimeOperations` | `org.activiti.test.operations` | `ProcessOperations` impl using `ProcessRuntime` |
+| `TaskRuntimeOperations` | `org.activiti.test.operations` | `TaskOperations` impl using `TaskRuntime` |
 
 ### Local Runtime
 
-- `LocalEventSource` - Local event source
-- `LocalTaskSource` - Local task source
-- `ProcessRuntimeOperations` - Runtime operations
-- `TaskRuntimeOperations` - Task operations
+| Class | Package | Description |
+|---|---|---|
+| `LocalEventSource` | `org.activiti.test` | In-memory event collector |
+| `LocalTaskSource` | `org.activiti.test` | Task source backed by `TaskRuntime` |
+| `ActivitiAssertionsAutoConfiguration` | `org.activiti.test.config` | Registers event listeners and operations beans |
+| `AssertionsAPIAutoConfiguration` | `org.activiti.test.conf` | Wraps operations with awaitable decorators |
+
+### Supporting Interfaces
+
+| Interface | Package | Description |
+|---|---|---|
+| `EventSource` | `org.activiti.test` | Provides collected runtime events |
+| `TaskSource` | `org.activiti.test` | Provides task queries and status handling |
 
 ---
 
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Expression Language](../core-common/expression-language.md)
-- [Common Utilities](../core-common/common-util.md)
+- [Expression Language](./expression-language.md)
+- [Common Utilities](./common-util.md)

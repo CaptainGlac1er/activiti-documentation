@@ -637,15 +637,14 @@ List<HistoricVariableInstance> variables = variableQuery
     .executionId("execution-id-789")
     .list();
 
-// Filter by value
-List<HistoricVariableInstance> variables = variableQuery
-    .variableValueEquals(1000)
-    .list();
-
 // Filter by name and value
 List<HistoricVariableInstance> variables = variableQuery
-    .variableName("status")
-    .variableValueEquals("APPROVED")
+    .variableValueEquals("orderAmount", 1000)
+    .list();
+
+// Variable not equals
+List<HistoricVariableInstance> variables = variableQuery
+    .variableValueNotEquals("status", "APPROVED")
     .list();
 ```
 
@@ -657,11 +656,6 @@ Historic details include variable updates and form properties:
 
 ```java
 HistoricDetailQuery detailQuery = historyService.createHistoricDetailQuery();
-
-// By variable name
-List<HistoricDetail> details = detailQuery
-    .variableName("orderAmount")
-    .list();
 
 // By process instance
 List<HistoricDetail> details = detailQuery
@@ -678,13 +672,14 @@ List<HistoricDetail> details = detailQuery
     .executionId("execution-id-789")
     .list();
 
-// Filter by type
-List<HistoricDetail> details = detailQuery
-    .type(HistoricDetail.VARIABLE_UPDATE)
+// Only variable updates
+List<HistoricDetail> variableUpdates = detailQuery
+    .variableUpdates()
     .list();
 
-List<HistoricDetail> details = detailQuery
-    .type(HistoricDetail.FORM_PROPERTY)
+// Only form properties
+List<HistoricDetail> formProperties = detailQuery
+    .formProperties()
     .list();
 ```
 
@@ -735,9 +730,19 @@ String tenantId = log.getTenantId();
 // Get chronological trail of events
 List<HistoricData> historicData = log.getHistoricData();
 
-for (HistoricData data : historicData) {
-    System.out.println(data.getTimestamp() + " - " + data.getType());
-}
+    for (HistoricData data : historicData) {
+        System.out.println(data.getTime());
+        if (data instanceof HistoricTaskInstance) {
+            HistoricTaskInstance task = (HistoricTaskInstance) data;
+            System.out.println("Task: " + task.getName());
+        } else if (data instanceof HistoricActivityInstance) {
+            HistoricActivityInstance activity = (HistoricActivityInstance) data;
+            System.out.println("Activity: " + activity.getActivityId());
+        } else if (data instanceof HistoricVariableUpdate) {
+            HistoricVariableUpdate varUpdate = (HistoricVariableUpdate) data;
+            System.out.println("Variable: " + varUpdate.getVariableName());
+        }
+    }
 ```
 
 ### Use Case: Process Replay
@@ -757,8 +762,16 @@ public void replayProcessInstance(HistoryService historyService, String processI
     System.out.println("\nEvent Timeline:");
 
     for (HistoricData data : log.getHistoricData()) {
-        System.out.println(data.getTimestamp() + " - " + 
-                          data.getType() + ": " + data.getName());
+        if (data instanceof HistoricTaskInstance) {
+            HistoricTaskInstance task = (HistoricTaskInstance) data;
+            System.out.println(data.getTime() + " - Task: " + task.getName());
+        } else if (data instanceof HistoricActivityInstance) {
+            HistoricActivityInstance activity = (HistoricActivityInstance) data;
+            System.out.println(data.getTime() + " - Activity: " + activity.getActivityId());
+        } else if (data instanceof HistoricVariableUpdate) {
+            HistoricVariableUpdate varUpdate = (HistoricVariableUpdate) data;
+            System.out.println(data.getTime() + " - Variable: " + varUpdate.getVariableName());
+        }
     }
 }
 ```
@@ -929,7 +942,7 @@ public Map<String, Long> analyzeProcessPerformance(HistoryService historyService
         durationByProcess.merge(processKey, duration, Long::sum);
     }
     
-    return durationByPerformance;
+    return durationByProcess;
 }
 ```
 
@@ -956,8 +969,7 @@ public List<HistoricDetail> getVariableChanges(HistoryService historyService,
     return historyService
         .createHistoricDetailQuery()
         .processInstanceId(processInstanceId)
-        .variableName(variableName)
-        .type(HistoricDetail.VARIABLE_UPDATE)
+        .variableUpdates()
         .orderByTime()
         .asc()
         .list();
@@ -1049,26 +1061,26 @@ public void investigateFailedProcesses(HistoryService historyService,
 
 ## Configuration
 
-Set history level in `ProcessEngineConfiguration`:
+Set history level in `ProcessEngineConfiguration`. Two methods are available — `setHistory(String)` for XML/string-based config and `setHistoryLevel(HistoryLevel)` for programmatic use:
 
 ```java
 ProcessEngineConfiguration configuration = ProcessEngineConfiguration
     .createStandaloneInMemProcessEngineConfiguration();
 
-// History levels: NONE, ACTIVITY, TASK, FULL
-configuration.setHistory(HistoryLevel.FULL);
+// Using string-based configuration (e.g., from XML)
+configuration.setHistory("full");
 
-// Enable history for audit
+// Using the HistoryLevel enum (programmatic)
 configuration.setHistoryLevel(HistoryLevel.FULL);
 
 ProcessEngine engine = configuration.buildProcessEngine();
 ```
 
 **History Levels:**
-- `NONE` - No history
-- `ACTIVITY` - Activity instances only
-- `TASK` - Activities and task instances
-- `FULL` - Complete history including variables and details
+- `NONE` / `"none"` — No history
+- `ACTIVITY` / `"activity"` — Activity instances only
+- `AUDIT` / `"audit"` — Activities and variable history
+- `FULL` / `"full"` — Complete history including variable updates and form properties
 
 ---
 
@@ -1076,7 +1088,7 @@ ProcessEngine engine = configuration.buildProcessEngine();
 
 - [Management Service](./management-service.md) - Engine administration
 - [Runtime Service](./runtime-service.md) - Process execution
-- [Engine Configuration](../../../configuration.md) - Setup and configuration
+- [Engine Configuration](../../configuration.md) - Setup and configuration
 - [Best Practices](../../best-practices/overview.md) - Performance tips
 
 ---

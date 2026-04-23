@@ -1,789 +1,315 @@
 ---
 sidebar_label: BPMN Layout
 slug: /activiti-core/bpmn-layout
-description: Algorithms and utilities for calculating optimal positions and layouts for BPMN diagram elements.
+description: JGraphX-based automatic layout system for BPMN diagrams.
 ---
 
-# Activiti BPMN Layout Module - Technical Documentation
+# Activiti BPMN Layout Module
 
 **Module:** `activiti-core/activiti-bpmn-layout`
 
 ---
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Layout Algorithms](#layout-algorithms)
-- [Position Calculation](#position-calculation)
-- [Diagram Optimization](#diagram-optimization)
-- [Integration Points](#integration-points)
-- [Performance Considerations](#performance-considerations)
-- [Usage Examples](#usage-examples)
-- [Customization](#customization)
-- [Best Practices](#best-practices)
-- [API Reference](#api-reference)
-
----
-
 ## Overview
 
-The **activiti-bpmn-layout** module provides algorithms and utilities for calculating optimal positions and layouts for BPMN diagram elements. It ensures that process diagrams are rendered clearly and efficiently, with proper spacing and alignment.
+The **activiti-bpmn-layout** module provides automatic layout for BPMN process diagrams. It builds a JGraphX graph from the BPMN model, runs a hierarchical layout algorithm, and writes back `GraphicInfo` elements with calculated positions and dimensions.
 
-### Key Features
+The module consists of two classes:
 
-- **Automatic Layout**: Calculate optimal element positions
-- **Spacing Management**: Ensure proper distances between elements
-- **Alignment**: Align elements for visual clarity
-- **Collision Detection**: Prevent overlapping elements
-- **Hierarchical Layout**: Handle sub-processes and nested structures
-- **Performance Optimized**: Efficient algorithms for large diagrams
+| Class | Purpose |
+|---|---|
+| `BPMNLayout` | Compact tree layout extending `mxGraphLayout` — positions nodes using depth-first traversal and polygon-based sibling placement |
+| `BpmnAutoLayout` | Orchestrates the full layout pipeline: converts BPMN model to JGraphX graph, configures and runs `mxHierarchicalLayout`, writes back diagram interchange information |
 
 ### Module Structure
 
 ```
 activiti-bpmn-layout/
-├── src/main/java/org/activiti/bpmn/layout/
-│   ├── LayoutCalculator.java          # Main layout engine
-│   ├── PositionCalculator.java        # Position algorithms
-│   ├── SpacingManager.java            # Spacing calculations
-│   ├── AlignmentStrategy.java         # Alignment logic
-│   ├── CollisionDetector.java         # Overlap prevention
-│   └── HierarchicalLayout.java        # Nested structure layout
-└── src/test/java/
+└── src/main/java/org/activiti/bpmn/
+    ├── BPMNLayout.java       # Compact tree layout (extends mxGraphLayout)
+    └── BpmnAutoLayout.java   # Layout orchestrator for BpmnModel
 ```
 
 ---
 
-## Architecture
+## BpmnAutoLayout
 
-### Layout Pipeline
+`BpmnAutoLayout` is the entry point. It takes a `BpmnModel`, builds an `mxGraph`, runs a hierarchical layout, and populates the model's diagram interchange (`GraphicInfo`) data.
 
-```mermaid
-flowchart TD
-    Model["BPMN Model"]
-    Structure["Structure<br>Analyzer"]
-    Layout["Layout<br>Calculator"]
-    Position["Position<br>Calculator"]
-    Spacing["Spacing<br>Manager"]
-    Alignment["Alignment<br>Strategy"]
-    Collision["Collision<br>Detector"]
-    Result["Layout Result"]
-    
-    Model --> Structure
-    Structure --> Layout
-    Layout --> Position
-    Position --> Spacing
-    Spacing --> Alignment
-    Alignment --> Collision
-    Collision --> Result
+### Constructor
+
+```java
+public BpmnAutoLayout(BpmnModel bpmnModel)
 ```
 
-### Component Diagram
+### Configuration
 
-```mermaid
-flowchart TD
-    subgraph LayoutCalculator["LayoutCalculator"]
-        Structure["Structure<br>Analyzer"]
-        Position["Position<br>Calculator"]
-        
-        subgraph LayoutEngine["Layout Engine"]
-            LE1["- Calculate positions"]
-            LE2["- Apply spacing"]
-            LE3["- Ensure alignment"]
-            LE4["- Detect collisions"]
-        end
-    end
-    
-    Structure --> LayoutEngine
-    Position --> LayoutEngine
+The following fields control element sizes. All are configurable via setters.
+
+| Field | Default | Description |
+|---|---|---|
+| `eventSize` | 30 | Width and height of event vertices (ellipse shape) |
+| `gatewaySize` | 40 | Width and height of gateway vertices (rhombus shape) |
+| `taskWidth` | 100 | Width of task/call activity vertices |
+| `taskHeight` | 60 | Height of task/call activity vertices |
+| `subProcessMargin` | 20 | Margin padding around sub-process boundary |
+
+### execute()
+
+```java
+public void execute()
+```
+
+Entry method. For each `Process` in the model:
+1. Clears any existing `GraphicInfo` from `bpmnModel.getLocationMap()` and `bpmnModel.getFlowLocationMap()`.
+2. Calls `layout(process)` to generate new positions.
+3. Calls `translateNestedSubprocesses(process)` to adjust coordinates of nested sub-process elements relative to their parent sub-process bounds.
+
+### layout()
+
+```java
+protected void layout(FlowElementsContainer flowElementsContainer)
+```
+
+The core layout pipeline:
+
+1. **Creates an `mxGraph`** and initializes tracking maps.
+2. **Iterates over `FlowElement`s**, dispatching to handlers:
+   - `SequenceFlow` → stored in `sequenceFlows` map for deferred processing (source and target must exist first).
+   - `Event` → if boundary event, stored in `boundaryEvents` list; otherwise `createEventVertex()` is called.
+   - `Gateway` → `createGatewayVertex()` creates a rhombus vertex.
+   - `Task` / `CallActivity` → `handleActivity()` creates a rectangular vertex sized `taskWidth` × `taskHeight`.
+   - `SubProcess` → `handleSubProcess()` creates a new `BpmnAutoLayout` instance, recursively lays out the sub-process content, then wraps it in a vertex sized to the sub-process bounds plus `2 * subProcessMargin`.
+3. **Iterates over `Artifact`s**:
+   - `Association` → stored for deferred processing.
+   - `TextAnnotation` → stored for deferred processing.
+4. **Deferred processing**:
+   - `handleBoundaryEvents()` — creates relative-positioned ellipse cells attached to parent vertex.
+   - `handleSequenceFlow()` — inserts edges with elbow connector style; boundary event flows use orthogonal style.
+   - `handleAssociations()` — inserts edges with elbow connector style.
+5. **Runs the layout**:
+
+```java
+CustomLayout layout = new CustomLayout(graph, SwingConstants.WEST);
+layout.setIntraCellSpacing(100.0);
+layout.setResizeParent(true);
+layout.setFineTuning(true);
+layout.setParentBorder(20);
+layout.setMoveParent(true);
+layout.setDisableEdgeStyle(false);
+layout.setUseBoundingBox(true);
+layout.execute(graph.getDefaultParent());
+```
+
+6. **Generates `GraphicInfo`** from the laid-out graph state and writes it back to the `BpmnModel`.
+
+### CustomLayout
+
+```java
+static class CustomLayout extends mxHierarchicalLayout
+```
+
+A thin subclass of `mxHierarchicalLayout` that sets `traverseAncestors = false` to work around a JGraphX bug with child vertices in hierarchical layout.
+
+### Edge and Gateway Handling
+
+- **Sequence flow style**: Orthogonal elbow connector (`mxEdgeStyle.ElbowConnector`), entry point at `(0.0, 0.5)` (left-center).
+- **Boundary event flow style**: Orthogonal connector (`mxEdgeStyle.OrthConnector`), exit at `(0.5, 1.0)`, entry at `(0.5, 1.0)`.
+- **Gateway sequence flow optimization**: When a gateway has multiple outgoing flows, the starting point of each flow is snapped to the closest rhombus corner (north, south, east, or west) so flows visually originate from a corner rather than the center.
+- **Point optimization**: `optimizeEdgePoints()` removes collinear intermediate waypoints where three consecutive points lie on the same axis.
+
+### Nested Sub-Process Translation
+
+`translateNestedSubprocesses()` and `translateNestedSubprocessElements()` adjust the `x`/`y` coordinates of all elements inside a sub-process by adding the sub-process's own position plus `subProcessMargin`. This is applied recursively for deeply nested sub-processes.
+
+---
+
+## BPMNLayout
+
+`BPMNLayout` extends `mxGraphLayout` and implements a **compact tree layout algorithm**. It uses depth-first search to build a tree of `TreeNode` objects, then computes positions using polygon-based contour merging to avoid sibling overlap.
+
+### Constructors
+
+```java
+public BPMNLayout(mxGraph graph)
+public BPMNLayout(mxGraph graph, boolean horizontal)
+public BPMNLayout(mxGraph graph, boolean horizontal, boolean invert)
+```
+
+### Configuration
+
+| Field | Default | Description |
+|---|---|---|
+| `horizontal` | `true` | Layout orientation — horizontal (left-to-right) or vertical (top-to-bottom) |
+| `invert` | `false` | Whether to traverse edges in reverse direction |
+| `resizeParent` | `true` | Whether to resize parent swimlane to fit tree dimensions |
+| `moveTree` | `true` | Whether to move tree to top-left corner when in a top-level layer |
+| `resetEdges` | `true` | Whether to clear edge waypoints on traversed edges |
+| `levelDistance` | 40 | Distance between tree levels |
+| `nodeDistance` | 20 | Distance between sibling nodes |
+| `bpmnAutoLayout` | `null` | Reference to parent `BpmnAutoLayout` instance (set via `setBpmnAutoLayout()`) |
+
+### execute(Object parent)
+
+```java
+public void execute(Object parent)
+```
+
+The main entry point, called by `mxGraphLayout` infrastructure:
+
+1. Finds tree roots using `graph.findTreeRoots(parent, true, invert)`.
+2. For each root:
+   - Determines the parent container (walks up an extra level for boundary events).
+   - Begins a model update transaction.
+   - Builds a tree via `dfs(root, parent, null)`.
+   - Runs the compact layout algorithm via `layout(node)`.
+   - Positions nodes via `horizontalLayout()` or `verticalLayout()` depending on the `horizontal` flag.
+   - Adjusts for negative bounds, swimlane start size, and optionally resizes the parent container.
+   - Commits the model update.
+
+### dfs() — Depth-First Search
+
+```java
+protected TreeNode dfs(Object cell, Object parent, Set<Object> visited)
+```
+
+Traverses the graph from a root cell, building a linked tree of `TreeNode` objects:
+
+- Skips cells that are ignored by `isVertexIgnored()` (swimlanes, cells with relative geometry, disconnected cells) unless the cell is a boundary event.
+- For each outgoing edge (or incoming if `invert` is true), recursively visits the visible terminal.
+- Chains child nodes via `node.child` / `prev.next` (first-child/next-sibling representation).
+- Resets edge waypoints if `resetEdges` is true.
+
+### layout() — Compact Tree Layout
+
+```java
+protected void layout(TreeNode node)
+```
+
+Bottom-up pass that computes the outline of each subtree:
+
+- Recursively lays out children first.
+- For internal nodes, calls `join()` to merge child contours and compute total height, then `attachParent()` to position the parent relative to its merged children.
+- For leaf nodes, calls `layoutLeaf()` to create a simple contour.
+
+#### Polygon-Based Contour Merging
+
+The algorithm uses upper and lower contour polylines (`Polygon` / `Polyline`) to track the shape of each subtree. When merging sibling subtrees:
+
+- `join(TreeNode node)` — iterates over siblings, merging each one into the accumulated contour using `merge()`. Sets `offsetY` for each sibling based on the merge distance, and `offsetX` to 0 (siblings share the same x level). Returns the total height of the joined children.
+- `merge(Polygon p1, Polygon p2)` — walks both polylines simultaneously, computing vertical offsets needed to avoid overlap using `offset()`. Connects remaining segments with `bridge()`.
+- `attachParent(TreeNode node, double height)` — positions the parent centered vertically relative to its children's combined height. Sets child offsets using `nodeDistance + levelDistance` (horizontal) and computes the vertical centering offset.
+- `layoutLeaf(TreeNode node)` — creates a minimal contour for a leaf node with `2 * nodeDistance` spacing.
+
+### Positioning Passes
+
+```java
+protected mxRectangle horizontalLayout(TreeNode node, double x0, double y0, mxRectangle bounds)
+protected mxRectangle verticalLayout(TreeNode node, Object parent, double x0, double y0, mxRectangle bounds)
+```
+
+Top-down passes that apply computed offsets to actual positions:
+
+- Each node's position is `parent.x + offsetX`, `parent.y + offsetY`.
+- Children are positioned to the right (horizontal) or below (vertical) of the parent.
+- Siblings are stacked vertically (horizontal mode) or horizontally (vertical mode) based on their accumulated `offsetY` / `offsetX`.
+- Returns the bounding rectangle of the laid-out subtree.
+
+### Vertex Filtering
+
+```java
+public boolean isVertexIgnored(Object vertex)
+```
+
+A vertex is ignored if:
+- The base `mxGraphLayout` ignores it.
+- It is a swimlane (`graph.isSwimlane(vertex)`).
+- Its geometry is relative (`graph.getModel().getGeometry(vertex).isRelative()`).
+- It has no connections (`graph.getConnections(vertex).length == 0`).
+
+Boundary events (cell IDs starting with `"boundary-event-"`) are always processed despite having relative geometry.
+
+### Inner Classes
+
+#### TreeNode
+
+Represents a node in the tree during layout. Uses a first-child/next-sibling linked structure.
+
+| Field | Type | Description |
+|---|---|---|
+| `cell` | `Object` | The `mxCell` this node represents |
+| `x`, `y` | `double` | Computed position |
+| `width`, `height` | `double` | Vertex dimensions from `mxGeometry` |
+| `offsetX`, `offsetY` | `double` | Offset from parent during positioning pass |
+| `child` | `TreeNode` | First child |
+| `next` | `TreeNode` | Next sibling |
+| `contour` | `Polygon` | Merged subtree contour |
+
+#### Polygon
+
+Tracks upper and lower contour polylines of a subtree for overlap-free merging.
+
+| Field | Type | Description |
+|---|---|---|
+| `upperHead`, `upperTail` | `Polyline` | Upper contour chain |
+| `lowerHead`, `lowerTail` | `Polyline` | Lower contour chain |
+
+#### Polyline
+
+Linked-list segment of a contour polygon.
+
+| Field | Type | Description |
+|---|---|---|
+| `dx`, `dy` | `double` | Delta for this segment |
+| `next` | `Polyline` | Next segment in chain |
+
+### Utility Methods
+
+| Method | Description |
+|---|---|
+| `createNode(Object cell)` | Creates a `TreeNode` from an `mxCell`, extracting width/height from `mxGeometry` |
+| `apply(TreeNode node, mxRectangle bounds)` | Sets the vertex location in the model geometry and updates the bounding rectangle |
+| `createLine(double dx, double dy, Polyline next)` | Factory for `Polyline` instances |
+| `moveNode(TreeNode node, double dx, double dy)` | Recursively shifts a node and its children by `(dx, dy)` |
+| `isBoundaryEvent(Object obj)` | Returns true if the cell ID starts with `"boundary-event-"` |
+| `setEdgePoints(Object edge, Object points)` | Resets edge waypoints (inherited from `mxGraphLayout`) |
+| `getVertexBounds(Object cell)` | Returns the bounding rectangle of a vertex (inherited from `mxGraphLayout`) |
+| `isVertexMovable(Object cell)` | Whether a vertex can be repositioned (inherited from `mxGraphLayout`) |
+| `setVertexLocation(Object cell, double x, double y)` | Sets vertex position (inherited from `mxGraphLayout`) |
+
+---
+
+## Usage
+
+```java
+BpmnModel model = ...;
+
+BpmnAutoLayout autoLayout = new BpmnAutoLayout(model);
+autoLayout.setEventSize(36);
+autoLayout.setGatewaySize(50);
+autoLayout.setTaskWidth(120);
+autoLayout.setTaskHeight(80);
+autoLayout.setSubProcessMargin(30);
+
+autoLayout.execute();
+
+// The model now has GraphicInfo entries with computed positions
+Map<String, GraphicInfo> locationMap = model.getLocationMap();
+Map<String, List<GraphicInfo>> flowLocationMap = model.getFlowLocationMap();
 ```
 
 ---
 
-## Layout Algorithms
+## Dependencies
 
-### Hierarchical Layout Algorithm
+The module depends on:
 
-```java
-public class HierarchicalLayoutAlgorithm {
-    
-    public LayoutResult calculateLayout(BpmnModel model) {
-        // 1. Analyze structure
-        StructureAnalysis analysis = analyzeStructure(model);
-        
-        // 2. Create hierarchy
-        LayoutHierarchy hierarchy = buildHierarchy(analysis);
-        
-        // 3. Calculate levels
-        List<LayoutLevel> levels = calculateLevels(hierarchy);
-        
-        // 4. Assign positions
-        assignPositions(levels);
-        
-        // 5. Optimize layout
-        optimizeLayout(levels);
-        
-        return new LayoutResult(levels, hierarchy);
-    }
-    
-    private StructureAnalysis analyzeStructure(BpmnModel model) {
-        StructureAnalysis analysis = new StructureAnalysis();
-        
-        for (Process process : model.getProcesses()) {
-            analyzeProcess(process, analysis);
-        }
-        
-        return analysis;
-    }
-    
-    private void analyzeProcess(Process process, StructureAnalysis analysis) {
-        // Identify start events
-        List<StartEvent> startEvents = process.getFlowElements().stream()
-            .filter(e -> e instanceof StartEvent)
-            .map(e -> (StartEvent) e)
-            .collect(Collectors.toList());
-        
-        // Build dependency graph
-        DependencyGraph graph = new DependencyGraph();
-        for (FlowElement element : process.getFlowElements()) {
-            buildDependencies(element, graph);
-        }
-        
-        analysis.setStartEvents(startEvents);
-        analysis.setDependencyGraph(graph);
-    }
-}
-```
-
-### Force-Directed Layout
-
-```java
-public class ForceDirectedLayoutAlgorithm {
-    
-    private static final double SPRING_LENGTH = 100.0;
-    private static final double REPULSION_STRENGTH = 5000.0;
-    private static final double ATTRACTION_STRENGTH = 0.01;
-    private static final int MAX_ITERATIONS = 500;
-    
-    public LayoutResult calculateLayout(List<FlowElement> elements) {
-        // Initialize positions randomly
-        initializePositions(elements);
-        
-        // Iteratively improve layout
-        for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-            applyRepulsionForces(elements);
-            applyAttractionForces(elements);
-            applyCenterForce(elements);
-            updatePositions(elements);
-            
-            // Check convergence
-            if (isConverged(elements)) {
-                break;
-            }
-        }
-        
-        return new LayoutResult(elements);
-    }
-    
-    private void applyRepulsionForce(List<FlowElement> elements) {
-        for (int i = 0; i < elements.size(); i++) {
-            for (int j = i + 1; j < elements.size(); j++) {
-                FlowElement e1 = elements.get(i);
-                FlowElement e2 = elements.get(j);
-                
-                double distance = calculateDistance(e1, e2);
-                double force = REPULSION_STRENGTH / (distance * distance);
-                
-                applyForce(e1, e2, force, true);
-                applyForce(e2, e1, force, true);
-            }
-        }
-    }
-    
-    private void applyAttractionForces(List<FlowElement> elements) {
-        for (FlowElement element : elements) {
-            if (element instanceof Activity) {
-                Activity activity = (Activity) element;
-                
-                for (SequenceFlow flow : activity.getOutgoing()) {
-                    FlowElement target = flow.getTargetRef();
-                    
-                    double distance = calculateDistance(activity, target);
-                    double force = ATTRACTION_STRENGTH * (distance - SPRING_LENGTH);
-                    
-                    applyForce(activity, target, force, false);
-                    applyForce(target, activity, force, false);
-                }
-            }
-        }
-    }
-}
-```
-
-### Grid-Based Layout
-
-```java
-public class GridBasedLayoutAlgorithm {
-    
-    private static final int GRID_SIZE = 50;
-    
-    public LayoutResult calculateLayout(BpmnModel model) {
-        GridLayout grid = new GridLayout();
-        
-        // Place elements on grid
-        for (Process process : model.getProcesses()) {
-            int currentX = 0;
-            int currentY = 0;
-            
-            for (FlowElement element : process.getFlowElements()) {
-                GridPosition position = findNextPosition(grid, currentX, currentY);
-                
-                grid.placeElement(element, position);
-                
-                // Update current position
-                currentX = position.getX() + 1;
-                if (currentX >= grid.getWidth()) {
-                    currentX = 0;
-                    currentY++;
-                }
-            }
-        }
-        
-        return convertToLayoutResult(grid);
-    }
-    
-    private GridPosition findNextPosition(GridLayout grid, int startX, int startY) {
-        for (int y = startY; y < grid.getHeight(); y++) {
-            for (int x = startX; x < grid.getWidth(); x++) {
-                if (grid.isEmpty(x, y)) {
-                    return new GridPosition(x * GRID_SIZE, y * GRID_SIZE);
-                }
-            }
-            startX = 0;
-        }
-        
-        throw new IllegalStateException("No available grid position");
-    }
-}
-```
-
----
-
-## Position Calculation
-
-### Position Calculator
-
-```java
-public class PositionCalculator {
-    
-    public Point calculatePosition(FlowElement element, 
-                                   List<FlowElement> siblings,
-                                   LayoutContext context) {
-        
-        // Get element dimensions
-        Dimension dimensions = getElementDimensions(element);
-        
-        // Calculate base position
-        Point basePosition = calculateBasePosition(element, context);
-        
-        // Apply offset for siblings
-        Point offset = calculateSiblingOffset(element, siblings, dimensions);
-        
-        // Final position
-        return new Point(
-            basePosition.getX() + offset.getX(),
-            basePosition.getY() + offset.getY()
-        );
-    }
-    
-    private Dimension getElementDimensions(FlowElement element) {
-        if (element instanceof Activity) {
-            return new Dimension(120, 60);
-        } else if (element instanceof Gateway) {
-            return new Dimension(50, 50);
-        } else if (element instanceof BPMNEvent) {
-            return new Dimension(36, 36);
-        }
-        
-        return new Dimension(80, 40);
-    }
-    
-    private Point calculateBasePosition(FlowElement element, 
-                                        LayoutContext context) {
-        // Use element's existing position if available
-        if (context.hasExistingPosition(element)) {
-            return context.getExistingPosition(element);
-        }
-        
-        // Calculate based on flow
-        return calculateFromFlow(element, context);
-    }
-    
-    private Point calculateFromFlow(FlowElement element, LayoutContext context) {
-        // Find incoming flows
-        List<SequenceFlow> incoming = element.getIncoming();
-        
-        if (incoming.isEmpty()) {
-            // Start element
-            return new Point(50, 50);
-        }
-        
-        // Calculate average of source positions
-        double avgX = 0;
-        double avgY = 0;
-        
-        for (SequenceFlow flow : incoming) {
-            Point sourcePos = context.getPosition(flow.getSourceRef());
-            avgX += sourcePos.getX();
-            avgY += sourcePos.getY();
-        }
-        
-        avgX /= incoming.size();
-        avgY /= incoming.size();
-        
-        return new Point((int) avgX, (int) avgY);
-    }
-}
-```
-
----
-
-## Diagram Optimization
-
-### Spacing Manager
-
-```java
-public class SpacingManager {
-    
-    private static final int MIN_HORIZONTAL_SPACING = 100;
-    private static final int MIN_VERTICAL_SPACING = 80;
-    
-    public void optimizeSpacing(List<LayoutElement> elements) {
-        // Check horizontal spacing
-        for (int i = 0; i < elements.size(); i++) {
-            for (int j = i + 1; j < elements.size(); j++) {
-                LayoutElement e1 = elements.get(i);
-                LayoutElement e2 = elements.get(j);
-                
-                if (areOnSameRow(e1, e2)) {
-                    ensureHorizontalSpacing(e1, e2);
-                }
-                
-                if (areOnSameColumn(e1, e2)) {
-                    ensureVerticalSpacing(e1, e2);
-                }
-            }
-        }
-    }
-    
-    private void ensureHorizontalSpacing(LayoutElement e1, LayoutElement e2) {
-        int currentSpacing = Math.abs(e2.getX() - e1.getX()) 
-                           - (e1.getWidth() + e2.getWidth()) / 2;
-        
-        if (currentSpacing < MIN_HORIZONTAL_SPACING) {
-            int neededSpacing = MIN_HORIZONTAL_SPACING - currentSpacing;
-            e2.setX(e2.getX() + neededSpacing);
-        }
-    }
-    
-    private void ensureVerticalSpacing(LayoutElement e1, LayoutElement e2) {
-        int currentSpacing = Math.abs(e2.getY() - e1.getY()) 
-                           - (e1.getHeight() + e2.getHeight()) / 2;
-        
-        if (currentSpacing < MIN_VERTICAL_SPACING) {
-            int neededSpacing = MIN_VERTICAL_SPACING - currentSpacing;
-            e2.setY(e2.getY() + neededSpacing);
-        }
-    }
-    
-    private boolean areOnSameRow(LayoutElement e1, LayoutElement e2) {
-        return Math.abs(e1.getY() - e2.getY()) < 20;
-    }
-    
-    private boolean areOnSameColumn(LayoutElement e1, LayoutElement e2) {
-        return Math.abs(e1.getX() - e2.getX()) < 20;
-    }
-}
-```
-
-### Alignment Strategy
-
-```java
-public class AlignmentStrategy {
-    
-    public void alignElements(List<LayoutElement> elements, 
-                              AlignmentType alignment) {
-        switch (alignment) {
-            case LEFT:
-                alignLeft(elements);
-                break;
-            case RIGHT:
-                alignRight(elements);
-                break;
-            case CENTER:
-                alignCenter(elements);
-                break;
-            case TOP:
-                alignTop(elements);
-                break;
-            case BOTTOM:
-                alignBottom(elements);
-                break;
-            case MIDDLE:
-                alignMiddle(elements);
-                break;
-        }
-    }
-    
-    private void alignLeft(List<LayoutElement> elements) {
-        int minX = elements.stream()
-            .mapToInt(e -> e.getX())
-            .min()
-            .orElse(0);
-        
-        for (LayoutElement element : elements) {
-            element.setX(minX);
-        }
-    }
-    
-    private void alignCenter(List<LayoutElement> elements) {
-        int totalWidth = elements.stream()
-            .mapToInt(e -> e.getWidth())
-            .sum();
-        
-        int centerX = totalWidth / 2;
-        int offset = 0;
-        
-        for (LayoutElement element : elements) {
-            element.setX(centerX - element.getWidth() / 2 + offset);
-            offset += element.getWidth();
-        }
-    }
-    
-    private void alignTop(List<LayoutElement> elements) {
-        int minY = elements.stream()
-            .mapToInt(e -> e.getY())
-            .min()
-            .orElse(0);
-        
-        for (LayoutElement element : elements) {
-            element.setY(minY);
-        }
-    }
-}
-```
-
----
-
-## Integration Points
-
-### With BPMN Model
-
-```java
-public class LayoutModelIntegration {
-    
-    public void applyLayout(BpmnModel model, LayoutResult layout) {
-        for (LayoutElement element : layout.getElements()) {
-            FlowElement flowElement = model.getElementById(element.getId());
-            
-            if (flowElement != null) {
-                // Apply position
-                flowElement.setX(element.getX());
-                flowElement.setY(element.getY());
-                
-                // Apply dimensions
-                flowElement.setWidth(element.getWidth());
-                flowElement.setHeight(element.getHeight());
-            }
-        }
-    }
-    
-    public BpmnModel extractModel(LayoutResult layout) {
-        BpmnModel model = new BpmnModel();
-        
-        for (LayoutElement element : layout.getElements()) {
-            FlowElement flowElement = createFlowElement(element);
-            model.addFlowElement(flowElement);
-        }
-        
-        return model;
-    }
-}
-```
-
-### With Image Generator
-
-```java
-public class LayoutImageIntegration {
-    
-    public BufferedImage generateImage(BpmnModel model, LayoutResult layout) {
-        // Calculate canvas size
-        int canvasWidth = calculateCanvasWidth(layout);
-        int canvasHeight = calculateCanvasHeight(layout);
-        
-        BufferedImage image = new BufferedImage(
-            canvasWidth, canvasHeight, BufferedImage.TYPE_INT_RGB);
-        
-        Graphics2D graphics = image.createGraphics();
-        graphics.setColor(Color.WHITE);
-        graphics.fillRect(0, 0, canvasWidth, canvasHeight);
-        
-        // Draw elements
-        for (LayoutElement element : layout.getElements()) {
-            drawElement(graphics, element);
-        }
-        
-        // Draw connections
-        for (LayoutConnection connection : layout.getConnections()) {
-            drawConnection(graphics, connection);
-        }
-        
-        graphics.dispose();
-        return image;
-    }
-}
-```
-
----
-
-## Performance Considerations
-
-### Large Diagram Optimization
-
-```java
-public class PerformanceOptimizedLayout {
-    
-    public LayoutResult calculateLayout(BpmnModel model) {
-        int elementCount = countElements(model);
-        
-        if (elementCount > 1000) {
-            // Use simplified algorithm for large diagrams
-            return calculateSimplifiedLayout(model);
-        } else if (elementCount > 100) {
-            // Use standard algorithm
-            return calculateStandardLayout(model);
-        } else {
-            // Use detailed algorithm for small diagrams
-            return calculateDetailedLayout(model);
-        }
-    }
-    
-    private LayoutResult calculateSimplifiedLayout(BpmnModel model) {
-        // Grid-based layout for performance
-        return new GridBasedLayoutAlgorithm().calculateLayout(model);
-    }
-    
-    private LayoutResult calculateStandardLayout(BpmnModel model) {
-        // Hierarchical layout
-        return new HierarchicalLayoutAlgorithm().calculateLayout(model);
-    }
-    
-    private LayoutResult calculateDetailedLayout(BpmnModel model) {
-        // Force-directed layout for best results
-        return new ForceDirectedLayoutAlgorithm().calculateLayout(model);
-    }
-}
-```
-
-### Caching Strategy
-
-```java
-public class CachedLayoutCalculator {
-    
-    private final Map<String, LayoutResult> cache = new ConcurrentHashMap<>();
-    
-    public LayoutResult calculateLayout(String modelId, BpmnModel model) {
-        return cache.computeIfAbsent(modelId, id -> {
-            // Calculate layout
-            return doCalculateLayout(model);
-        });
-    }
-    
-    public void invalidateCache(String modelId) {
-        cache.remove(modelId);
-    }
-    
-    public void clearCache() {
-        cache.clear();
-    }
-}
-```
-
----
-
-## Usage Examples
-
-### Basic Layout Calculation
-
-```java
-public class LayoutExample {
-    
-    public void calculateLayout() throws IOException {
-        // Load BPMN model
-        BpmnModel model = loadBpmnModel("process.bpmn");
-        
-        // Create layout calculator
-        LayoutCalculator calculator = new LayoutCalculator();
-        
-        // Calculate layout
-        LayoutResult layout = calculator.calculateLayout(model);
-        
-        // Apply layout to model
-        applyLayout(model, layout);
-        
-        // Save updated model
-        saveBpmnModel(model, "process-laidout.bpmn");
-    }
-}
-```
-
-### Custom Layout Algorithm
-
-```java
-public class CustomLayoutExample {
-    
-    public void useCustomLayout() {
-        LayoutCalculator calculator = new LayoutCalculator();
-        
-        // Register custom algorithm
-        calculator.registerAlgorithm("custom", new CustomLayoutAlgorithm());
-        
-        // Use custom algorithm
-        LayoutResult layout = calculator.calculateLayout(
-            model, "custom");
-    }
-}
-```
-
----
-
-## Customization
-
-### Custom Layout Algorithm
-
-```java
-public class CustomLayoutAlgorithm implements LayoutAlgorithm {
-    
-    @Override
-    public LayoutResult calculateLayout(BpmnModel model) {
-        // Custom layout logic
-        LayoutResult result = new LayoutResult();
-        
-        // Implement your algorithm here
-        for (Process process : model.getProcesses()) {
-            layoutProcess(process, result);
-        }
-        
-        return result;
-    }
-    
-    private void layoutProcess(Process process, LayoutResult result) {
-        // Custom process layout
-    }
-}
-```
-
-### Custom Spacing Rules
-
-```java
-public class CustomSpacingRules implements SpacingRules {
-    
-    @Override
-    public int getHorizontalSpacing(FlowElement e1, FlowElement e2) {
-        // Custom horizontal spacing logic
-        if (e1 instanceof UserTask && e2 instanceof UserTask) {
-            return 150; // More space between user tasks
-        }
-        return 100; // Default spacing
-    }
-    
-    @Override
-    public int getVerticalSpacing(FlowElement e1, FlowElement e2) {
-        // Custom vertical spacing logic
-        return 80;
-    }
-}
-```
-
----
-
-## Best Practices
-
-### 1. Choose Appropriate Algorithm
-
-```java
-// For simple linear processes
-useHierarchicalLayout();
-
-// For complex branching processes
-useForceDirectedLayout();
-
-// For large diagrams (>1000 elements)
-useGridBasedLayout();
-```
-
-### 2. Optimize for Performance
-
-```java
-// Cache layout results
-@Cacheable(value = "layouts", key = "#model.id")
-public LayoutResult calculateLayout(BpmnModel model) {
-    return layoutCalculator.calculateLayout(model);
-}
-```
-
-### 3. Validate Layout
-
-```java
-LayoutResult layout = calculator.calculateLayout(model);
-LayoutValidation validation = validator.validate(layout);
-
-if (!validation.isValid()) {
-    log.error("Layout validation failed: {}", validation.getErrors());
-}
-```
-
-### 4. Handle Edge Cases
-
-```java
-try {
-    LayoutResult layout = calculator.calculateLayout(model);
-} catch (LayoutException e) {
-    // Fallback to default layout
-    LayoutResult defaultLayout = createDefaultLayout(model);
-}
-```
-
----
-
-## API Reference
-
-### Key Classes
-
-- `LayoutCalculator` - Main layout engine
-- `PositionCalculator` - Position algorithms
-- `SpacingManager` - Spacing calculations
-- `AlignmentStrategy` - Alignment logic
-- `CollisionDetector` - Overlap prevention
-- `LayoutResult` - Layout output
-
-### Key Interfaces
-
-- `LayoutAlgorithm` - Layout algorithm contract
-- `SpacingRules` - Spacing configuration
-- `LayoutElement` - Layout element representation
-
-### Layout Algorithms
-
-- `HierarchicalLayoutAlgorithm` - Tree-based layout
-- `ForceDirectedLayoutAlgorithm` - Physics-based layout
-- `GridBasedLayoutAlgorithm` - Grid-based layout
+- **JGraphX** (`com.mxgraph.*`) — the graph layout engine. `BPMNLayout` extends `mxGraphLayout`; `BpmnAutoLayout` uses `mxGraph`, `mxCell`, `mxGeometry`, and `mxHierarchicalLayout`.
+- **activiti-bpmn-model** — provides `BpmnModel`, `GraphicInfo`, and all BPMN element types (`FlowElement`, `Event`, `Gateway`, `Task`, `SubProcess`, `SequenceFlow`, `Association`, `TextAnnotation`, `BoundaryEvent`, `CallActivity`, `Artifact`, `DataObject`, `FlowElementsContainer`).
 
 ---
 
 ## See Also
 
-- [Parent Module Documentation](../overview.md)
-- [BPMN Model](../engine-api/bpmn-model.md)
-- [Image Generator](../engine-api/image-generator.md)
+- [BPMN Model](./bpmn-model.md)
+- [Image Generator](./image-generator.md)

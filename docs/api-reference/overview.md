@@ -5,8 +5,6 @@ title: "API Reference"
 description: "Complete reference for all Activiti API interfaces, classes, methods, and payload builders. Essential guide for developers implementing workflow automation."
 ---
 
-# API Reference
-
 **Community-Maintained Guide**
 
 Complete reference for all Activiti API interfaces, classes, and methods. This documentation serves as a community-contributed guide for developers implementing workflow automation solutions.
@@ -15,13 +13,22 @@ Complete reference for all Activiti API interfaces, classes, and methods. This d
 
 ## Quick Navigation
 
-| API Category | Interface | Purpose |
-|--------------|-----------|---------|
-| **Process Management** | `ProcessRuntime` | Start, query, and manage process instances |
-| **Process Administration** | `ProcessAdminRuntime` | Admin-level process operations |
-| **Task Management** | `TaskRuntime` | Query and complete user tasks |
-| **Task Administration** | `TaskAdminRuntime` | Admin-level task operations |
-| **Repository** | `RepositoryRuntime` | Manage process definitions and deployments |
+| Tier | Interface/Class | Purpose |
+|------|-----------------|---------|
+| **API — Process** | `ProcessRuntime` | Start, query, and manage process instances |
+| **API — Process** | `ProcessAdminRuntime` | Admin-level process operations |
+| **API — Task** | `TaskRuntime` | Query and complete user tasks |
+| **API — Task** | `TaskAdminRuntime` | Admin-level task operations |
+| **Engine — Runtime** | `RuntimeService` | Low-level process instance operations |
+| **Engine — Task** | `TaskService` | Low-level task management |
+| **Engine — Repository** | `RepositoryService` | Process definitions, deployments, and models |
+| **Engine — History** | `HistoryService` | Historic process and task queries |
+| **Engine — Management** | `ManagementService` | Admin and maintenance operations |
+| **Engine — Dynamic BPMN** | `DynamicBpmnService` | Runtime modification of deployed process definitions |
+| **Core Common — Security** | `SecurityManager` | Authentication and authorization |
+| **Core Common — EL** | `ExpressionFactoryImpl` | Unified Expression Language (JUEL) |
+| **Core Common — Connectors** | `ConnectorDefinition`, `ActionDefinition` | Connector model definitions |
+| **Core Common — Caching** | `ActivitiSpringCaffeineCacheConfigurer`, `TreeCache` | Spring cache and expression cache |
 
 ## Table of Contents
 
@@ -32,6 +39,10 @@ Complete reference for all Activiti API interfaces, classes, and methods. This d
 - [Model Interfaces](#model-interfaces)
 - [Security API](#security-api)
 - [Query API](#query-api)
+- [Exception Types](#exception-types)
+- [Configuration Interfaces](#configuration-interfaces)
+- [Engine API Services](#engine-api-services)
+- [Core Common](#core-common)
 
 ---
 
@@ -645,6 +656,8 @@ public interface ProcessRuntimeEvent<T extends ProcessInstance>
 }
 ```
 
+> **Note:** The `PROCESS_DELETED` enum value has no corresponding `ProcessDeletedEvent` interface in the Activiti source code. Use `ProcessCancelledEvent` for cancelled process instances.
+
 #### ExtendedProcessRuntimeEvent
 
 Extended process event with nested process information.
@@ -1055,6 +1068,165 @@ public interface TaskRuntimeConfiguration {
     List<VariableEventListener<?>> variableEventListeners();
 }
 ```
+
+---
+
+## Engine API Services
+
+The Engine API (`org.activiti.engine`) provides low-level services that operate directly on the process engine. These are marked with `@Internal` and are primarily used internally by the higher-level `activiti-api` runtimes. Applications should prefer the API tier unless direct engine access is required.
+
+### RuntimeService
+
+Service for managing runtime process instances and executions.
+
+```java
+@Internal
+public interface RuntimeService {
+
+    ProcessInstanceBuilder createProcessInstanceBuilder();
+    ProcessInstance startCreatedProcessInstance(ProcessInstance createdProcessInstance, Map<String, Object> variables);
+    ProcessInstance startProcessInstanceByKey(String processDefinitionKey);
+    ProcessInstance startProcessInstanceByKey(String processDefinitionKey, Map<String, Object> variables);
+    ProcessInstance startProcessInstanceByKey(String processDefinitionKey, String businessKey, Map<String, Object> variables);
+    ProcessInstance startProcessInstanceById(String processDefinitionId);
+    ProcessInstance startProcessInstanceById(String processDefinitionId, Map<String, Object> variables);
+    ProcessInstance startProcessInstanceById(String processDefinitionId, String businessKey, Map<String, Object> variables);
+    // ... additional query, variable, signal, and message methods
+}
+```
+
+### TaskService
+
+Service for task and form-related operations.
+
+```java
+@Internal
+public interface TaskService {
+
+    Task newTask();
+    Task newTask(String taskId);
+    Task saveTask(Task task);
+    void deleteTask(String taskId);
+    void deleteTask(String taskId, boolean cascade);
+    Task createTaskQuery();
+    Task createNativeTaskQuery();
+    // ... additional assignment, variable, comment, and attachment methods
+}
+```
+
+### RepositoryService
+
+Service providing access to the repository of process definitions, deployments, and models.
+
+```java
+@Internal
+public interface RepositoryService {
+
+    DeploymentBuilder createDeployment();
+    void deleteDeployment(String deploymentId);
+    void deleteDeployment(String deploymentId, boolean cascade);
+    void setDeploymentCategory(String deploymentId, String category);
+    void setDeploymentKey(String deploymentId, String key);
+    // ... additional process definition, model, and deployment query methods
+}
+```
+
+### HistoryService
+
+Service exposing information about ongoing and past process instances. History data remains permanent in the persistent storage.
+
+```java
+@Internal
+public interface HistoryService {
+
+    HistoricProcessInstanceQuery createHistoricProcessInstanceQuery();
+    HistoricActivityInstanceQuery createHistoricActivityInstanceQuery();
+    HistoricTaskInstanceQuery createHistoricTaskInstanceQuery();
+    HistoricDetailQuery createHistoricDetailQuery();
+    HistoricVariableInstanceQuery createHistoricVariableInstanceQuery();
+    // ... additional native query and cleanup methods
+}
+```
+
+### ManagementService
+
+Service for admin and maintenance operations on the process engine. Typically used in operational consoles rather than application code.
+
+```java
+@Internal
+public interface ManagementService {
+
+    Map<String, Long> getTableCount();
+    String getTableName(Class<?> activitiEntityClass);
+    TableMetaData getTableMetaData(String tableName);
+    TablePageQuery createTablePageQuery();
+    JobQuery createJobQuery();
+    TimerJobQuery createTimerJobQuery();
+    SuspendedJobQuery createSuspendedJobQuery();
+    DeadLetterJobQuery createDeadLetterJobQuery();
+    // ... additional SQL execution and command methods
+}
+```
+
+### DynamicBpmnService
+
+Service for runtime modification of deployed process definitions without re-deployment.
+
+```java
+public interface DynamicBpmnService {
+
+    ObjectNode getProcessDefinitionInfo(String processDefinitionId);
+    ObjectNode getProcessDefinitionInfo(ProcessDefinition processDefinition);
+    void saveProcessDefinitionInfo(String processDefinitionId, ObjectNode infoNode);
+    ObjectNode changeServiceTaskClassName(String id, String className);
+    ObjectNode changeServiceTaskExpression(String id, String expression);
+    ObjectNode changeUserTaskName(String id, String name);
+    ObjectNode changeUserTaskAssignee(String id, String assignee);
+    // ... additional task modification and localization methods
+}
+```
+
+---
+
+## Core Common
+
+The `activiti-core-common` module provides shared infrastructure used across the API and engine layers.
+
+### Security
+
+#### SecurityManager
+
+Defined in `org.activiti.api.runtime.shared.security`. Provides the contract for retrieving the current authenticated user's identity, groups, and roles.
+
+```java
+public interface SecurityManager {
+
+    String getAuthenticatedUserId();
+    List<String> getAuthenticatedUserGroups() throws SecurityException;
+    List<String> getAuthenticatedUserRoles() throws SecurityException;
+}
+```
+
+The default Spring implementation is `LocalSpringSecurityManager` in `org.activiti.core.common.spring.security`.
+
+### Expression Language
+
+Activiti ships a fork of Jakarta Expression Language (JUEL) under `org.activiti.core.el.juel`. The main entry point is `ExpressionFactoryImpl`, which extends the standard `jakarta.el.ExpressionFactory`.
+
+### Connectors
+
+The `activiti-connector-model` module defines POJOs for connector configuration:
+
+- `ConnectorDefinition` — top-level connector descriptor
+- `ActionDefinition` — individual action within a connector
+- `VariableDefinition` — input/output variable for an action
+
+### Caching
+
+Two caching subsystems are available in core-common:
+
+- `ActivitiSpringCaffeineCacheConfigurer` — interface for configuring Spring Caffeine caches with per-cache predicates and builder functions
+- `TreeCache` — interface for the expression language parser's internal AST caching
 
 ---
 

@@ -84,7 +84,7 @@ ProcessInstance instance = runtimeService.startProcessInstanceByKey("orderProces
 
 // Start with business key
 ProcessInstance instance = runtimeService.startProcessInstanceByKey(
-    "orderProcess", 
+    "orderProcess",
     "ORDER-12345"
 );
 
@@ -109,16 +109,17 @@ variables.put("customerName", "John Doe");
 variables.put("orderAmount", 999.99);
 
 ProcessInstance instance = runtimeService.startProcessInstanceByKey(
-    "orderProcess", 
+    "orderProcess",
     variables
 );
 
-// Using withVariables() builder
-ProcessInstance instance = runtimeService.createStartProcessInstanceByKey("orderProcess")
+// Using ProcessInstanceBuilder
+ProcessInstance instance = runtimeService.createProcessInstanceBuilder()
+    .processDefinitionKey("orderProcess")
     .variable("orderId", "12345")
     .variable("customerName", "John Doe")
     .variable("orderAmount", 999.99)
-    .execute();
+    .start();
 ```
 
 **Why pass variables at start?**
@@ -148,10 +149,10 @@ ProcessInstance instance = runtimeService.startProcessInstanceById(
     variables
 );
 
-// Start with custom activity ID
+// Start with business key by process definition ID
 ProcessInstance instance = runtimeService.startProcessInstanceById(
     processDef.getId(),
-    "startEventId",  // Start at specific activity
+    "ORDER-12345",
     variables
 );
 ```
@@ -159,7 +160,39 @@ ProcessInstance instance = runtimeService.startProcessInstanceById(
 **Use cases for advanced options:**
 - **Business key + variables**: Best practice for traceability and data initialization
 - **Specific version**: When you need to run a known-good version of a process
-- **Custom start activity**: For processes with multiple start events (e.g., different entry points)
+- **Business key + ID + variables**: Combines version pinning with correlation
+
+### Using ProcessInstanceBuilder
+
+```java
+// Full builder example with all options
+ProcessInstance instance = runtimeService.createProcessInstanceBuilder()
+    .processDefinitionKey("orderProcess")
+    .businessKey("ORDER-12345")
+    .name("My Order Process")
+    .tenantId("tenant1")
+    .variables(Map.of("orderId", "12345", "customerName", "John Doe"))
+    .variable("orderAmount", 999.99)
+    .start();
+
+// Create without starting (for pre-authorization scenarios)
+ProcessInstance createdInstance = runtimeService.createProcessInstanceBuilder()
+    .processDefinitionKey("orderProcess")
+    .businessKey("ORDER-12345")
+    .create();
+
+// Then start later
+ProcessInstance instance = runtimeService.startCreatedProcessInstance(
+    createdInstance,
+    Map.of("orderId", "12345")
+);
+```
+
+**When to use ProcessInstanceBuilder:**
+- You need to set many options (business key, name, tenant, variables)
+- You want fluent, chainable API
+- You need to create a process instance before starting it
+- Starting by message name: use `messageName()` instead of `processDefinitionKey()`
 
 ### Multi-Instance Process Start
 
@@ -197,7 +230,7 @@ Process variables are the **data backbone** of your workflows. They:
 ### Setting Variables
 
 ```java
-// Set process-level variable
+// Set process-level variable (executionId or processInstanceId)
 runtimeService.setVariable(processInstanceId, "orderId", "12345");
 
 // Set execution-level variable
@@ -206,10 +239,10 @@ runtimeService.setVariable(executionId, "stepNumber", 1);
 // Set variable with type
 runtimeService.setVariable(processInstanceId, "orderAmount", BigDecimal.valueOf(999.99));
 
-// Set multiple variables
-runtimeService.setVariables(processInstanceId, variablesMap);
+// Set multiple variables at once
+runtimeService.setVariables(executionId, variablesMap);
 
-// Set transient variable (not persisted)
+// Set local variable (scoped to this execution only, not propagated to parent)
 runtimeService.setVariableLocal(executionId, "tempData", data);
 ```
 
@@ -218,51 +251,54 @@ runtimeService.setVariableLocal(executionId, "tempData", data);
 - **Execution-level variables**: Data specific to a particular path or subprocess
 - **Typed variables**: When you need type safety (BigDecimal for money, Date for timestamps)
 - **Multiple variables**: Batch updates for better performance
-- **Local/transient variables**: Temporary data that shouldn't persist or propagate
+- **Local variables**: Data that should not propagate to parent execution scope
 
 ### Getting Variables
 
 ```java
 // Get single variable
-String orderId = (String) runtimeService.getVariable(processInstanceId, "orderId");
+String orderId = (String) runtimeService.getVariable(executionId, "orderId");
 
-// Get variable with default
-String name = (String) runtimeService.getVariable(processInstanceId, "name", "Unknown");
+// Get typed variable
+Order order = runtimeService.getVariable(executionId, "order", Order.class);
 
 // Get all variables
-Map<String, Object> allVars = runtimeService.getVariables(processInstanceId);
+Map<String, Object> allVars = runtimeService.getVariables(executionId);
 
-// Get execution-level variables
+// Get local variables (this execution scope only)
 Map<String, Object> execVars = runtimeService.getVariablesLocal(executionId);
 
-// Get variable by type
-Order order = (Order) runtimeService.getVariable(processInstanceId, "order");
+// Get specific variables by name
+Map<String, Object> someVars = runtimeService.getVariables(
+    executionId,
+    Arrays.asList("orderId", "customerName")
+);
 ```
 
 **Use cases:**
 - **Single variable**: Quick access to specific data (e.g., display in UI)
-- **With default**: Safe access when variable might not exist
+- **Typed access**: Type-safe retrieval using `getVariable(executionId, name, Class)`
 - **All variables**: Debugging, auditing, or bulk operations
-- **Execution-level**: Inspecting data in specific process branches
-- **Typed access**: Working with complex objects (POJOs, custom types)
+- **Local variables**: Inspecting data in specific execution scope without parent data
+- **Complex objects**: Working with POJOs, custom types
 
 ### Variable Scopes
 
 ```java
-// Process scope (available to all executions)
+// Process scope (available to all child executions)
 runtimeService.setVariable(processInstanceId, "processVar", "value");
 
-// Execution scope (available to specific execution)
+// Execution scope (available to this execution and its children)
 runtimeService.setVariable(executionId, "executionVar", "value");
 
-// Task scope (available to specific task)
-runtimeService.setVariable(taskId, "taskVar", "value");
+// Local scope (available ONLY to this execution, not parent or children)
+runtimeService.setVariableLocal(executionId, "localVar", "value");
 ```
 
 **Understanding scope hierarchy:**
 - **Process scope**: Root level - visible to all tasks and subprocesses
-- **Execution scope**: Subprocess or multi-instance level - isolated to that execution
-- **Task scope**: Single task level - most granular, for task-specific data
+- **Execution scope**: Subprocess or multi-instance level - child executions can see parent variables
+- **Local scope**: Set with `setVariableLocal` - isolated to that specific execution only
 
 **Why scope matters:**
 - Prevents data leakage between parallel paths
@@ -270,17 +306,28 @@ runtimeService.setVariable(taskId, "taskVar", "value");
 - Optimizes memory usage (local variables don't propagate)
 - Supports multi-instance patterns with per-instance data
 
+**Important:** RuntimeService variables operate on **executions**, not tasks. To set task-scoped variables, use `TaskService.setVariable(taskId, variableName, value)`.
+
+```java
+// Task-scoped variables use TaskService, not RuntimeService
+taskService.setVariable(taskId, "taskVar", "value");
+taskService.setVariableLocal(taskId, "localTaskVar", "value");
+```
+
 ### Variable Removal
 
 ```java
-// Remove process variable
-runtimeService.removeVariable(processInstanceId, "orderId");
+// Remove variable from execution
+runtimeService.removeVariable(executionId, "orderId");
 
-// Remove execution variable
-runtimeService.removeVariable(executionId, "tempVar");
+// Remove local variable from execution
+runtimeService.removeVariableLocal(executionId, "tempVar");
 
-// Remove all variables
-runtimeService.removeVariables(processInstanceId, Arrays.asList("var1", "var2"));
+// Remove multiple variables by name
+runtimeService.removeVariables(executionId, Arrays.asList("var1", "var2"));
+
+// Remove local variables by name
+runtimeService.removeVariablesLocal(executionId, Arrays.asList("var1", "var2"));
 ```
 
 **When to remove variables:**
@@ -342,15 +389,15 @@ List<Execution> atActivity = runtimeService.createExecutionQuery()
 
 ```java
 public class ExecutionInfo {
-    
+
     @Autowired
     private RuntimeService runtimeService;
-    
+
     public void displayExecutionInfo(String executionId) {
         Execution execution = runtimeService.createExecutionQuery()
             .executionId(executionId)
             .singleResult();
-        
+
         System.out.println("Execution ID: " + execution.getId());
         System.out.println("Process Instance ID: " + execution.getProcessInstanceId());
         System.out.println("Process Definition ID: " + execution.getProcessDefinitionId());
@@ -381,12 +428,22 @@ Map<String, Object> vars = runtimeService.getVariables(executionId);
 long count = runtimeService.createExecutionQuery()
     .processInstanceId(processInstanceId)
     .count();
+
+// Get active activity IDs for an execution
+List<String> activityIds = runtimeService.getActiveActivityIds(executionId);
+
+// Trigger an execution (manual transition)
+runtimeService.trigger(executionId);
+
+// Trigger with variables
+runtimeService.trigger(executionId, Map.of("result", "approved"));
 ```
 
 **When to manage at execution level:**
 - **Execution variables**: Data specific to a subprocess or parallel branch
 - **Counting**: Monitor load, detect stuck processes, capacity planning
 - **Targeted updates**: Modify state in specific process paths without affecting others
+- **Triggering**: Manually advance an execution stuck at an intermediate catch event
 
 ---
 
@@ -402,16 +459,27 @@ Events are the **communication mechanism** between your process and the outside 
 ### Sending Signals
 
 ```java
-// Send global signal
+// Send global signal (notifies ALL executions waiting for this signal)
 runtimeService.signalEventReceived("ORDER_APPROVED");
 
-// Send signal with data
-runtimeService.signalEventReceived("ORDER_APPROVED", 
+// Send global signal with variables (broadcasts to all waiting signal events)
+runtimeService.signalEventReceived("ORDER_APPROVED",
     Map.of("approvedBy", "manager", "approvalDate", Instant.now())
 );
 
-// Send signal to specific process instance
-runtimeService.signalEventReceived("ORDER_APPROVED", processInstanceId);
+// Send signal to a specific execution
+runtimeService.signalEventReceived("ORDER_APPROVED", executionId);
+
+// Send signal to specific execution with variables
+runtimeService.signalEventReceived("ORDER_APPROVED", executionId,
+    Map.of("approvedBy", "manager")
+);
+
+// Send global signal asynchronously
+runtimeService.signalEventReceivedAsync("SYSTEM_MAINTENANCE");
+
+// Send signal to specific execution asynchronously
+runtimeService.signalEventReceivedAsync("ORDER_APPROVED", executionId);
 ```
 
 **When to use signals:**
@@ -425,6 +493,8 @@ runtimeService.signalEventReceived("ORDER_APPROVED", processInstanceId);
 - Use for system-wide events, not business-specific correlations
 - Less precise but simpler for broadcast scenarios
 
+**Important:** The 2-argument form `signalEventReceived(signalName, executionId)` takes an **executionId**, not a processInstanceId. While a process instance ID is also a valid execution ID (the root execution), the parameter represents any execution in the system.
+
 ### Starting Process by Message
 
 ```java
@@ -433,7 +503,7 @@ ProcessInstance instance = runtimeService.startProcessInstanceByMessage("startOr
 
 // Start process instance by message with business key
 ProcessInstance instance = runtimeService.startProcessInstanceByMessage(
-    "startOrder", 
+    "startOrder",
     "ORDER-12345"
 );
 
@@ -441,7 +511,7 @@ ProcessInstance instance = runtimeService.startProcessInstanceByMessage(
 Map<String, Object> variables = new HashMap<>();
 variables.put("order", orderData);
 ProcessInstance instance = runtimeService.startProcessInstanceByMessage(
-    "startOrder", 
+    "startOrder",
     variables
 );
 
@@ -620,8 +690,11 @@ ProcessInstance found = runtimeService.createProcessInstanceQuery()
     .processInstanceBusinessKey("ORDER-12345")
     .singleResult();
 
+// Get business key from the ProcessInstance object
+String businessKey = instance.getBusinessKey();
+
 // Update business key
-runtimeService.setBusinessKey(processInstanceId, "NEW-KEY");
+runtimeService.updateBusinessKey(processInstanceId, "NEW-KEY");
 ```
 
 **When to use business keys:**
@@ -635,6 +708,13 @@ runtimeService.setBusinessKey(processInstanceId, "NEW-KEY");
 - Enable queries without knowing internal process IDs
 - Support event correlation from external systems
 - Facilitate monitoring and reporting
+
+### Process Instance Name
+
+```java
+// Set a human-readable name for a process instance
+runtimeService.setProcessInstanceName(processInstanceId, "Order #12345 - John Doe");
+```
 
 ### Variable Correlation
 
@@ -685,53 +765,137 @@ This section provides a **quick lookup** for RuntimeService methods. Use it to:
 
 ```java
 // Process Instance Management
-// Use these to start and control process instances
-ProcessInstance startProcessInstanceByKey(String key);
-ProcessInstance startProcessInstanceByKey(String key, String businessKey);
-ProcessInstance startProcessInstanceByKey(String key, Map<String, Object> variables);
+ProcessInstanceBuilder createProcessInstanceBuilder();
+ProcessInstance startProcessInstanceByKey(String processDefinitionKey);
+ProcessInstance startProcessInstanceByKey(String processDefinitionKey, String businessKey);
+ProcessInstance startProcessInstanceByKey(String processDefinitionKey, Map<String, Object> variables);
+ProcessInstance startProcessInstanceByKey(String processDefinitionKey, String businessKey, Map<String, Object> variables);
+ProcessInstance startProcessInstanceByKeyAndTenantId(String processDefinitionKey, String tenantId);
+ProcessInstance startProcessInstanceByKeyAndTenantId(String processDefinitionKey, String businessKey, String tenantId);
+ProcessInstance startProcessInstanceByKeyAndTenantId(String processDefinitionKey, Map<String, Object> variables, String tenantId);
+ProcessInstance startProcessInstanceByKeyAndTenantId(String processDefinitionKey, String businessKey, Map<String, Object> variables, String tenantId);
 ProcessInstance startProcessInstanceById(String processDefinitionId);
-void deleteProcessInstance(String processInstanceId, String reason);
-
-// Variable Management
-// Use these to read and write process data
-Object getVariable(String executionId, String variableName);
-Object getVariableLocal(String executionId, String variableName);
-Map<String, Object> getVariables(String executionId);
-void setVariable(String executionId, String variableName, Object value);
-void setVariableLocal(String executionId, String variableName, Object value);
-void removeVariable(String executionId, String variableName);
+ProcessInstance startProcessInstanceById(String processDefinitionId, String businessKey);
+ProcessInstance startProcessInstanceById(String processDefinitionId, Map<String, Object> variables);
+ProcessInstance startProcessInstanceById(String processDefinitionId, String businessKey, Map<String, Object> variables);
+ProcessInstance startCreatedProcessInstance(ProcessInstance createdProcessInstance, Map<String, Object> variables);
+void deleteProcessInstance(String processInstanceId, String deleteReason);
+void setProcessInstanceName(String processInstanceId, String name);
 
 // Business Key
-// Use these to correlate processes with business entities
-void setBusinessKey(String processInstanceId, String businessKey);
-String getBusinessKey(String processInstanceId);
+void updateBusinessKey(String processInstanceId, String businessKey);
 
-// Signals & Messages
-// Use these for event-driven process interaction
+// Variable Management
+Object getVariable(String executionId, String variableName);
+<T> T getVariable(String executionId, String variableName, Class<T> variableClass);
+Object getVariableLocal(String executionId, String variableName);
+<T> T getVariableLocal(String executionId, String variableName, Class<T> variableClass);
+Map<String, Object> getVariables(String executionId);
+Map<String, Object> getVariables(String executionId, Collection<String> variableNames);
+Map<String, Object> getVariablesLocal(String executionId);
+Map<String, Object> getVariablesLocal(String executionId, Collection<String> variableNames);
+VariableInstance getVariableInstance(String executionId, String variableName);
+VariableInstance getVariableInstanceLocal(String executionId, String variableName);
+Map<String, VariableInstance> getVariableInstances(String executionId);
+Map<String, VariableInstance> getVariableInstances(String executionId, Collection<String> variableNames);
+Map<String, VariableInstance> getVariableInstancesLocal(String executionId);
+Map<String, VariableInstance> getVariableInstancesLocal(String executionId, Collection<String> variableNames);
+List<VariableInstance> getVariableInstancesByExecutionIds(Set<String> executionIds);
+boolean hasVariable(String executionId, String variableName);
+boolean hasVariableLocal(String executionId, String variableName);
+void setVariable(String executionId, String variableName, Object value);
+void setVariableLocal(String executionId, String variableName, Object value);
+void setVariables(String executionId, Map<String, ? extends Object> variables);
+void setVariablesLocal(String executionId, Map<String, ? extends Object> variables);
+void removeVariable(String executionId, String variableName);
+void removeVariableLocal(String executionId, String variableName);
+void removeVariables(String executionId, Collection<String> variableNames);
+void removeVariablesLocal(String executionId, Collection<String> variableNames);
+
+// Data Objects
+Map<String, DataObject> getDataObjects(String executionId);
+Map<String, DataObject> getDataObjects(String executionId, String locale, boolean withLocalizationFallback);
+Map<String, DataObject> getDataObjectsLocal(String executionId);
+Map<String, DataObject> getDataObjectsLocal(String executionId, String locale, boolean withLocalizationFallback);
+Map<String, DataObject> getDataObjects(String executionId, Collection<String> dataObjectNames);
+Map<String, DataObject> getDataObjectsLocal(String executionId, Collection<String> dataObjectNames);
+DataObject getDataObject(String executionId, String dataObjectName);
+DataObject getDataObjectLocal(String executionId, String dataObjectName);
+
+// Signals
 void signalEventReceived(String signalName);
-void signalEventReceived(String signalName, String processInstanceId);
+void signalEventReceived(String signalName, Map<String, Object> processVariables);
+void signalEventReceived(String signalName, String executionId);
+void signalEventReceived(String signalName, String executionId, Map<String, Object> processVariables);
+void signalEventReceivedWithTenantId(String signalName, String tenantId);
+void signalEventReceivedWithTenantId(String signalName, Map<String, Object> processVariables, String tenantId);
+void signalEventReceivedAsync(String signalName);
+void signalEventReceivedAsync(String signalName, String executionId);
+void signalEventReceivedAsyncWithTenantId(String signalName, String tenantId);
+
+// Messages
 ProcessInstance startProcessInstanceByMessage(String messageName);
 ProcessInstance startProcessInstanceByMessage(String messageName, String businessKey);
 ProcessInstance startProcessInstanceByMessage(String messageName, Map<String, Object> processVariables);
 ProcessInstance startProcessInstanceByMessage(String messageName, String businessKey, Map<String, Object> processVariables);
+ProcessInstance startProcessInstanceByMessageAndTenantId(String messageName, String tenantId);
+ProcessInstance startProcessInstanceByMessageAndTenantId(String messageName, String businessKey, String tenantId);
+ProcessInstance startProcessInstanceByMessageAndTenantId(String messageName, Map<String, Object> processVariables, String tenantId);
+ProcessInstance startProcessInstanceByMessageAndTenantId(String messageName, String businessKey, Map<String, Object> processVariables, String tenantId);
 void messageEventReceived(String messageName, String executionId);
 void messageEventReceived(String messageName, String executionId, Map<String, Object> processVariables);
 void messageEventReceivedAsync(String messageName, String executionId);
 
+// Execution Management
+List<String> getActiveActivityIds(String executionId);
+void trigger(String executionId);
+void trigger(String executionId, Map<String, Object> processVariables);
+void trigger(String executionId, Map<String, Object> processVariables, Map<String, Object> transientVariables);
+void suspendProcessInstanceById(String processInstanceId);
+void activateProcessInstanceById(String processInstanceId);
+
+// Identity Links
+void addUserIdentityLink(String processInstanceId, String userId, String identityLinkType);
+void addUserIdentityLink(String processInstanceId, String userId, String identityLinkType, byte[] details);
+void addGroupIdentityLink(String processInstanceId, String groupId, String identityLinkType);
+void addParticipantUser(String processInstanceId, String userId);
+void addParticipantGroup(String processInstanceId, String groupId);
+void deleteParticipantUser(String processInstanceId, String userId);
+void deleteParticipantGroup(String processInstanceId, String groupId);
+void deleteUserIdentityLink(String processInstanceId, String userId, String identityLinkType);
+void deleteGroupIdentityLink(String processInstanceId, String groupId, String identityLinkType);
+List<IdentityLink> getIdentityLinksForProcessInstance(String instanceId);
+
+// Ad-hoc Subprocess
+List<FlowNode> getEnabledActivitiesFromAdhocSubProcess(String executionId);
+Execution executeActivityInAdhocSubProcess(String executionId, String activityId);
+void completeAdhocSubProcess(String executionId);
+
+// Event Listeners
+void addEventListener(ActivitiEventListener listenerToAdd);
+void addEventListener(ActivitiEventListener listenerToAdd, ActivitiEventType... types);
+void removeEventListener(ActivitiEventListener listenerToRemove);
+void dispatchEvent(ActivitiEvent event);
+List<Event> getProcessInstanceEvents(String processInstanceId);
+
 // Queries
-// Use these to find and inspect running processes
 ProcessInstanceQuery createProcessInstanceQuery();
 ExecutionQuery createExecutionQuery();
+NativeProcessInstanceQuery createNativeProcessInstanceQuery();
+NativeExecutionQuery createNativeExecutionQuery();
 ```
 
 **Method selection guide:**
-- **startProcessInstanceByKey**: Most common - start by process definition key
-- **startProcessInstanceByMessage**: Event-driven - start by business event
-- **setVariable/getVariable**: Read/write process data
-- **messageEventReceived**: Correlate events to running processes
-- **signalEventReceived**: Broadcast events to all waiting processes
-- **createProcessInstanceQuery**: Find running instances
-- **createExecutionQuery**: Inspect process tokens and state
+- **createProcessInstanceBuilder()**: Fluent API for starting processes with multiple options
+- **startProcessInstanceByKey()**: Most common - start by process definition key
+- **startProcessInstanceByMessage()**: Event-driven - start by business event
+- **setVariable/getVariable**: Read/write process data on an execution
+- **updateBusinessKey**: Update the business key for a process instance
+- **messageEventReceived()**: Correlate events to a running execution
+- **signalEventReceived()**: Broadcast events to all waiting signal events, or target a specific execution
+- **createProcessInstanceQuery()**: Find running instances
+- **createExecutionQuery()**: Inspect process tokens and state
+- **trigger()**: Manually advance an execution past an intermediate catch event
 
 ### ProcessInstanceQuery
 
@@ -739,7 +903,6 @@ ExecutionQuery createExecutionQuery();
 ProcessInstanceQuery createProcessInstanceQuery();
 
 // Filtering
-// Use these to narrow down search results
 .processInstanceId(String id)
 .processInstanceBusinessKey(String key)
 .processInstanceBusinessKeyLike(String key)
@@ -752,7 +915,6 @@ ProcessInstanceQuery createProcessInstanceQuery();
 .suspended()
 
 // Ordering
-// Use these to sort results
 .orderByProcessInstanceId()
 .orderByProcessDefinitionKey()
 .orderByProcessDefinitionName()
@@ -762,7 +924,6 @@ ProcessInstanceQuery createProcessInstanceQuery();
 .desc()
 
 // Pagination
-// Use these for large result sets
 .listPage(int firstResult, int maxResults)
 ```
 
@@ -789,53 +950,53 @@ ProcessInstanceQuery createProcessInstanceQuery();
 ```java
 @Service
 public class OrderRuntimeService {
-    
+
     @Autowired
     private RuntimeService runtimeService;
-    
+
     public ProcessInstance createOrder(Order order) {
         Map<String, Object> variables = new HashMap<>();
         variables.put("orderId", order.getId());
         variables.put("customerName", order.getCustomerName());
         variables.put("orderAmount", order.getTotalAmount());
         variables.put("items", order.getItems());
-        
+
         ProcessInstance instance = runtimeService.startProcessInstanceByKey(
             "orderProcess",
             order.getId(),
             variables
         );
-        
-        log.info("Started order process: {} for order: {}", 
+
+        log.info("Started order process: {} for order: {}",
             instance.getId(), order.getId());
-        
+
         return instance;
     }
-    
+
     public void updateOrderStatus(String orderId, String status) {
         // Find the process instance by business key
         ProcessInstance instance = runtimeService.createProcessInstanceQuery()
             .processInstanceBusinessKey(orderId)
             .singleResult();
-        
+
         // Find the active execution
         Execution execution = runtimeService.createExecutionQuery()
             .processInstanceId(instance.getId())
             .active()
             .singleResult();
-        
+
         // Correlate message to update order
         Map<String, Object> messageVars = new HashMap<>();
         messageVars.put("newStatus", status);
         runtimeService.messageEventReceived("updateOrderStatus", execution.getId(), messageVars);
     }
-    
+
     public void cancelOrder(String orderId, String reason) {
         // Get process instance
         ProcessInstance instance = runtimeService.createProcessInstanceQuery()
             .processInstanceBusinessKey(orderId)
             .singleResult();
-        
+
         // Delete with reason
         runtimeService.deleteProcessInstance(instance.getId(), reason);
     }
@@ -847,58 +1008,90 @@ public class OrderRuntimeService {
 ```java
 @Service
 public class ApprovalRuntimeService {
-    
+
     @Autowired
     private RuntimeService runtimeService;
-    
+
     public ProcessInstance submitForApproval(ApprovalRequest request) {
         Map<String, Object> variables = new HashMap<>();
         variables.put("requestId", request.getId());
         variables.put("requester", request.getRequester());
         variables.put("amount", request.getAmount());
         variables.put("description", request.getDescription());
-        
+
         return runtimeService.startProcessInstanceByKey(
             "approvalProcess",
             request.getId(),
             variables
         );
     }
-    
+
     public void approveRequest(String requestId, String approver) {
         // Find the process instance by business key
         ProcessInstance instance = runtimeService.createProcessInstanceQuery()
             .processInstanceBusinessKey(requestId)
             .singleResult();
-        
+
         // Find the active execution
         Execution execution = runtimeService.createExecutionQuery()
             .processInstanceId(instance.getId())
             .active()
             .singleResult();
-        
+
         // Correlate message to approve request
         Map<String, Object> messageVars = new HashMap<>();
         messageVars.put("approver", approver);
         runtimeService.messageEventReceived("approveRequest", execution.getId(), messageVars);
     }
-    
+
     public void rejectRequest(String requestId, String reason) {
         // Find the process instance by business key
         ProcessInstance instance = runtimeService.createProcessInstanceQuery()
             .processInstanceBusinessKey(requestId)
             .singleResult();
-        
+
         // Find the active execution
         Execution execution = runtimeService.createExecutionQuery()
             .processInstanceId(instance.getId())
             .active()
             .singleResult();
-        
+
         // Correlate message to reject request
         Map<String, Object> messageVars = new HashMap<>();
         messageVars.put("reason", reason);
         runtimeService.messageEventReceived("rejectRequest", execution.getId(), messageVars);
+    }
+}
+```
+
+### ProcessInstanceBuilder Usage
+
+```java
+@Service
+public class AdvancedProcessStarter {
+
+    @Autowired
+    private RuntimeService runtimeService;
+
+    public ProcessInstance startComplexProcess(ComplexRequest request) {
+        return runtimeService.createProcessInstanceBuilder()
+            .processDefinitionKey("complexProcess")
+            .businessKey(request.getExternalId())
+            .name("Process for " + request.getDescription())
+            .tenantId(request.getTenantId())
+            .variable("requestId", request.getId())
+            .variable("requestData", request.getPayload())
+            .variable("initiatedBy", request.getUser())
+            .variables(request.getAdditionalVariables())
+            .start();
+    }
+
+    public void sendTargetedSignal(String signalName, String executionId, Map<String, Object> vars) {
+        runtimeService.signalEventReceived(signalName, executionId, vars);
+    }
+
+    public void broadcastSignal(String signalName) {
+        runtimeService.signalEventReceived(signalName);
     }
 }
 ```
@@ -922,15 +1115,28 @@ runtimeService.startProcessInstanceByKey("orderProcess");
 ```java
 // GOOD - All variables available from start
 Map<String, Object> vars = getAllOrderData();
-runtimeService.startProcessInstanceByKey("orderProcess", vars);
+runtimeService.startProcessInstanceByKey("orderProcess", "ORDER-12345", vars);
 
-// BAD - Setting variables one by one
+// BAD - Setting variables one by one after start
 ProcessInstance instance = runtimeService.startProcessInstanceByKey("orderProcess");
 runtimeService.setVariable(instance.getId(), "var1", value1);
 runtimeService.setVariable(instance.getId(), "var2", value2);
 ```
 
-### 3. Use Message Events
+### 3. Use ProcessInstanceBuilder for Complex Starts
+
+```java
+// GOOD - Fluent API for complex process starts
+ProcessInstance instance = runtimeService.createProcessInstanceBuilder()
+    .processDefinitionKey("orderProcess")
+    .businessKey("ORDER-12345")
+    .name("Order from John Doe")
+    .tenantId("tenant1")
+    .variables(Map.of("orderId", "12345", "amount", 999.99))
+    .start();
+```
+
+### 4. Use Message Events for Business Correlation
 
 ```java
 // GOOD - Start process with message
@@ -947,18 +1153,42 @@ Execution execution = runtimeService.createExecutionQuery()
     .singleResult();
 runtimeService.messageEventReceived("orderShipped", execution.getId());
 
-// BAD - Using signals for business events
-runtimeService.signalEventReceived("orderShipped", processInstanceId);
+// BAD - Using signals for business-specific events
+runtimeService.signalEventReceived("orderShipped", executionId);
 ```
 
-### 4. Handle Variable Types
+### 5. Handle Variable Types Correctly
 
 ```java
 // GOOD - Proper typing
-runtimeService.setVariable(processId, "amount", BigDecimal.valueOf(999.99));
+runtimeService.setVariable(executionId, "amount", BigDecimal.valueOf(999.99));
+runtimeService.setVariable(executionId, "timestamp", Instant.now());
 
 // BAD - String for numbers
-runtimeService.setVariable(processId, "amount", "999.99");
+runtimeService.setVariable(executionId, "amount", "999.99");
+```
+
+### 6. Use TaskService for Task Variables
+
+```java
+// GOOD - Task-scoped variables through TaskService
+taskService.setVariable(taskId, "taskOutcome", "approved");
+
+// BAD - Attempting task-scoped variables through RuntimeService
+// RuntimeService operates on executions, not tasks
+```
+
+### 7. Update Business Keys Correctly
+
+```java
+// GOOD - Use updateBusinessKey
+runtimeService.updateBusinessKey(processInstanceId, "NEW-BUSINESS-KEY");
+
+// GOOD - Read business key from ProcessInstance
+ProcessInstance instance = runtimeService.createProcessInstanceQuery()
+    .processInstanceId(processInstanceId)
+    .singleResult();
+String businessKey = instance.getBusinessKey();
 ```
 
 ---

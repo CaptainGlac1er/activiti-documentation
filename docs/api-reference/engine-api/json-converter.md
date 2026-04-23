@@ -1,941 +1,388 @@
 ---
 sidebar_label: JSON Converter
 slug: /activiti-core/json-converter
-description: Utilities for serializing and deserializing Activiti objects to and from JSON format.
+description: Converts between the Activiti BPMN modeler editor JSON format and the BpmnModel object model.
 ---
 
-# Activiti JSON Converter Module - Technical Documentation
+# Activiti JSON Converter Module
 
 **Module:** `activiti-core/activiti-json-converter`
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [JSON Serialization](#json-serialization)
-- [JSON Deserialization](#json-deserialization)
-- [Custom Converters](#custom-converters)
-- [Performance Optimization](#performance-optimization)
-- [Error Handling](#error-handling)
-- [Usage Examples](#usage-examples)
-- [Best Practices](#best-practices)
-- [API Reference](#api-reference)
-
----
-
 ## Overview
 
-The **activiti-json-converter** module provides utilities for serializing and deserializing Activiti objects to and from JSON format. It enables REST API integration, data exchange, and storage of workflow data in JSON format.
+The `activiti-json-converter` module converts between the **Activiti BPMN modeler's JSON format** and the `BpmnModel` object model. It is used by the Activiti modeler to serialize and deserialize process definitions created in the visual editor.
 
-### Key Features
+This module does **not** handle runtime objects (`ProcessInstance`, `Task`, etc.). Its sole purpose is translating the editor's JSON representation of BPMN diagrams into the `BpmnModel` in-memory object graph (and vice versa), which can then be converted to BPMN 2.0 XML.
 
-- **Bidirectional Conversion**: JSON ↔ Java objects
-- **Custom Serializers**: Type-specific converters
-- **Polymorphic Support**: Handle inheritance hierarchies
-- **Null Safety**: Proper null handling
-- **Date/Time Formatting**: ISO 8601 compliance
-- **Performance Optimized**: Efficient JSON processing
-
-### Module Structure
+## Package Structure
 
 ```
-activiti-json-converter/
-├── src/main/java/org/activiti/json/
-│   ├── JsonConverter.java              # Main converter
-│   ├── serializers/
-│   │   ├── ProcessInstanceSerializer.java
-│   │   ├── TaskSerializer.java
-│   │   └── VariableSerializer.java
-│   ├── deserializers/
-│   │   ├── ProcessInstanceDeserializer.java
-│   │   ├── TaskDeserializer.java
-│   │   └── VariableDeserializer.java
-│   └── custom/
-│       ├── JsonModule.java
-│       └── TypeAdapters.java
-└── src/test/java/
+org.activiti.editor.constants
+  |-- EditorJsonConstants        # JSON structure key constants
+  |-- ModelDataJsonConstants     # Model metadata JSON key constants
+  |-- StencilConstants           # Stencil ID and property name constants
+
+org.activiti.editor.language.json.converter
+  |-- BpmnJsonConverter          # Main entry point
+  |-- BaseBpmnJsonConverter      # Abstract base for element converters
+  |-- BpmnJsonConverterUtil      # Shared utility methods
+  |-- ActivityProcessor          # Interface for nested element processing
+  |-- FormAwareConverter         # Interface: form map injection
+  |-- FormKeyAwareConverter      # Interface: form key map injection
+  |-- DecisionTableAwareConverter    # Interface: decision table map injection
+  |-- DecisionTableKeyAwareConverter # Interface: decision table key map injection
+  |-- <Element>JsonConverter     # Per-element converters (see below)
+  |-- util/
+  |     |-- JsonConverterUtil    # JSON property extraction utilities
+  |     |-- CollectionUtils      # Collection null-safety helpers
+
+org.activiti.editor.language.json.model
+  |-- ModelInfo                  # Simple POJO (id, name, key)
 ```
 
----
+## Main API: BpmnJsonConverter
 
-## Architecture
+The `BpmnJsonConverter` class (`org.activiti.editor.language.json.converter.BpmnJsonConverter`) is the entry point with two conversion directions:
 
-### Conversion Pipeline
-
-```
-Java Object
-     │
-     ▼
-┌─────────────┐
-│ Type        │
-│ Checker     │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Serializer  │
-│ Selection   │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ JSON        │
-│ Generation  │
-└──────┬──────┘
-       │
-       ▼
-    JSON String
-```
-
-### Component Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    JsonConverter                            │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐                 │
-│  │   ObjectMapper  │  │  Type Adapters  │                 │
-│  │   (Jackson)     │  │                 │                 │
-│  └────────┬────────┘  └────────┬────────┘                 │
-│           │                    │                           │
-│           └────────┬───────────┘                           │
-│                    │                                       │
-│                    ▼                                       │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Custom Serializers                      │  │
-│  │  - ProcessInstanceSerializer                         │  │
-│  │  - TaskSerializer                                    │  │
-│  │  - VariableSerializer                                │  │
-│  │  - EventSerializer                                   │  │
-│  └─────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## JSON Serialization
-
-### ObjectMapper Configuration
+### BpmnModel to Editor JSON
 
 ```java
-public class ActivitiObjectMapper {
-    
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-    
-    static {
-        // Configure JSON features
-        objectMapper.configure(
-            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        objectMapper.configure(
-            SerializationFeature.INDENT_OUTPUT, true);
-        objectMapper.configure(
-            SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        
-        // Register modules
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.registerModule(new ActivitiJsonModule());
-        
-        // Set date format
-        objectMapper.setDateFormat(new SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
-    }
-    
-    public static ObjectMapper getInstance() {
-        return objectMapper;
-    }
-}
+public ObjectNode convertToJson(BpmnModel model)
+public ObjectNode convertToJson(BpmnModel model,
+                                Map<String, ModelInfo> formKeyMap,
+                                Map<String, ModelInfo> decisionTableKeyMap)
 ```
 
-### ProcessInstance Serializer
+Converts a `BpmnModel` (including `Process`, flow elements, pools, lanes, graphics, and layout info) into the editor's JSON `ObjectNode`. The resulting JSON contains:
+
+- `resourceId`: set to `"canvas"`
+- `stencil`: `"BPMNDiagram"`
+- `stencilset`: BPMN 2.0 stencilset reference
+- `bounds`: canvas dimensions
+- `childShapes`: array of shape nodes representing pools, lanes, flow elements, edges, and artifacts
+- `properties`: process-level properties (ID, name, documentation, namespace, messages, signals, listeners, data objects)
+
+The optional `formKeyMap` and `decisionTableKeyMap` resolve form and DMN decision table references to `ModelInfo` objects.
+
+### Editor JSON to BpmnModel
 
 ```java
-public class ProcessInstanceSerializer 
-    extends JsonSerializer<ProcessInstance> {
-    
-    @Override
-    public void serialize(ProcessInstance value, 
-                         JsonGenerator gen, 
-                         SerializerProvider provider) 
-            throws IOException {
-        
-        gen.writeStartObject();
-        
-        // Basic fields
-        gen.writeFieldName("id");
-        gen.writeString(value.getId());
-        
-        gen.writeFieldName("processDefinitionId");
-        gen.writeString(value.getProcessDefinitionId());
-        
-        gen.writeFieldName("businessKey");
-        gen.writeString(value.getBusinessKey());
-        
-        gen.writeFieldName("name");
-        gen.writeString(value.getName());
-        
-        // Timestamps
-        gen.writeFieldName("startTime");
-        gen.writeTimestamp(value.getStartTime().getTime());
-        
-        if (value.getEndTime() != null) {
-            gen.writeFieldName("endTime");
-            gen.writeTimestamp(value.getEndTime().getTime());
-        }
-        
-        // State
-        gen.writeFieldName("state");
-        gen.writeString(value.getState().name());
-        
-        // Variables (if included)
-        if (includeVariables()) {
-            gen.writeFieldName("variables");
-            provider.defaultSerializeValue(value.getVariables(), gen);
-        }
-        
-        gen.writeEndObject();
-    }
-    
-    private boolean includeVariables() {
-        // Configuration-based decision
-        return true;
-    }
-}
+public BpmnModel convertToBpmnModel(JsonNode modelNode)
+public BpmnModel convertToBpmnModel(JsonNode modelNode,
+                                    Map<String, String> formKeyMap,
+                                    Map<String, String> decisionTableKeyMap)
 ```
 
-### Task Serializer
+Parses the editor JSON into a `BpmnModel` with all processes, flow elements, pools, lanes, sequence flows, graphic info (`GraphicInfo`), and flow route geometry (`addFlowGraphicInfoList`). Uses geometry calculations (line-circle, line-rectangle, line-gateway intersections) to reconstruct connection routing.
+
+The optional `formKeyMap` and `decisionTableKeyMap` resolve form and DMN references back to their keys.
+
+## Converter Architecture
+
+### Two Registries
+
+`BpmnJsonConverter` maintains two static maps populated in a `static {}` block:
+
+| Map | Key Type | Value | Direction |
+|-----|----------|-------|-----------|
+| `convertersToJsonMap` | `Class<? extends BaseElement>` | `Class<? extends BaseBpmnJsonConverter>` | BpmnModel -> JSON |
+| `convertersToBpmnMap` | `String` (stencil ID) | `Class<? extends BaseBpmnJsonConverter>` | JSON -> BpmnModel |
+
+Each element converter calls `fillTypes(...)` from the static block to register itself in both maps.
+
+### BaseBpmnJsonConverter
+
+Abstract class that all element converters extend. It handles:
+
+- **Shape node creation**: `createChildShape()` with bounds, stencil, resource ID, child shapes, and outgoing references
+- **Common BpmnModel -> JSON properties**:
+  - `overrideid`, `name`, `documentation`
+  - `asynchronousdefinition`, `exclusivedefinition`
+  - Multi-instance: `multiinstance_type`, `multiinstance_cardinality`, `multiinstance_collection`, `multiinstance_variable`, `multiinstance_condition`
+  - Task listeners (`tasklisteners`) and execution listeners (`executionlisteners`)
+  - Data input/output associations
+  - Form properties (`formproperties`)
+  - Field extensions (`servicetaskfields`)
+  - Event definitions (error, signal, message, timer, terminate)
+- **Common JSON -> BpmnModel processing**:
+  - Extracts `name`, `documentation` from properties
+  - Converts execution listeners and task listeners
+  - Converts multi-instance characteristics
+  - Converts form properties for `StartEvent` and `UserTask`
+  - Converts timer, signal, message, and error event definitions
+  - Adds the element to the parent (`Process`, `SubProcess`, or `Lane`)
+
+Every concrete converter must implement three abstract methods:
 
 ```java
-public class TaskSerializer extends JsonSerializer<Task> {
-    
-    @Override
-    public void serialize(Task value, 
-                         JsonGenerator gen, 
-                         SerializerProvider provider) 
-            throws IOException {
-        
-        gen.writeStartObject();
-        
-        // Core fields
-        gen.writeFieldName("id");
-        gen.writeString(value.getId());
-        
-        gen.writeFieldName("name");
-        gen.writeString(value.getName());
-        
-        gen.writeFieldName("description");
-        gen.writeString(value.getDescription());
-        
-        gen.writeFieldName("assignee");
-        gen.writeString(value.getAssignee());
-        
-        // Dates
-        gen.writeFieldName("createTime");
-        gen.writeTimestamp(value.getCreateTime().getTime());
-        
-        if (value.getDueDate() != null) {
-            gen.writeFieldName("dueDate");
-            gen.writeTimestamp(value.getDueDate().getTime());
-        }
-        
-        // Priority
-        gen.writeFieldName("priority");
-        gen.writeNumber(value.getPriority());
-        
-        // Status
-        gen.writeFieldName("status");
-        gen.writeString(value.getStatus().name());
-        
-        // Candidate users
-        if (!value.getCandidateUsers().isEmpty()) {
-            gen.writeFieldName("candidateUsers");
-            gen.writeArray(value.getCandidateUsers());
-        }
-        
-        // Candidate groups
-        if (!value.getCandidateGroups().isEmpty()) {
-            gen.writeFieldName("candidateGroups");
-            gen.writeArray(value.getCandidateGroups());
-        }
-        
-        gen.writeEndObject();
-    }
+protected abstract void convertElementToJson(ObjectNode propertiesNode, BaseElement baseElement);
+protected abstract BaseElement convertJsonToElement(JsonNode elementNode, JsonNode modelNode, Map<String, JsonNode> shapeMap);
+protected abstract String getStencilId(BaseElement baseElement);
+```
+
+## Element Converters
+
+Each BPMN element type has a dedicated converter class. Below is the complete list:
+
+### Start Events
+
+**`StartEventJsonConverter`** handles:
+- `StartNoneEvent` — with initiator, form key, and form properties
+- `StartTimerEvent` — timer duration, cycle, date definitions
+- `StartErrorEvent` — error reference
+- `StartMessageEvent` — message reference
+- `StartSignalEvent` — signal reference
+
+Implements `FormAwareConverter` and `FormKeyAwareConverter` to resolve form references.
+
+### End Events
+
+**`EndEventJsonConverter`** handles:
+- `EndNoneEvent` — default end event
+- `EndErrorEvent` — error reference
+- `EndCancelEvent` — cancel definition (for transactions)
+- `EndTerminateEvent` — terminate definition with `terminateall` and `terminateMultiInstance` flags
+
+### Boundary Events
+
+**`BoundaryEventJsonConverter`** handles:
+- `BoundaryTimerEvent` — timer definition
+- `BoundaryErrorEvent` — error reference
+- `BoundarySignalEvent` — signal reference
+- `BoundaryMessageEvent` — message reference
+- `BoundaryCancelEvent` — cancel definition
+- `BoundaryCompensationEvent` — compensate definition
+
+Resolves the attached-to activity by traversing the `outgoing` references of parent shapes.
+
+### Intermediate Catch Events
+
+**`CatchEventJsonConverter`** handles:
+- `CatchTimerEvent` — timer definition
+- `CatchSignalEvent` — signal reference
+- `CatchMessageEvent` — message reference
+
+### Intermediate Throw Events
+
+**`ThrowEventJsonConverter`** handles:
+- `ThrowNoneEvent` — message throw
+- `ThrowSignalEvent` — signal throw
+
+### Task Elements
+
+| Converter | Stencil ID | BPMN Class | Notes |
+|-----------|-----------|------------|-------|
+| `UserTaskJsonConverter` | `UserTask` | `UserTask` | Assignee, candidates, priority, due date, form key, form properties, IDM integration. Implements `FormAwareConverter`, `FormKeyAwareConverter`. |
+| `ServiceTaskJsonConverter` | `ServiceTask` | `ServiceTask` | Class/expression/delegate expression, result variable, field extensions, mail/Camel/Mule/DMN subtypes. Implements `DecisionTableKeyAwareConverter`. |
+| `ScriptTaskJsonConverter` | `ScriptTask` | `ScriptTask` | Script format and script text. |
+| `SendTaskJsonConverter` | `SendTask` | `SendTask` | Delegates to ServiceTask converter. |
+| `ReceiveTaskJsonConverter` | `ReceiveTask` | `ReceiveTask` | — |
+| `ManualTaskJsonConverter` | `ManualTask` | `ManualTask` | — |
+| `BusinessRuleTaskJsonConverter` | `BusinessRule` | `BusinessRuleTask` | Rule class, input variables, result variable, rules list, exclude variables. |
+| `MailTaskJsonConverter` | `MailTask` | `ServiceTask` (type="mail") | To, from, subject, CC, BCC, text, HTML, charset. |
+| `CamelTaskJsonConverter` | `CamelTask` | `ServiceTask` (type="camel") | Camel context. |
+| `MuleTaskJsonConverter` | `MuleTask` | `ServiceTask` (type="mule") | Endpoint URL, language, payload expression, result variable. |
+| `DecisionTaskJsonConverter` | `DecisionTask` | `ServiceTask` (type="dmn") | DMN decision table reference. Implements `DecisionTableAwareConverter`. |
+
+### Gateways
+
+| Converter | Stencil ID | BPMN Class |
+|-----------|-----------|------------|
+| `ExclusiveGatewayJsonConverter` | `ExclusiveGateway` | `ExclusiveGateway` |
+| `ParallelGatewayJsonConverter` | `ParallelGateway` | `ParallelGateway` |
+| `InclusiveGatewayJsonConverter` | `InclusiveGateway` | `InclusiveGateway` |
+| `EventGatewayJsonConverter` | `EventGateway` | `EventGateway` |
+
+### Scope Constructs
+
+| Converter | Stencil ID | BPMN Class | Notes |
+|-----------|-----------|------------|-------|
+| `SubProcessJsonConverter` | `SubProcess` | `SubProcess`, `Transaction` | Recursive via `ActivityProcessor`. Supports `istransaction` flag. Data objects. Implements all four `*AwareConverter` interfaces. |
+| `EventSubProcessJsonConverter` | `EventSubProcess` | `SubProcess` (triggeredByEvent) | — |
+| `CallActivityJsonConverter` | `CallActivity` | `CallActivity` | Called element, in/out parameters with source/sourceExpression/target. |
+
+### Connectors & Artifacts
+
+| Converter | Stencil ID | BPMN Class | Notes |
+|-----------|-----------|------------|-------|
+| `SequenceFlowJsonConverter` | `SequenceFlow` | `SequenceFlow` | Condition expressions (plain, variable-based, outcome-based), default flow flag, execution listeners. Overrides `convertToJson` for docker geometry. |
+| `MessageFlowJsonConverter` | `MessageFlow` | `MessageFlow` | Source/target references. |
+| `AssociationJsonConverter` | `Association` | `Association` | Source/target, association direction. |
+| `TextAnnotationJsonConverter` | `TextAnnotation` | `TextAnnotation` | Text content. |
+| `DataStoreJsonConverter` | `DataStore` | `DataStoreReference` | Data store reference. |
+
+## Editor JSON Structure
+
+The editor uses a stencil-based JSON format. Top-level structure:
+
+```json
+{
+  "resourceId": "canvas",
+  "stencil": { "id": "BPMNDiagram" },
+  "stencilset": {
+    "namespace": "http://b3mn.org/stencilset/bpmn2.0#",
+    "url": "../editor/stencilsets/bpmn2.0/bpmn2.0.json"
+  },
+  "bounds": {
+    "lowerRight": { "x": 1485, "y": 700 },
+    "upperLeft": { "x": 0, "y": 0 }
+  },
+  "childShapes": [ ... ],
+  "properties": {
+    "process_id": "myProcess",
+    "name": "My Process",
+    ...
+  }
 }
 ```
 
-### Variable Serializer
+Each shape node in `childShapes` has:
+
+```json
+{
+  "resourceId": "shape_abc123",
+  "stencil": { "id": "UserTask" },
+  "bounds": {
+    "lowerRight": { "x": 280, "y": 140 },
+    "upperLeft": { "x": 140, "y": 70 }
+  },
+  "childShapes": [ ... ],
+  "outgoing": [ { "resourceId": "flow_123" }, ... ],
+  "properties": {
+    "overrideid": "UserTask_1",
+    "name": "Review Document",
+    "documentation": "...",
+    "asynchronousdefinition": false,
+    "exclusivedefinition": true,
+    ...
+  }
+}
+```
+
+Flow and edge nodes additionally include `dockers` (connection points) and `target`:
+
+```json
+{
+  "resourceId": "flow_123",
+  "stencil": { "id": "SequenceFlow" },
+  "dockers": [ { "x": 50, "y": 25 }, { "x": 100, "y": 70 } ],
+  "target": { "resourceId": "shape_def456" },
+  "outgoing": [ { "resourceId": "shape_def456" } ],
+  "properties": {
+    "overrideid": "Flow_1",
+    "name": "Approved",
+    "conditionsequenceflow": "${approved == true}"
+  }
+}
+```
+
+Pool shapes contain nested `childShapes` with lane definitions, and their `outgoing` array can reference boundary events and message flows.
+
+## Property Constants
+
+All JSON property names and stencil IDs are defined as constants:
+
+- **`EditorJsonConstants`**: Structural keys — `childShapes`, `resourceId`, `properties`, `stencil`, `id`, `bounds`, `lowerRight`, `upperLeft`, `x`, `y`, `dockers`, `outgoing`, `items`.
+
+- **`StencilConstants`**: Stencil IDs (`UserTask`, `ServiceTask`, `StartNoneEvent`, `ExclusiveGateway`, etc.) and property names (`overrideid`, `name`, `documentation`, `process_id`, `assignee`, `candidateUsers`, `servicetaskclass`, `formkeydefinition`, `timerdurationdefinition`, `multiinstance_type`, `asynchronousdefinition`, `conditionsequenceflow`, etc.).
+
+- **`ModelDataJsonConstants`**: Model metadata keys — `modelId`, `name`, `revision`, `description`.
+
+## ModelInfo
+
+`ModelInfo` is a simple POJO with three fields (`id`, `name`, `key`) used to reference external models such as forms or DMN decision tables.
+
+## Geometry Processing
+
+When converting JSON to BpmnModel, `BpmnJsonConverter` reconstructs:
+
+- **Shape positions**: Extracted from `bounds.upperLeft` and `bounds.lowerRight` into `GraphicInfo` objects stored in `bpmnModel.getLocationMap()`.
+- **Flow routes**: Docker points on edges are converted into a list of `GraphicInfo` waypoints via `bpmnModel.addFlowGraphicInfoList()`. The converter uses geometric intersection calculations against circles (events), rectangles (tasks), and diamond polylines (gateways) to snap connection endpoints to element boundaries.
+
+When converting BpmnModel to JSON, `GraphicInfo` positions and flow routes are written back into `bounds` and `dockers`.
+
+## Namespace
+
+Extension elements added during conversion use the namespace:
+
+```
+http://activiti.com/modeler   (prefix: modeler)
+```
+
+This namespace is defined as `NAMESPACE` in `BaseBpmnJsonConverter`.
+
+## Conversion Flow
+
+### BpmnModel -> JSON
+
+1. `BpmnJsonConverter.convertToJson()` creates the root model node with bounds, stencil, and stencilset.
+2. Process-level properties (ID, name, namespace, messages, signals, listeners, data objects) are written.
+3. If pools exist, each pool and its lanes are converted with nested `childShapes`.
+4. Flow elements are looked up in `convertersToJsonMap` by their Java class.
+5. Each converter's `convertToJson()` is called, which delegates to `convertElementToJson()` for element-specific properties.
+6. Sequence flows and boundary events are added to parent `outgoing` arrays.
+7. Sub-processes recursively call back into `BpmnJsonConverter` via `ActivityProcessor.processFlowElements()`.
+
+### JSON -> BpmnModel
+
+1. `BpmnJsonConverter.convertToBpmnModel()` creates a new `BpmnModel`.
+2. Shape `bounds` are recursively read into `GraphicInfo` objects via `readShapeDI()`.
+3. Edge docker points are read and flow routes computed via `readEdgeDI()`.
+4. Pool shapes are processed first, creating `Pool`, `Process`, and `Lane` objects.
+5. Each shape's stencil ID is looked up in `convertersToBpmnMap`.
+6. Each converter's `convertToBpmnModel()` calls `convertJsonToElement()` for element-specific parsing.
+7. Sequence flows have their source/target resolved, and incoming/outgoing lists are populated in `postProcessElements()`.
+8. Boundary events are attached to their parent activities.
+9. Gateway flow ordering (stored as `EDITOR_FLOW_ORDER` extension elements) is applied and cleaned up.
+
+## Helper Classes
+
+### BpmnJsonConverterUtil
+
+Static utility methods shared across converters:
+
+- `createChildShape()` — builds a shape node with bounds, stencil, and empty childShapes/outgoing
+- `createBoundsNode()` / `createPositionNode()` — builds bounds geometry nodes
+- `createResourceNode()` — builds `{"resourceId": "..."}` nodes
+- `getStencilId()` / `getElementId()` — extracts stencil ID and element override ID from a shape node
+- `convertListenersToJson()` / `convertJsonToListeners()` — execution and task listener conversion
+- `convertEventListenersToJson()` / `parseEventListeners()` — global event listener conversion
+- `convertMessagesToJson()` / `convertJsonToMessages()` — message definition conversion
+- `convertSignalDefinitionsToJson()` — signal definition conversion
+- `convertDataPropertiesToJson()` / `convertJsonToDataProperties()` — valued data object conversion (string, int, long, double, boolean, datetime)
+- `validateIfNodeIsTextual()` — recursively parses textually-encoded JSON nodes
+- `lookForSourceRef()` — traverses childShapes to find which shape lists a given ID in its outgoing
+
+### JsonConverterUtil
+
+Lower-level JSON property extraction:
+
+- `getPropertyValueAsString()` — reads a property from the shape's `properties` node
+- `getPropertyValueAsBoolean()` — boolean conversion with "Yes"/"No" support
+- `getPropertyValueAsList()` — comma-separated list splitting
+- `getProperty()` — navigates to `objectNode.properties[name]`
+- `getBpmnProcessModelChildShapesPropertyValues()` — recursive search for a property across all child shapes
+- `getBpmnProcessModelFormReferences()` — finds form references on UserTask and StartNoneEvent shapes
+- `getBpmnProcessModelDecisionTableReferences()` — finds decision table references on DecisionTask shapes
+- `getAppModelReferencedProcessModels()` / `getAppModelReferencedModelIds()` — app model processing
+- `JsonLookupResult` — inner class holding id, name, and JsonNode for lookup results
+
+## Usage
+
+The converter is typically used by the Activiti modeler REST layer:
 
 ```java
-public class VariableSerializer extends JsonSerializer<VariableInstance> {
-    
-    @Override
-    public void serialize(VariableInstance value, 
-                         JsonGenerator gen, 
-                         SerializerProvider provider) 
-            throws IOException {
-        
-        gen.writeStartObject();
-        
-        gen.writeFieldName("name");
-        gen.writeString(value.getName());
-        
-        gen.writeFieldName("type");
-        gen.writeString(value.getType().name());
-        
-        // Value based on type
-        gen.writeFieldName("value");
-        serializeValue(value.getValue(), value.getType(), gen, provider);
-        
-        gen.writeFieldName("scopeId");
-        gen.writeString(value.getScopeId());
-        
-        gen.writeEndObject();
-    }
-    
-    private void serializeValue(Object value, 
-                               VariableType type, 
-                               JsonGenerator gen, 
-                               SerializerProvider provider) 
-                    throws IOException {
-        
-        switch (type) {
-            case STRING:
-                gen.writeString((String) value);
-                break;
-            case INTEGER:
-                gen.writeNumber((Integer) value);
-                break;
-            case LONG:
-                gen.writeNumber((Long) value);
-                break;
-            case DOUBLE:
-                gen.writeNumber((Double) value);
-                break;
-            case BOOLEAN:
-                gen.writeBoolean((Boolean) value);
-                break;
-            case DATE:
-                gen.writeTimestamp(((Date) value).getTime());
-                break;
-            case OBJECT:
-                provider.defaultSerializeValue(value, gen);
-                break;
-            default:
-                gen.writeString(value.toString());
-        }
-    }
-}
+// Editor JSON -> BpmnModel (for deployment)
+BpmnJsonConverter converter = new BpmnJsonConverter();
+BpmnModel bpmnModel = converter.convertToBpmnModel(modelJsonNode, formKeyMap, decisionTableKeyMap);
+
+// BpmnModel -> Editor JSON (for loading in the editor)
+ObjectNode editorJson = converter.convertToJson(bpmnModel, formKeyMap, decisionTableKeyMap);
 ```
 
----
-
-## JSON Deserialization
-
-### ProcessInstance Deserializer
-
-```java
-public class ProcessInstanceDeserializer 
-    extends JsonDeserializer<ProcessInstance> {
-    
-    @Override
-    public ProcessInstance deserialize(JsonParser p, 
-                                       DeserializationContext ctxt) 
-            throws IOException {
-        
-        JsonNode node = p.getCodec().readTree(p);
-        
-        // Create builder
-        ProcessInstanceBuilder builder = ProcessInstance.builder();
-        
-        // Read fields
-        if (node.has("id")) {
-            builder.id(node.get("id").asText());
-        }
-        
-        if (node.has("processDefinitionId")) {
-            builder.processDefinitionId(
-                node.get("processDefinitionId").asText());
-        }
-        
-        if (node.has("businessKey")) {
-            builder.businessKey(node.get("businessKey").asText());
-        }
-        
-        if (node.has("name")) {
-            builder.name(node.get("name").asText());
-        }
-        
-        if (node.has("startTime")) {
-            builder.startTime(
-                Instant.ofEpochMilli(node.get("startTime").asLong()));
-        }
-        
-        if (node.has("endTime")) {
-            builder.endTime(
-                Instant.ofEpochMilli(node.get("endTime").asLong()));
-        }
-        
-        if (node.has("state")) {
-            builder.state(
-                ProcessInstanceState.valueOf(node.get("state").asText()));
-        }
-        
-        if (node.has("variables")) {
-            JsonNode variablesNode = node.get("variables");
-            Map<String, Object> variables = 
-                p.getCodec().treeToValue(
-                    variablesNode, 
-                    new TypeReference<Map<String, Object>>() {});
-            builder.variables(variables);
-        }
-        
-        return builder.build();
-    }
-}
-```
-
-### Task Deserializer
-
-```java
-public class TaskDeserializer extends JsonDeserializer<Task> {
-    
-    @Override
-    public Task deserialize(JsonParser p, 
-                           DeserializationContext ctxt) 
-                throws IOException {
-        
-        JsonNode node = p.getCodec().readTree(p);
-        
-        TaskBuilder builder = Task.builder();
-        
-        // Core fields
-        builder.id(node.get("id").asText());
-        builder.name(node.get("name").asText());
-        
-        if (node.has("description")) {
-            builder.description(node.get("description").asText());
-        }
-        
-        if (node.has("assignee")) {
-            builder.assignee(node.get("assignee").asText());
-        }
-        
-        // Dates
-        if (node.has("createTime")) {
-            builder.createTime(
-                new Date(node.get("createTime").asLong()));
-        }
-        
-        if (node.has("dueDate")) {
-            builder.dueDate(new Date(node.get("dueDate").asLong()));
-        }
-        
-        // Priority
-        if (node.has("priority")) {
-            builder.priority(node.get("priority").asInt());
-        }
-        
-        // Status
-        if (node.has("status")) {
-            builder.status(
-                TaskStatus.valueOf(node.get("status").asText()));
-        }
-        
-        // Candidates
-        if (node.has("candidateUsers")) {
-            List<String> users = new ArrayList<>();
-            for (JsonNode user : node.get("candidateUsers")) {
-                users.add(user.asText());
-            }
-            builder.candidateUsers(users);
-        }
-        
-        if (node.has("candidateGroups")) {
-            List<String> groups = new ArrayList<>();
-            for (JsonNode group : node.get("candidateGroups")) {
-                groups.add(group.asText());
-            }
-            builder.candidateGroups(groups);
-        }
-        
-        return builder.build();
-    }
-}
-```
-
----
-
-## Custom Converters
-
-### Type Adapters
-
-```java
-public class ActivitiTypeAdapters {
-    
-    public static void registerTypeAdapters(GsonBuilder gsonBuilder) {
-        // ProcessInstance adapter
-        gsonBuilder.registerTypeAdapter(
-            ProcessInstance.class, 
-            new ProcessInstanceTypeAdapter());
-        
-        // Task adapter
-        gsonBuilder.registerTypeAdapter(
-            Task.class, 
-            new TaskTypeAdapter());
-        
-        // VariableInstance adapter
-        gsonBuilder.registerTypeAdapter(
-            VariableInstance.class, 
-            new VariableInstanceTypeAdapter());
-    }
-}
-
-class ProcessInstanceTypeAdapter 
-    extends TypeAdapter<ProcessInstance> {
-    
-    @Override
-    public void write(JsonWriter out, ProcessInstance value) 
-            throws IOException {
-        out.beginObject();
-        out.name("id").value(value.getId());
-        out.name("processDefinitionId")
-            .value(value.getProcessDefinitionId());
-        // ... more fields
-        out.endObject();
-    }
-    
-    @Override
-    public ProcessInstance read(JsonReader in) throws IOException {
-        in.beginObject();
-        ProcessInstanceBuilder builder = ProcessInstance.builder();
-        
-        while (in.hasNext()) {
-            String name = in.nextName();
-            switch (name) {
-                case "id":
-                    builder.id(in.nextString());
-                    break;
-                case "processDefinitionId":
-                    builder.processDefinitionId(in.nextString());
-                    break;
-                // ... more cases
-            }
-        }
-        
-        in.endObject();
-        return builder.build();
-    }
-}
-```
-
-### Jackson Modules
-
-```java
-public class ActivitiJsonModule extends JacksonModule {
-    
-    public ActivitiJsonModule() {
-        super("activiti-json-module");
-    }
-    
-    @Override
-    public void setupModule(SetupContext context) {
-        // Register serializers
-        context.addSerializer(
-            ProcessInstance.class, 
-            new ProcessInstanceSerializer());
-        
-        context.addSerializer(
-            Task.class, 
-            new TaskSerializer());
-        
-        context.addSerializer(
-            VariableInstance.class, 
-            new VariableSerializer());
-        
-        // Register deserializers
-        context.addDeserializer(
-            ProcessInstance.class, 
-            new ProcessInstanceDeserializer());
-        
-        context.addDeserializer(
-            Task.class, 
-            new TaskDeserializer());
-        
-        context.addDeserializer(
-            VariableInstance.class, 
-            new VariableDeserializer());
-    }
-}
-```
-
----
-
-## Performance Optimization
-
-### Object Pooling
-
-```java
-public class JsonConverterPool {
-    
-    private final ObjectPool<ObjectMapper> mapperPool;
-    
-    public JsonConverterPool(int poolSize) {
-        BasicObjectPoolConfig<ObjectMapper> config = 
-            new BasicObjectPoolConfig<>();
-        config.setMaxTotal(poolSize);
-        config.setMaxIdle(poolSize / 2);
-        
-        mapperPool = new GenericObjectPool<>(
-            new ObjectMapperFactory(), config);
-    }
-    
-    public ObjectMapper borrowMapper() {
-        return mapperPool.borrowObject();
-    }
-    
-    public void returnMapper(ObjectMapper mapper) {
-        mapperPool.returnObject(mapper);
-    }
-}
-```
-
-### Streaming API
-
-```java
-public class StreamingJsonConverter {
-    
-    public void writeStream(ProcessInstance instance, 
-                           OutputStream output) 
-                    throws IOException {
-        
-        JsonFactory factory = new JsonFactory();
-        try (JsonGenerator generator = 
-                factory.createGenerator(output)) {
-            
-            generator.writeStartObject();
-            generator.writeStringField("id", instance.getId());
-            generator.writeStringField("processDefinitionId", 
-                instance.getProcessDefinitionId());
-            // ... more fields
-            generator.writeEndObject();
-        }
-    }
-    
-    public ProcessInstance readStream(InputStream input) 
-            throws IOException {
-        
-        JsonFactory factory = new JsonFactory();
-        try (JsonParser parser = factory.createParser(input)) {
-            
-            parser.nextToken(); // Start object
-            ProcessInstanceBuilder builder = ProcessInstance.builder();
-            
-            while (parser.nextToken() != JsonToken.END_OBJECT) {
-                String fieldName = parser.getCurrentName();
-                parser.nextToken();
-                
-                switch (fieldName) {
-                    case "id":
-                        builder.id(parser.getText());
-                        break;
-                    case "processDefinitionId":
-                        builder.processDefinitionId(parser.getText());
-                        break;
-                    // ... more cases
-                }
-            }
-            
-            return builder.build();
-        }
-    }
-}
-```
-
-### Caching
-
-```java
-public class CachedJsonConverter {
-    
-    private final Map<String, String> jsonCache = 
-        new ConcurrentHashMap<>();
-    
-    public String toJson(ProcessInstance instance) {
-        String cacheKey = instance.getId();
-        
-        return jsonCache.computeIfAbsent(cacheKey, key -> {
-            try {
-                return objectMapper.writeValueAsString(instance);
-            } catch (JsonProcessingException e) {
-                throw new ConversionException("Failed to convert", e);
-            }
-        });
-    }
-    
-    public void invalidateCache(String instanceId) {
-        jsonCache.remove(instanceId);
-    }
-}
-```
-
----
-
-## Error Handling
-
-### Conversion Exceptions
-
-```java
-public class ConversionException extends RuntimeException {
-    
-    public ConversionException(String message) {
-        super(message);
-    }
-    
-    public ConversionException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
-
-public class SerializationException extends ConversionException {
-    public SerializationException(String message, Throwable cause) {
-        super("Serialization failed: " + message, cause);
-    }
-}
-
-public class DeserializationException extends ConversionException {
-    public DeserializationException(String message, Throwable cause) {
-        super("Deserialization failed: " + message, cause);
-    }
-}
-```
-
-### Error Recovery
-
-```java
-public class ResilientJsonConverter {
-    
-    public String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize {}", value.getClass().getName(), e);
-            
-            // Fallback to basic serialization
-            return fallbackSerialization(value);
-        }
-    }
-    
-    private String fallbackSerialization(Object value) {
-        try {
-            return objectMapper.writeValueAsString(
-                value.toString());
-        } catch (Exception e) {
-            throw new SerializationException(
-                "Fallback serialization also failed", e);
-        }
-    }
-}
-```
-
----
-
-## Usage Examples
-
-### Basic Serialization
-
-```java
-public class SerializationExample {
-    
-    public void serializeProcessInstance() throws IOException {
-        ProcessInstance instance = getProcessInstance();
-        
-        ObjectMapper mapper = ActivitiObjectMapper.getInstance();
-        
-        String json = mapper.writeValueAsString(instance);
-        
-        System.out.println(json);
-    }
-    
-    public void serializeTask() throws IOException {
-        Task task = getTask();
-        
-        ObjectMapper mapper = ActivitiObjectMapper.getInstance();
-        
-        // Pretty print
-        String json = mapper.writerWithDefaultPrettyPrinter()
-            .writeValueAsString(task);
-        
-        System.out.println(json);
-    }
-}
-```
-
-### Basic Deserialization
-
-```java
-public class DeserializationExample {
-    
-    public ProcessInstance deserializeProcessInstance(String json) 
-            throws IOException {
-        
-        ObjectMapper mapper = ActivitiObjectMapper.getInstance();
-        
-        ProcessInstance instance = mapper.readValue(
-            json, 
-            ProcessInstance.class);
-        
-        return instance;
-    }
-    
-    public Task deserializeTask(File file) throws IOException {
-        ObjectMapper mapper = ActivitiObjectMapper.getInstance();
-        
-        Task task = mapper.readValue(
-            file, 
-            Task.class);
-        
-        return task;
-    }
-}
-```
-
-### Type-Safe Deserialization
-
-```java
-public class TypeSafeDeserialization {
-    
-    public List<ProcessInstance> deserializeProcessInstances(String json) 
-            throws IOException {
-        
-        ObjectMapper mapper = ActivitiObjectMapper.getInstance();
-        
-        TypeReference<List<ProcessInstance>> typeRef = 
-            new TypeReference<List<ProcessInstance>>() {};
-        
-        List<ProcessInstance> instances = mapper.readValue(
-            json, 
-            typeRef);
-        
-        return instances;
-    }
-    
-    public Map<String, VariableInstance> deserializeVariables(String json) 
-            throws IOException {
-        
-        ObjectMapper mapper = ActivitiObjectMapper.getInstance();
-        
-        TypeReference<Map<String, VariableInstance>> typeRef = 
-            new TypeReference<Map<String, VariableInstance>>() {};
-        
-        return mapper.readValue(json, typeRef);
-    }
-}
-```
-
----
-
-## Best Practices
-
-### 1. Use Try-With-Resources
-
-```java
-// GOOD
-try (JsonGenerator generator = factory.createGenerator(output)) {
-    generator.writeStartObject();
-    // ... write data
-}
-
-// BAD
-JsonGenerator generator = factory.createGenerator(output);
-try {
-    generator.writeStartObject();
-} finally {
-    generator.close();
-}
-```
-
-### 2. Configure ObjectMapper Once
-
-```java
-// GOOD: Singleton configuration
-private static final ObjectMapper MAPPER = configureMapper();
-
-private static ObjectMapper configureMapper() {
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(new JavaTimeModule());
-    mapper.registerModule(new ActivitiJsonModule());
-    return mapper;
-}
-
-// BAD: Creating new mapper each time
-public String toJson(Object obj) {
-    ObjectMapper mapper = new ObjectMapper();
-    return mapper.writeValueAsString(obj);
-}
-```
-
-### 3. Handle Nulls Explicitly
-
-```java
-gen.writeFieldName("assignee");
-if (task.getAssignee() != null) {
-    gen.writeString(task.getAssignee());
-} else {
-    gen.writeNull();
-}
-```
-
-### 4. Use Type References for Collections
-
-```java
-TypeReference<List<Task>> typeRef = 
-    new TypeReference<List<Task>>() {};
-
-List<Task> tasks = mapper.readValue(json, typeRef);
-```
-
-### 5. Validate JSON Before Deserialization
-
-```java
-JsonNode node = mapper.readTree(json);
-if (!node.isObject()) {
-    throw new DeserializationException("Expected JSON object");
-}
-```
-
----
-
-## API Reference
-
-### Key Classes
-
-- `ActivitiObjectMapper` - Configured ObjectMapper
-- `JsonConverter` - Main conversion utility
-- `ProcessInstanceSerializer` - Process serialization
-- `TaskSerializer` - Task serialization
-- `VariableSerializer` - Variable serialization
-
-### Key Methods
-
-```java
-// Serialization
-String writeValueAsString(Object value)
-void writeValue(OutputStream output, Object value)
-
-// Deserialization
-<T> T readValue(String json, Class<T> clazz)
-<T> T readValue(File file, Class<T> clazz)
-<T> T readValue(JsonParser p, TypeReference<T> typeRef)
-
-// Configuration
-ObjectMapper registerModule(TypedModule module)
-ObjectMapper configure(MapperFeature feature, boolean state)
-```
-
----
+The resulting `BpmnModel` can be passed to `BpmnXMLConverter` to generate BPMN 2.0 XML for deployment.
 
 ## See Also
 
-- [Parent Module Documentation](../overview.md)
-- [Engine Documentation](../engine-api/README.md)
-- [API Implementation](../activiti-api/api-implementation.md)
+- [BPMN Model](./bpmn-model.md)
+- [BPMN XML Converter](./bpmn-converter.md)

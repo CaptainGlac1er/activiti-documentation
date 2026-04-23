@@ -65,10 +65,10 @@ order-management-workflow/
 │   ├── inventoryProcess.bpmn          # Inventory sub-process
 │   └── shippingProcess.bpmn           # Shipping sub-process
 ├── extensions/
-│   ├── orderManagementProcess-extension.json
-│   ├── paymentProcess-extension.json
-│   ├── inventoryProcess-extension.json
-│   └── shippingProcess-extension.json
+│   ├── orderManagementProcess-extensions.json
+│   ├── paymentProcess-extensions.json
+│   ├── inventoryProcess-extensions.json
+│   └── shippingProcess-extensions.json
 ├── src/main/
 │   ├── java/com/example/ordermanagement/
 │   │   ├── OrderManagementApplication.java
@@ -105,13 +105,15 @@ The main process starts with a message event, enabling external triggers:
 Human tasks include timeout handling:
 
 ```xml
-<bpmn:userTask id="validateCustomerTask" name="Validate Customer Information">
-  <bpmn:boundaryEvent id="validateCustomerTimeout" cancelActivity="true">
-    <bpmn:timerEventDefinition>
-      <bpmn:timeDuration>PT30M</timeDuration>
-    </bpmn:timerEventDefinition>
-  </bpmn:boundaryEvent>
-</bpmn:userTask>
+<bpmn:userTask id="validateCustomerTask" name="Validate Customer Information"/>
+
+<bpmn:boundaryEvent id="validateCustomerTimeout" 
+                    attachedToRef="validateCustomerTask" 
+                    cancelActivity="true">
+  <bpmn:timerEventDefinition>
+    <bpmn:timeDuration>PT30M</timeDuration>
+  </bpmn:timerEventDefinition>
+</bpmn:boundaryEvent>
 ```
 
 **Why use this?** Boundary events provide:
@@ -174,7 +176,7 @@ Payment failures trigger retry logic:
 <bpmn:userTask id="retryPaymentTask" name="Retry Payment">
   <bpmn:multiInstanceLoopCharacteristics isSequential="true">
     <bpmn:loopCardinality>3</bpmn:loopCardinality>
-    <bpmn:completionCondition>${approvedRetries >= 1}</bpmn:completionCondition>
+    <bpmn:completionCondition>${nrOfCompletedInstances >= 1}</bpmn:completionCondition>
   </bpmn:multiInstanceLoopCharacteristics>
 </bpmn:userTask>
 ```

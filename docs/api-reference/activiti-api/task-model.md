@@ -962,9 +962,9 @@ taskRuntime.addCandidateUsers(payload);
 
 ## Related Documentation
 
-- [Task Runtime Module](task-runtime.md)
-- [Process Model Module](process-model.md)
-- [Main Module Docs](../overview.md)
+- [Task Runtime Module](./task-runtime.md)
+- [Process Model Module](./process-model.md)
+- [Main Module Docs](./README.md)
 
 ---
 

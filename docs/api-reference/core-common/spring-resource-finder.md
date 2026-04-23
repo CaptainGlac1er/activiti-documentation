@@ -191,4 +191,4 @@ System.out.println("Found: " + resources.size() + " resources");
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Spring Application](../core-common/spring-application.md)
+- [Spring Application](./spring-application.md)

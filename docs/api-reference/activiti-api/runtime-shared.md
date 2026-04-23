@@ -735,10 +735,10 @@ public class CustomSecurityProvider implements SecurityManager {
 
 ## Related Documentation
 
-- [Model Shared Module](model-shared.md)
-- [Process Runtime Module](process-runtime.md)
-- [Task Runtime Module](task-runtime.md)
-- [Main Module Docs](../overview.md)
+- [Model Shared Module](./model-shared.md)
+- [Process Runtime Module](./process-runtime.md)
+- [Task Runtime Module](./task-runtime.md)
+- [Main Module Docs](./README.md)
 
 ---
 

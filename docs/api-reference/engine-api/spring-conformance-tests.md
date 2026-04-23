@@ -1,664 +1,338 @@
 ---
 sidebar_label: Spring Conformance Tests
 slug: /api-reference/engine-api/spring-conformance-tests
-description: Spring-based conformance test suite for Activiti engine compatibility verification.
+title: "Spring Conformance Tests"
+description: "Overview of the activiti-spring-conformance-tests multi-module test suite — shared utilities, conformance sets, and what each submodule validates."
 ---
 
-# Activiti Spring Conformance Tests Module - Technical Documentation
+# Spring Conformance Tests
 
-**Module:** `activiti-core/activiti-spring-conformance-tests`
+`activiti-spring-conformance-tests` is a **multi-module Maven aggregator** under `activiti-core/` that contains integration tests validating the Activiti Spring API against BPMN conformance scenarios. It is not a production library — it is a test suite used during development and CI to verify correct behavior of `ProcessRuntime`, `TaskRuntime`, and related APIs under Spring Boot.
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [BPMN Conformance Suite](#bpmn-conformance-suite)
-- [Test Framework](#test-framework)
-- [Test Cases](#test-cases)
-- [Regression Testing](#regression-testing)
-- [Performance Testing](#performance-testing)
-- [Usage Examples](#usage-examples)
-- [Best Practices](#best-practices)
-- [API Reference](#api-reference)
-
----
-
-## Overview
-
-The **activiti-spring-conformance-tests** module provides a comprehensive test suite to validate BPMN 2.0 conformance and engine correctness. It includes regression tests, performance benchmarks, and integration tests to ensure the Activiti engine meets BPMN specifications.
-
-### Key Features
-
-- **BPMN 2.0 Conformance**: Validate against BPMN specification
-- **Regression Testing**: Prevent functionality degradation
-- **Performance Benchmarks**: Measure engine performance
-- **Integration Tests**: Full-stack testing
-- **Spring Integration**: Test within Spring context
-- **Automated Validation**: CI/CD ready
-
-### Module Structure
+## Module Layout
 
 ```
-activiti-spring-conformance-tests/
-├── src/test/java/org/activiti/spring/conformance/
-│   ├── BpmnConformanceTest.java         # Main conformance test
-│   ├── regression/
-│   │   ├── RegressionTestSuite.java
-│   │   └── RegressionTestCase.java
-│   ├── performance/
-│   │   ├── PerformanceTestSuite.java
-│   │   └── PerformanceBenchmark.java
-│   ├── integration/
-│   │   ├── IntegrationTestSuite.java
-│   │   └── IntegrationTestCase.java
-│   └── fixtures/
-│       ├── BpmnFixtures.java
-│       └── TestData.java
-└── src/test/resources/
-    ├── bpmn/
-    │   ├── conformance/
-    │   └── regression/
-    └── config/
+activiti-spring-conformance-tests/          (parent POM, aggregator)
+├── activiti-spring-conformance-util/       (shared test infrastructure)
+├── activiti-spring-conformance-set0/       (basic process & task runtime)
+├── activiti-spring-conformance-set1/       (service tasks)
+├── activiti-spring-conformance-set2/       (user task assignments)
+├── activiti-spring-conformance-set3/       (user task candidates)
+├── activiti-spring-conformance-set4/       (gateways)
+├── activiti-spring-conformance-set5/       (call activities)
+├── activiti-spring-conformance-variables/  (process & task variables)
+└── activiti-spring-conformance-signals/    (signal events)
 ```
 
----
+The parent POM sets `<packaging>pom</packaging>` and declares all submodules. Deployment is skipped (`maven.deploy.skip=true`).
 
-## Architecture
+## Shared Infrastructure — `activiti-spring-conformance-util`
 
-### Test Execution Pipeline
+This submodule provides the common test configuration used by every conformance set.
 
-```
-Test Suite Selection
-     │
-     ▼
-┌─────────────┐
-│ Test        │
-│ Configuration│
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Spring      │
-│ Context     │
-│ Setup       │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Test        │
-│ Execution   │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Result      │
-│ Validation  │
-└──────┬──────┘
-       │
-       ▼
-Test Report
-```
+### `RuntimeTestConfiguration`
 
-### Component Diagram
+An `@AutoConfiguration` / `@TestConfiguration` class that produces the following beans:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│              Conformance Test Framework                      │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐                 │
-│  │ Test            │  │ Test            │                 │
-│  │ Runner          │  │ Executor        │                 │
-│  └────────┬────────┘  └────────┬────────┘                 │
-│           │                    │                           │
-│           └────────┬───────────┘                           │
-│                    │                                       │
-│                    ▼                                       │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Test Suites                              │  │
-│  │  - ConformanceTests                                  │  │
-│  │  - RegressionTests                                   │  │
-│  │  - PerformanceTests                                  │  │
-│  │  - IntegrationTests                                  │  │
-│  └─────────────────────────────────────────────────────┘  │
-│                          │                                  │
-│                          ▼                                  │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Test Fixtures                            │  │
-│  │  - BPMN models                                       │  │
-│  │  - Test data                                         │  │
-│  │  - Spring configuration                              │  │
-│  └─────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+- **`SecurityUtil`** — wraps login/logout for test users.
+- **`UserDetailsService`** — in-memory user store with five preconfigured users:
+  | Username | Roles / Groups |
+  |----------|---------------|
+  | `user1` | `ROLE_ACTIVITI_USER`, `GROUP_group1` |
+  | `user2` | `ROLE_ACTIVITI_USER`, `GROUP_group2` |
+  | `user3` | `ROLE_ACTIVITI_USER`, `GROUP_group1`, `GROUP_group2` |
+  | `user4` | `ROLE_ACTIVITI_USER` |
+  | `admin` | `ROLE_ACTIVITI_ADMIN` |
+
+- **Event listeners** — one bean per runtime event type that appends every event to a static `List<RuntimeEvent> collectedEvents`. The full list of registered listeners:
+
+  | Bean Method | Event Type |
+  |-------------|------------|
+  | `bpmnActivityStartedListener` | `BPMNActivityStartedEvent` |
+  | `bpmnActivityCompletedListener` | `BPMNActivityCompletedEvent` |
+  | `bpmnActivityCancelledListener` | `BPMNActivityCancelledEvent` |
+  | `bpmnSequenceFlowTakenListener` | `BPMNSequenceFlowTakenEvent` |
+  | `processCreatedListener` | `ProcessCreatedEvent` |
+  | `processStartedListener` | `ProcessStartedEvent` |
+  | `processCompletedListener` | `ProcessCompletedEvent` |
+  | `processResumedListener` | `ProcessResumedEvent` |
+  | `processSuspendedListener` | `ProcessSuspendedEvent` |
+  | `processCancelledListener` | `ProcessCancelledEvent` |
+  | `variableCreatedEventListener` | `VariableCreatedEvent` |
+  | `variableDeletedEventListener` | `VariableDeletedEvent` |
+  | `variableUpdatedEventListener` | `VariableUpdatedEvent` |
+  | `taskCreatedEventListener` | `TaskCreatedEvent` |
+  | `taskUpdatedEventListener` | `TaskUpdatedEvent` |
+  | `taskCompletedEventListener` | `TaskCompletedEvent` |
+  | `taskSuspendedEventListener` | `TaskSuspendedEvent` |
+  | `taskAssignedEventListener` | `TaskAssignedEvent` |
+  | `taskCancelledEventListener` | `TaskCancelledEvent` |
+  | `bpmnSignalReceivedListener` | `BPMNSignalReceivedEvent` |
+
+Tests assert on `RuntimeTestConfiguration.collectedEvents` after each operation to verify the exact sequence and type of events fired.
+
+### `SecurityUtil`
+
+Helper that performs Spring Security login for a given username:
+
+- Calls `UserDetailsService.loadUserByUsername()`
+- Sets `SecurityContextHolder` with a custom `Authentication`
+- Calls the legacy `Authentication.setAuthenticatedUserId()`
+- Verifies the result via `SecurityManager.getAuthenticatedUserId()`
+
+**Key method:**
+```java
+public void logInAs(String username)
 ```
 
----
+### Spring Boot Auto-configuration
 
-## BPMN Conformance Suite
+The util module registers `RuntimeTestConfiguration` via:
 
-### Conformance Test Base
+```
+META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+→ org.activiti.spring.conformance.util.RuntimeTestConfiguration
+```
+
+### Dependencies
+
+The util module depends on:
+
+- `activiti-api-process-runtime`
+- `activiti-api-task-runtime`
+- `activiti-api-runtime-shared`
+- `activiti-api-task-model`
+- `activiti-api-process-model`
+- `activiti-api-model-shared`
+- `activiti-spring-identity`
+- `activiti-engine`
+- `activiti-spring-boot-starter`
+- `spring-boot-starter-web`
+- `spring-boot-starter-security`
+- `slf4j-api`
+- `h2` (test scope)
+- `spring-boot-starter-test`
+
+## Conformance Sets
+
+Each set (set0–set5) is an independent Spring Boot test application. Every set follows the same pattern:
+
+- Contains a minimal `@SpringBootApplication` entry point
+- Tests are `@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)`
+- Tests log in as a preconfigured user, perform API operations, and assert event sequences against `RuntimeTestConfiguration.collectedEvents`
+- BPMN process definitions are deployed as classpath resources (`src/test/resources/processes/`)
+
+### Set 0 — Basic Process & Task Runtime
+
+**Package:** `org.activiti.spring.conformance.set0`
+
+**Test classes:**
+- `ConformanceBasicProcessRuntimeTest` — validates `ProcessRuntime.configuration()`, `processDefinitions()` pagination, and process definition metadata.
+- `ConformanceBasicProcessInformationTest` — queries deployed process definitions and verifies name/version fields.
+- `ConformanceBasicGenericTaskTest` — starts a process with only generic BPMN tasks (no human interaction) and asserts 11 events in exact order (create, start, activity start/complete ×3, sequence flow ×2, complete), ending in `COMPLETED` status.
+- `ProcessInstanceOperationsTest` — tests `start()`, `delete()`, `suspend()`, and `resume()` on process instances; asserts full event chains including `TASK_CANCELLED`, `ACTIVITY_CANCELLED`, `PROCESS_CANCELLED`, `PROCESS_SUSPENDED`, `TASK_SUSPENDED`, and `PROCESS_RESUMED`.
+
+**Process definitions:**
+- `Process Information.bpmn20.xml`
+- `Process with Generic  BPMN Task.bpmn20.xml`
+- `UserTask with no User or Group Assignment.bpmn20.xml`
+
+### Set 1 — Service Tasks
+
+**Package:** `org.activiti.spring.conformance.set1`
+
+**Test classes:**
+- `ConformanceBasicProcessRuntimeTest` — basic runtime verification.
+- `ConformanceServiceTaskTest` — starts a process containing a service task, verifies synchronous connector execution, inspects the `IntegrationContext` on the resulting `ProcessInstance` (business key, process definition ID/key/version, client ID/name/type), and asserts the full 11-event sequence.
+- `ConformanceServiceTaskModifyVariableTest` — verifies that a service task connector can modify process variables.
+
+**Process definitions:**
+- `ServiceTask with Implementation.bpmn20.xml`
+- `ServiceTask with Implementation2.bpmn20.xml`
+
+**Note:** Set 1 also depends on `activiti-core-test-local-runtime` for `ProcessOperations` / `TaskOperations` fluent test helpers.
+
+### Set 2 — User Task Assignments
+
+**Package:** `org.activiti.spring.conformance.set2`
+
+**Test classes:**
+- `ConformanceBasicProcessRuntimeTest`
+- `UserTaskAssigneeRuntimeTest` — user task with a direct assignee.
+- `UserTaskAssigneeDeleteRuntimeTest` — assignment deletion scenarios.
+- `UserTaskCandidateUserRuntimeTest` — candidate user assignment.
+- `UserTaskCandidateGroupRuntimeTest` — candidate group assignment.
+- `UserTaskCandidateDeleteRuntimeTest` — candidate deletion.
+- `UserTaskNoCandidateRuntimeTest` — user task with no assignment at all.
+
+**Process definitions:**
+- `UserTask with Assignee.bpmn20.xml`
+- `UserTask with CandidateUser.bpmn20.xml`
+- `UserTask with CandidateGroup.bpmn20.xml`
+- `UserTask with no User or Group Assignment.bpmn20.xml`
+
+### Set 3 — User Task Candidate Visibility
+
+**Package:** `org.activiti.spring.conformance.set3`
+
+**Test classes:**
+- `ConformanceBasicProcessRuntimeTest`
+- `UserTaskCandidateGroupsTest` — multi-group candidate visibility.
+- `UserTaskCandidateGroupAndAssigneeTest` — combined candidate group and assignee.
+- `UserTaskCandidateVisibilityTest` — visibility rules for candidate tasks.
+
+**Process definitions:**
+- `user-task-candidate-group.bpmn20.xml`
+- `user-task-group1-followed-group2.bpmn20.xml`
+- `user-task-assignee-followed-group1.bpmn20.xml`
+
+### Set 4 — Gateways
+
+**Package:** `org.activiti.spring.conformance.set4`
+
+**Test classes:**
+- `ConformanceBasicProcessRuntimeTest`
+- `BasicExclusiveGatewayTest` — starts a process with an exclusive gateway; uses `ProcessOperations` and `TaskOperations` to complete tasks and asserts gateway start/complete events, sequence flow taken events, and task creation/assignment downstream of the gateway.
+- `BasicExclusiveGatewayErrorTest` — exclusive gateway with expression evaluation error path.
+- `BasicInclusiveGatewayTest` — inclusive gateway routing.
+- `BasicParallelGatewayTest` — parallel split/join.
+- `BasicParallelGatewayGroupAssignmentsTest` — parallel gateway combined with group task assignments.
+
+**Process definitions:**
+- `basic-exclusive-gateway.bpmn20.xml`
+- `basic-exclusive-gateway-expr-error.bpmn20.xml`
+- `basic-Inclusive-gateway.bpmn20.xml`
+- `basic-parallel-gateway.bpmn20.xml`
+- `basic-parallel-gateway-groups.bpmn20.xml`
+
+### Set 5 — Call Activities
+
+**Package:** `org.activiti.spring.conformance.set5`
+
+**Test classes:**
+- `ConformanceBasicProcessRuntimeTest`
+- `BasicCallActivityTest` — call activity that invokes a sub-process.
+- `BasicCallActivityAndServiceTaskTest` — call activity combined with a service task in the sub-process.
+
+**Process definitions:**
+- `basic-call-activity.bpmn20.xml`
+- `basic-call-activity-service-task.bpmn20.xml`
+- `sub-process-a.bpmn20.xml`
+- `sub-process-b.bpmn20.xml`
+
+## Variables Submodule
+
+**Artifact:** `activiti-spring-conformance-variables`
+**Package:** `org.activiti.spring.conformance.variables`
+
+**Test classes:**
+- `ProcessVariablesTest` — starts a process, calls `ProcessRuntime.setVariables()` with a mix of string and integer values, retrieves variables via `ProcessRuntime.variables()`, and asserts:
+  - Variable names and values match
+  - `processInstanceId` is set, `taskId` is null (not a task variable)
+  - `isTaskVariable()` returns `false`
+  - Variable types are `"string"` and `"integer"` respectively
+- `TaskVariablesTest` — variable operations scoped to tasks.
+
+**Process definitions:**
+- `user-task-assignee-followed-group1.bpmn20.xml`
+- `user-task-candidate-group.bpmn20.xml`
+- `user-task-group1-followed-group2.bpmn20.xml`
+
+## Signals Submodule
+
+**Artifact:** `activiti-spring-conformance-signals`
+**Package:** `org.activiti.spring.conformance.signals`
+
+**Test class:** `SignalThrowCatchTest`
+
+Tests five signal scenarios:
+
+| Test Method | Description |
+|-------------|-------------|
+| `testProcessWithThrowSignal` | Process with an intermediate throw signal event — verifies the throw event fires and process completes. |
+| `testProcessWithIntermediateCatchEventSignal` | Process paused at an intermediate catch signal event — then `ProcessRuntime.signal()` is called to deliver a signal with variables; asserts `SIGNAL_RECEIVED`, variable creation, activity completion, and process completion. |
+| `testProcessesWithThrowCatchSignal` | Two processes: one throws a signal, one catches it — verifies the signal propagates from the thrower to the catcher and both processes complete. |
+| `testProcessWithBoundaryEventSignal` | User task with a boundary signal catch event — signal delivery cancels the task and fires `TASK_CANCELLED`, `ACTIVITY_CANCELLED`, then continues to the boundary's downstream flow. |
+| `testProcessStartedBySignal` | Process started by a signal (signal start event) — `ProcessRuntime.signal()` creates and starts the process in one operation. |
+
+**Process definitions:**
+- `SignalThrowEventProcess.bpmn20.xml`
+- `SignalCatchEventProcess.bpmn20.xml`
+- `SignalStartEventProcess.bpmn20.xml`
+- `ProcessWithBoundarySignal.bpmn20.xml`
+
+## Common Test Patterns
+
+Every conformance test follows a consistent structure:
 
 ```java
-@SpringBootTest
-@AutoConfigureTestDatabase
-public abstract class BpmnConformanceTest {
-    
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+public class SomeConformanceTest {
+
     @Autowired
-    protected ProcessEngine processEngine;
-    
+    private ProcessRuntime processRuntime;
+
     @Autowired
-    protected RuntimeService runtimeService;
-    
+    private TaskRuntime taskRuntime;
+
     @Autowired
-    protected TaskService taskService;
-    
-    @Autowired
-    protected RepositoryService repositoryService;
-    
-    @Autowired
-    protected HistoryService historyService;
-    
-    protected void deployProcess(String bpmnResource) {
-        repositoryService.createDeployment()
-            .addClasspathResource(bpmnResource)
-            .deploy();
-    }
-    
-    protected void assertProcessCompleted(String processInstanceId) {
-        ProcessInstance instance = runtimeService
-            .createProcessInstanceQuery()
-            .processInstanceId(processInstanceId)
-            .singleResult();
-        
-        assertNull("Process should be completed", instance);
-    }
-    
-    protected void assertTaskCompleted(String taskId) {
-        Task task = taskService.createTaskQuery()
-            .taskId(taskId)
-            .singleResult();
-        
-        assertNull("Task should be completed", task);
-    }
-}
-```
+    private SecurityUtil securityUtil;
 
-### Conformance Test Cases
-
-```java
-public class BpmnConformanceTestSuite extends BpmnConformanceTest {
-    
     @Test
-    public void testSequentialFlow() {
-        deployProcess("bpmn/conformance/sequential-flow.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("sequentialFlow");
-        
-        // Should complete automatically
-        assertProcessCompleted(instance.getId());
-    }
-    
-    @Test
-    public void testExclusiveGateway() {
-        deployProcess("bpmn/conformance/exclusive-gateway.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("exclusiveGateway", 
-                Collections.singletonMap("condition", "true"));
-        
-        assertProcessCompleted(instance.getId());
-    }
-    
-    @Test
-    public void testParallelGateway() {
-        deployProcess("bpmn/conformance/parallel-gateway.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("parallelGateway");
-        
-        // Wait for parallel branches to complete
-        waitForProcessCompletion(instance.getId());
-    }
-    
-    @Test
-    public void testUserTask() {
-        deployProcess("bpmn/conformance/user-task.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("userTask");
-        
-        Task task = taskService.createTaskQuery()
-            .processInstanceId(instance.getId())
-            .singleResult();
-        
-        taskService.complete(task.getId());
-        
-        assertProcessCompleted(instance.getId());
-    }
-    
-    @Test
-    public void testServiceTask() {
-        deployProcess("bpmn/conformance/service-task.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("serviceTask");
-        
-        assertProcessCompleted(instance.getId());
-    }
-    
-    @Test
-    public void testTimerEvent() {
-        deployProcess("bpmn/conformance/timer-event.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("timerEvent");
-        
-        // Advance time
-        Clock.getCurrent().addTime(Duration.ofSeconds(10));
-        
-        // Trigger job executor
-        ManagementService managementService = 
-            processEngine.getManagementService();
-        managementService.executeJobs();
-        
-        assertProcessCompleted(instance.getId());
-    }
-}
-```
+    public void shouldDoSomething() {
+        // 1. Log in as a preconfigured user
+        securityUtil.logInAs("user1");
 
----
-
-## Test Framework
-
-### Test Runner
-
-```java
-public class ConformanceTestRunner {
-    
-    private final List<TestSuite> suites;
-    private final TestResultCollector collector;
-    
-    public ConformanceTestRunner(List<TestSuite> suites) {
-        this.suites = suites;
-        this.collector = new TestResultCollector();
-    }
-    
-    public TestReport run() {
-        for (TestSuite suite : suites) {
-            runSuite(suite);
-        }
-        
-        return collector.generateReport();
-    }
-    
-    private void runSuite(TestSuite suite) {
-        log.info("Running suite: {}", suite.getName());
-        
-        for (TestCase testCase : suite.getTestCases()) {
-            try {
-                testCase.execute();
-                collector.recordPass(testCase);
-            } catch (Exception e) {
-                collector.recordFail(testCase, e);
-            }
-        }
-    }
-}
-```
-
-### Test Result Collector
-
-```java
-public class TestResultCollector {
-    
-    private final List<TestResult> results = new ArrayList<>();
-    
-    public void recordPass(TestCase testCase) {
-        results.add(TestResult.builder()
-            .testCase(testCase)
-            .status(Status.PASS)
-            .duration(System.currentTimeMillis() - testCase.getStartTime())
-            .build());
-    }
-    
-    public void recordFail(TestCase testCase, Exception exception) {
-        results.add(TestResult.builder()
-            .testCase(testCase)
-            .status(Status.FAIL)
-            .exception(exception)
-            .duration(System.currentTimeMillis() - testCase.getStartTime())
-            .build());
-    }
-    
-    public TestReport generateReport() {
-        int passed = (int) results.stream()
-            .filter(r -> r.getStatus() == Status.PASS)
-            .count();
-        
-        int failed = (int) results.stream()
-            .filter(r -> r.getStatus() == Status.FAIL)
-            .count();
-        
-        return TestReport.builder()
-            .totalTests(results.size())
-            .passed(passed)
-            .failed(failed)
-            .results(results)
-            .build();
-    }
-}
-```
-
----
-
-## Test Cases
-
-### Regression Test Cases
-
-```java
-public class RegressionTestSuite {
-    
-    @Test
-    public void testIssue123_VariableScope() {
-        // Regression test for issue #123
-        deployProcess("bpmn/regression/issue-123.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("variableScope", 
-                Collections.singletonMap("globalVar", "value"));
-        
-        Task task = taskService.createTaskQuery()
-            .processInstanceId(instance.getId())
-            .singleResult();
-        
-        // Variable should be accessible
-        String value = (String) taskService.getVariable(task.getId(), "globalVar");
-        assertEquals("value", value);
-    }
-    
-    @Test
-    public void testIssue456_MultiInstance() {
-        // Regression test for issue #456
-        deployProcess("bpmn/regression/issue-456.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("multiInstance",
-                Collections.singletonMap("items", Arrays.asList(1, 2, 3)));
-        
-        // Should create 3 instances
-        List<Task> tasks = taskService.createTaskQuery()
-            .processInstanceId(instance.getId())
-            .list();
-        
-        assertEquals(3, tasks.size());
-    }
-}
-```
-
-### Performance Test Cases
-
-```java
-public class PerformanceTestSuite {
-    
-    @Test
-    public void benchmarkProcessStart() {
-        deployProcess("bpmn/performance/simple-process.bpmn");
-        
-        int iterations = 1000;
-        
-        long startTime = System.currentTimeMillis();
-        
-        for (int i = 0; i < iterations; i++) {
-            runtimeService.startProcessInstanceByKey("simpleProcess");
-        }
-        
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        
-        double avgTime = (double) duration / iterations;
-        
-        log.info("Average process start time: {} ms", avgTime);
-        
-        // Assert performance threshold
-        assertTrue("Process start too slow", avgTime < 100);
-    }
-    
-    @Test
-    public void benchmarkTaskCompletion() {
-        deployProcess("bpmn/performance/task-process.bpmn");
-        
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceByKey("taskProcess");
-        
-        Task task = taskService.createTaskQuery()
-            .processInstanceId(instance.getId())
-            .singleResult();
-        
-        int iterations = 100;
-        
-        long startTime = System.currentTimeMillis();
-        
-        for (int i = 0; i < iterations; i++) {
-            taskService.complete(task.getId());
-            // Reset for next iteration
-        }
-        
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        
-        double avgTime = (double) duration / iterations;
-        
-        log.info("Average task completion time: {} ms", avgTime);
-        
-        assertTrue("Task completion too slow", avgTime < 50);
-    }
-}
-```
-
----
-
-## Regression Testing
-
-### Regression Test Suite
-
-```java
-@SpringBootTest
-public class RegressionTestSuite {
-    
-    @Autowired
-    private RuntimeService runtimeService;
-    
-    @Autowired
-    private TaskService taskService;
-    
-    @BeforeAll
-    static void setup() {
-        // Setup test data
-    }
-    
-    @Test
-    void testAllRegressionCases() {
-        List<String> regressionTests = Arrays.asList(
-            "bpmn/regression/variable-scope.bpmn",
-            "bpmn/regression/multi-instance.bpmn",
-            "bpmn/regression/event-subprocess.bpmn",
-            "bpmn/regression/call-activity.bpmn"
+        // 2. Perform API operation
+        ProcessInstance pi = processRuntime.start(
+            ProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("myProcess")
+                .withBusinessKey("bk")
+                .withName("name")
+                .build()
         );
-        
-        for (String test : regressionTests) {
-            runRegressionTest(test);
-        }
+
+        // 3. Assert state
+        assertThat(pi.getStatus()).isEqualTo(ProcessInstanceStatus.RUNNING);
+
+        // 4. Assert exact event sequence
+        assertThat(RuntimeTestConfiguration.collectedEvents)
+            .extracting(RuntimeEvent::getEventType)
+            .containsExactly(
+                ProcessRuntimeEvent.ProcessEvents.PROCESS_CREATED,
+                ProcessRuntimeEvent.ProcessEvents.PROCESS_STARTED,
+                // ... more events
+            );
     }
-    
-    private void runRegressionTest(String bpmnFile) {
-        deployProcess(bpmnFile);
-        // Execute test
-        // Validate results
-    }
-}
-```
 
----
-
-## Performance Testing
-
-### Performance Benchmark
-
-```java
-public class PerformanceBenchmark {
-    
-    @Test
-    public void benchmarkLargeProcess() {
-        deployProcess("bpmn/performance/large-process.bpmn");
-        
-        int instances = 100;
-        
-        List<ProcessInstance> processInstances = new ArrayList<>();
-        
-        long startTime = System.currentTimeMillis();
-        
-        for (int i = 0; i < instances; i++) {
-            ProcessInstance instance = runtimeService
-                .startProcessInstanceByKey("largeProcess");
-            processInstances.add(instance);
-        }
-        
-        long deploymentTime = System.currentTimeMillis() - startTime;
-        
-        // Complete all tasks
-        startTime = System.currentTimeMillis();
-        
-        for (ProcessInstance instance : processInstances) {
-            completeAllTasks(instance.getId());
-        }
-        
-        long executionTime = System.currentTimeMillis() - startTime;
-        
-        log.info("Deployment time: {} ms", deploymentTime);
-        log.info("Execution time: {} ms", executionTime);
+    @AfterEach
+    public void cleanup() {
+        RuntimeTestConfiguration.collectedEvents.clear();
     }
 }
 ```
 
----
+## Running the Tests
 
-## Usage Examples
-
-### Running Conformance Tests
+The parent module skips deployment; each submodule is a standalone Spring Boot test application.
 
 ```bash
 # Run all conformance tests
-mvn test -Dtest=BpmnConformanceTestSuite
+mvn test -pl activiti-core/activiti-spring-conformance-tests -am
 
-# Run specific test
-mvn test -Dtest=BpmnConformanceTestSuite#testSequentialFlow
+# Run a single set
+mvn test -pl activiti-core/activiti-spring-conformance-tests/activiti-spring-conformance-set4
 
-# Run regression tests
-mvn test -Dtest=RegressionTestSuite
-
-# Run performance tests
-mvn test -Dtest=PerformanceTestSuite
+# Run a single test class
+mvn test -pl activiti-core/activiti-spring-conformance-tests/activiti-spring-conformance-set4 \
+    -Dtest=BasicExclusiveGatewayTest
 ```
 
-### Running in CI/CD
+## Related Documentation
 
-```yaml
-# .github/workflows/test.yml
-name: Conformance Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run conformance tests
-        run: mvn test -Dtest=*Conformance*
-      - name: Run regression tests
-        run: mvn test -Dtest=*Regression*
-```
+- [Process Runtime API](../activiti-api/process-runtime.md)
+- [Task Runtime API](../activiti-api/task-runtime.md)
 
 ---
 
-## Best Practices
-
-### 1. Isolate Test Data
-
-```java
-@BeforeEach
-void setup() {
-    // Clean up before each test
-    repositoryService.createDeploymentQuery()
-        .list()
-        .forEach(d -> repositoryService.deleteDeployment(d.getId(), true));
-}
-```
-
-### 2. Use Descriptive Test Names
-
-```java
-@Test
-void testExclusiveGatewayTakesTruePathWhenConditionIsTrue() {
-    // Clear test name
-}
-```
-
-### 3. Validate All Outcomes
-
-```java
-@Test
-void testProcessCompletion() {
-    ProcessInstance instance = runtimeService
-        .startProcessInstanceByKey("testProcess");
-    
-    assertProcessCompleted(instance.getId());
-    
-    // Also check history
-    HistoricProcessInstance historic = historyService
-        .createHistoricProcessInstanceQuery()
-        .processInstanceId(instance.getId())
-        .singleResult();
-    
-        assertNotNull(historic);
-        assertEquals("COMPLETED", historic.getState());
-}
-```
-
----
-
-## API Reference
-
-### Key Classes
-
-- `BpmnConformanceTest` - Base conformance test
-- `ConformanceTestRunner` - Test execution
-- `TestResultCollector` - Result collection
-- `RegressionTestSuite` - Regression tests
-- `PerformanceTestSuite` - Performance tests
-
-### Key Methods
-
-```java
-// Test execution
-void run()
-TestReport generateReport()
-
-// Test setup
-void deployProcess(String resource)
-void setupTestEnvironment()
-
-// Assertions
-void assertProcessCompleted(String instanceId)
-void assertTaskCompleted(String taskId)
-```
-
----
-
-## See Also
-
-- [Parent Module Documentation](../overview.md)
-- [Engine Documentation](../engine-api/README.md)
-- [Spring Integration](../engine-api/spring-integration.md)
+**Source:** `activiti-core/activiti-spring-conformance-tests/`

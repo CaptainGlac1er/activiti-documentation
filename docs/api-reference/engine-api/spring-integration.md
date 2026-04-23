@@ -1,7 +1,7 @@
 ---
 sidebar_label: Spring Integration
 slug: /activiti-core/spring
-description: Spring Framework integration for Activiti including transaction management, bean factory integration, and event publishing.
+description: Spring Framework integration for Activiti including transaction management, bean factory integration, and expression language.
 ---
 
 # Activiti Spring Module - Technical Documentation
@@ -19,11 +19,10 @@ description: Spring Framework integration for Activiti including transaction man
 - [Transaction Management](#transaction-management)
 - [Bean Factory Integration](#bean-factory-integration)
 - [Expression Language](#expression-language)
-- [Event Integration](#event-integration)
+- [Auto-Deployment](#auto-deployment)
 - [Async Execution](#async-execution)
 - [Configuration Examples](#configuration-examples)
 - [Best Practices](#best-practices)
-- [Common Issues](#common-issues)
 - [Testing](#testing)
 - [API Reference](#api-reference)
 
@@ -35,12 +34,12 @@ The **activiti-spring** module provides seamless integration between Activiti wo
 
 ### Key Features
 
-- **Spring ProcessEngineConfiguration**: Full Spring integration
-- **Transaction Synchronization**: JTA and Spring transaction support
+- **SpringProcessEngineConfiguration**: Full Spring integration
+- **Transaction Management**: Spring transaction synchronization
 - **Bean Factory Integration**: Access Spring beans from processes
-- **Expression Language**: Spring EL support
-- **Event Publishing**: Spring ApplicationEvent integration
-- **Auto-Configuration**: Spring Boot ready
+- **Expression Language**: Spring ApplicationContext EL support
+- **Auto-Deployment**: Automatic deployment of BPMN resources
+- **Async Execution**: Spring TaskExecutor-based job execution
 
 ### Module Structure
 
@@ -48,16 +47,33 @@ The **activiti-spring** module provides seamless integration between Activiti wo
 activiti-spring/
 ├── src/main/java/org/activiti/spring/
 │   ├── SpringProcessEngineConfiguration.java
-│   ├── SpringBeanFactoryProxyMap.java
-│   ├── transaction/
-│   │   ├── SpringTransactionContext.java
-│   │   └── SpringTransactionSynchronization.java
-│   ├── el/
-│   │   └── SpringExpressionManager.java
-│   └── event/
-│       └── SpringEventPublisher.java
+│   ├── ProcessEngineFactoryBean.java
+│   ├── SpringTransactionContext.java
+│   ├── SpringTransactionContextFactory.java
+│   ├── SpringTransactionInterceptor.java
+│   ├── SpringExpressionManager.java
+│   ├── ApplicationContextElResolver.java
+│   ├── SpringConfigurationHelper.java
+│   ├── SpringAsyncExecutor.java
+│   ├── SpringRejectedJobsHandler.java
+│   ├── SpringCallerRunsRejectedJobsHandler.java
+│   ├── SpringEntityManagerSessionFactory.java
+│   ├── SpringAdvancedBusinessCalendarManagerFactory.java
+│   ├── autodeployment/
+│   │   ├── AutoDeploymentStrategy.java
+│   │   ├── AbstractAutoDeploymentStrategy.java
+│   │   ├── DefaultAutoDeploymentStrategy.java
+│   │   ├── SingleResourceAutoDeploymentStrategy.java
+│   │   ├── ResourceParentFolderAutoDeploymentStrategy.java
+│   │   ├── FailOnNoProcessAutoDeploymentStrategy.java
+│   │   └── NeverFailAutoDeploymentStrategy.java
+│   └── impl/test/
+│       ├── SpringActivitiTestCase.java
+│       └── CleanTestExecutionListener.java
 └── src/test/java/
 ```
+
+Note: `SpringBeanFactoryProxyMap` resides in `org.activiti.engine.impl.cfg` (the `activiti-engine` module), not in `org.activiti.spring`.
 
 ---
 
@@ -65,112 +81,137 @@ activiti-spring/
 
 ### SpringProcessEngineConfiguration
 
-**Purpose:** Extends ProcessEngineConfiguration with Spring-specific features and integration.
+**Purpose:** Extends ProcessEngineConfigurationImpl with Spring-specific features and integration.
 
 **Responsibilities:**
 - Integrating with Spring's bean factory
-- Managing Spring transaction synchronization
-- Configuring Spring expression language
-- Handling Spring event publishing
-- Managing Spring resource loading
-- Providing Spring-aware command execution
+- Managing Spring transaction synchronization via `SpringTransactionInterceptor` and `SpringTransactionContext`
+- Configuring Spring expression language through `SpringExpressionManager`
+- Auto-deploying BPMN resources from Spring Resource arrays
+- Wrapping DataSource in Spring's `TransactionAwareDataSourceProxy`
 
 **Key Properties:**
-- `beanFactory` - Spring ConfigurableListableBeanFactory
 - `transactionManager` - Spring PlatformTransactionManager
-- `expressionManager` - Spring ExpressionManager
-- `eventPublisher` - Spring ApplicationEventPublisher
+- `applicationContext` - Spring ApplicationContext
+- `deploymentName` - Name for auto-deployment (default: "SpringAutoDeployment")
+- `deploymentResources` - Array of Spring Resources to auto-deploy
+- `deploymentMode` - Auto-deployment strategy mode (default, single-resource, etc.)
+- `transactionSynchronizationAdapterOrder` - Ordering for transaction synchronization
 
 **Key Methods:**
-- `setBeanFactory(ConfigurableListableBeanFactory)` - Inject bean factory
 - `setTransactionManager(PlatformTransactionManager)` - Set transaction manager
-- `createCommandExecutor()` - Create Spring-aware executor
-- `buildProcessEngine()` - Build engine with Spring integration
+- `setDeploymentResources(Resource[])` - Set resources to auto-deploy
+- `setDeploymentMode(String)` - Set auto-deployment strategy mode
+- `setTransactionSynchronizationAdapterOrder(Integer)` - Set synchronization order
+- `buildProcessEngine()` - Build engine with Spring integration and auto-deploy resources
+- `createTransactionInterceptor()` - Creates `SpringTransactionInterceptor`
+- `initTransactionContextFactory()` - Initializes `SpringTransactionContextFactory`
+- `setDataSource(DataSource)` - Wraps DataSource in `TransactionAwareDataSourceProxy`
 
 **When to Use:** Instead of StandaloneProcessEngineConfiguration when using Spring. This is the recommended configuration for Spring applications.
 
 **Design Pattern:** Template Method - extends base configuration with Spring features
 
-**Important:** Must have a bean factory set for Spring integration to work
+**Important:** Must have a transaction manager set for Spring transaction integration to work
+
+---
+
+### ProcessEngineFactoryBean
+
+**Purpose:** Spring FactoryBean that creates and configures a ProcessEngine instance.
+
+**Responsibilities:**
+- Creating the ProcessEngine bean for Spring context
+- Configuring the expression manager with Spring integration
+- Setting up SpringBeanFactoryProxyMap for bean access
+- Detecting and enabling externally managed transactions
+
+**Key Properties:**
+- `processEngineConfiguration` - ProcessEngineConfigurationImpl instance
+
+**Key Methods:**
+- `getObject()` - Returns the configured ProcessEngine
+- `setProcessEngineConfiguration(ProcessEngineConfigurationImpl)` - Inject configuration
+- `destroy()` - Closes the process engine on context shutdown
+
+**When to Use:** With traditional Spring XML or Java configuration where you want Spring to manage the ProcessEngine lifecycle.
+
+**Design Pattern:** FactoryBean pattern
+
+**Important:** Automatically configures `SpringExpressionManager` and `SpringBeanFactoryProxyMap` if not already set
 
 ---
 
 ### SpringTransactionContext
 
-**Purpose:** Manages transactions using Spring's transaction infrastructure.
+**Purpose:** Integrates Activiti's transaction context with Spring's transaction management. Transactions are managed entirely by Spring; this class delegates to Spring rather than managing transactions directly.
 
 **Responsibilities:**
-- Integrating with Spring's transaction manager
-- Synchronizing with Spring transaction lifecycle
-- Managing transaction status
-- Handling commit and rollback
-- Supporting transaction propagation
-- Managing transaction listeners
+- Delegating commit to Spring (no-op, since Spring manages the transaction)
+- Marking rollback when requested
+- Registering transaction listeners with Spring's `TransactionSynchronizationManager`
 
 **Key Methods:**
-- `beginTransaction()` - Begin Spring transaction
-- `commitTransaction()` - Commit via Spring manager
-- `rollbackTransaction()` - Rollback via Spring manager
-- `isActive()` - Check if transaction active
-- `getStatus()` - Get transaction status
+- `commit()` - No-op. Transaction is managed by Spring.
+- `rollback()` - Marks the current Spring transaction as rollback-only.
+- `addTransactionListener(TransactionState state, TransactionListener listener)` - Registers a callback with Spring's `TransactionSynchronizationManager` for the given state (COMMITTING, COMMITTED, ROLLINGBACK, ROLLED_BACK).
 
-**When to Use:** Automatically used when SpringProcessEngineConfiguration is configured with a transaction manager.
+**When to Use:** Automatically used when `SpringProcessEngineConfiguration` is configured with a transaction manager. Created by `SpringTransactionContextFactory`.
 
-**Design Pattern:** Transaction Script with Spring integration
+**Design Pattern:** Delegation to Spring's TransactionSynchronizationManager
 
-**Thread Safety:** Uses Spring's TransactionSynchronizationManager - thread-safe
+**Thread Safety:** Uses Spring's `TransactionSynchronizationManager` - thread-safe
+
+**Important:** Unlike standalone mode, transactions are NOT started, committed, or rolled back here. Spring controls the full transaction lifecycle.
 
 ---
 
-### SpringTransactionSynchronization
+### SpringTransactionContextFactory
 
-**Purpose:** Synchronizes Activiti operations with Spring transaction lifecycle.
-
-**Responsibilities:**
-- Registering callbacks with Spring transaction
-- Flushing jobs before commit
-- Publishing events after commit
-- Handling rollback scenarios
-- Managing transaction phases
-- Coordinating multiple resources
+**Purpose:** Factory for creating `SpringTransactionContext` instances.
 
 **Key Methods:**
-- `beforeCommit()` - Flush pending operations
-- `afterCommit()` - Publish events
-- `beforeRollback()` - Handle rollback prep
-- `afterRollback()` - Cleanup on rollback
-- `afterCompletion(int status)` - Post-transaction handling
+- `openTransactionContext(CommandContext)` - Creates a new `SpringTransactionContext`
 
-**When to Use:** Internally by SpringTransactionContext. Ensures proper transaction ordering.
+---
 
-**Design Pattern:** Callback pattern for transaction lifecycle
+### SpringTransactionInterceptor
 
-**Important:** Ensures jobs are executed before transaction commits
+**Purpose:** Command interceptor that wraps Activiti command execution in Spring transactions using `TransactionTemplate`.
+
+**Responsibilities:**
+- Creating a `TransactionTemplate` from the configured `PlatformTransactionManager`
+- Mapping Activiti's `TransactionPropagation` to Spring's propagation behavior
+- Executing the next command interceptor within the Spring transaction
+
+**Supported Propagation:**
+- `REQUIRED` - Default, joins existing or creates new transaction
+- `REQUIRES_NEW` - Suspends current, creates new transaction
+- `NOT_SUPPORTED` - Executes outside transaction
+
+**Important:** This replaces the standard `LoggingCommandInterceptor` when Spring integration is enabled.
 
 ---
 
 ### SpringBeanFactoryProxyMap
 
-**Purpose:** Provides access to Spring beans from within the workflow engine.
+**Package:** `org.activiti.engine.impl.cfg` (not `org.activiti.spring`)
+
+**Purpose:** Provides read-only access to Spring beans from within the workflow engine, implementing `Map<Object, Object>`.
 
 **Responsibilities:**
-- Resolving bean names to instances
-- Managing bean proxies
-- Handling bean lifecycle
-- Providing type-safe bean access
-- Caching bean references
-- Supporting lazy initialization
+- Resolving bean names to instances via `BeanFactory.getBean()`
+- Checking bean existence via `BeanFactory.containsBean()`
 
 **Key Methods:**
-- `getBean(String name)` - Get bean by name
-- `getBean(String name, Class<T> type)` - Get typed bean
-- `containsBean(String name)` - Check bean existence
-- `getBeansWithAnnotation(Class<?>)` - Find by annotation
-- `registerBean(String, Object)` - Register custom bean
+- `get(Object key)` - Returns bean by name (key must be String)
+- `containsKey(Object key)` - Checks if bean exists (key must be String)
 
-**When to Use:** Internally by expression language and delegate resolution. Allows processes to access Spring beans.
+**Unsupported Operations:** `keySet()`, `values()`, `entrySet()`, `size()`, `isEmpty()`, `put()`, `remove()`, `putAll()`, `clear()` all throw `ActivitiException`.
 
-**Design Pattern:** Proxy pattern for bean access
+**When to Use:** Used internally by expression evaluation and delegate resolution. Configured by `ProcessEngineFactoryBean` as the beans map.
+
+**Design Pattern:** Proxy pattern for read-only bean access
 
 **Thread Safety:** Thread-safe bean access from Spring container
 
@@ -178,105 +219,103 @@ activiti-spring/
 
 ### SpringExpressionManager
 
-**Purpose:** Provides Spring Expression Language (SpEL) support for workflow expressions.
+**Purpose:** Extends `ExpressionManager` to expose Spring ApplicationContext beans in workflow expressions.
 
 **Responsibilities:**
-- Evaluating SpEL expressions
-- Resolving beans in expressions
-- Managing expression context
-- Handling expression errors
-- Caching parsed expressions
-- Supporting custom functions
+- Adding the Spring ApplicationContext as an EL resolver
+- Optionally limiting exposed beans to a custom subset
 
 **Key Methods:**
-- `evaluate(String expression)` - Evaluate expression
-- `evaluate(String, Object rootObject)` - Evaluate with context
-- `parseExpression(String)` - Parse expression
-- `setBeanResolver(BeanResolver)` - Set bean resolver
-- `registerFunction(String, Method)` - Register custom function
+- Constructor `(ApplicationContext, Map<Object, Object>)` - If map is non-null, only those beans are exposed; otherwise the full ApplicationContext is available.
+- `addBeansResolver(CompositeELResolver)` - Overrides base to add `ApplicationContextElResolver` or `ReadOnlyMapELResolver`.
 
-**When to Use:** For evaluating expressions in BPMN (assignee, candidate users, conditions).
+**When to Use:** Automatically configured by `ProcessEngineFactoryBean` or when setting up Spring integration manually.
 
-**Design Pattern:** Interpreter pattern for expression evaluation
-
-**Example:** `${myService.getMethod()}` in BPMN uses this
+**Important:** This class does NOT have `evaluate()`, `parseExpression()`, `setBeanResolver()`, or `registerFunction()` methods. Expression evaluation is handled by the parent `ExpressionManager` (`createExpression()` and `getElContext()`).
 
 ---
 
-### SpringEventPublisher
+### ApplicationContextElResolver
 
-**Purpose:** Publishes Activiti events as Spring ApplicationEvents.
-
-**Responsibilities:**
-- Converting Activiti events to Spring events
-- Publishing via ApplicationEventPublisher
-- Managing event listeners
-- Handling event filtering
-- Supporting async event publishing
-- Integrating with Spring event system
+**Purpose:** EL resolver that looks up beans from the Spring `ApplicationContext`.
 
 **Key Methods:**
-- `publishEvent(RuntimeEvent)` - Publish Activiti event
-- `convertToSpringEvent(RuntimeEvent)` - Convert event type
-- `addListener(ApplicationListener)` - Add Spring listener
-- `publishAsync(RuntimeEvent)` - Publish asynchronously
-
-**When to Use:** Automatically when Spring integration is enabled. Allows Spring components to react to workflow events.
-
-**Design Pattern:** Publisher-Subscriber pattern
-
-**Benefit:** Enables loose coupling between workflow and business logic
+- `getValue(ELContext, Object base, Object property)` - Resolves bean names when base is null
+- `setValue(ELContext, Object base, Object property, Object value)` - Throws `ActivitiException` (beans are read-only)
+- `isReadOnly(ELContext, Object base, Object property)` - Returns true
 
 ---
 
-### SpringCommandExecutor
+### SpringConfigurationHelper
 
-**Purpose:** Executes commands within Spring transaction context.
-
-**Responsibilities:**
-- Wrapping commands in Spring transactions
-- Managing command context
-- Handling transaction propagation
-- Supporting read-only transactions
-- Managing interceptor chains
-- Providing Spring-aware execution
+**Purpose:** Utility for loading a ProcessEngine from a Spring XML configuration file.
 
 **Key Methods:**
-- `execute(Command<T>)` - Execute with Spring transaction
-- `createCommandContext()` - Create Spring context
-- `setTransactionPropagation(Propagation)` - Set propagation
-- `setReadOnly(boolean)` - Set read-only mode
-
-**When to Use:** Internally by SpringProcessEngineConfiguration. Ensures all operations use Spring transactions.
-
-**Design Pattern:** Command pattern with Spring transaction management
-
-**Important:** All service operations go through this executor
+- `buildProcessEngine(URL)` - Loads an XML config, creates the ApplicationContext, and returns the `ProcessEngine` bean.
 
 ---
 
-### ProcessEngineConfigurationImpl (Spring Extension)
+### SpringAsyncExecutor
 
-**Purpose:** Base configuration extended by SpringProcessEngineConfiguration.
+**Purpose:** Spring-based async job executor that uses `TaskExecutor` instead of raw threads.
 
 **Responsibilities:**
-- Providing base engine configuration
-- Managing database settings
-- Configuring job executor
-- Setting history options
-- Managing security settings
-- Providing extension points
+- Delegates job execution to a Spring `TaskExecutor`
+- Handles rejected jobs via `SpringRejectedJobsHandler`
 
 **Key Properties:**
-- `dataSource` - Database connection
-- `dbSchemaUpdate` - Auto-update setting
-- `historyLevel` - History tracking
-- `jobExecutorActivate` - Async execution
-- `authorizationManager` - Security manager
+- `taskExecutor` - Spring `TaskExecutor` for running jobs
+- `rejectedJobsHandler` - Handler for jobs rejected by the executor
 
-**When to Use:** As base class. SpringProcessEngineConfiguration extends this.
+**Key Methods:**
+- `setTaskExecutor(TaskExecutor)` - Inject the task executor
+- `setRejectedJobsHandler(SpringRejectedJobsHandler)` - Inject the rejected handler
+- `executeAsyncJob(Job)` - Executes a job through the task executor
 
-**Design Pattern:** Template Method - defines configuration structure
+**When to Use:** In application server environments where unmanaged threads are discouraged. Use a Spring-managed thread pool (e.g., `ThreadPoolTaskExecutor`).
+
+---
+
+### SpringRejectedJobsHandler
+
+**Purpose:** Strategy interface for handling jobs rejected by the async executor (e.g., when queue is full).
+
+**Note:** Deprecated. Activiti recommends against using the legacy Job Executor.
+
+**Key Methods:**
+- `jobRejected(AsyncExecutor, Job)` - Called when a job is rejected
+
+---
+
+### SpringCallerRunsRejectedJobsHandler
+
+**Purpose:** Default implementation of `SpringRejectedJobsHandler` that executes rejected jobs in the caller's thread.
+
+**Behavior:** Runs the rejected job synchronously in the calling thread, which may block job acquisition.
+
+---
+
+### SpringEntityManagerSessionFactory
+
+**Purpose:** Session factory for JPA `EntityManager` when managed by Spring.
+
+**Responsibilities:**
+- Retrieving the thread-bound `EntityManager` via `EntityManagerFactoryUtils`
+- Creating `EntityManagerSessionImpl` with Spring-managed entity manager
+
+**When to Use:** When the `EntityManagerFactory` is managed by Spring (e.g., via `LocalContainerEntityManagerFactoryBean`).
+
+---
+
+### SpringAdvancedBusinessCalendarManagerFactory
+
+**Purpose:** Creates a business calendar manager with support for advanced cycle calendars that handle daylight savings.
+
+**Key Methods:**
+- `getBusinessCalendarManager()` - Returns a `MapBusinessCalendarManager` with Duration, DueDate, and AdvancedCycle calendars configured
+- `setDefaultScheduleVersion(Integer)` / `setClock(Clock)` - Configuration properties
+
+**When to Use:** When processes use cycle date patterns and the server timezone differs from the scheduled timezone.
 
 ---
 
@@ -293,16 +332,17 @@ flowchart TD
                 Task["Task<br>Service"]
             end
         end
-        
+
         subgraph IntegrationLayer["Spring Integration Layer"]
             direction LR
             TxMgr["Transaction<br>Manager"]
             BeanFactory["Bean<br>Factory"]
-            EventPub["Event<br>Publisher"]
+            TxInterceptor["SpringTransactionInterceptor"]
         end
     end
-    
+
     SpringProcessEngine --> IntegrationLayer
+    TxInterceptor --> TxMgr
 ```
 
 ### Component Diagram
@@ -310,13 +350,19 @@ flowchart TD
 ```mermaid
 flowchart TD
     SpringCtx["Spring Application Context"]
-    Config["ProcessEngine<br>Configuration"]
-    TxSync["Transaction<br>Synchronization"]
-    BeanProxy["Bean Factory<br>Proxy"]
-    
-    SpringCtx --> Config
-    Config --> TxSync
-    Config --> BeanProxy
+    FactoryBean["ProcessEngineFactoryBean"]
+    Config["SpringProcessEngineConfiguration"]
+    TxInterceptor["SpringTransactionInterceptor"]
+    TxContextFactory["SpringTransactionContextFactory"]
+    ExprMgr["SpringExpressionManager"]
+    AutoDeploy["AutoDeploymentStrategy"]
+
+    SpringCtx --> FactoryBean
+    FactoryBean --> Config
+    Config --> TxInterceptor
+    Config --> TxContextFactory
+    Config --> ExprMgr
+    Config --> AutoDeploy
 ```
 
 ---
@@ -331,13 +377,13 @@ flowchart TD
 ```java
 @Component
 public class OrderService implements JavaDelegate {
-    
+
     @Autowired
     private EmailService emailService;
-    
+
     @Autowired
     private InventoryService inventoryService;
-    
+
     @Override
     public void execute(DelegateExecution execution) {
         // Use Spring beans directly
@@ -356,41 +402,41 @@ public class OrderService implements JavaDelegate {
 ```java
 @Service
 public class OrderProcessService {
-    
+
     @Autowired
     private RuntimeService runtimeService;
-    
+
     @Transactional
     public void createOrder(Order order) {
         // Database operation
         orderRepository.save(order);
-        
+
         // Workflow operation (same transaction)
         runtimeService.startProcessInstanceByKey("orderProcess");
     }
 }
 ```
 
-### 3. Event Publishing
+### 3. Accessing Spring Beans from BPMN Expressions
 
-**Problem:** How to publish Spring events from workflow?
+**Problem:** How to reference Spring beans in BPMN XML?
 
-**Solution:**
-```java
-@Component
-public class ProcessEventListener implements ActivitiEventListener {
-    
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
-    
-    @Override
-    public void onEvent(ActivitiEvent event) {
-        if (event.getType() == ProcessEvents.PROCESS_COMPLETED) {
-            eventPublisher.publishEvent(
-                new OrderCompletedEvent(this, event.getProcessInstance()));
-        }
-    }
-}
+**Solution:** Spring beans are available by name in EL expressions when `SpringExpressionManager` is configured.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:activiti="http://activiti.org/bpmn"
+             targetNamespace="Examples">
+
+  <process id="orderProcess">
+    <userTask id="approve" name="Approve Order"
+              activiti:assignee="${userService.getApprover()}"/>
+
+    <serviceTask id="sendEmail" name="Send Email"
+                 activiti:delegateExpression="${emailService}"/>
+  </process>
+</definitions>
 ```
 
 ---
@@ -400,27 +446,62 @@ public class ProcessEventListener implements ActivitiEventListener {
 ### SpringProcessEngineConfiguration
 
 ```java
-public class SpringProcessEngineConfiguration 
-    extends ProcessEngineConfigurationImpl {
-    
-    private ConfigurableListableBeanFactory beanFactory;
-    private PlatformTransactionManager transactionManager;
-    
+public class SpringProcessEngineConfiguration
+    extends ProcessEngineConfigurationImpl implements ApplicationContextAware {
+
+    protected PlatformTransactionManager transactionManager;
+    protected String deploymentName = "SpringAutoDeployment";
+    protected Resource[] deploymentResources = new Resource[0];
+    protected String deploymentMode = "default";
+    protected ApplicationContext applicationContext;
+
     @Override
-    public void setBeanFactory(ConfigurableListableBeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
-        // Integrate with Spring bean factory
+    public void setDataSource(DataSource dataSource) {
+        // Wraps in TransactionAwareDataSourceProxy
     }
-    
+
     @Override
-    public void setTransactionManager(PlatformTransactionManager transactionManager) {
-        this.transactionManager = transactionManager;
-        // Use Spring transaction manager
+    public CommandInterceptor createTransactionInterceptor() {
+        // Returns new SpringTransactionInterceptor(transactionManager)
     }
-    
+
     @Override
-    protected CommandExecutor createCommandExecutor() {
-        return new SpringCommandExecutor(this);
+    public void initTransactionContextFactory() {
+        // Returns new SpringTransactionContextFactory(transactionManager, ...)
+    }
+
+    @Override
+    public ProcessEngine buildProcessEngine() {
+        ProcessEngine processEngine = super.buildProcessEngine();
+        autoDeployResources(processEngine);
+        return processEngine;
+    }
+}
+```
+
+### ProcessEngineFactoryBean
+
+```java
+public class ProcessEngineFactoryBean
+    implements FactoryBean<ProcessEngine>, DisposableBean, ApplicationContextAware {
+
+    protected ProcessEngineConfigurationImpl processEngineConfiguration;
+    protected ApplicationContext applicationContext;
+
+    public ProcessEngine getObject() throws Exception {
+        configureExpressionManager();
+        configureExternallyManagedTransactions();
+
+        if (processEngineConfiguration.getBeans() == null) {
+            processEngineConfiguration.setBeans(
+                new SpringBeanFactoryProxyMap(applicationContext));
+        }
+
+        return processEngineConfiguration.buildProcessEngine();
+    }
+
+    public void destroy() throws Exception {
+        processEngine.close();
     }
 }
 ```
@@ -430,25 +511,25 @@ public class SpringProcessEngineConfiguration
 ```java
 @Configuration
 public class ActivitiConfig {
-    
+
     @Autowired
     private DataSource dataSource;
-    
+
     @Autowired
     private PlatformTransactionManager transactionManager;
-    
+
     @Bean
     public ProcessEngine processEngine() {
-        SpringProcessEngineConfiguration cfg = 
+        SpringProcessEngineConfiguration cfg =
             new SpringProcessEngineConfiguration();
-        
+
         cfg.setDataSource(dataSource);
         cfg.setTransactionManager(transactionManager);
         cfg.setDatabaseSchemaUpdate(
             ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
         cfg.setHistoryLevel(ProcessEngineConfiguration.HISTORY_FULL);
         cfg.setAsyncExecutorActivate(true);
-        
+
         return cfg.buildProcessEngine();
     }
 }
@@ -458,78 +539,33 @@ public class ActivitiConfig {
 
 ## Transaction Management
 
-### Spring Transaction Context
+### How Spring Transactions Work with Activiti
+
+Activiti's transaction management is fully delegated to Spring. The `SpringTransactionInterceptor` wraps each command in a Spring `TransactionTemplate`, and `SpringTransactionContext` provides no-op commit and rollback-only behavior.
 
 ```java
-public class SpringTransactionContext implements TransactionContext {
-    
-    private final PlatformTransactionManager transactionManager;
-    private TransactionStatus transactionStatus;
-    private final List<TransactionSynchronization> synchronizations = 
-        new ArrayList<>();
-    
-    @Override
-    public void beginTransaction() {
-        transactionStatus = transactionManager.getTransaction(
-            new DefaultTransactionDefinition());
-        
-        // Register synchronization
-        TransactionSynchronizationManager.registerSynchronization(
-            new SpringTransactionSynchronization(this));
-    }
-    
-    @Override
-    public void commitTransaction() {
-        // Notify synchronizations
-        for (TransactionSynchronization sync : synchronizations) {
-            sync.beforeCommit();
-            sync.afterCommit();
-        }
-        
-        // Commit transaction
-        transactionManager.commit(transactionStatus);
-    }
-    
-    @Override
-    public void rollbackTransaction() {
-        // Notify synchronizations
-        for (TransactionSynchronization sync : synchronizations) {
-            sync.beforeRollback();
-            sync.afterRollback();
-        }
-        
-        // Rollback transaction
-        transactionManager.rollback(transactionStatus);
+// SpringTransactionInterceptor - wraps commands in Spring transactions
+public class SpringTransactionInterceptor extends AbstractCommandInterceptor {
+    public <T> T execute(CommandConfig config, Command<T> command) {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(getPropagation(config));
+        return template.execute(status -> next.execute(config, command));
     }
 }
-```
 
-### Transaction Synchronization
+// SpringTransactionContext - delegates to Spring
+public class SpringTransactionContext implements TransactionContext {
+    public void commit() {
+        // Do nothing, transaction is managed by Spring
+    }
 
-```java
-public class SpringTransactionSynchronization 
-    implements TransactionSynchronization {
-    
-    private final SpringTransactionContext context;
-    
-    @Override
-    public void beforeCommit() {
-        // Flush jobs, events, etc.
-        context.flushJobs();
-        context.flushEvents();
+    public void rollback() {
+        // Mark the Spring transaction as rollback-only
+        transactionManager.getTransaction(null).setRollbackOnly();
     }
-    
-    @Override
-    public void afterCommit() {
-        // Post-commit actions
-        context.notifyCommitListeners();
-    }
-    
-    @Override
-    public void afterCompletion(int status) {
-        if (status == STATUS_ROLLED_BACK) {
-            context.handleRollback();
-        }
+
+    public void addTransactionListener(TransactionState state, TransactionListener listener) {
+        // Registers a callback with Spring's TransactionSynchronizationManager
     }
 }
 ```
@@ -539,22 +575,22 @@ public class SpringTransactionSynchronization
 ```java
 @Service
 public class WorkflowService {
-    
+
     @Autowired
     private RuntimeService runtimeService;
-    
+
     // Default: REQUIRED - join existing transaction
     @Transactional
     public void startProcess() {
         runtimeService.startProcessInstanceByKey("processKey");
     }
-    
+
     // REQUIRES_NEW - always create new transaction
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void startProcessIsolated() {
         runtimeService.startProcessInstanceByKey("processKey");
     }
-    
+
     // NOT_SUPPORTED - execute without transaction
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void queryProcess() {
@@ -569,62 +605,44 @@ public class WorkflowService {
 
 ### SpringBeanFactoryProxyMap
 
+**Package:** `org.activiti.engine.impl.cfg`
+
 ```java
-public class SpringBeanFactoryProxyMap {
-    
-    private final ConfigurableListableBeanFactory beanFactory;
-    private final Map<String, Object> proxyCache = new ConcurrentHashMap<>();
-    
-    public Object getBean(String beanName) {
-        return beanFactory.getBean(beanName);
+public class SpringBeanFactoryProxyMap implements Map<Object, Object> {
+
+    protected BeanFactory beanFactory;
+
+    public SpringBeanFactoryProxyMap(BeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
     }
-    
-    public <T> T getBean(String beanName, Class<T> type) {
-        return beanFactory.getBean(beanName, type);
+
+    public Object get(Object key) {
+        return beanFactory.getBean((String) key);
     }
-    
-    public boolean containsBean(String beanName) {
-        return beanFactory.containsBean(beanName);
+
+    public boolean containsKey(Object key) {
+        return beanFactory.containsBean((String) key);
     }
-    
-    public Map<String, Object> getAllBeans() {
-        return beanFactory.getBeansWithAnnotation(Component.class);
-    }
+
+    // keySet(), values(), entrySet(), size(), isEmpty(),
+    // put(), remove(), putAll(), clear() all throw ActivitiException
 }
 ```
 
 ### Accessing Beans from Process
 
 ```java
-// In BPMN: <delegateExpression="${springBean('orderService')}"/>
+// In BPMN: activiti:delegateExpression="${myBean}"
 // Or in JavaDelegate:
 @Component
 public class MyDelegate implements JavaDelegate {
-    
+
     @Autowired
     private OrderService orderService;
-    
+
     @Override
     public void execute(DelegateExecution execution) {
         orderService.processOrder();
-    }
-}
-```
-
-### Custom Bean Resolution
-
-```java
-public class CustomBeanFactory implements BeanFactory {
-    
-    @Override
-    public Object resolveExpression(String expression, 
-                                    DelegateExecution execution) {
-        // Custom resolution logic
-        if (expression.startsWith("spring:")) {
-            String beanName = expression.substring(7);
-            return getBean(beanName);
-        }
-        return null;
     }
 }
 ```
@@ -633,25 +651,27 @@ public class CustomBeanFactory implements BeanFactory {
 
 ## Expression Language
 
-### Spring EL Integration
+### SpringExpressionManager
 
 ```java
-public class SpringExpressionManager implements ExpressionManager {
-    
-    private final ConfigurableListableBeanFactory beanFactory;
-    private final StandardExpressionParser parser = 
-        new StandardExpressionParser();
-    
+public class SpringExpressionManager extends ExpressionManager {
+
+    protected ApplicationContext applicationContext;
+
+    public SpringExpressionManager(ApplicationContext applicationContext, Map<Object, Object> beans) {
+        super(beans);
+        this.applicationContext = applicationContext;
+    }
+
     @Override
-    public Object evaluate(String expression, 
-                          DelegateExecution execution) {
-        // Create evaluation context
-        SpringEvaluationContext context = 
-            new SpringEvaluationContext(execution, beanFactory);
-        
-        // Parse and evaluate
-        Expression exp = parser.parseExpression(expression);
-        return exp.getValue(context, Object.class);
+    protected void addBeansResolver(CompositeELResolver elResolver) {
+        if (beans != null) {
+            // Only expose limited set of beans in expressions
+            elResolver.add(new ReadOnlyMapELResolver(beans));
+        } else {
+            // Expose full application-context in expressions
+            elResolver.add(new ApplicationContextElResolver(applicationContext));
+        }
     }
 }
 ```
@@ -659,162 +679,168 @@ public class SpringExpressionManager implements ExpressionManager {
 ### Usage in BPMN
 
 ```xml
-<!-- Access Spring bean -->
-<userTask name="Approve Order">
-  <extensionElements>
-    <activiti:field name="assignee">
-      <activiti:string>${springBean('userService').getApprover()}</activiti:string>
-    </activiti:field>
-  </extensionElements>
-</userTask>
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:activiti="http://activiti.org/bpmn"
+             targetNamespace="Examples">
 
-<!-- Call bean method -->
-<serviceTask name="Send Email">
-  <extensionElements>
-    <activiti:delegateExpression>${emailService.send()}</activiti:delegateExpression>
-  </extensionElements>
-</serviceTask>
+  <process id="orderProcess">
+    <!-- Spring bean available by name in expressions -->
+    <userTask id="approve" name="Approve Order"
+              activiti:assignee="${userService.getApprover()}"/>
+
+    <!-- Call Spring bean via delegate expression -->
+    <serviceTask id="sendEmail" name="Send Email"
+                 activiti:delegateExpression="${emailService}"/>
+  </process>
+</definitions>
 ```
 
-### Custom EL Resolvers
+### ApplicationContextElResolver
 
 ```java
-public class CustomElResolver implements ELResolver {
-    
-    @Override
+public class ApplicationContextElResolver extends ELResolver {
+
+    protected ApplicationContext applicationContext;
+
     public Object getValue(ELContext context, Object base, Object property) {
-        if (base == null && "custom".equals(property)) {
+        if (base == null && applicationContext.containsBean((String) property)) {
             context.setPropertyResolved(true);
-            return getCustomObject();
+            return applicationContext.getBean((String) property);
         }
-        return super.getValue(context, base, property);
+        return null;
+    }
+
+    public boolean isReadOnly(ELContext context, Object base, Object property) {
+        return true;
+    }
+
+    public void setValue(ELContext context, Object base, Object property, Object value) {
+        // Throws ActivitiException - beans are read-only
     }
 }
 ```
 
 ---
 
-## Event Integration
+## Auto-Deployment
 
-### Spring ApplicationEvent Publisher
+`SpringProcessEngineConfiguration` supports auto-deploying BPMN resources at startup. Configure via `deploymentResources` and `deploymentMode`.
+
+### AutoDeploymentStrategy Interface
 
 ```java
-public class SpringEventPublisher implements EventPublisher {
-    
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
-    
+public interface AutoDeploymentStrategy {
+    boolean handlesMode(String mode);
+    void deployResources(String deploymentNameHint, Resource[] resources, RepositoryService repositoryService);
+}
+```
+
+### Available Strategies
+
+| Class | Mode | Behavior |
+|---|---|---|
+| `DefaultAutoDeploymentStrategy` | `default` | Groups all resources into a single deployment |
+| `SingleResourceAutoDeploymentStrategy` | `single-resource` | Creates a separate deployment for each resource |
+| `ResourceParentFolderAutoDeploymentStrategy` | `resource-parent-folder` | Groups resources by parent folder into separate deployments |
+| `FailOnNoProcessAutoDeploymentStrategy` | `fail-on-no-process` | Deploys valid resources; throws exception if none are valid |
+| `NeverFailAutoDeploymentStrategy` | `never-fail` | Skips invalid resources and deploys the rest |
+
+### Configuration
+
+```java
+SpringProcessEngineConfiguration cfg = new SpringProcessEngineConfiguration();
+cfg.setDataSource(dataSource);
+cfg.setTransactionManager(transactionManager);
+cfg.setDeploymentName("myProcesses");
+cfg.setDeploymentResources(new Resource[]{
+    new ClassPathResource("processes/order.bpmn"),
+    new ClassPathResource("processes/approval.bpmn")
+});
+cfg.setDeploymentMode("default");
+```
+
+### DefaultAutoDeploymentStrategy
+
+Groups all configured resources into a single deployment with duplicate filtering enabled.
+
+```java
+public class DefaultAutoDeploymentStrategy extends AbstractAutoDeploymentStrategy {
+    public static final String DEPLOYMENT_MODE = "default";
+
     @Override
-    public void publishEvent(RuntimeEvent event) {
-        // Convert to Spring event
-        ApplicationEvent springEvent = convertToSpringEvent(event);
-        
-        // Publish
-        eventPublisher.publishEvent(springEvent);
-    }
-    
-    private ApplicationEvent convertToSpringEvent(RuntimeEvent event) {
-        switch (event.getEventType()) {
-            case PROCESS_STARTED:
-                return new ProcessStartedSpringEvent(event);
-            case PROCESS_COMPLETED:
-                return new ProcessCompletedSpringEvent(event);
-            case TASK_CREATED:
-                return new TaskCreatedSpringEvent(event);
-            default:
-                return new GenericActivitiSpringEvent(event);
+    public void deployResources(String deploymentNameHint, Resource[] resources, RepositoryService repositoryService) {
+        DeploymentBuilder builder = repositoryService.createDeployment()
+            .enableDuplicateFiltering()
+            .name(deploymentNameHint);
+
+        for (Resource resource : resources) {
+            builder.addInputStream(determineResourceName(resource), resource);
         }
+        loadApplicationUpgradeContext(builder).deploy();
     }
 }
 ```
 
-### Custom Spring Events
+### SingleResourceAutoDeploymentStrategy
 
-```java
-public class ProcessStartedSpringEvent extends ApplicationEvent {
-    
-    private final ProcessInstance processInstance;
-    
-    public ProcessStartedSpringEvent(Object source, 
-                                     ProcessInstance processInstance) {
-        super(source);
-        this.processInstance = processInstance;
-    }
-    
-    public ProcessInstance getProcessInstance() {
-        return processInstance;
-    }
-}
-```
+Creates a separate deployment for each resource, using the resource name as the deployment name.
 
-### Event Listeners
+### ResourceParentFolderAutoDeploymentStrategy
 
-```java
-@Component
-public class ProcessEventListener {
-    
-    @EventListener
-    public void handleProcessStarted(ProcessStartedSpringEvent event) {
-        ProcessInstance instance = event.getProcessInstance();
-        log.info("Process started: {}", instance.getId());
-        
-        // Perform additional actions
-        sendNotification(instance);
-        updateDashboard(instance);
-    }
-    
-    @EventListener(condition = "#event.processInstance.processDefinitionKey == 'orderProcess'")
-    public void handleOrderProcess(ProcessStartedSpringEvent event) {
-        // Handle only order processes
-    }
-}
-```
+Groups resources by their parent folder and creates one deployment per folder. The deployment name is `{deploymentNameHint}.{folderName}`.
+
+### NeverFailAutoDeploymentStrategy
+
+Validates each resource before deployment and skips invalid ones. Only deploys if at least one valid process definition is found.
+
+### FailOnNoProcessAutoDeploymentStrategy
+
+Similar to `NeverFailAutoDeploymentStrategy`, but throws an `ActivitiException` if no valid process definitions are deployed.
 
 ---
 
 ## Async Execution
 
-### Spring Async Integration
+### SpringAsyncExecutor
+
+The `SpringAsyncExecutor` delegates job execution to a Spring `TaskExecutor`, allowing integration with managed thread pools in application servers.
 
 ```java
-@Configuration
-@EnableAsync
-public class AsyncConfig {
-    
-    @Bean(name = "taskExecutor")
-    public Executor taskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(20);
-        executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("Activiti-Async-");
-        executor.initialize();
-        return executor;
+public class SpringAsyncExecutor extends DefaultAsyncJobExecutor {
+
+    protected TaskExecutor taskExecutor;
+    protected SpringRejectedJobsHandler rejectedJobsHandler;
+
+    public void setTaskExecutor(TaskExecutor taskExecutor) {
+        this.taskExecutor = taskExecutor;
+    }
+
+    public void setRejectedJobsHandler(SpringRejectedJobsHandler rejectedJobsHandler) {
+        this.rejectedJobsHandler = rejectedJobsHandler;
+    }
+
+    @Override
+    public boolean executeAsyncJob(Job job) {
+        try {
+            taskExecutor.execute(new ExecuteAsyncRunnable((JobEntity) job, processEngineConfiguration));
+            return true;
+        } catch (RejectedExecutionException e) {
+            rejectedJobsHandler.jobRejected(this, job);
+            return false;
+        }
     }
 }
 ```
 
-### Async Process Execution
+### Spring Caller-Runs Rejected Jobs Handler
 
 ```java
-@Service
-public class AsyncWorkflowService {
-    
-    @Autowired
-    private RuntimeService runtimeService;
-    
-    @Async("taskExecutor")
-    public void startProcessAsync(String processKey, 
-                                  Map<String, Object> variables) {
-        // Non-blocking process start
-        runtimeService.startProcessInstanceByKey(processKey, variables);
-    }
-    
-    @Async("taskExecutor")
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void completeTaskAsync(String taskId, 
-                                 Map<String, Object> variables) {
-        taskService.complete(taskId, variables);
+public class SpringCallerRunsRejectedJobsHandler implements SpringRejectedJobsHandler {
+
+    public void jobRejected(AsyncExecutor asyncExecutor, Job job) {
+        // Execute rejected job in the caller's thread
+        new ExecuteAsyncRunnable((JobEntity) job, asyncExecutor.getProcessEngineConfiguration()).run();
     }
 }
 ```
@@ -832,18 +858,19 @@ public class AsyncWorkflowService {
        xsi:schemaLocation="
            http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans.xsd">
-    
-    <bean id="processEngineConfiguration" 
+
+    <bean id="processEngineConfiguration"
           class="org.activiti.spring.SpringProcessEngineConfiguration">
         <property name="dataSource" ref="dataSource"/>
         <property name="transactionManager" ref="transactionManager"/>
         <property name="databaseSchemaUpdate" value="true"/>
         <property name="historyLevel" value="full"/>
     </bean>
-    
-    <bean id="processEngine" 
-          factory-bean="processEngineConfiguration"
-          factory-method="buildProcessEngine"/>
+
+    <bean id="processEngine"
+          class="org.activiti.spring.ProcessEngineFactoryBean">
+        <property name="processEngineConfiguration" ref="processEngineConfiguration"/>
+    </bean>
 </beans>
 ```
 
@@ -853,36 +880,41 @@ public class AsyncWorkflowService {
 @Configuration
 @EnableTransactionManagement
 public class ActivitiSpringConfig {
-    
+
     @Autowired
     private DataSource dataSource;
-    
+
     @Bean
     public PlatformTransactionManager transactionManager() {
         return new DataSourceTransactionManager(dataSource);
     }
-    
+
     @Bean
-    public ProcessEngine processEngine() {
-        SpringProcessEngineConfiguration cfg = 
+    public SpringProcessEngineConfiguration processEngineConfiguration() {
+        SpringProcessEngineConfiguration cfg =
             new SpringProcessEngineConfiguration();
-        
+
         cfg.setDataSource(dataSource);
         cfg.setTransactionManager(transactionManager());
         cfg.setDatabaseSchemaUpdate(
             ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
         cfg.setHistoryLevel(ProcessEngineConfiguration.HISTORY_FULL);
-        cfg.setAsyncExecutorActivate(true);
-        cfg.setJobExecutorActivate(true);
-        
-        return cfg.buildProcessEngine();
+
+        return cfg;
     }
-    
+
+    @Bean
+    public ProcessEngineFactoryBean processEngine() {
+        ProcessEngineFactoryBean factory = new ProcessEngineFactoryBean();
+        factory.setProcessEngineConfiguration(processEngineConfiguration());
+        return factory;
+    }
+
     @Bean
     public RuntimeService runtimeService(ProcessEngine processEngine) {
         return processEngine.getRuntimeService();
     }
-    
+
     @Bean
     public TaskService taskService(ProcessEngine processEngine) {
         return processEngine.getTaskService();
@@ -899,15 +931,13 @@ public class ActivitiApplication {
         SpringApplication.run(ActivitiApplication.class, args);
     }
 }
+```
 
-application.yml:
+```yaml
 activiti:
   database-schema-update: true
   history-level: full
   async-executor-activate: true
-  job-executor-threads: 10
-  basic-auth:
-    enabled: false
 ```
 
 ---
@@ -920,7 +950,7 @@ activiti:
 // GOOD: Clear transaction boundaries
 @Service
 public class OrderService {
-    
+
     @Transactional
     public void createOrder(Order order) {
         orderRepository.save(order);
@@ -942,10 +972,10 @@ public void createOrder(Order order) {
 // GOOD: Use Spring-managed beans
 @Component
 public class MyDelegate implements JavaDelegate {
-    
+
     @Autowired
     private SomeService service;
-    
+
     @Override
     public void execute(DelegateExecution execution) {
         service.doSomething();
@@ -964,48 +994,17 @@ public void execute(DelegateExecution execution) {
 ```java
 @Service
 public class WorkflowService {
-    
+
     @Transactional
     @Retryable(value = ActivitiException.class, maxAttempts = 3)
     public void startProcess(String processKey) {
         runtimeService.startProcessInstanceByKey(processKey);
     }
-    
+
     @Recover
     public void recover(ActivitiException e, String processKey) {
         log.error("Failed to start process: {}", processKey, e);
         // Handle recovery
-    }
-}
-```
-
-### 4. Testing
-
-```java
-@SpringBootTest
-@AutoConfigureTestDatabase
-public class WorkflowServiceTest {
-    
-    @Autowired
-    private TestRestTemplate restTemplate;
-    
-    @Autowired
-    private RuntimeService runtimeService;
-    
-    @Test
-    public void testProcessExecution() {
-        // Arrange
-        Deployment deployment = runtimeService.createDeployment()
-            .addClasspathResource("test-process.bpmn")
-            .deploy();
-        
-        // Act
-        ProcessInstance instance = runtimeService
-            .startProcessInstanceById(
-                deployment.getProcessDefinitionId());
-        
-        // Assert
-        assertNotNull(instance);
     }
 }
 ```
@@ -1049,45 +1048,64 @@ public class MyDelegate implements JavaDelegate {
 private RuntimeService runtimeService;
 ```
 
-### 4. Event Not Published
-
-**Problem:** Spring events not firing
-
-**Solution:**
-```java
-// Ensure event publisher is configured
-@Bean
-public SpringEventPublisher eventPublisher() {
-    return new SpringEventPublisher(applicationEventPublisher);
-}
-```
-
 ---
 
 ## Testing
+
+### SpringActivitiTestCase
+
+Abstract test case for JUnit-based tests with Spring integration.
+
+```java
+@ContextConfiguration("test-context.xml")
+public class MySpringTest extends SpringActivitiTestCase {
+
+    @Override
+    protected void setUpProcessEngine() throws Throwable {
+        // ProcessEngine is loaded from Spring context
+    }
+
+    public void testProcessExecution() {
+        // Test with Spring-managed engine
+    }
+}
+```
+
+### CleanTestExecutionListener
+
+Test execution listener that removes all deployments after a test class completes.
+
+```java
+@RunWith(SpringJUnit4ClassRunner.class)
+@TestExecutionListeners(CleanTestExecutionListener.class)
+@ContextConfiguration("test-context.xml")
+public class MyIntegrationTest {
+    // All deployments are cleaned up after the test class
+}
+```
 
 ### Unit Testing with Mocks
 
 ```java
 @ExtendWith(MockitoExtension.class)
 public class WorkflowServiceTest {
-    
+
     @Mock
     private RuntimeService runtimeService;
-    
+
     @Mock
     private PlatformTransactionManager transactionManager;
-    
+
     @InjectMocks
     private WorkflowService workflowService;
-    
+
     @Test
     public void testStartProcess() {
         when(runtimeService.startProcessInstanceByKey("key"))
             .thenReturn(new ProcessInstanceImpl("1"));
-        
+
         ProcessInstance instance = workflowService.startProcess("key");
-        
+
         assertNotNull(instance);
         verify(runtimeService).startProcessInstanceByKey("key");
     }
@@ -1100,20 +1118,20 @@ public class WorkflowServiceTest {
 @SpringBootTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class WorkflowIntegrationTest {
-    
+
     @Autowired
     private ProcessEngine processEngine;
-    
+
     @BeforeEach
     public void setup() {
         // Deploy test processes
     }
-    
+
     @Test
     public void testFullWorkflow() {
         // Test complete workflow
     }
-    
+
     @AfterEach
     public void cleanup() {
         // Clean up test data
@@ -1125,17 +1143,53 @@ public class WorkflowIntegrationTest {
 
 ## API Reference
 
-### Key Classes
+### Core Classes
 
-- `SpringProcessEngineConfiguration` - Spring-aware engine config
-- `SpringTransactionContext` - Spring transaction integration
-- `SpringBeanFactoryProxyMap` - Bean factory access
-- `SpringExpressionManager` - Spring EL support
+| Class | Package | Description |
+|---|---|---|
+| `SpringProcessEngineConfiguration` | `org.activiti.spring` | Spring-aware engine configuration |
+| `ProcessEngineFactoryBean` | `org.activiti.spring` | FactoryBean for ProcessEngine |
+| `SpringTransactionContext` | `org.activiti.spring` | Delegates transaction management to Spring |
+| `SpringTransactionContextFactory` | `org.activiti.spring` | Creates SpringTransactionContext instances |
+| `SpringTransactionInterceptor` | `org.activiti.spring` | Wraps commands in Spring transactions |
+| `SpringExpressionManager` | `org.activiti.spring` | Extends ExpressionManager with Spring beans |
+| `ApplicationContextElResolver` | `org.activiti.spring` | EL resolver for Spring ApplicationContext |
+| `SpringConfigurationHelper` | `org.activiti.spring` | Utility to load engine from XML config |
+| `SpringBeanFactoryProxyMap` | `org.activiti.engine.impl.cfg` | Read-only Map proxy to Spring BeanFactory |
 
-### Key Interfaces
+### Async Execution
 
-- `TransactionSynchronization` - Transaction sync callback
-- `EventPublisher` - Event publishing interface
+| Class | Package | Description |
+|---|---|---|
+| `SpringAsyncExecutor` | `org.activiti.spring` | Spring TaskExecutor-based job executor |
+| `SpringRejectedJobsHandler` | `org.activiti.spring` | Interface for handling rejected jobs (deprecated) |
+| `SpringCallerRunsRejectedJobsHandler` | `org.activiti.spring` | Default rejected jobs handler |
+
+### Auto-Deployment
+
+| Class | Package | Mode |
+|---|---|---|
+| `AutoDeploymentStrategy` | `org.activiti.spring.autodeployment` | Interface |
+| `AbstractAutoDeploymentStrategy` | `org.activiti.spring.autodeployment` | Base class |
+| `DefaultAutoDeploymentStrategy` | `org.activiti.spring.autodeployment` | `default` |
+| `SingleResourceAutoDeploymentStrategy` | `org.activiti.spring.autodeployment` | `single-resource` |
+| `ResourceParentFolderAutoDeploymentStrategy` | `org.activiti.spring.autodeployment` | `resource-parent-folder` |
+| `FailOnNoProcessAutoDeploymentStrategy` | `org.activiti.spring.autodeployment` | `fail-on-no-process` |
+| `NeverFailAutoDeploymentStrategy` | `org.activiti.spring.autodeployment` | `never-fail` |
+
+### Additional Classes
+
+| Class | Package | Description |
+|---|---|---|
+| `SpringEntityManagerSessionFactory` | `org.activiti.spring` | JPA EntityManager session factory for Spring |
+| `SpringAdvancedBusinessCalendarManagerFactory` | `org.activiti.spring` | Creates advanced business calendar manager |
+
+### Test Support
+
+| Class | Package | Description |
+|---|---|---|
+| `SpringActivitiTestCase` | `org.activiti.spring.impl.test` | Abstract JUnit test case with Spring integration |
+| `CleanTestExecutionListener` | `org.activiti.spring.impl.test` | Removes all deployments after test class |
 
 ### Configuration Properties
 
@@ -1144,16 +1198,22 @@ activiti:
   database-schema-update: true|false|create-drop
   history-level: none|activity|audit|full
   async-executor-activate: true|false
-  job-executor-threads: 10
-  transaction:
-    manager: platformTransactionManager
-    propagation: REQUIRED
 ```
+
+### SpringProcessEngineConfiguration Properties
+
+| Property | Type | Description |
+|---|---|---|
+| `transactionManager` | `PlatformTransactionManager` | Spring transaction manager (required) |
+| `deploymentName` | `String` | Name for auto-deployment (default: "SpringAutoDeployment") |
+| `deploymentResources` | `Resource[]` | BPMN resources to auto-deploy |
+| `deploymentMode` | `String` | Auto-deployment strategy mode |
+| `transactionSynchronizationAdapterOrder` | `Integer` | Ordering for transaction synchronization callbacks |
 
 ---
 
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Engine Documentation](../engine-api/README.md)
-- [Spring Boot Starter](../engine-api/spring-boot-starter.md)
+- [Engine Documentation](./README.md)
+- [Spring Boot Starter](./spring-boot-starter.md)

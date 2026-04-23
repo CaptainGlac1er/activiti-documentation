@@ -11,26 +11,26 @@ Core common modules provide shared utilities, connectors, and Spring integration
 ## Modules
 
 ### Utilities
-- [Common Util](./common-util) - Shared utilities
-- [Core Test](./core-test) - Testing support
-- [Expression Language](./expression-language) - EL support
-- [JUEL Jakarta](./juel-jakarta) - Jakarta EL implementation
+- [Common Util](./common-util.md) - Shared utilities
+- [Core Test](./core-test.md) - Testing support
+- [Expression Language](./expression-language.md) - EL support
+- [JUEL Jakarta](./juel-jakarta.md) - Jakarta EL implementation
 
 ### Connectors
-- [Connector Model](./connector-model) - Connector framework
-- [Spring Connector](./spring-connector) - Spring integration
+- [Connector Model](./connector-model.md) - Connector framework
+- [Spring Connector](./spring-connector.md) - Spring integration
 
 ### Project Management
-- [Project Model](./project-model) - Project structure
-- [Spring Project](./spring-project) - Spring project support
+- [Project Model](./project-model.md) - Project structure
+- [Spring Project](./spring-project.md) - Spring project support
 
 ### Spring Integration
-- [Spring Application](./spring-application) - Application context
-- [Spring Cache Manager](./spring-cache-manager) - Caching support
-- [Spring Identity](./spring-identity) - Identity management
-- [Spring Resource Finder](./spring-resource-finder) - Resource loading
-- [Spring Security](./spring-security) - Security integration
-- [Spring Security Policies](./spring-security-policies) - Policy management
+- [Spring Application](./spring-application.md) - Application context
+- [Spring Cache Manager](./spring-cache-manager.md) - Caching support
+- [Spring Identity](./spring-identity.md) - Identity management
+- [Spring Resource Finder](./spring-resource-finder.md) - Resource loading
+- [Spring Security](./spring-security.md) - Security integration
+- [Spring Security Policies](./spring-security-policies.md) - Policy management
 
 ## Use Cases
 
@@ -56,6 +56,6 @@ The core common modules are dependencies for both the Activiti API and Engine AP
 ---
 
 **Related:**
-- [Activiti API](../activiti-api/)
-- [Engine API](../engine-api/)
+- [Activiti API](../activiti-api/README.md)
+- [Engine API](../engine-api/README.md)
 - [Architecture](../../architecture/overview.md)

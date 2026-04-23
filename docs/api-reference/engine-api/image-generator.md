@@ -1,1205 +1,522 @@
 ---
 sidebar_label: Image Generator
 slug: /activiti-core/image-generator
-description: Generate visual representations of BPMN process diagrams with highlighting and custom styling.
+description: Generate SVG process diagrams from BPMN models with activity and flow highlighting.
 ---
 
-# Activiti Image Generator Module - Technical Documentation
+# Activiti Image Generator Module
 
 **Module:** `activiti-core/activiti-image-generator`
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Image Rendering Pipeline](#image-rendering-pipeline)
-- [Style Templates](#style-templates)
-- [Highlighting Logic](#highlighting-logic)
-- [Format Support](#format-support)
-- [Performance Optimization](#performance-optimization)
-- [Customization](#customization)
-- [Usage Examples](#usage-examples)
-- [Best Practices](#best-practices)
-- [API Reference](#api-reference)
-
----
-
-## Overview
-
-The **activiti-image-generator** module provides capabilities to generate visual representations of BPMN process diagrams. It creates PNG, SVG, and other image formats from BPMN models, with support for highlighting active execution paths, custom styling, and various output configurations.
-
-This module is essential for:
-- **Process visualization** in user interfaces
-- **Audit and reporting** of process execution
-- **Debugging** workflow behavior
-- **Documentation** generation
-- **Monitoring dashboards** showing active processes
-
-### Key Features
-
-- **Multiple Formats**: PNG, SVG, PDF support with format-specific optimizations
-- **Process Highlighting**: Show active execution paths in real-time
-- **Custom Styling**: Themes, color schemes, and element-specific styles
-- **Zoom Levels**: Multiple resolution outputs for different display needs
-- **Annotation Support**: Render labels, descriptions, and custom annotations
-- **Performance Optimized**: Fast rendering for large diagrams with caching
-- **Extensible Pipeline**: Custom renderers and style templates
-
-### Module Structure
-
-```mermaid
-flowchart TD
-    subgraph ImageGenerator["activiti-image-generator"]
-        subgraph Main["Main API"]
-            ImgGen["ImageGenerator.java<br>Main generation API"]
-        end
-        
-        subgraph Renderers["Renderers"]
-            Png["PngRenderer.java<br>PNG output"]
-            Svg["SvgRenderer.java<br>SVG output"]
-            Pdf["PdfRenderer.java<br>PDF output"]
-            Conn["ConnectionRenderer.java<br>Flow rendering"]
-        end
-        
-        subgraph Styles["Styles"]
-            StyleTpl["StyleTemplate.java<br>Configuration"]
-            Default["DefaultStyle.java<br>Default"]
-            Custom["CustomStyle.java<br>Custom"]
-            Highlight["HighlightStyle.java<br>Highlight"]
-        end
-        
-        subgraph Highlight["Highlight"]
-            HlMgr["HighlightManager.java<br>Control"]
-            Path["PathHighlighter.java<br>Calculation"]
-            HlData["HighlightData.java<br>Information"]
-        end
-        
-        subgraph Utils["Utils"]
-            DiagCalc["DiagramCalculator.java<br>Metrics"]
-            ImgUtils["ImageUtils.java<br>Utilities"]
-            Text["TextRenderer.java<br>Text"]
-        end
-        
-        subgraph Model["Model"]
-            Elem["DiagramElement.java<br>Element"]
-            ConnModel["DiagramConnection.java<br>Connection"]
-            DiagData["DiagramData.java<br>Complete data"]
-        end
-    end
-```
-
----
-
-## Key Classes and Their Responsibilities
-
-### ImageGenerator
-
-**Purpose:** Main entry point for generating process diagram images from BPMN models.
-
-**Responsibilities:**
-- Coordinating the complete image generation pipeline
-- Managing renderer selection based on output format
-- Applying style templates to diagrams
-- Handling highlight overlays for active processes
-- Managing image caching and optimization
-- Providing unified API for all image operations
-
-**Key Properties:**
-- `styleTemplate` - Current style configuration
-- `highlightManager` - Active highlight settings
-- `rendererFactory` - Creates format-specific renderers
-- `cacheEnabled` - Whether caching is active
-
-**Key Methods:**
-- `generate(BpmnModel, OutputStream, ImageFormat)` - Generate image
-- `generate(BpmnModel, HighlightManager, OutputStream, ImageFormat)` - Generate with highlights
-- `generateAsImage(BpmnModel)` - Return BufferedImage directly
-- `setStyleTemplate(StyleTemplate)` - Apply custom styles
-- `setHighlightManager(HighlightManager)` - Configure highlighting
-- `enableCache(boolean)` - Enable/disable caching
-
-**When to Use:** This is your primary API for all image generation needs. Use this class instead of accessing renderers directly.
-
-**Design Pattern:** Facade pattern - simplifies complex rendering pipeline
-
-**Thread Safety:** Thread-safe for read operations. Style changes should be synchronized.
-
-**Performance:** Typical rendering time: 50-500ms depending on diagram complexity
-
----
-
-### DiagramCalculator
-
-**Purpose:** Analyzes BPMN models to calculate diagram metrics and prepare rendering data.
-
-**Responsibilities:**
-- Calculating bounding boxes for diagrams
-- Determining optimal canvas size
-- Converting BPMN elements to diagram elements
-- Computing connection paths between elements
-- Extracting text labels and annotations
-- Optimizing element ordering for rendering
-
-**Key Properties:**
-- `bounds` - Diagram bounding rectangle
-- `elements` - List of diagram elements
-- `connections` - List of flow connections
-- `texts` - List of text annotations
-
-**Key Methods:**
-- `calculateDiagram(BpmnModel)` - Full diagram calculation
-- `calculateBounds(BpmnModel)` - Get diagram bounds
-- `calculateElements(BpmnModel)` - Extract elements
-- `calculateConnections(BpmnModel)` - Map connections
-- `getCanvasSize(BpmnModel)` - Determine canvas dimensions
-
-**When to Use:** Internally by ImageGenerator. Use directly if you need diagram metrics without rendering.
-
-**Design Pattern:** Analyzer pattern - extracts and computes diagram information
-
-**Important:** Must be called before rendering to prepare diagram data
-
----
-
-### StyleTemplate
-
-**Purpose:** Central configuration for all visual styling of diagram elements.
-
-**Responsibilities:**
-- Defining colors for different element types
-- Managing font styles and sizes
-- Configuring stroke widths and patterns
-- Providing highlight style overrides
-- Supporting theme switching
-- Caching style lookups for performance
-
-**Key Properties:**
-- `name` - Template identifier
-- `elementStyles` - Map of element type to style
-- `connectionStyles` - Map of connection type to style
-- `defaultStyle` - Fallback style
-- `highlightStyle` - Active element style
-
-**Key Methods:**
-- `getElementStyle(String elementType)` - Get style for element
-- `getConnectionStyle(String connectionType)` - Get style for connection
-- `getHighlightStyle()` - Get highlight style
-- `setDefaultStyle(Style)` - Set default style
-- `addElementStyle(String, Style)` - Add custom element style
-
-**When to Use:** To customize the appearance of generated images. Create templates for different use cases (e.g., print, web, debug).
-
-**Design Pattern:** Registry pattern - stores and retrieves style configurations
-
-**Example Use Cases:**
-- Dark mode vs light mode themes
-- Print-optimized styles (high contrast)
-- Accessibility styles (larger fonts, colorblind-friendly)
-
----
-
-### HighlightManager
-
-**Purpose:** Controls which elements appear highlighted in the generated image.
-
-**Responsibilities:**
-- Tracking active activities and flows
-- Applying highlight styles to active elements
-- Managing highlight state
-- Calculating highlight paths
-- Supporting multiple highlight modes
-
-**Key Properties:**
-- `activeActivityIds` - Set of highlighted activities
-- `activeSequenceFlowIds` - Set of highlighted flows
-- `highlightStyle` - Style for highlighted elements
-- `highlightMode` - Highlight behavior (overlay, replace, etc.)
-
-**Key Methods:**
-- `isHighlighted(String elementId)` - Check if element highlighted
-- `isFlowHighlighted(String flowId)` - Check if flow highlighted
-- `getStyleForElement(DiagramElement)` - Get appropriate style
-- `getStyleForConnection(DiagramConnection)` - Get connection style
-- `addHighlightedActivity(String id)` - Add to highlight set
-- `clearHighlights()` - Remove all highlights
-
-**When to Use:** When you need to show the current state of a running process. Essential for monitoring and debugging.
-
-**Design Pattern:** State pattern - manages highlight state
-
-**Integration:** Works with HistoryService to determine active elements
-
----
-
-### PngRenderer
-
-**Purpose:** Generates PNG raster images from diagram data.
-
-**Responsibilities:**
-- Creating BufferedImage instances
-- Rendering elements with Graphics2D
-- Applying anti-aliasing and rendering hints
-- Writing PNG files with compression
-- Managing color profiles
-- Optimizing for web display
-
-**Key Properties:**
-- `imageType` - BufferedImage type (RGB, ARGB, etc.)
-- `compressionLevel` - PNG compression (0-9)
-- `dpi` - Dots per inch for resolution
-- `antiAliasing` - Whether to use anti-aliasing
-
-**Key Methods:**
-- `render(DiagramData, StyleTemplate, HighlightManager, OutputStream)` - Generate PNG
-- `createBufferedImage(int width, int height)` - Create image buffer
-- `configureGraphics(Graphics2D)` - Set rendering hints
-- `writePng(BufferedImage, OutputStream)` - Write PNG file
-
-**When to Use:** For web display, email attachments, and general-purpose images. Best format for photos and complex graphics.
-
-**Design Pattern:** Concrete Renderer in Strategy pattern
-
-**Performance:** Fast rendering, moderate file size. Typical: 100-500KB for medium diagrams
-
-**Limitations:** Raster format - loses quality when zoomed
-
----
-
-### SvgRenderer
-
-**Purpose:** Generates SVG vector graphics from diagram data.
-
-**Responsibilities:**
-- Creating SVG XML documents
-- Rendering elements as vector shapes
-- Preserving scalability
-- Supporting CSS styling
-- Managing SVG namespaces
-- Optimizing for web and print
-
-**Key Properties:**
-- `version` - SVG version (1.1, 2.0)
-- `encoding` - Character encoding (UTF-8)
-- `compression` - Whether to minify
-- `cssExternal` - Use external CSS or inline
-
-**Key Methods:**
-- `render(DiagramData, StyleTemplate, HighlightManager, OutputStream)` - Generate SVG
-- `writeSvgHeader(Writer)` - Write XML declaration
-- `renderElement(Writer, DiagramElement)` - Write element SVG
-- `renderConnection(Writer, DiagramConnection)` - Write connection SVG
-- `colorToHex(Color)` - Convert color to hex
-
-**When to Use:** For responsive web displays, print documents, and when scalability is important. Best for diagrams that need zooming.
-
-**Design Pattern:** Concrete Renderer in Strategy pattern
-
-**Performance:** Slower rendering, smaller file size. Typical: 10-100KB for medium diagrams
-
-**Advantages:** Infinite scalability, editable in vector tools, searchable text
-
----
-
-### PathHighlighter
-
-**Purpose:** Calculates which elements should be highlighted based on process execution path.
-
-**Responsibilities:**
-- Analyzing execution history
-- Determining active activities
-- Calculating flow paths between activities
-- Identifying completed vs pending elements
-- Supporting multi-instance highlighting
-- Managing highlight timing
-
-**Key Properties:**
-- `activityPath` - Ordered list of executed activities
-- `currentActivity` - Currently executing activity
-- `completedActivities` - Finished activities
-- `pendingActivities` - Waiting activities
-
-**Key Methods:**
-- `highlightPath(List<String> activityPath)` - Highlight execution path
-- `calculateActiveFlows(List<String> path)` - Find flows in path
-- `findFlowBetween(String source, String target)` - Locate connection
-- `getCompletedActivities()` - Get finished activities
-- `getCurrentActivity()` - Get active activity
-
-**When to Use:** To automatically determine what to highlight based on process state. Use with HistoryService data.
-
-**Design Pattern:** Calculator pattern - computes highlight data
-
-**Integration:** Typically called from HighlightManager with history data
-
----
-
-### ConnectionRenderer
-
-**Purpose:** Specialized renderer for sequence flows and connections between elements.
-
-**Responsibilities:**
-- Drawing flow lines (straight, curved, orthogonal)
-- Rendering flow arrows and markers
-- Applying flow styles and colors
-- Handling flow labels
-- Managing flow routing
-- Supporting conditional flow indicators
-
-**Key Properties:**
-- `flowType` - Line style (straight, curve, orthogonal)
-- `arrowSize` - Arrowhead dimensions
-- `lineWidth` - Flow line thickness
-- `cornerRadius` - Curve smoothness
-
-**Key Methods:**
-- `render(Graphics2D, DiagramConnection, Style)` - Draw connection
-- `drawStraightLine(Graphics2D, Point, Point)` - Straight flow
-- `drawCurvedLine(Graphics2D, Point, Point)` - Curved flow
-- `drawArrow(Graphics2D, Point, double angle)` - Arrowhead
-- `calculatePath(DiagramConnection)` - Compute flow path
-
-**When to Use:** Internally by PngRenderer. Use directly for custom connection rendering.
-
-**Design Pattern:** Specialized Renderer
-
-**Flow Types:**
-- **Straight:** Direct line between elements
-- **Curved:** Smooth bezier curves
-- **Orthogonal:** Right-angle routing (most common in BPMN)
-
----
-
-### DiagramElement
-
-**Purpose:** Internal representation of a BPMN element for rendering.
-
-**Responsibilities:**
-- Storing element position and dimensions
-- Tracking element type and ID
-- Managing element style
-- Holding label text
-- Supporting element metadata
-- Enabling element transformation
-
-**Key Properties:**
-- `id` - Element identifier
-- `type` - Element type (START_EVENT, USER_TASK, etc.)
-- `x`, `y` - Position coordinates
-- `width`, `height` - Dimensions
-- `style` - Applied style
-- `label` - Display text
-
-**Key Methods:**
-- `getX()`, `getY()` - Get position
-- `getWidth()`, `getHeight()` - Get dimensions
-- `getType()` - Get element type
-- `getStyle()` - Get applied style
-- `setLabel(String)` - Set label text
-
-**When to Use:** Internally by rendering pipeline. Represents elements during rendering.
-
-**Design Pattern:** Data Transfer Object (DTO)
-
-**Important:** Not the same as BPMN model elements - optimized for rendering
-
----
-
-## Architecture
-
-### Rendering Pipeline
-
-```
-BPMN Model + Execution Data
-         │
-         ▼
-┌─────────────────┐
-│ Diagram         │
-│ Calculator      │
-│ (Layout)        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Style           │
-│ Applicator      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Highlight       │
-│ Manager         │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Renderer        │
-│ (PNG/SVG/PDF)   │
-└────────┬────────┘
-         │
-         ▼
-    Image Output
-```
-
-### Component Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ImageGenerator                           │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐                 │
-│  │ Diagram         │  │ Style           │                 │
-│  │ Calculator      │  │ Manager         │                 │
-│  └────────┬────────┘  └────────┬────────┘                 │
-│           │                    │                           │
-│           └────────┬───────────┘                           │
-│                    │                                       │
-│                    ▼                                       │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Rendering Engine                         │  │
-│  │  - Element rendering                                 │  │
-│  │  - Connection rendering                              │  │
-│  │  - Text rendering                                    │  │
-│  │  - Highlight rendering                               │  │
-│  └─────────────────────────────────────────────────────┘  │
-│                          │                                  │
-│                          ▼                                  │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              Output Formatters                       │  │
-│  │  - PngRenderer                                       │  │
-│  │  - SvgRenderer                                       │  │
-│  │  - PdfRenderer                                       │  │
-│  └─────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Image Rendering Pipeline
-
-### Diagram Calculator
+**Package:** `org.activiti.image`
+
+The `activiti-image-generator` module renders BPMN 2.0 process diagrams as SVG images from `BpmnModel` instances. It reads diagram interchange (layout) information embedded in the BPMN model and draws all BPMN constructs — events, tasks, gateways, flows, sub-processes, pools, lanes, and text annotations. The generated SVG supports activity-level and flow-level highlighting for visualizing process execution state.
+
+**Dependencies:** Apache Batik (`SVGGraphics2D`, `DOMGroupManager`, `GenericDOMImplementation`).
+
+## Module Contents
+
+| Class | Package | Role |
+|---|---|---|
+| `ProcessDiagramGenerator` | `org.activiti.image` | Interface — entry point for diagram generation |
+| `DefaultProcessDiagramGenerator` | `org.activiti.image.impl` | Implementation — walks the BPMN model and draws every element |
+| `DefaultProcessDiagramCanvas` | `org.activiti.image.impl` | Drawing surface — wraps `ProcessDiagramSVGGraphics2D` with BPMN-specific draw methods |
+| `ProcessDiagramSVGGraphics2D` | `org.activiti.image.impl` | Extends Apache Batik `SVGGraphics2D` to assign `id` attributes to SVG groups |
+| `ProcessDiagramDOMGroupManager` | `org.activiti.image.impl` | Extends Batik `DOMGroupManager`; exposes `setCurrentGroupId(String)` |
+| `IconType` | `org.activiti.image.impl.icon` | Abstract base for event-type icons (timer, message, error, signal, etc.) |
+| `TaskIconType` | `org.activiti.image.impl.icon` | Abstract base for task-type icons (user, service, script, etc.) |
+| `ActivitiImageException` | `org.activiti.image.exception` | Runtime exception for image-generation errors |
+| `ActivitiInterchangeInfoNotFoundException` | `org.activiti.image.exception` | Thrown when the BPMN model lacks diagram interchange (layout) data |
+
+### Icon Implementations
+
+**Task icons** (extend `TaskIconType`):
+
+| Class | BPMN Element |
+|---|---|
+| `UserTaskIconType` | User Task |
+| `ServiceTaskIconType` | Service Task |
+| `ScriptTaskIconType` | Script Task |
+| `SendTaskIconType` | Send Task |
+| `ReceiveTaskIconType` | Receive Task |
+| `ManualTaskIconType` | Manual Task |
+| `BusinessRuleTaskIconType` | Business Rule Task |
+
+**Event icons** (extend `IconType`):
+
+| Class | Event Type |
+|---|---|
+| `TimerIconType` | Timer events |
+| `MessageIconType` | Message events |
+| `ErrorIconType` / `ErrorThrowIconType` | Error events |
+| `SignalIconType` / `SignalThrowIconType` | Signal events |
+| `CompensateIconType` / `CompensateThrowIconType` | Compensation events |
+| `LinkCatchIconType` / `LinkThrowIconType` | Link events |
+
+## ProcessDiagramGenerator (Interface)
+
+`org.activiti.image.ProcessDiagramGenerator` is the public API. All `generateDiagram` methods return an `InputStream` containing the rendered SVG.
 
 ```java
-public class DiagramCalculator {
-    
-    public DiagramData calculateDiagram(BpmnModel model) {
-        DiagramData data = new DiagramData();
-        
-        // Calculate bounding box
-        Rectangle bounds = calculateBounds(model);
-        data.setBounds(bounds);
-        
-        // Calculate element positions
-        List<DiagramElement> elements = calculateElements(model);
-        data.setElements(elements);
-        
-        // Calculate connections
-        List<DiagramConnection> connections = calculateConnections(model);
-        data.setConnections(connections);
-        
-        // Calculate text labels
-        List<DiagramText> texts = calculateTexts(model);
-        data.setTexts(texts);
-        
-        return data;
-    }
-    
-    private Rectangle calculateBounds(BpmnModel model) {
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        
-        for (Process process : model.getProcesses()) {
-            for (FlowElement element : process.getFlowElements()) {
-                if (element instanceof BaseElement) {
-                    BaseElement base = (BaseElement) element;
-                    int x = base.getX() != null ? base.getX() : 0;
-                    int y = base.getY() != null ? base.getY() : 0;
-                    int width = base.getWidth() != null ? base.getWidth() : 0;
-                    int height = base.getHeight() != null ? base.getHeight() : 0;
-                    
-                    minX = Math.min(minX, x);
-                    minY = Math.min(minY, y);
-                    maxX = Math.max(maxX, x + width);
-                    maxY = Math.max(maxY, y + height);
-                }
-            }
-        }
-        
-        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
-    }
-    
-    private List<DiagramElement> calculateElements(BpmnModel model) {
-        List<DiagramElement> elements = new ArrayList<>();
-        
-        for (Process process : model.getProcesses()) {
-            for (FlowElement flowElement : process.getFlowElements()) {
-                DiagramElement diagramElement = convertToDiagramElement(flowElement);
-                elements.add(diagramElement);
-            }
-        }
-        
-        return elements;
-    }
+public interface ProcessDiagramGenerator {
+
+    InputStream generateDiagram(BpmnModel bpmnModel,
+                                List<String> highLightedActivities,
+                                List<String> highLightedFlows);
+
+    InputStream generateDiagram(BpmnModel bpmnModel,
+                                List<String> highLightedActivities);
+
+    InputStream generateDiagram(BpmnModel bpmnModel,
+                                String activityFontName,
+                                String labelFontName,
+                                String annotationFontName);
+
+    InputStream generateDiagram(BpmnModel bpmnModel,
+                                List<String> highLightedActivities,
+                                List<String> highLightedFlows,
+                                String activityFontName,
+                                String labelFontName,
+                                String annotationFontName);
+
+    InputStream generateDiagram(BpmnModel bpmnModel,
+                                List<String> highLightedActivities,
+                                List<String> highLightedFlows,
+                                String activityFontName,
+                                String labelFontName,
+                                String annotationFontName,
+                                boolean generateDefaultDiagram);
+
+    InputStream generateDiagram(BpmnModel bpmnModel,
+                                List<String> highLightedActivities,
+                                List<String> highLightedFlows,
+                                List<String> currentActivities,
+                                List<String> erroredActivities,
+                                String activityFontName,
+                                String labelFontName,
+                                String annotationFontName,
+                                boolean generateDefaultDiagram,
+                                String defaultDiagramImageFileName);
+
+    String getDefaultActivityFontName();
+    String getDefaultLabelFontName();
+    String getDefaultAnnotationFontName();
+    String getDefaultDiagramImageFileName();
 }
 ```
 
-### Element Renderer
+### Parameter Summary
+
+| Parameter | Description |
+|---|---|
+| `bpmnModel` | The `BpmnModel` containing BPMN elements and their `GraphicInfo` layout data |
+| `highLightedActivities` | IDs of activities already traversed (completed path) — drawn with a **blue** highlight |
+| `highLightedFlows` | IDs of sequence flows already traversed — drawn with a **blue** highlight |
+| `currentActivities` | IDs of activities currently executing — drawn with a **green** highlight |
+| `erroredActivities` | IDs of activities that failed — drawn with a **red** highlight |
+| `activityFontName` | Font name for activity labels (default: `"Arial"`) |
+| `labelFontName` | Font name for flow labels (default: `"Arial"`) |
+| `annotationFontName` | Font name for text annotations (default: `"Arial"`) |
+| `generateDefaultDiagram` | If `true`, returns a fallback `/image/na.svg` when no layout data exists instead of throwing |
+| `defaultDiagramImageFileName` | Custom classpath resource for the fallback image |
+
+### Exceptions
+
+- **`ActivitiInterchangeInfoNotFoundException`** — thrown when `bpmnModel.hasDiagramInterchangeInfo()` is `false` and `generateDefaultDiagram` is `false`.
+- **`ActivitiImageException`** — thrown when generating the image fails (e.g., SVG serialization error) or when the default diagram resource cannot be loaded.
+
+## DefaultProcessDiagramGenerator
+
+`org.activiti.image.impl.DefaultProcessDiagramGenerator` is the sole implementation. It orchestrates rendering by:
+
+1. **Preparing the BPMN model** — normalizes all `GraphicInfo` coordinates so they are non-negative (`prepareBpmnModel`).
+2. **Initializing the canvas** — computes bounding box from all pools, flow nodes, artifacts, and lanes, then creates a `DefaultProcessDiagramCanvas` sized to fit (`initProcessDiagramCanvas`).
+3. **Drawing in order**:
+   - Pools (`drawPoolOrLane`)
+   - Lanes (`drawPoolOrLane`)
+   - Flow nodes via `ActivityDrawInstruction` callbacks (`drawActivity`)
+   - Artifacts (text annotations, associations) via `ArtifactDrawInstruction` callbacks (`drawArtifact`)
+4. **Generating the SVG** — calls `canvas.generateImage()` which serializes the Batik DOM to a `ByteArrayInputStream`.
+
+### Draw Instructions
+
+Each BPMN element type has a registered draw instruction defined in the constructor:
 
 ```java
-public class ElementRenderer {
-    
-    public void render(Graphics2D graphics, DiagramElement element) {
-        switch (element.getType()) {
-            case START_EVENT:
-                renderStartEvent(graphics, element);
-                break;
-            case END_EVENT:
-                renderEndEvent(graphics, element);
-                break;
-            case USER_TASK:
-                renderUserTask(graphics, element);
-                break;
-            case SERVICE_TASK:
-                renderServiceTask(graphics, element);
-                break;
-            case EXCLUSIVE_GATEWAY:
-                renderExclusiveGateway(graphics, element);
-                break;
-            case PARALLEL_GATEWAY:
-                renderParallelGateway(graphics, element);
-                break;
-            // ... more element types
-        }
-    }
-    
-    private void renderUserTask(Graphics2D graphics, DiagramElement element) {
-        // Set style
-        Style style = element.getStyle();
-        graphics.setColor(style.getFillColor());
-        graphics.setStroke(style.getStroke());
-        
-        // Draw rectangle
-        Rectangle2D rect = new Rectangle2D.Double(
-            element.getX(), 
-            element.getY(), 
-            element.getWidth(), 
-            element.getHeight());
-        
-        graphics.fill(rect);
-        graphics.draw(rect);
-        
-        // Draw icon
-        drawTaskIcon(graphics, element.getX() + 10, element.getY() + 10);
-        
-        // Draw label
-        if (element.getLabel() != null) {
-            graphics.setColor(style.getTextColor());
-            graphics.setFont(style.getTextFont());
-            graphics.drawString(
-                element.getLabel(), 
-                element.getX() + element.getWidth() / 2, 
-                element.getY() + element.getHeight() + 20);
-        }
-    }
-    
-    private void renderStartEvent(Graphics2D graphics, DiagramElement element) {
-        Style style = element.getStyle();
-        graphics.setColor(style.getFillColor());
-        graphics.setStroke(style.getStroke());
-        
-        // Draw circle
-        Ellipse2D circle = new Ellipse2D.Double(
-            element.getX(), 
-            element.getY(), 
-            element.getWidth(), 
-            element.getHeight());
-        
-        graphics.fill(circle);
-        graphics.draw(circle);
-    }
+protected Map<Class<? extends BaseElement>, ActivityDrawInstruction> activityDrawInstructions;
+protected Map<Class<? extends BaseElement>, ArtifactDrawInstruction> artifactDrawInstructions;
+```
+
+**ActivityDrawInstruction** covers: `StartEvent`, `EndEvent`, `IntermediateCatchEvent`, `ThrowEvent`, `BoundaryEvent`, `Task`, `UserTask`, `ScriptTask`, `ServiceTask`, `ReceiveTask`, `SendTask`, `ManualTask`, `BusinessRuleTask`, `ExclusiveGateway`, `InclusiveGateway`, `ParallelGateway`, `EventGateway`, `SubProcess`, `Transaction`, `EventSubProcess`, `CallActivity`.
+
+**ArtifactDrawInstruction** covers: `TextAnnotation`, `Association`.
+
+Instructions are accessible via getters/setters for customization:
+
+```java
+Map<Class<? extends BaseElement>, ActivityDrawInstruction> getActivityDrawInstructions();
+void setActivityDrawInstructions(Map<...> instructions);
+Map<Class<? extends BaseElement>, ArtifactDrawInstruction> getArtifactDrawInstructions();
+void setArtifactDrawInstructions(Map<...> instructions);
+```
+
+### Highlighting Logic
+
+Three distinct highlight colors are applied by element type:
+
+| State | Color (RGB) | Task/CallActivity | Gateway | Event |
+|---|---|---|---|---|
+| **Current** (active) | `#57FFAE` | `drawHighLightCurrent` | `drawGatewayHighLight` | `drawEventHighLight` |
+| **Completed** (path) | `#3399FF` | `drawHighLightCompleted` | `drawGatewayHighLightCompleted` | `drawEventHighLightCompleted` |
+| **Errored** | `#FF3757` | `drawHighLightErrored` | `drawGatewayHighLightErrored` | `drawEventHighLightErrored` |
+
+Highlight overlay is drawn on top of the base element. Highlighted sequence flows are rendered in `#3399FF` with a 2px stroke.
+
+### Connection Perfectionizer
+
+`connectionPerfectionizer()` adjusts the start and end points of sequence flows so they terminate on the boundary of the connected shapes (rectangle, rhombus, or ellipse) rather than at their centers. Uses `DefaultProcessDiagramCanvas.connectionPerfectionizer()` with shape-specific intersection calculations.
+
+### getLineCenter
+
+`getLineCenter()` calculates the midpoint along a multi-segment flow path for positioning labels.
+
+## DefaultProcessDiagramCanvas
+
+`org.activiti.image.impl.DefaultProcessDiagramCanvas` is the primary drawing surface. It wraps `ProcessDiagramSVGGraphics2D` (a Batik `SVGGraphics2D`) and provides 60+ draw methods for individual BPMN constructs.
+
+### Constants
+
+```java
+// Colors
+TASK_BOX_COLOR            = new Color(249, 249, 249)
+SUBPROCESS_BOX_COLOR      = new Color(255, 255, 255)
+EVENT_COLOR               = new Color(255, 255, 255)
+CONNECTION_COLOR          = new Color(88, 88, 88)
+HIGHLIGHT_CURRENT_COLOR   = new Color(87, 255, 174)
+HIGHLIGHT_COMPLETED_ACTIVITY_COLOR = new Color(51, 153, 255)
+HIGHLIGHT_ERRORED_ACTIVITY_COLOR  = new Color(255, 55, 87)
+LABEL_COLOR               = new Color(112, 146, 190)
+TASK_BORDER_COLOR         = new Color(187, 187, 187)
+EVENT_BORDER_COLOR        = new Color(88, 88, 88)
+SUBPROCESS_BORDER_COLOR   = new Color(0, 0, 0)
+
+// Sizes
+FONT_SIZE         = 11
+ARROW_WIDTH       = 5
+CONDITIONAL_INDICATOR_WIDTH = 16
+DEFAULT_INDICATOR_WIDTH  = 10
+MARKER_WIDTH    = 12
+ICON_PADDING    = 5
+TEXT_PADDING    = 3
+ANNOTATION_TEXT_PADDING = 7
+```
+
+### Shape Drawing Methods
+
+| Method | Draws |
+|---|---|
+| `drawNoneStartEvent(id, graphicInfo)` | Plain start event (circle) |
+| `drawTimerStartEvent(id, graphicInfo)` | Timer start event |
+| `drawSignalStartEvent(id, graphicInfo)` | Signal start event |
+| `drawMessageStartEvent(id, graphicInfo)` | Message start event |
+| `drawErrorStartEvent(id, graphicInfo)` | Error start event |
+| `drawNoneEndEvent(id, name, graphicInfo)` | Plain end event (thick-bordered circle) |
+| `drawErrorEndEvent(id, name, graphicInfo)` | Error end event |
+| `drawCatchingTimerEvent(...)` | Intermediate/boundary timer catch |
+| `drawCatchingMessageEvent(...)` | Intermediate/boundary message catch |
+| `drawCatchingSignalEvent(...)` | Intermediate/boundary signal catch |
+| `drawCatchingErrorEvent(...)` | Boundary error catch |
+| `drawCatchingCompensateEvent(...)` | Boundary compensation catch |
+| `drawCatchingLinkEvent(...)` | Intermediate link catch |
+| `drawThrowingSignalEvent(...)` | Throw signal event |
+| `drawThrowingCompensateEvent(...)` | Throw compensation event |
+| `drawThrowingLinkEvent(...)` | Throw link event |
+| `drawThrowingNoneEvent(...)` | Throw none event |
+
+### Task Drawing Methods
+
+| Method | Draws |
+|---|---|
+| `drawTask(id, name, graphicInfo)` | Generic task (rounded rectangle with icon) |
+| `drawUserTask(id, name, graphicInfo)` | User task |
+| `drawServiceTask(id, name, graphicInfo)` | Service task |
+| `drawScriptTask(id, name, graphicInfo)` | Script task |
+| `drawReceiveTask(id, name, graphicInfo)` | Receive task |
+| `drawSendTask(id, name, graphicInfo)` | Send task |
+| `drawManualTask(id, name, graphicInfo)` | Manual task |
+| `drawBusinessRuleTask(id, name, graphicInfo)` | Business rule task |
+| `drawCollapsedSubProcess(id, name, graphicInfo, isTriggeredByEvent)` | Collapsed sub-process |
+| `drawCollapsedCallActivity(id, name, graphicInfo)` | Collapsed call activity |
+| `drawExpandedSubProcess(id, name, graphicInfo, type)` | Expanded sub-process / transaction / event sub-process |
+
+### Gateway Drawing Methods
+
+| Method | Draws |
+|---|---|
+| `drawExclusiveGateway(id, graphicInfo)` | Exclusive gateway (X in rhombus) |
+| `drawParallelGateway(id, graphicInfo)` | Parallel gateway (+ in rhombus) |
+| `drawInclusiveGateway(id, graphicInfo)` | Inclusive gateway (circle in rhombus) |
+| `drawEventBasedGateway(id, graphicInfo)` | Event-based gateway (pentagon in rhombus) |
+
+### Flow & Artifact Methods
+
+| Method | Draws |
+|---|---|
+| `drawSequenceflow(xPoints, yPoints, conditional, isDefault, highLighted)` | Sequence flow with optional arrow, conditional indicator, default indicator |
+| `drawAssociation(xPoints, yPoints, direction, highLighted)` | Dashed association line |
+| `drawPoolOrLane(id, name, graphicInfo)` | Pool or lane with vertical label |
+| `drawTextAnnotation(id, text, graphicInfo)` | Note-shaped text annotation |
+| `drawLabel(text, graphicInfo, centered)` | Flow label text |
+
+### Marker Methods
+
+| Method | Draws |
+|---|---|
+| `drawActivityMarkers(x, y, w, h, multiInstanceSequential, multiInstanceParallel, collapsed)` | Composed marker bar (multi-instance and/or collapsed) |
+| `drawMultiInstanceMarker(sequential, x, y, w, h)` | Three horizontal lines (sequential) or three vertical lines (parallel) |
+| `drawCollapsedMarker(x, y, w, h)` | Plus-sign in small rectangle |
+
+### Highlight Overlay Methods
+
+| Method | Color |
+|---|---|
+| `drawHighLightCurrent(graphicInfo)` | Green `#57FFAE` |
+| `drawHighLightCompleted(graphicInfo)` | Blue `#3399FF` |
+| `drawHighLightErrored(graphicInfo)` | Red `#FF3757` |
+| `drawGatewayHighLightCompleted(graphicInfo)` | Blue (rhombus overlay) |
+| `drawGatewayHighLightErrored(graphicInfo)` | Red (rhombus overlay) |
+| `drawEventHighLightCompleted(graphicInfo)` | Blue (circle overlay) |
+| `drawEventHighLightErrored(graphicInfo)` | Red (circle overlay) |
+
+### Utility Methods
+
+| Method | Purpose |
+|---|---|
+| `generateImage()` | Serializes the Batik SVG DOM to an `InputStream` (UTF-8) |
+| `close()` | Disposes the graphics context |
+| `connectionPerfectionizer(sourceShapeType, targetShapeType, ...)` | Adjusts flow endpoint coordinates to shape boundaries |
+| `createShape(SHAPE_TYPE, GraphicInfo)` | Creates `Rectangle2D`, `Ellipse2D`, or `Path2D` for intersection math |
+| `getIntersection(Shape, Line2D)` | Calculates where a flow line intersects a shape's border |
+| `fitTextToWidth(original, width)` | Truncates text with "..." to fit available width |
+
+### SHAPE_TYPE Enum
+
+```java
+public enum SHAPE_TYPE {
+    Rectangle,   // Tasks, activities, text annotations
+    Rhombus,     // Gateways
+    Ellipse      // Events
 }
 ```
 
----
+## ProcessDiagramSVGGraphics2D
 
-## Style Templates
-
-### Style Template
+`org.activiti.image.impl.ProcessDiagramSVGGraphics2D` extends Apache Batik's `SVGGraphics2D`. It configures a custom `ProcessDiagramDOMGroupManager` and exposes:
 
 ```java
-public class StyleTemplate {
-    
-    private String name;
-    private Map<String, Style> elementStyles = new HashMap<>();
-    private Map<String, Style> connectionStyles = new HashMap<>();
-    private Style defaultStyle;
-    private Style highlightStyle;
-    
-    public Style getElementStyle(String elementType) {
-        return elementStyles.getOrDefault(
-            elementType, 
-            defaultStyle);
-    }
-    
-    public Style getConnectionStyle(String connectionType) {
-        return connectionStyles.getOrDefault(
-            connectionType, 
-            defaultStyle);
-    }
-    
-    public Style getHighlightStyle() {
-        return highlightStyle;
-    }
+public void setCurrentGroupId(String id)
+```
+
+This assigns the `id` attribute to the current SVG `<g>` element, allowing generated SVG groups to be identified by BPMN element ID. Tests verify this with `svg.getElementById(elementId)`.
+
+## ProcessDiagramDOMGroupManager
+
+`org.activiti.image.impl.ProcessDiagramDOMGroupManager` extends Batik's `DOMGroupManager`. It stores the current `<g>` element and sets its `id` attribute when `setCurrentGroupId(String)` is called.
+
+## IconType and TaskIconType
+
+### IconType (abstract)
+
+```java
+public abstract class IconType {
+    abstract Integer getWidth();
+    abstract Integer getHeight();
+    abstract String getAnchorValue();
+    abstract String getFillValue();
+    abstract String getStyleValue();
+    abstract String getDValue();        // SVG path "d" attribute
+    abstract String getStrokeValue();
+    abstract String getStrokeWidth();
+    abstract void drawIcon(int imageX, int imageY, int iconPadding,
+                           ProcessDiagramSVGGraphics2D svgGenerator);
 }
 ```
 
-### Default Style
+Two drawing strategies exist:
+
+- **Event icons** (extend `IconType` directly, e.g., `TimerIconType`, `MessageIconType`): implement `drawIcon` using `fill`/`stroke` attributes on an SVG `<path>` inside a translated `<g>` tag. They return concrete `getWidth()`/`getHeight()` values for centering.
+
+- **Task icons** (extend `TaskIconType`): `TaskIconType` provides a default `drawIcon` implementation that creates an SVG `<path>` with `anchors` and `style` attributes. Subclasses only override `getDValue()` (path data) and `getStyleValue()` (fill color). Methods like `getWidth()`, `getHeight()`, `getFillValue()` return `null`.
+
+### TaskIconType (abstract)
 
 ```java
-public class DefaultStyle implements Style {
-    
-    private static final Color DEFAULT_FILL = Color.WHITE;
-    private static final Color DEFAULT_STROKE = Color.BLACK;
-    private static final Color DEFAULT_TEXT = Color.BLACK;
-    private static final Font DEFAULT_FONT = new Font("Arial", Font.PLAIN, 12);
-    private static final Stroke DEFAULT_STROKE_WIDTH = new BasicStroke(2.0f);
-    
-    @Override
-    public Color getFillColor() {
-        return DEFAULT_FILL;
-    }
-    
-    @Override
-    public Color getStrokeColor() {
-        return DEFAULT_STROKE;
-    }
-    
-    @Override
-    public Color getTextColor() {
-        return DEFAULT_TEXT;
-    }
-    
-    @Override
-    public Font getTextFont() {
-        return DEFAULT_FONT;
-    }
-    
-    @Override
-    public Stroke getStroke() {
-        return DEFAULT_STROKE_WIDTH;
-    }
+public abstract class TaskIconType extends IconType {
+    // getAnchorValue() -> "top left"
+    // getStrokeValue() -> null
+    // getFillValue()   -> null
+    // getWidth()       -> null
+    // getHeight()      -> null
+    // getStrokeWidth() -> null
+    // drawIcon(...)    -> draws <g transform="translate(...)"> <path d="..." anchors="top left" style="..."> </g>
 }
 ```
-
-### Custom Style
-
-```java
-public class CustomStyle implements Style {
-    
-    private final Color fillColor;
-    private final Color strokeColor;
-    private final Color textColor;
-    private final Font textFont;
-    private final Stroke stroke;
-    
-    public CustomStyle(Builder builder) {
-        this.fillColor = builder.fillColor;
-        this.strokeColor = builder.strokeColor;
-        this.textColor = builder.textColor;
-        this.textFont = builder.textFont;
-        this.stroke = builder.stroke;
-    }
-    
-    // Getters...
-    
-    public static Builder builder() {
-        return new Builder();
-    }
-    
-    public static class Builder {
-        private Color fillColor = Color.WHITE;
-        private Color strokeColor = Color.BLACK;
-        private Color textColor = Color.BLACK;
-        private Font textFont = new Font("Arial", Font.PLAIN, 12);
-        private Stroke stroke = new BasicStroke(2.0f);
-        
-        public Builder fillColor(Color color) {
-            this.fillColor = color;
-            return this;
-        }
-        
-        public Builder strokeColor(Color color) {
-            this.strokeColor = color;
-            return this;
-        }
-        
-        // More builder methods...
-        
-        public CustomStyle build() {
-            return new CustomStyle(this);
-        }
-    }
-}
-```
-
----
-
-## Highlighting Logic
-
-### Highlight Manager
-
-```java
-public class HighlightManager {
-    
-    private final Set<String> activeActivityIds;
-    private final Set<String> activeSequenceFlowIds;
-    private final Style highlightStyle;
-    
-    public HighlightManager(Set<String> activeActivityIds, 
-                           Set<String> activeSequenceFlowIds,
-                           Style highlightStyle) {
-        this.activeActivityIds = activeActivityIds;
-        this.activeSequenceFlowIds = activeSequenceFlowIds;
-        this.highlightStyle = highlightStyle;
-    }
-    
-    public boolean isHighlighted(String elementId) {
-        return activeActivityIds.contains(elementId);
-    }
-    
-    public boolean isFlowHighlighted(String flowId) {
-        return activeSequenceFlowIds.contains(flowId);
-    }
-    
-    public Style getStyleForElement(DiagramElement element) {
-        if (isHighlighted(element.getId())) {
-            return highlightStyle;
-        }
-        return element.getStyle();
-    }
-    
-    public Style getStyleForConnection(DiagramConnection connection) {
-        if (isFlowHighlighted(connection.getId())) {
-            return highlightStyle;
-        }
-        return connection.getStyle();
-    }
-}
-```
-
-### Path Highlighter
-
-```java
-public class PathHighlighter {
-    
-    public HighlightData highlightPath(List<String> activityPath) {
-        HighlightData data = new HighlightData();
-        
-        // Highlight activities in path
-        data.setActiveActivities(new HashSet<>(activityPath));
-        
-        // Calculate sequence flows between activities
-        Set<String> activeFlows = calculateActiveFlows(activityPath);
-        data.setActiveSequenceFlows(activeFlows);
-        
-        return data;
-    }
-    
-    private Set<String> calculateActiveFlows(List<String> activityPath) {
-        Set<String> activeFlows = new HashSet<>();
-        
-        for (int i = 0; i < activityPath.size() - 1; i++) {
-            String source = activityPath.get(i);
-            String target = activityPath.get(i + 1);
-            
-            // Find flow between source and target
-            String flowId = findFlowBetween(source, target);
-            if (flowId != null) {
-                activeFlows.add(flowId);
-            }
-        }
-        
-        return activeFlows;
-    }
-}
-```
-
----
-
-## Format Support
-
-### PNG Renderer
-
-```java
-public class PngRenderer implements ImageRenderer {
-    
-    @Override
-    public void render(DiagramData data, 
-                      StyleTemplate style,
-                      HighlightManager highlight,
-                      OutputStream output) 
-            throws IOException {
-        
-        // Calculate image size
-        int width = data.getBounds().width + 100;
-        int height = data.getBounds().height + 100;
-        
-        // Create image
-        BufferedImage image = new BufferedImage(
-            width, height, BufferedImage.TYPE_INT_RGB);
-        
-        Graphics2D graphics = image.createGraphics();
-        
-        // Anti-aliasing
-        graphics.setRenderingHint(
-            RenderingHints.KEY_ANTIALIASING, 
-            RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        // Render background
-        graphics.setColor(Color.WHITE);
-        graphics.fillRect(0, 0, width, height);
-        
-        // Render connections first (so they're behind elements)
-        ConnectionRenderer connectionRenderer = new ConnectionRenderer();
-        for (DiagramConnection connection : data.getConnections()) {
-            Style styleToUse = highlight.getStyleForConnection(connection);
-            connectionRenderer.render(graphics, connection, styleToUse);
-        }
-        
-        // Render elements
-        ElementRenderer elementRenderer = new ElementRenderer();
-        for (DiagramElement element : data.getElements()) {
-            Style styleToUse = highlight.getStyleForElement(element);
-            elementRenderer.render(graphics, element, styleToUse);
-        }
-        
-        // Render text
-        TextRenderer textRenderer = new TextRenderer();
-        for (DiagramText text : data.getTexts()) {
-            textRenderer.render(graphics, text, style);
-        }
-        
-        graphics.dispose();
-        
-        // Write PNG
-        ImageIO.write(image, "PNG", output);
-    }
-}
-```
-
-### SVG Renderer
-
-```java
-public class SvgRenderer implements ImageRenderer {
-    
-    @Override
-    public void render(DiagramData data, 
-                      StyleTemplate style,
-                      HighlightManager highlight,
-                      OutputStream output) 
-            throws IOException {
-        
-        Writer writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
-        
-        // SVG header
-        writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" ");
-        writer.write("width=\"" + data.getBounds().width + "\" ");
-        writer.write("height=\"" + data.getBounds().height + "\">\n");
-        
-        // Render connections
-        for (DiagramConnection connection : data.getConnections()) {
-            renderConnection(writer, connection, highlight);
-        }
-        
-        // Render elements
-        for (DiagramElement element : data.getElements()) {
-            renderElement(writer, element, highlight);
-        }
-        
-        // Render text
-        for (DiagramText text : data.getTexts()) {
-            renderText(writer, text);
-        }
-        
-        writer.write("</svg>");
-        writer.flush();
-    }
-    
-    private void renderElement(Writer writer, 
-                              DiagramElement element,
-                              HighlightManager highlight) 
-                    throws IOException {
-        
-        Style style = highlight.getStyleForElement(element);
-        
-        switch (element.getType()) {
-            case START_EVENT:
-                writer.write("<circle cx=\"" + (element.getX() + element.getWidth()/2) + "\" ");
-                writer.write("cy=\"" + (element.getY() + element.getHeight()/2) + "\" ");
-                writer.write("r=\"" + element.getWidth()/2 + "\" ");
-                writer.write("fill=\"" + colorToHex(style.getFillColor()) + "\" ");
-                writer.write("stroke=\"" + colorToHex(style.getStrokeColor()) + "\"/>\n");
-                break;
-            // ... more element types
-        }
-    }
-}
-```
-
----
-
-## Performance Optimization
-
-### Image Caching
-
-```java
-public class CachedImageGenerator {
-    
-    private final Map<String, BufferedImage> imageCache = 
-        new ConcurrentHashMap<>();
-    
-    public BufferedImage generateImage(String processKey, 
-                                      BpmnModel model,
-                                      HighlightData highlight) {
-        String cacheKey = generateCacheKey(processKey, highlight);
-        
-        return imageCache.computeIfAbsent(cacheKey, key -> {
-            // Generate image
-            return doGenerateImage(model, highlight);
-        });
-    }
-    
-    private String generateCacheKey(String processKey, HighlightData highlight) {
-        return processKey + ":" + highlight.getActiveActivities().hashCode();
-    }
-    
-    public void invalidateCache(String processKey) {
-        imageCache.keySet().removeIf(key -> key.startsWith(processKey + ":"));
-    }
-}
-```
-
-### Lazy Rendering
-
-```java
-public class LazyImageGenerator {
-    
-    private final ExecutorService rendererPool;
-    
-    public CompletableFuture<BufferedImage> generateImageAsync(
-            BpmnModel model, 
-            HighlightData highlight) {
-        
-        return CompletableFuture.supplyAsync(() -> {
-            return doGenerateImage(model, highlight);
-        }, rendererPool);
-    }
-    
-    private BufferedImage doGenerateImage(BpmnModel model, 
-                                         HighlightData highlight) {
-        // Rendering logic
-    }
-}
-```
-
----
-
-## Customization
-
-### Custom Renderer
-
-```java
-public class CustomRenderer implements ImageRenderer {
-    
-    @Override
-    public void render(DiagramData data, 
-                      StyleTemplate style,
-                      HighlightManager highlight,
-                      OutputStream output) 
-            throws IOException {
-        
-        // Custom rendering logic
-        // Add watermarks, logos, custom annotations, etc.
-    }
-}
-```
-
-### Custom Style Template
-
-```java
-public class CustomStyleTemplate extends StyleTemplate {
-    
-    public CustomStyleTemplate() {
-        setName("Custom");
-        
-        // Define custom styles
-        elementStyles.put("userTask", CustomStyle.builder()
-            .fillColor(new Color(240, 240, 255))
-            .strokeColor(new Color(100, 100, 200))
-            .build());
-        
-        highlightStyle = CustomStyle.builder()
-            .fillColor(Color.YELLOW)
-            .strokeColor(Color.ORANGE)
-            .build();
-    }
-}
-```
-
----
 
 ## Usage Examples
 
-### Basic Image Generation
+### Basic SVG Generation (No Highlights)
 
 ```java
-public class ImageGenerationExample {
-    
-    public void generateProcessImage() throws IOException {
-        // Load BPMN model
-        BpmnModel model = loadBpmnModel("process.bpmn");
-        
-        // Create image generator
-        ImageGenerator generator = new ImageGenerator();
-        
-        // Generate PNG
-        try (OutputStream output = 
-                new FileOutputStream("process.png")) {
-            generator.generate(model, output, ImageFormat.PNG);
-        }
-    }
+ProcessDiagramGenerator generator = new DefaultProcessDiagramGenerator();
+
+BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinitionId);
+
+try (InputStream svgStream = generator.generateDiagram(
+        bpmnModel,
+        Collections.emptyList(),
+        Collections.emptyList())) {
+
+    // svgStream contains the SVG diagram
+    Files.copy(svgStream, outputPath, StandardCopyOption.REPLACE_EXISTING);
 }
 ```
 
-### Highlighted Image Generation
+### Highlight Current Activity
 
 ```java
-public class HighlightedImageExample {
-    
-    public void generateHighlightedImage() throws IOException {
-        BpmnModel model = loadBpmnModel("process.bpmn");
-        
-        // Get active elements
-        Set<String> activeActivities = getActiveActivities();
-        Set<String> activeFlows = getActiveFlows();
-        
-        // Create highlight manager
-        HighlightManager highlight = new HighlightManager(
-            activeActivities, 
-            activeFlows,
-            new HighlightStyle());
-        
-        // Generate image with highlighting
-        ImageGenerator generator = new ImageGenerator();
-        
-        try (OutputStream output = 
-                new FileOutputStream("process-highlighted.png")) {
-            generator.generate(model, highlight, output, ImageFormat.PNG);
-        }
-    }
+ProcessDiagramGenerator generator = new DefaultProcessDiagramGenerator();
+
+// Get the currently active activity IDs for a running process instance
+List<String> activeActivityIds = runtimeService.getActiveActivityIds(processInstanceId);
+
+BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinitionId);
+
+try (InputStream svgStream = generator.generateDiagram(bpmnModel, activeActivityIds)) {
+    // Activities in activeActivityIds are highlighted in green (#57FFAE)
 }
 ```
 
-### SVG Generation
+### Highlight Completed Path (Activities + Flows)
 
 ```java
-public class SvgGenerationExample {
-    
-    public void generateSvg() throws IOException {
-        BpmnModel model = loadBpmnModel("process.bpmn");
-        
-        ImageGenerator generator = new ImageGenerator();
-        
-        try (OutputStream output = 
-                new FileOutputStream("process.svg")) {
-            generator.generate(model, output, ImageFormat.SVG);
-        }
-    }
+ProcessDiagramGenerator generator = new DefaultProcessDiagramGenerator();
+
+// Collect completed activity IDs and flow IDs from history
+List<String> highlightedActivities = historyService.createHistoricActivityInstanceQuery()
+        .processInstanceId(processInstanceId)
+        .finished()
+        .list()
+        .stream()
+        .map(HistoricActivityInstance::getActivityId)
+        .collect(Collectors.toList());
+
+List<String> highlightedFlows = historyService.createHistoricActivityInstanceQuery()
+        .processInstanceId(processInstanceId)
+        .finished()
+        .list()
+        .stream()
+        .flatMap(h -> h.getStartTime() != null
+                ? h.getEndTime() != null ? Stream.of(h.getActivityId()) : Stream.empty()
+                : Stream.empty())
+        .collect(Collectors.toList());
+// Or collect sequence flow IDs from HistoricSequenceFlow
+
+BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinitionId);
+
+try (InputStream svgStream = generator.generateDiagram(
+        bpmnModel,
+        highlightedActivities,
+        highlightedFlows)) {
+    // Activities and flows are highlighted in blue (#3399FF)
 }
 ```
 
----
-
-## Best Practices
-
-### 1. Use Appropriate Image Size
+### Three-State Highlighting (Current, Completed, Errored)
 
 ```java
-// Calculate optimal size based on diagram complexity
-int width = model.getFlowElements().size() * 150;
-int height = model.getProcesses().size() * 200;
-```
+ProcessDiagramGenerator generator = new DefaultProcessDiagramGenerator();
 
-### 2. Cache Generated Images
+List<String> highlightedActivities = getCompletedActivities(processInstanceId);
+List<String> highlightedFlows = getCompletedFlows(processInstanceId);
+List<String> currentActivities = runtimeService.getActiveActivityIds(processInstanceId);
+List<String> erroredActivities = getErroredActivities(processInstanceId);
 
-```java
-@Cacheable(value = "processImages", key = "#model.id + ':' + #highlight")
-public BufferedImage generateImage(BpmnModel model, HighlightData highlight) {
-    return imageGenerator.generate(model, highlight);
+BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinitionId);
+
+try (InputStream svgStream = generator.generateDiagram(
+        bpmnModel,
+        highlightedActivities,
+        highlightedFlows,
+        currentActivities,
+        erroredActivities,
+        "Arial", "Arial", "Arial",
+        false, null)) {
+    // Completed = blue, current = green, errored = red
 }
 ```
 
-### 3. Use Async Rendering for Large Diagrams
+### Custom Fonts and Fallback Diagram
 
 ```java
-CompletableFuture<BufferedImage> imageFuture = 
-    generator.generateImageAsync(model, highlight);
+ProcessDiagramGenerator generator = new DefaultProcessDiagramGenerator();
 
-// Continue with other work
-imageFuture.thenAccept(image -> saveImage(image));
+BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinitionId);
+
+try (InputStream svgStream = generator.generateDiagram(
+        bpmnModel,
+        Collections.emptyList(),
+        Collections.emptyList(),
+        "DejaVu Sans",      // activity font
+        "DejaVu Sans",      // label font
+        "DejaVu Sans",      // annotation font
+        true,               // generateDefaultDiagram — don't throw if no layout data
+        null)) {            // use default fallback image (/image/na.svg)
+
+    // Returns the fallback SVG if bpmnModel.hasDiagramInterchangeInfo() is false
+}
 ```
 
-### 4. Choose Right Format
+### Accessing SVG Element IDs
+
+Each BPMN element in the generated SVG is wrapped in a `<g>` tag whose `id` attribute matches the element's BPMN `id`. This enables CSS targeting and DOM lookups:
 
 ```java
-// PNG for web display
-ImageFormat.PNG
-
-// SVG for scalable diagrams
-ImageFormat.SVG
-
-// PDF for documentation
-ImageFormat.PDF
+// The SVG output contains elements like:
+// <g id="usertask1"> ... </g>
+// <g id="exclusivegateway1"> ... </g>
+// <g id="startevent1"> ... </g>
 ```
 
----
+## Rendering Order
 
-## API Reference
+`DefaultProcessDiagramGenerator.generateProcessDiagram()` draws elements in this order:
 
-### Key Classes
+1. **Pools** — `drawPoolOrLane()` for each `Pool` in the model
+2. **Lanes** — `drawPoolOrLane()` for each `Lane` in each `Process`
+3. **Flow nodes** — iterates `FlowNode`s via `findFlowElementsOfType(FlowNode.class)`:
+   - Draw the shape (event circle, task rectangle, gateway rhombus, etc.)
+   - Draw multi-instance and collapsed markers
+   - Draw highlight overlays (current, completed, errored)
+   - Draw outgoing sequence flows with arrowheads, conditional/default indicators
+   - Draw sequence flow labels
+   - Recurse into nested `FlowElementsContainer` children (sub-process contents)
+4. **Artifacts** — text annotations and associations from each `Process` and `SubProcess`
 
-- `ImageGenerator` - Main image generation API
-- `PngRenderer` - PNG output
-- `SvgRenderer` - SVG output
-- `PdfRenderer` - PDF output
-- `HighlightManager` - Highlighting control
-- `StyleTemplate` - Style management
+## Default Values
 
-### Key Methods
-
-```java
-// Image generation
-void generate(BpmnModel model, OutputStream output, ImageFormat format)
-void generate(BpmnModel model, HighlightManager highlight, 
-              OutputStream output, ImageFormat format)
-BufferedImage generateAsImage(BpmnModel model)
-
-// Styling
-void setStyleTemplate(StyleTemplate template)
-StyleTemplate getCurrentStyleTemplate()
-
-// Highlighting
-void setHighlightManager(HighlightManager highlight)
-```
-
----
+| Setting | Default |
+|---|---|
+| Activity font name | `"Arial"` (bold, 11px) |
+| Label font name | `"Arial"` (italic, 10px) |
+| Annotation font name | `"Arial"` (plain, 11px) |
+| Fallback diagram | `/image/na.svg` (classpath resource) |
+| Task fill color | `#F9F9F9` |
+| Task border color | `#BBBBBB` |
+| Event fill color | `#FFFFFF` |
+| Event border color | `#585858` |
+| Connection color | `#585858` |
+| Label color | `#7092BE` |
 
 ## See Also
 
-- [Parent Module Documentation](../overview.md)
-- [BPMN Model](../engine-api/bpmn-model.md)
-- [BPMN Layout](../engine-api/bpmn-layout.md)
+- [BPMN Model](./bpmn-model.md)
+- [BPMN Layout (GraphicInfo)](./bpmn-layout.md)

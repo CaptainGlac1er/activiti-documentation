@@ -87,7 +87,9 @@ ProcessPayloadBuilder.start()
                activiti:assignee="customerValidator">
   <bpmn:incoming>flowToValidateCustomer</bpmn:incoming>
   <bpmn:outgoing>flowToCustomerGateway</bpmn:outgoing>
-  <bpmn:property id="customerData" name="customerData"/>
+  <bpmn:extensionElements>
+    <activiti:formProperty id="customerData" name="customerData" type="string"/>
+  </bpmn:extensionElements>
 </bpmn:userTask>
 ```
 
@@ -95,7 +97,7 @@ ProcessPayloadBuilder.start()
 
 **Key Features:**
 - **Assignee:** `customerValidator` - Static user ID or group (can also use EL expression `${customerValidator}` for dynamic resolution)
-- **Task Property:** `customerData` - stores validated customer information
+- **Form Property:** `customerData` - stores validated customer information (defined via `activiti:formProperty` in extensionElements)
 - **Boundary Event:** 30-minute timeout
 
 **Boundary Timer Event:**
@@ -236,20 +238,21 @@ public class CreditScoreService implements Connector {
 <bpmn:boundaryEvent id="creditServiceError" 
                     name="Credit Service Unavailable" 
                     attachedToRef="checkCreditScoreTask" 
-                    cancelActivity="true">
+                    cancelActivity="false">
   <bpmn:outgoing>flowToCreditErrorHandler</bpmn:outgoing>
-  <bpmn:errorEventDefinition errorRef="creditServiceError"/>
+  <bpmn:errorEventDefinition errorRef="creditServiceErrorDef"/>
 </bpmn:boundaryEvent>
 ```
 
 **Error Definition:**
 ```xml
-<bpmn:error id="creditServiceError" name="CreditServiceError" errorCode="CREDIT001"/>
+<bpmn:error id="creditServiceErrorDef" name="CreditServiceError" errorCode="CREDIT001"/>
 ```
 
 **Why error boundary?**
 - Handles service failures gracefully
-- Prevents process from hanging on external service errors
+- Error boundary events are always non-cancelling in Activiti (the converter forces `cancelActivity="false"`)
+- Fires alongside the service task, allowing error recovery without interrupting
 - Can log, notify, or retry based on error type
 
 ---
@@ -481,16 +484,16 @@ public class CreditScoreService implements Connector {
                activiti:assignee="qualityTeam">
   <bpmn:incoming>flowToQualityCheck</bpmn:incoming>
   <bpmn:outgoing>flowToQualityGateway</bpmn:outgoing>
-  
-  <!-- Non-cancelling boundary event -->
-  <bpmn:boundaryEvent id="qualityEscalation" 
-                      name="Escalation Request" 
-                      attachedToRef="qualityCheckTask" 
-                      cancelActivity="false">
-    <bpmn:outgoing>flowToEscalationHandler</bpmn:outgoing>
-    <bpmn:messageEventDefinition messageRef="escalationMessage"/>
-  </bpmn:boundaryEvent>
 </bpmn:userTask>
+
+<!-- Non-cancelling boundary event (sibling, not child of the userTask) -->
+<bpmn:boundaryEvent id="qualityEscalation" 
+                    name="Escalation Request" 
+                    attachedToRef="qualityCheckTask" 
+                    cancelActivity="false">
+  <bpmn:outgoing>flowToEscalationHandler</bpmn:outgoing>
+  <bpmn:messageEventDefinition messageRef="escalationMessage"/>
+</bpmn:boundaryEvent>
 ```
 
 **Key Feature:** Non-cancelling boundary event

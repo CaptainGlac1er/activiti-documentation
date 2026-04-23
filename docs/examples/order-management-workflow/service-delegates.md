@@ -20,21 +20,27 @@ flowchart TD
 
 ## Connector Interface
 
-All service delegates implement the Activiti `Connector` interface:
+All service delegates implement the Activiti `Connector` interface, which extends `java.util.function.Function<IntegrationContext, IntegrationContext>`:
 
 ```java
-public interface Connector {
-    IntegrationContext apply(IntegrationContext integrationContext);
+public interface Connector extends Function<IntegrationContext, IntegrationContext> {
+    // Inherits apply(IntegrationContext) from Function
 }
 ```
 
-**IntegrationContext Methods:**
-- `getInBoundVariables()` - Read all input variables from process as `Map<String, Object>`
+**IntegrationContext Methods (22 total):**
+- `getInBoundVariables()` - Read all input variables as `Map<String, Object>`
 - `getInBoundVariable(String name)` - Access specific input variable with type inference
 - `getInBoundVariable(String name, Class<T> type)` - Access specific input variable with explicit type
-- `addOutBoundVariable(String name, Object value)` - Set output variable
-- `addOutBoundVariables(Map<String, Object> variables)` - Set multiple output variables
 - `getOutBoundVariables()` - Read all output variables as `Map<String, Object>`
+- `addOutBoundVariable(String name, Object value)` - Set single output variable
+- `addOutBoundVariables(Map<String, Object> variables)` - Set multiple output variables
+- `getOutBoundVariable(String name)` - Read specific output variable with type inference
+- `getOutBoundVariable(String name, Class<T> type)` - Read specific output variable with explicit type
+- `getId()`, `getProcessInstanceId()`, `getParentProcessInstanceId()`, `getRootProcessInstanceId()` - Process instance metadata
+- `getExecutionId()`, `getProcessDefinitionId()`, `getProcessDefinitionKey()`, `getProcessDefinitionVersion()` - Definition metadata
+- `getBusinessKey()`, `getConnectorType()` - Connector configuration
+- `getAppVersion()`, `getClientId()`, `getClientName()`, `getClientType()` - Client metadata
 
 ---
 

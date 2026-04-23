@@ -226,8 +226,10 @@ public class ProcessDefinitionInfo {
         System.out.println("Category: " + processDef.getCategory());
         System.out.println("Deployment ID: " + processDef.getDeploymentId());
         System.out.println("Resource Name: " + processDef.getResourceName());
-        System.out.println("Diagram XML: " + processDef.getDiagramXML() != null);
-        System.out.println("Startable by User: " + processDef.isStartableByUser());
+        System.out.println("Diagram Resource: " + processDef.getDiagramResourceName());
+        System.out.println("Has Graphical Notation: " + processDef.hasGraphicalNotation());
+        System.out.println("Has Start Form Key: " + processDef.hasStartFormKey());
+        System.out.println("Suspended: " + processDef.isSuspended());
     }
 }
 ```
@@ -236,12 +238,8 @@ public class ProcessDefinitionInfo {
 
 ```java
 // Get BPMN XML
-String bpmnXml = repositoryService
-    .getProcessDefinitionXML(processDefinition.getId());
-
-// Get diagram XML
-String diagramXml = repositoryService
-    .getProcessDefinitionDiagramXML(processDefinition.getId());
+String bpmnXml = new String(repositoryService
+    .getResourceAsStream(deploymentId, resourceName).readAllBytes());
 
 // Get deployment resources
 List<String> resourceNames = repositoryService
@@ -249,8 +247,8 @@ List<String> resourceNames = repositoryService
 
 for (String resourceName : resourceNames) {
     InputStream resource = repositoryService
-        .getDeploymentResourceAsStream(deploymentId, resourceName);
-    
+        .getResourceAsStream(deploymentId, resourceName);
+
     // Process resource...
 }
 ```
@@ -313,7 +311,10 @@ public class BlueGreenDeployment {
             .deploy();
         
         // Update process routing to use new version
-        updateProcessRouting(processKey, newDeployment.getProcessDefinitions().get(0));
+        ProcessDefinition newProcess = repositoryService.createProcessDefinitionQuery()
+            .deploymentId(newDeployment.getId())
+            .singleResult();
+        updateProcessRouting(processKey, newProcess);
     }
 }
 ```
@@ -336,7 +337,9 @@ public class CanaryDeployment {
             .addClasspathResource("processes/" + processKey + "-canary.bpmn")
             .deploy();
         
-        ProcessDefinition canaryProcess = canaryDeployment.getProcessDefinitions().get(0);
+        ProcessDefinition canaryProcess = repositoryService.createProcessDefinitionQuery()
+            .deploymentId(canaryDeployment.getId())
+            .singleResult();
         
         // Route canary percentage to new version
         // Remaining traffic goes to stable version
@@ -353,7 +356,7 @@ public class FeatureFlagDeployment {
     @Autowired
     private RepositoryService repositoryService;
     
-    public void deployWithFeatureFlag(String processKey, String featureFlag) {
+    public String deployWithFeatureFlag(String processKey, String featureFlag) {
         // Deploy both versions
         Deployment stableDeployment = repositoryService.createDeployment()
             .name(processKey + "-stable")
@@ -366,9 +369,12 @@ public class FeatureFlagDeployment {
             .deploy();
         
         // Use feature flag to route
-        ProcessDefinition processDef = FeatureFlagEvaluator.evaluate(featureFlag)
-            ? featureDeployment.getProcessDefinitions().get(0)
-            : stableDeployment.getProcessDefinitions().get(0);
+        Deployment targetDeployment = FeatureFlagEvaluator.evaluate(featureFlag)
+            ? featureDeployment
+            : stableDeployment;
+        ProcessDefinition processDef = repositoryService.createProcessDefinitionQuery()
+            .deploymentId(targetDeployment.getId())
+            .singleResult();
         
         return processDef.getKey();
     }
@@ -467,24 +473,26 @@ public class VersionDeprecator {
 
 ```java
 // Deployments
-Deployment createDeployment();
-Deployment createDeployment(String name);
+DeploymentBuilder createDeployment();
 void deleteDeployment(String deploymentId);
-void deleteDeployments(String... deploymentIds);
-Deployment getDeployment(String deploymentId);
+void deleteDeployment(String deploymentId, boolean cascade);
+void setDeploymentCategory(String deploymentId, String category);
+void setDeploymentKey(String deploymentId, String key);
 List<Deployment> createDeploymentQuery().list();
 
 // Process Definitions
 ProcessDefinition getProcessDefinition(String id);
-String getProcessDefinitionXML(String id);
-String getProcessDefinitionDiagramXML(String id);
-void deleteProcessDefinition(String processDefinitionId);
+BpmnModel getBpmnModel(String processDefinitionId);
+InputStream getProcessModel(String processDefinitionId);
+boolean isProcessDefinitionSuspended(String processDefinitionId);
 void suspendProcessDefinitionById(String id);
+void suspendProcessDefinitionById(String id, boolean suspendProcessInstances, Date suspensionDate);
 void activateProcessDefinitionById(String id);
+void activateProcessDefinitionById(String id, boolean activateProcessInstances, Date activationDate);
 
 // Resources
 List<String> getDeploymentResourceNames(String deploymentId);
-InputStream getDeploymentResourceAsStream(String deploymentId, String resourceName);
+InputStream getResourceAsStream(String deploymentId, String resourceName);
 
 // Queries
 ProcessDefinitionQuery createProcessDefinitionQuery();
@@ -548,10 +556,12 @@ public class ProcessDeploymentService {
         log.info("Deployed process with ID: {}", deployment.getId());
         
         // Get deployed process definitions
-        List<ProcessDefinition> processDefinitions = deployment.getProcessDefinitions();
-        
+        List<ProcessDefinition> processDefinitions = repositoryService.createProcessDefinitionQuery()
+            .deploymentId(deployment.getId())
+            .list();
+
         for (ProcessDefinition pd : processDefinitions) {
-            log.info("Process: {} v{} - {}", 
+            log.info("Process: {} v{} - {}",
                 pd.getKey(), pd.getVersion(), pd.getName());
         }
         

@@ -471,7 +471,7 @@ public Map<String, Long> getDatabaseHealth(ManagementService managementService) 
     // Check for unusually high counts
     for (Map.Entry<String, Long> entry : tableCounts.entrySet()) {
         if (entry.getValue() > 1000000) {
-            System.warn("Table " + entry.getKey() + " has " + entry.getValue() + " rows");
+            System.err.println("Table " + entry.getKey() + " has " + entry.getValue() + " rows");
         }
     }
 
@@ -588,23 +588,13 @@ public void executeTimerJobNow(ManagementService managementService, String timer
 3. **Handle Exceptions** - Catch `ActivitiObjectNotFoundException`
 4. **Paginate Large Queries** - Use page/size for table queries
 5. **Monitor Dead Letter** - Regularly check and handle dead letter jobs
-6. **Event Logging** - Enable in config if you need audit trails
+6. **Event Logging** - Enable through engine configuration if you need audit trails; see [Engine Configuration](../../configuration.md) for details
 
 ---
 
 ## Configuration
 
-Enable event logging in `ProcessEngineConfiguration`:
-
-```java
-ProcessEngineConfiguration configuration = ProcessEngineConfiguration
-    .createStandaloneInMemProcessEngineConfiguration();
-
-configuration.setEventLoggingEnabled(true);
-configuration.setActivityHistoryEnabled(true);
-
-ProcessEngine engine = configuration.buildProcessEngine();
-```
+Event logging can be enabled in `ProcessEngineConfiguration` through the appropriate configuration mechanism. Consult the [Engine Configuration](../../configuration.md) documentation for available options.
 
 ---
 
@@ -612,7 +602,7 @@ ProcessEngine engine = configuration.buildProcessEngine();
 
 - [History Service](./history-service.md) - Historical data queries
 - [Runtime Service](./runtime-service.md) - Process execution
-- [Engine Configuration](../../../configuration.md) - Setup and configuration
+- [Engine Configuration](../../configuration.md) - Setup and configuration
 
 ---
 

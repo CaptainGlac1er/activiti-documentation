@@ -17,10 +17,9 @@ description: Concrete implementation of Activiti API interfaces, bridging high-l
 - [API Implementation Strategy](#api-implementation-strategy)
 - [Process Runtime Implementation](#process-runtime-implementation)
 - [Task Runtime Implementation](#task-runtime-implementation)
-- [Model Implementation](#model-implementation)
-- [Query Implementation](#query-implementation)
-- [Event Implementation](#event-implementation)
-- [Converter Implementation](#converter-implementation)
+- [Model Converters](#model-converters)
+- [Event Converters](#event-converters)
+- [Variable Validation](#variable-validation)
 - [Performance Considerations](#performance-considerations)
 - [Error Handling](#error-handling)
 - [Testing Strategy](#testing-strategy)
@@ -35,20 +34,20 @@ The **activiti-api-impl** module provides the concrete implementation of the Act
 
 ### Key Responsibilities
 
-1. **API Implementation**: Concrete implementations of all API interfaces
-2. **Model Conversion**: Transform between API models and engine models
-3. **Query Translation**: Convert API queries to engine queries
-4. **Event Mapping**: Map engine events to API events
-5. **Error Handling**: Translate engine exceptions to API exceptions
-6. **Validation**: Input validation and business rule enforcement
+1. **API Implementation**: Concrete implementations of all API interfaces (`ProcessRuntime`, `TaskRuntime`, etc.)
+2. **Model Conversion**: Transform between engine models and API models via `ModelConverter` implementations
+3. **Event Mapping**: Map engine events to API events through dedicated event converters
+4. **Error Handling**: Translate engine exceptions to API exceptions (`NotFoundException`, `UnprocessableEntityException`)
+5. **Validation**: Variable type checking against process extension definitions
+6. **Security**: User-based access control via `SecurityManager` and `ProcessSecurityPoliciesManager`
 
 ### Design Principles
 
-- **Facade Pattern**: Hide engine complexity
-- **Adapter Pattern**: Bridge API and engine
-- **Builder Pattern**: Fluent API construction
-- **Immutable Models**: Type-safe data structures
-- **Fail-Fast**: Early validation and error detection
+- **Facade Pattern**: Hide engine complexity behind runtime interfaces
+- **Converter Pattern**: Dedicated `ModelConverter` implementations for each model type
+- **Builder Pattern**: `ProcessPayloadBuilder` and `TaskPayloadBuilder` for fluent payload construction
+- **Event-Driven Architecture**: Spring `ApplicationEventPublisher` for process and task events
+- **Security-First**: `@PreAuthorize("hasRole('ACTIVITI_USER')")` on all runtime implementations
 
 ---
 
@@ -58,26 +57,40 @@ The **activiti-api-impl** module provides the concrete implementation of the Act
 
 **Purpose:** Implements the `ProcessRuntime` interface to manage process instance lifecycle operations.
 
+**Location:** `activiti-api-process-runtime-impl/src/main/java/org/activiti/runtime/api/impl/ProcessRuntimeImpl.java`
+
 **Responsibilities:**
 - Starting new process instances with variables and business keys
-- Sending signal and message events to running processes
-- Querying process instances and definitions
+- Creating suspended process instances (via `create()`)
+- Sending signal and message events through Spring event publishing
+- Querying process definitions and instances with pagination
 - Managing process instance state (suspend, activate, delete)
-- Handling process variables at instance and execution level
+- Handling process variables (get, set, remove)
+- Security checks via `ProcessSecurityPoliciesManager` and `SecurityManager`
 
-**Key Methods:**
+**Key Methods (from interface):**
 - `start(StartProcessPayload)` - Initiates a new process instance
-- `signal(SignalEventPayload)` - Broadcasts signals to waiting processes
-- `message(MessageEventPayload)` - Sends targeted messages to processes
-- `processInstances()` - Returns query builder for process instances
-- `processDefinition(String id)` - Retrieves process definition metadata
-
-**When to Use:** For all process instance management operations in your application. This is the primary entry point for workflow execution.
+- `signal(SignalPayload)` - Broadcasts signals to waiting processes
+- `receive(ReceiveMessagePayload)` - Sends targeted messages to processes
+- `processInstance(String)` - Retrieves a single process instance
+- `processInstances(Pageable)` - Returns paged process instances
+- `processDefinition(String)` - Retrieves process definition metadata
+- `suspend(SuspendProcessPayload)` - Suspends a running process
+- `resume(ResumeProcessPayload)` - Resumes a suspended process
+- `delete(DeleteProcessPayload)` - Deletes a process instance
 
 **Dependencies:**
-- `RuntimeService` - Underlying engine service
-- `ProcessPayloadConverter` - Converts API payloads to engine commands
-- `ProcessInstanceConverter` - Converts engine instances to API models
+- `RepositoryService` - Process definition queries
+- `RuntimeService` - Engine runtime operations
+- `TaskService` - Task queries for security checks
+- `APIProcessInstanceConverter` - Converts engine instances to API models
+- `APIProcessDefinitionConverter` - Converts engine definitions to API models
+- `APIVariableInstanceConverter` - Converts engine variables to API models
+- `APIDeploymentConverter` - Converts engine deployments to API models
+- `ProcessVariablesPayloadValidator` - Validates variable payloads
+- `ProcessSecurityPoliciesManager` - Security policy enforcement
+- `SecurityManager` - Authenticated user context
+- `ApplicationEventPublisher` - Event publishing
 
 ---
 
@@ -85,186 +98,142 @@ The **activiti-api-impl** module provides the concrete implementation of the Act
 
 **Purpose:** Implements the `TaskRuntime` interface to manage user task lifecycle operations.
 
+**Location:** `activiti-api-task-runtime-impl/src/main/java/org/activiti/runtime/api/impl/TaskRuntimeImpl.java`
+
 **Responsibilities:**
-- Querying tasks by various criteria (assignee, candidate, process instance)
-- Claiming and assigning tasks to users
+- Querying tasks with pagination by assignee, candidate, process instance
+- Claiming and releasing tasks
 - Completing tasks with optional variables
-- Updating task properties (assignee, due date, priority)
-- Managing task candidates (users and groups)
-- Handling task variables and comments
+- Updating task properties (name, description, priority, due date)
+- Managing task candidate users and groups
+- Creating ad-hoc tasks
+- Handling task variables (create, update, get)
 
-**Key Methods:**
-- `task(String taskId)` - Retrieves a specific task
-- `tasks(TaskQueryPayload)` - Queries tasks with filters
+**Key Methods (from interface):**
+- `task(String)` - Retrieves a specific task
+- `tasks(Pageable)` - Queries tasks with pagination for authenticated user
 - `complete(CompleteTaskPayload)` - Completes a task
-- `claim(ClaimTaskPayload)` - Claims a task for a user
-- `assign(AssignTaskPayload)` - Assigns task to user
-- `addCandidate(AddCandidatePayload)` - Adds candidate user/group
-
-**When to Use:** For all task management operations. Use this when you need to interact with user tasks in a process.
+- `claim(ClaimTaskPayload)` - Claims a task for authenticated user
+- `release(ReleaseTaskPayload)` - Releases a claimed task
+- `update(UpdateTaskPayload)` - Updates task properties
+- `assign(AssignTaskPayload)` - Reassigns a task to another candidate user
+- `create(CreateTaskPayload)` - Creates an ad-hoc task
 
 **Dependencies:**
 - `TaskService` - Underlying engine service
-- `TaskPayloadConverter` - Converts API payloads to engine commands
-- `TaskConverter` - Converts engine tasks to API models
+- `APITaskConverter` - Converts engine tasks to API models
+- `APIVariableInstanceConverter` - Converts engine variables to API models
+- `TaskRuntimeHelper` - Shared task operations (update, variable handling, security)
+- `SecurityManager` - Authenticated user context
 
 ---
 
-### ProcessPayloadConverter
-
-**Purpose:** Transforms API payload objects into engine-compatible command objects.
-
-**Responsibilities:**
-- Converting `StartProcessPayload` to engine start commands
-- Mapping API variables to engine variable format
-- Resolving process definition IDs from keys
-- Validating payload structure before conversion
-- Handling optional fields and defaults
-
-**Key Methods:**
-- `toCommand(StartProcessPayload)` - Converts start payload to command
-- `toEngineVariables(Map<String, Object>)` - Converts API variables
-- `resolveProcessDefinitionId(String key)` - Finds definition by key
-- `validate(StartProcessPayload)` - Validates payload structure
-
-**When to Use:** Internally by runtime implementations. You typically don't use this directly.
-
-**Design Pattern:** Converter/Translator pattern - bridges API and engine models
-
----
-
-### ProcessInstanceConverter
+### APIProcessInstanceConverter
 
 **Purpose:** Transforms engine `ProcessInstance` objects to API `ProcessInstance` models.
 
-**Responsibilities:**
-- Mapping engine fields to API fields
-- Converting engine state enums to API state enums
-- Transforming Date objects to Instant
-- Handling null values appropriately
-- Creating immutable API model instances
+**Location:** `activiti-api-process-runtime-impl/src/main/java/org/activiti/runtime/api/model/impl/APIProcessInstanceConverter.java`
+
+**Base Classes:** Extends `ListConverter<ProcessInstance, ProcessInstance>` and implements `ModelConverter<ProcessInstance, ProcessInstance>`.
 
 **Key Methods:**
-- `toApiProcessInstance(engine.ProcessInstance)` - Converts engine to API
-- `convertState(String engineState)` - Maps state values
-- `convertDate(Date engineDate)` - Converts to Instant
+- `from(engine.ProcessInstance)` - Converts single engine instance to API model
+- `from(Collection<engine.ProcessInstance>)` - Inherited from `ListConverter`, converts collections
 
-**When to Use:** Internally by runtime implementations. Ensures API consumers get consistent, type-safe models.
-
-**Design Pattern:** Converter pattern with immutable target models
+**Conversion Logic:**
+- Maps all standard fields (id, name, businessKey, processDefinitionId, etc.)
+- Calculates status: `RUNNING`, `CREATED`, `SUSPENDED`, or `COMPLETED` based on engine state
+- Creates `ProcessInstanceImpl` as the target API model
 
 ---
 
-### TaskPayloadConverter
+### APITaskConverter
 
-**Purpose:** Transforms API task payloads into engine-compatible commands.
+**Purpose:** Transforms engine `Task` objects to API `Task` models.
 
-**Responsibilities:**
-- Converting `CompleteTaskPayload` to engine complete commands
-- Mapping `ClaimTaskPayload` to engine claim operations
-- Transforming task variable payloads
-- Validating task operation parameters
-- Handling candidate user/group payloads
+**Location:** `activiti-api-task-runtime-impl/src/main/java/org/activiti/runtime/api/model/impl/APITaskConverter.java`
+
+**Base Classes:** Extends `ListConverter<Task, Task>` and implements `ModelConverter<Task, Task>`.
 
 **Key Methods:**
-- `toCompleteCommand(CompleteTaskPayload)` - Converts completion payload
-- `toClaimCommand(ClaimTaskPayload)` - Converts claim payload
-- `toEngineVariables(Map<String, Object>)` - Converts variables
-- `validate(TaskPayload)` - Validates payload structure
+- `from(engine.Task)` - Converts engine task to API model
+- `fromWithCandidates(engine.Task)` - Converts with identity link extraction for candidate users/groups
+- `fromWithCompletedBy(engine.Task, status, completedBy)` - Converts with completion metadata
 
-**When to Use:** Internally by TaskRuntimeImpl. Ensures task operations are properly formatted.
+**Conversion Logic:**
+- Calculates status: `CREATED`, `ASSIGNED`, `SUSPENDED`, or `CANCELLED`
+- Creates `TaskImpl` as the target API model
+- Extracts `CandidateUsers` and `CandidateGroups` from `IdentityLink` entries
 
 ---
 
-### ProcessInstanceQueryImpl
+### ProcessVariablesPayloadValidator
 
-**Purpose:** Implements fluent query builder for process instance queries.
+**Purpose:** Validates variable payloads against process extension definitions.
+
+**Location:** `activiti-api-process-runtime-impl/src/main/java/org/activiti/runtime/api/impl/ProcessVariablesPayloadValidator.java`
 
 **Responsibilities:**
-- Building complex queries with multiple filters
-- Translating API query criteria to engine query
-- Handling pagination (firstResult, maxResults)
-- Ordering results by various fields
-- Executing queries and converting results
+- Checking variable names against naming conventions
+- Validating variable types against process extension schema (`VariableDefinition`)
+- Parsing date strings to `java.util.Date` objects
+- Detecting and rejecting expression-based variable values
+- Converting string variables to dates when no schema definition exists
 
 **Key Methods:**
-- `processDefinitionKey(String key)` - Filter by definition key
-- `processInstanceId(String id)` - Filter by instance ID
-- `businessKey(String key)` - Filter by business key
-- `active()` - Filter for active instances only
-- `list()` - Execute query and return results
-- `singleResult()` - Execute and return single result
-
-**When to Use:** When you need to search for process instances with specific criteria.
-
-**Design Pattern:** Query Object pattern with fluent interface
+- `checkStartProcessPayloadVariables(StartProcessPayload, processDefinitionId)`
+- `checkPayloadVariables(SetProcessVariablesPayload, processDefinitionId)`
+- `checkSignalPayloadVariables(SignalPayload, processDefinitionId)`
+- `checkReceiveMessagePayloadVariables(ReceiveMessagePayload, processDefinitionId)`
+- `checkStartMessagePayloadVariables(StartMessagePayload, processDefinitionId)`
 
 ---
 
-### EventConverter
+### TaskRuntimeHelper
 
-**Purpose:** Maps engine runtime events to API event models.
+**Purpose:** Shared helper class for task runtime operations.
+
+**Location:** `activiti-api-task-runtime-impl/src/main/java/org/activiti/runtime/api/impl/TaskRuntimeHelper.java`
 
 **Responsibilities:**
-- Converting engine event types to API event types
-- Transforming event entity data
-- Creating appropriate API event instances
-- Handling event payload conversion
-- Managing event metadata
+- Applying `UpdateTaskPayload` to engine tasks (name, description, priority, due date, form key, parent task)
+- Task lookup with security checks (`getInternalTaskWithChecks`)
+- Variable creation and update with validation
+- Handling complete and save task payloads
 
 **Key Methods:**
-- `convert(engine.RuntimeEvent)` - Converts engine event to API event
-- `convertCreatedEvent(engine.RuntimeEvent)` - Handles creation events
-- `convertUpdatedEvent(engine.RuntimeEvent)` - Handles update events
-- `convertDeletedEvent(engine.RuntimeEvent)` - Handles deletion events
-
-**When to Use:** Internally by event listeners. Ensures consistent event representation.
+- `applyUpdateTaskPayload(isAdmin, UpdateTaskPayload)`
+- `getInternalTaskWithChecks(taskId)` - Finds task with security access verification
+- `getInternalTask(taskId)` - Admin lookup without security checks
+- `createVariable(isAdmin, CreateTaskVariablePayload)`
+- `updateVariable(isAdmin, UpdateTaskVariablePayload)`
+- `handleCompleteTaskPayload(CompleteTaskPayload)`
+- `handleSaveTaskPayload(SaveTaskPayload)`
 
 ---
 
-### ApiExceptionHandler
+### ProcessAdminRuntimeImpl
 
-**Purpose:** Translates engine exceptions to API-specific exceptions.
+**Purpose:** Admin-level process operations bypassing user security checks.
+
+**Location:** `activiti-api-process-runtime-impl/src/main/java/org/activiti/runtime/api/impl/ProcessAdminRuntimeImpl.java`
 
 **Responsibilities:**
-- Catching and wrapping engine exceptions
-- Creating appropriate API exception types
-- Preserving exception chains for debugging
-- Adding context to error messages
-- Handling validation errors
-
-**Key Methods:**
-- `translate(Exception)` - Converts any exception to API exception
-- `translateActivitiException(ActivitiException)` - Handles engine exceptions
-- `createNotFoundException(String message)` - Creates not found exception
-- `createAuthorizationException(String message)` - Creates auth exception
-
-**When to Use:** Internally by runtime implementations. Provides consistent error handling.
-
-**Design Pattern:** Exception Translation pattern
+- Starting processes without security policy restrictions
+- Deleting process instances at admin level
+- All operations use `ProcessVariablesPayloadValidator` for variable validation
 
 ---
 
-### PayloadValidator
+### TaskAdminRuntimeImpl
 
-**Purpose:** Validates API payloads before processing.
+**Purpose:** Admin-level task operations bypassing user security checks.
+
+**Location:** `activiti-api-task-runtime-impl/src/main/java/org/activiti/runtime/api/impl/TaskAdminRuntimeImpl.java`
 
 **Responsibilities:**
-- Checking required fields are present
-- Validating field formats and values
-- Ensuring business rule compliance
-- Providing clear error messages
-- Fail-fast validation
-
-**Key Methods:**
-- `validate(StartProcessPayload)` - Validates start payload
-- `validate(CompleteTaskPayload)` - Validates completion payload
-- `checkRequiredFields(Payload)` - Ensures required fields exist
-- `checkFieldFormats(Payload)` - Validates field formats
-
-**When to Use:** At the beginning of runtime operations. Catches errors early.
-
-**Design Pattern:** Validator pattern with fail-fast principle
+- Completing, claiming, releasing, updating tasks without assignee restrictions
+- Variable operations without security checks
 
 ---
 
@@ -276,46 +245,86 @@ The **activiti-api-impl** module provides the concrete implementation of the Act
 flowchart TD
     subgraph Application["Application Layer<br>(Your Business Logic)"]
     end
-    
-    subgraph API["API Layer<br>(activiti-api interfaces - ProcessRuntime, TaskRuntime)"]
+
+    subgraph API["API Layer<br>(activiti-api interfaces)"]
+        ProcApi["ProcessRuntime"]
+        TaskApi["TaskRuntime"]
     end
-    
-    subgraph APIImpl["API Implementation Layer<br>(activiti-api-impl - Concrete implementations)"]
-        subgraph Impls["Implementations"]
-            ProcessImpl["ProcessRuntimeImpl"]
-            TaskImpl["TaskRuntimeImpl"]
-            More["..."]
-        end
+
+    subgraph APIImpl["API Implementation Layer<br>(activiti-api-impl)"]
+        ProcImpl["ProcessRuntimeImpl"]
+        TaskImpl["TaskRuntimeImpl"]
+        ProcAdmin["ProcessAdminRuntimeImpl"]
+        TaskAdmin["TaskAdminRuntimeImpl"]
+        Converters["APIProcessInstanceConverter,<br>APITaskConverter, etc."]
+        Validators["ProcessVariablesPayloadValidator,<br>TaskVariablesPayloadValidator"]
     end
-    
-    subgraph Engine["Engine Layer<br>(activiti-engine - RuntimeService, TaskService, etc.)"]
+
+    subgraph Engine["Engine Layer<br>(RuntimeService, TaskService, RepositoryService)"]
     end
-    
+
     Application --> API
     API --> APIImpl
     APIImpl --> Engine
+    ProcImpl --> Converters
+    TaskImpl --> Converters
+    ProcImpl --> Validators
 ```
 
 ### Component Diagram
 
 ```mermaid
 flowchart TD
-    subgraph APIImpls["API Implementations"]
-        Process["ProcessRuntime<br>Impl"]
-        Task["TaskRuntime<br>Impl"]
-        Model["ModelRuntime<br>Impl"]
+    subgraph ProcessImpl["ProcessRuntimeImpl"]
+        P1["ProcessRuntimeImpl"]
     end
-    
-    subgraph Converter["Converter Layer<br>(Model Translators)"]
+
+    subgraph TaskImpl["TaskRuntimeImpl"]
+        T1["TaskRuntimeImpl"]
     end
-    
-    subgraph EngineServices["Engine Services<br>(RuntimeService, etc.)"]
+
+    subgraph Converters["Model Converters"]
+        C1["APIProcessInstanceConverter"]
+        C2["APIProcessDefinitionConverter"]
+        C3["APITaskConverter"]
+        C4["APIVariableInstanceConverter"]
+        C5["APIDeploymentConverter"]
     end
-    
-    Process --> Converter
-    Task --> Converter
-    Model --> Converter
-    Converter --> EngineServices
+
+    subgraph Helpers["Helpers"]
+        H1["TaskRuntimeHelper"]
+        H2["ProcessVariablesPayloadValidator"]
+        H3["TaskVariablesPayloadValidator"]
+    end
+
+    subgraph Security["Security"]
+        S1["SecurityManager"]
+        S2["ProcessSecurityPoliciesManager"]
+    end
+
+    subgraph Engine["Engine Services"]
+        E1["RuntimeService"]
+        E2["TaskService"]
+        E3["RepositoryService"]
+    end
+
+    P1 --> C1
+    P1 --> C2
+    P1 --> C5
+    P1 --> H2
+    P1 --> S1
+    P1 --> S2
+    P1 --> E1
+    P1 --> E2
+    P1 --> E3
+
+    T1 --> C3
+    T1 --> H1
+    T1 --> S1
+    T1 --> E2
+
+    H1 --> C3
+    H1 --> H3
 ```
 
 ---
@@ -325,76 +334,107 @@ flowchart TD
 ### Implementation Pattern
 
 ```java
-// API Interface (from activiti-api)
+// API Interface (from activiti-api-process-runtime)
 public interface ProcessRuntime {
-    ProcessInstance start(StartProcessPayload payload);
-    void signal(SignalEventPayload payload);
-    void message(MessageEventPayload payload);
+    ProcessInstance start(StartProcessPayload startProcessPayload);
+    ProcessInstance processInstance(String processInstanceId);
+    Page<ProcessInstance> processInstances(Pageable pageable);
+    void signal(SignalPayload signalPayload);
+    void receive(ReceiveMessagePayload messagePayload);
 }
 
-// Implementation (in activiti-api-impl)
-@Component
+// Implementation (in activiti-api-impl/activiti-api-process-runtime-impl)
+@PreAuthorize("hasRole('ACTIVITI_USER')")
 public class ProcessRuntimeImpl implements ProcessRuntime {
-    
-    @Autowired
-    private RuntimeService runtimeService;
-    
-    @Autowired
-    private ProcessPayloadConverter processPayloadConverter;
-    
+
+    private final RuntimeService runtimeService;
+    private final RepositoryService repositoryService;
+    private final APIProcessInstanceConverter processInstanceConverter;
+    private final APIProcessDefinitionConverter processDefinitionConverter;
+    private final ProcessVariablesPayloadValidator processVariablesValidator;
+    private final ProcessSecurityPoliciesManager securityPoliciesManager;
+    private final SecurityManager securityManager;
+    private final ApplicationEventPublisher eventPublisher;
+    // ... other dependencies
+
     @Override
-    public ProcessInstance start(StartProcessPayload payload) {
-        // 1. Validate payload
-        validatePayload(payload);
-        
-        // 2. Convert to engine model
-        StartProcessCommand command = 
-            processPayloadConverter.toCommand(payload);
-        
-        // 3. Execute on engine
-        ProcessInstance engineInstance = 
-            runtimeService.startProcessInstanceById(command.getProcessDefinitionId());
-        
-        // 4. Convert back to API model
-        return processPayloadConverter.toApiModel(engineInstance);
+    public ProcessInstance start(StartProcessPayload startProcessPayload) {
+        return processInstanceConverter.from(
+            this.createProcessInstanceBuilder(startProcessPayload).start()
+        );
     }
-    
-    private void validatePayload(StartProcessPayload payload) {
-        if (payload.getProcessDefinitionKey() == null) {
-            throw new IllegalArgumentException("Process definition key is required");
-        }
+
+    private ProcessInstanceBuilder createProcessInstanceBuilder(StartProcessPayload payload) {
+        ProcessDefinition processDefinition = getProcessDefinitionAndCheckUserHasRights(
+            payload.getProcessDefinitionId(),
+            payload.getProcessDefinitionKey()
+        );
+
+        processVariablesValidator.checkStartProcessPayloadVariables(
+            payload, processDefinition.getId()
+        );
+
+        return runtimeService
+            .createProcessInstanceBuilder()
+            .processDefinitionId(processDefinition.getId())
+            .processDefinitionKey(processDefinition.getKey())
+            .businessKey(payload.getBusinessKey())
+            .variables(payload.getVariables())
+            .name(payload.getName());
+    }
+
+    @Override
+    @Transactional
+    public void signal(SignalPayload signalPayload) {
+        processVariablesValidator.checkSignalPayloadVariables(signalPayload, null);
+        eventPublisher.publishEvent(signalPayload);
     }
 }
 ```
 
-### Dependency Injection
+### Spring Auto-Configuration
+
+Runtime beans are configured via `ProcessRuntimeAutoConfiguration` and equivalent task configuration:
 
 ```java
 @Configuration
-public class ApiImplConfig {
-    
-    @Autowired
-    private ProcessEngine processEngine;
-    
+public class ProcessRuntimeAutoConfiguration {
+
     @Bean
-    public ProcessRuntime processRuntime() {
+    public ProcessRuntime processRuntime(
+        RepositoryService repositoryService,
+        APIProcessDefinitionConverter processDefinitionConverter,
+        RuntimeService runtimeService,
+        TaskService taskService,
+        ProcessSecurityPoliciesManager securityPoliciesManager,
+        APIProcessInstanceConverter processInstanceConverter,
+        APIVariableInstanceConverter variableInstanceConverter,
+        APIDeploymentConverter deploymentConverter,
+        ProcessRuntimeConfiguration configuration,
+        ApplicationEventPublisher eventPublisher,
+        ProcessVariablesPayloadValidator processVariablesValidator,
+        SecurityManager securityManager
+    ) {
         return new ProcessRuntimeImpl(
-            processEngine.getRuntimeService(),
-            processPayloadConverter()
+            repositoryService, processDefinitionConverter, runtimeService,
+            taskService, securityPoliciesManager, processInstanceConverter,
+            variableInstanceConverter, deploymentConverter, configuration,
+            eventPublisher, processVariablesValidator, securityManager
         );
     }
-    
+
     @Bean
-    public TaskRuntime taskRuntime() {
-        return new TaskRuntimeImpl(
-            processEngine.getTaskService(),
-            taskPayloadConverter()
+    public ProcessVariablesPayloadValidator processVariablesValidator(
+        DateFormatterProvider dateFormatterProvider,
+        ProcessExtensionService processExtensionService,
+        VariableValidationService variableValidationService,
+        VariableNameValidator variableNameValidator,
+        ExpressionResolver expressionResolver
+    ) {
+        return new ProcessVariablesPayloadValidator(
+            dateFormatterProvider, processExtensionService,
+            variableValidationService, variableNameValidator, expressionResolver
         );
-    }
-    
-    @Bean
-    private ProcessPayloadConverter processPayloadConverter() {
-        return new DefaultProcessPayloadConverter();
     }
 }
 ```
@@ -407,99 +447,114 @@ public class ApiImplConfig {
 
 ```java
 public class ProcessRuntimeImpl implements ProcessRuntime {
-    
-    private final RuntimeService runtimeService;
-    private final ProcessPayloadConverter converter;
-    
+
     @Override
-    public ProcessInstance start(StartProcessPayload payload) {
-        try {
-            // Validate
-            Assert.notNull(payload.getProcessDefinitionKey(), 
-                "Process definition key is required");
-            
-            // Build variables map
-            Map<String, Object> variables = buildVariables(payload);
-            
-            // Start process
-            String processDefinitionId = resolveProcessDefinitionId(payload);
-            
-            org.activiti.engine.ProcessInstance engineInstance = 
-                runtimeService.startProcessInstanceById(
-                    processDefinitionId, 
-                    payload.getBusinessKey(),
-                    variables
-                );
-            
-            // Convert to API model
-            return converter.toApiProcessInstance(engineInstance);
-            
-        } catch (ActivitiException e) {
-            throw new ProcessEngineException("Failed to start process", e);
-        }
+    public ProcessInstance start(StartProcessPayload startProcessPayload) {
+        return processInstanceConverter.from(
+            this.createProcessInstanceBuilder(startProcessPayload).start()
+        );
     }
-    
-    private Map<String, Object> buildVariables(StartProcessPayload payload) {
-        Map<String, Object> variables = new HashMap<>();
-        if (payload.getVariables() != null) {
-            payload.getVariables().forEach(variables::put);
-        }
-        return variables;
+
+    private ProcessInstanceBuilder createProcessInstanceBuilder(StartProcessPayload payload) {
+        ProcessDefinition processDefinition = getProcessDefinitionAndCheckUserHasRights(
+            payload.getProcessDefinitionId(),
+            payload.getProcessDefinitionKey()
+        );
+
+        processVariablesValidator.checkStartProcessPayloadVariables(
+            payload, processDefinition.getId()
+        );
+
+        return runtimeService
+            .createProcessInstanceBuilder()
+            .processDefinitionId(processDefinition.getId())
+            .processDefinitionKey(processDefinition.getKey())
+            .businessKey(payload.getBusinessKey())
+            .variables(payload.getVariables())
+            .name(payload.getName());
     }
-    
-    private String resolveProcessDefinitionId(StartProcessPayload payload) {
-        if (payload.getProcessDefinitionId() != null) {
-            return payload.getProcessDefinitionId();
+
+    protected ProcessDefinition getProcessDefinitionAndCheckUserHasRights(
+            String processDefinitionId, String processDefinitionKey) {
+
+        String checkId = processDefinitionKey != null ? processDefinitionKey : processDefinitionId;
+        ProcessDefinition processDefinition = processDefinition(checkId);
+
+        if (processDefinition == null) {
+            throw new IllegalStateException(
+                "At least Process Definition Id or Key needs to be provided to start a process");
         }
-        
-        // Find by key and version
-        return runtimeService.createProcessDefinitionQuery()
-            .processDefinitionKey(payload.getProcessDefinitionKey())
-            .latestVersion()
-            .singleResult()
-            .getId();
+
+        checkUserCanWritePermissionOnProcessDefinition(processDefinition.getKey());
+        return processDefinition;
     }
 }
 ```
 
 ### Signal Event Implementation
 
+Signals are published through Spring's `ApplicationEventPublisher` rather than directly calling the engine:
+
 ```java
 @Override
-public void signal(SignalEventPayload payload) {
-    try {
-        Assert.notNull(payload.getSignalName(), 
-            "Signal name is required");
-        
-        runtimeService.signalEventReceived(
-            payload.getSignalName(),
-            payload.getData()
-        );
-        
-    } catch (ActivitiException e) {
-        throw new SignalEventException("Failed to send signal", e);
-    }
+@Transactional
+public void signal(SignalPayload signalPayload) {
+    processVariablesValidator.checkSignalPayloadVariables(signalPayload, null);
+    eventPublisher.publishEvent(signalPayload);
 }
 ```
 
+The `SignalPayloadEventListener` subscribes to the published event and routes it to the engine.
+
 ### Message Event Implementation
+
+Messages are similarly published through Spring events:
 
 ```java
 @Override
-public void message(MessageEventPayload payload) {
-    try {
-        Assert.notNull(payload.getMessageName(), 
-            "Message name is required");
-        
-        runtimeService.messageEventReceived(
-            payload.getMessageName(),
-            payload.getProcessInstanceId(),
-            payload.getData()
-        );
-        
-    } catch (ActivitiException e) {
-        throw new MessageEventException("Failed to send message", e);
+@Transactional
+public void receive(ReceiveMessagePayload messagePayload) {
+    processVariablesValidator.checkReceiveMessagePayloadVariables(messagePayload, null);
+    eventPublisher.publishEvent(messagePayload);
+}
+```
+
+The `ReceiveMessagePayloadEventListener` handles the event dispatch.
+
+### Process Instance Queries
+
+```java
+@Override
+public Page<ProcessInstance> processInstances(Pageable pageable,
+                                              GetProcessInstancesPayload getProcessInstancesPayload) {
+    org.activiti.engine.runtime.ProcessInstanceQuery internalQuery =
+        runtimeService.createProcessInstanceQuery();
+
+    String currentUserId = securityManager.getAuthenticatedUserId();
+    internalQuery.involvedUser(currentUserId);
+
+    if (getProcessInstancesPayload.getProcessDefinitionKeys() != null
+        && !getProcessInstancesPayload.getProcessDefinitionKeys().isEmpty()) {
+        internalQuery.processDefinitionKeys(
+            getProcessInstancesPayload.getProcessDefinitionKeys());
     }
+    if (getProcessInstancesPayload.getBusinessKey() != null
+        && !getProcessInstancesPayload.getBusinessKey().isEmpty()) {
+        internalQuery.processInstanceBusinessKey(
+            getProcessInstancesPayload.getBusinessKey());
+    }
+    if (getProcessInstancesPayload.isSuspendedOnly()) {
+        internalQuery.suspended();
+    }
+    if (getProcessInstancesPayload.isActiveOnly()) {
+        internalQuery.active();
+    }
+
+    return new PageImpl<>(
+        processInstanceConverter.from(internalQuery.listPage(
+            pageable.getStartIndex(), pageable.getMaxItems())),
+        Math.toIntExact(internalQuery.count())
+    );
 }
 ```
 
@@ -511,56 +566,42 @@ public void message(MessageEventPayload payload) {
 
 ```java
 public class TaskRuntimeImpl implements TaskRuntime {
-    
+
     private final TaskService taskService;
-    private final TaskPayloadConverter converter;
-    
+    private final APITaskConverter taskConverter;
+    private final TaskRuntimeHelper taskRuntimeHelper;
+    private final SecurityManager securityManager;
+
     @Override
     public Task task(String taskId) {
-        try {
-            org.activiti.engine.Task engineTask = 
-                taskService.createTaskQuery()
-                    .taskId(taskId)
-                    .singleResult();
-            
-            if (engineTask == null) {
-                throw new TaskNotFoundException(taskId);
-            }
-            
-            return converter.toApiTask(engineTask);
-            
-        } catch (ActivitiException e) {
-            throw new TaskServiceException("Failed to get task", e);
-        }
+        return taskConverter.fromWithCandidates(
+            taskRuntimeHelper.getInternalTaskWithChecks(taskId)
+        );
     }
-    
+
     @Override
-    public List<Task> tasks(TaskQueryPayload payload) {
-        TaskQuery query = taskService.createTaskQuery();
-        
-        // Apply filters
-        applyFilters(query, payload);
-        
-        // Execute query
-        List<org.activiti.engine.Task> engineTasks = query.list();
-        
-        // Convert results
-        return engineTasks.stream()
-            .map(converter::toApiTask)
-            .collect(Collectors.toList());
-    }
-    
-    private void applyFilters(TaskQuery query, TaskQueryPayload payload) {
-        if (payload.getProcessInstanceId() != null) {
-            query.processInstanceId(payload.getProcessInstanceId());
+    public Page<Task> tasks(Pageable pageable, GetTasksPayload getTasksPayload) {
+        TaskQuery taskQuery = taskService.createTaskQuery();
+
+        String authenticatedUserId = securityManager.getAuthenticatedUserId();
+        List<String> userGroups = securityManager.getAuthenticatedUserGroups();
+
+        taskQuery = taskQuery.or()
+            .taskCandidateOrAssigned(authenticatedUserId, userGroups)
+            .taskOwner(authenticatedUserId)
+            .endOr();
+
+        if (getTasksPayload.getProcessInstanceId() != null) {
+            taskQuery = taskQuery.processInstanceId(getTasksPayload.getProcessInstanceId());
         }
-        if (payload.getAssignee() != null) {
-            query.taskAssignee(payload.getAssignee());
+        if (getTasksPayload.getParentTaskId() != null) {
+            taskQuery = taskQuery.taskParentTaskId(getTasksPayload.getParentTaskId());
         }
-        if (payload.getCandidateUser() != null) {
-            query.candidateUser(payload.getCandidateUser());
-        }
-        // ... more filters
+
+        List<Task> tasks = taskConverter.from(
+            taskQuery.listPage(pageable.getStartIndex(), pageable.getMaxItems())
+        );
+        return new PageImpl<>(tasks, Math.toIntExact(taskQuery.count()));
     }
 }
 ```
@@ -569,19 +610,32 @@ public class TaskRuntimeImpl implements TaskRuntime {
 
 ```java
 @Override
-public void complete(CompleteTaskPayload payload) {
+public Task complete(CompleteTaskPayload completeTaskPayload) {
+    Task task;
     try {
-        Assert.notNull(payload.getTaskId(), "Task ID is required");
-        
-        Map<String, Object> variables = 
-            payload.getVariables() != null ? 
-            payload.getVariables() : new HashMap<>();
-        
-        taskService.complete(payload.getTaskId(), variables);
-        
-    } catch (ActivitiException e) {
-        throw new TaskCompletionException("Failed to complete task", e);
+        task = task(completeTaskPayload.getTaskId());
+    } catch (IllegalStateException ex) {
+        throw new IllegalStateException(
+            "The authenticated user cannot complete task "
+            + completeTaskPayload.getTaskId() + " due he/she cannot access to the task");
     }
+
+    if (task.getAssignee() == null || task.getAssignee().isEmpty()) {
+        throw new IllegalStateException(
+            "The task needs to be claimed before trying to complete it");
+    }
+    if (!task.getAssignee().equals(securityManager.getAuthenticatedUserId())) {
+        throw new IllegalStateException(
+            "You cannot complete the task if you are not assigned to it");
+    }
+
+    taskRuntimeHelper.handleCompleteTaskPayload(completeTaskPayload);
+    taskService.complete(completeTaskPayload.getTaskId(),
+                         completeTaskPayload.getVariables(), true);
+
+    ((TaskImpl) task).setCompletedBy(securityManager.getAuthenticatedUserId());
+    ((TaskImpl) task).setStatus(Task.TaskStatus.COMPLETED);
+    return task;
 }
 ```
 
@@ -589,313 +643,203 @@ public void complete(CompleteTaskPayload payload) {
 
 ```java
 @Override
-public Task claim(ClaimTaskPayload payload) {
+public Task claim(ClaimTaskPayload claimTaskPayload) {
+    Task task;
     try {
-        Assert.notNull(payload.getTaskId(), "Task ID is required");
-        Assert.notNull(payload.getAssignee(), "Assignee is required");
-        
-        taskService.claim(payload.getTaskId(), payload.getAssignee());
-        
-        return task(payload.getTaskId());
-        
-    } catch (ActivitiException e) {
-        throw new TaskClaimException("Failed to claim task", e);
+        task = task(claimTaskPayload.getTaskId());
+    } catch (IllegalStateException ex) {
+        throw new IllegalStateException(
+            "The authenticated user cannot claim task "
+            + claimTaskPayload.getTaskId()
+            + " due it is not a candidate for it");
+    }
+
+    if (task.getAssignee() != null && !task.getAssignee().isEmpty()) {
+        throw new IllegalStateException(
+            "The task was already claimed, the assignee of this task "
+            + "needs to release it first for you to claim it");
+    }
+
+    String authenticatedUserId = securityManager.getAuthenticatedUserId();
+    claimTaskPayload.setAssignee(authenticatedUserId);
+    taskService.claim(claimTaskPayload.getTaskId(), claimTaskPayload.getAssignee());
+    return task(claimTaskPayload.getTaskId());
+}
+```
+
+---
+
+## Model Converters
+
+### ModelConverter Interface
+
+All model converters implement the `ModelConverter` interface:
+
+```java
+public interface ModelConverter<SourceT, TargetT> {
+    TargetT from(SourceT source);
+    List<TargetT> from(Collection<SourceT> sources);
+}
+```
+
+### Available Converters
+
+| Converter | Converts From | Converts To |
+|---|---|---|
+| `APIProcessInstanceConverter` | `engine.runtime.ProcessInstance` | `api.ProcessInstance` |
+| `APIProcessDefinitionConverter` | `engine.repository.ProcessDefinition` | `api.ProcessDefinition` |
+| `APITaskConverter` | `engine.task.Task` | `api.Task` |
+| `APIVariableInstanceConverter` | `engine.persistence.entity.VariableInstance` | `api.VariableInstance` |
+| `APIDeploymentConverter` | `engine.repository.Deployment` | `api.Deployment` |
+| `APIProcessCandidateStarterUserConverter` | `engine.repository.ProcessDefinition` | `api.ProcessCandidateStarterUser` |
+| `APIProcessCandidateStarterGroupConverter` | `engine.repository.ProcessDefinition` | `api.ProcessCandidateStarterGroup` |
+| `ToSignalConverter` | `engine.SignalEventSubscription` | `api.BPMNSignal` |
+| `ToActivityConverter` | `engine.ActivitiActivity` | `api.BPMNActivity` |
+
+### Converter Usage Pattern
+
+```java
+// Single entity conversion
+ProcessInstance apiInstance = processInstanceConverter.from(engineInstance);
+
+// Batch conversion (via ListConverter inheritance)
+List<Task> apiTasks = taskConverter.from(engineTaskList);
+```
+
+---
+
+## Event Converters
+
+### Event Conversion Architecture
+
+Events use the Spring `ApplicationEventPublisher` pattern. Each event type has a dedicated converter and listener delegate.
+
+### Process Event Converters
+
+| Converter | Engine Event | API Event |
+|---|---|---|
+| `ToAPIProcessCreatedEventConverter` | `ENGINE_PROCESS_CREATED` | `ProcessCreatedEvent` |
+| `ToAPIProcessStartedEventConverter` | `ENGINE_PROCESS_STARTED` | `ProcessStartedEvent` |
+| `ToProcessCompletedConverter` | `ENGINE_PROCESS_COMPLETED` | `ProcessCompleted` |
+| `ToProcessCancelledConverter` | `ENGINE_PROCESS_CANCELLED` | `ProcessCancelled` |
+| `ToProcessUpdatedConverter` | `ENGINE_PROCESS_UPDATED` | `ProcessUpdated` |
+| `ToProcessSuspendedConverter` | `ENGINE_PROCESS_SUSPENDED` | `ProcessSuspended` |
+| `ToProcessResumedConverter` | `ENGINE_PROCESS_RESUMED` | `ProcessResumed` |
+
+### Task Event Converters
+
+| Converter | Engine Event | API Event |
+|---|---|---|
+| `ToAPITaskCreatedEventConverter` | `ENGINE_TASK_CREATED` | `TaskCreatedEvent` |
+| `ToTaskCompletedConverter` | `ENGINE_TASK_COMPLETED` | `TaskCompleted` |
+| `ToTaskCancelledConverter` | `ENGINE_TASK_CANCELLED` | `TaskCancelled` |
+| `ToAPITaskUpdatedEventConverter` | `ENGINE_TASK_UPDATED` | `TaskUpdated` |
+| `ToAPITaskAssignedEventConverter` | `ENGINE_TASK_ASSIGNED` | `TaskAssignedEvent` |
+| `ToTaskActivatedConverter` | `ENGINE_TASK_ACTIVATED` | `TaskActivated` |
+| `ToTaskSuspendedConverter` | `ENGINE_TASK_SUSPENDED` | `TaskSuspended` |
+
+### BPMN Activity Event Converters
+
+| Converter | Engine Event | API Event |
+|---|---|---|
+| `ToActivityStartedConverter` | `ACTIVITY_STARTED` | `BPMNActivityStartedEvent` |
+| `ToActivityCompletedConverter` | `ACTIVITY_COMPLETED` | `BPMNActivityCompletedEvent` |
+| `ToActivityCancelledConverter` | `ACTIVITY_CANCELLED` | `BPMNActivityCancelledEvent` |
+| `ToSequenceFlowTakenConverter` | `SEQUENCE_FLOW_TAKEN` | `BPMNSequenceFlowTaken` |
+
+### Timer, Signal, and Message Converters
+
+| Converter | API Event |
+|---|---|
+| `ToTimerScheduledConverter` | `BPMNTimerScheduledEvent` |
+| `ToTimerFiredConverter` | `BPMNTimerFiredEvent` |
+| `ToTimerCancelledConverter` | `BPMNTimerCancelledEvent` |
+| `ToTimerFailedConverter` | `BPMNTimerFailedEvent` |
+| `ToTimerExecutedConverter` | `BPMNTimerExecutedEvent` |
+| `ToTimerRetriesDecrementedConverter` | `BPMNTimerRetriesDecrementedEvent` |
+| `ToSignalReceivedConverter` | `BPMNSignalReceivedEvent` |
+| `ToMessageReceivedConverter` | `BPMNMessageReceivedEvent` |
+| `ToMessageSentConverter` | `BPMNMessageSentEvent` |
+| `ToMessageWaitingConverter` | `BPMNMessageWaitingEvent` |
+| `ToErrorReceivedConverter` | `BPMNErrorReceivedEvent` |
+
+### Event Listener Delegates
+
+Each event type has a corresponding `*ListenerDelegate` that receives the engine event, converts it using the appropriate converter, and publishes the API event through `ApplicationEventPublisher`.
+
+```java
+// Example listener delegate pattern
+public class ProcessCreatedListenerDelegate {
+    private final ApplicationEventPublisher eventPublisher;
+    private final ProcessRuntimeConfiguration configuration;
+
+    public void handle(ActivitiEvent event) {
+        ProcessCreatedEvent apiEvent =
+            new ToAPIProcessCreatedEventConverter(event).toAPIEvent();
+        configuration.processEventListeners().forEach(
+            listener -> listener.onEvent(apiEvent));
+        eventPublisher.publishEvent(apiEvent);
     }
 }
 ```
 
 ---
 
-## Model Implementation
+## Variable Validation
 
-### Payload Builders
+### ProcessVariablesPayloadValidator
+
+Validates process-level variable payloads against process extension definitions:
 
 ```java
-public final class StartProcessPayloadBuilder {
-    
-    private String processDefinitionKey;
-    private String processDefinitionId;
-    private String businessKey;
-    private Map<String, Object> variables;
-    
-    public StartProcessPayloadBuilder withProcessDefinitionKey(String key) {
-        this.processDefinitionKey = key;
-        return this;
+public class ProcessVariablesPayloadValidator {
+
+    private final DateFormatterProvider dateFormatterProvider;
+    private final ProcessExtensionService processExtensionService;
+    private final VariableValidationService variableValidationService;
+    private final VariableNameValidator variableNameValidator;
+    private final ExpressionResolver expressionResolver;
+
+    public void checkStartProcessPayloadVariables(
+            StartProcessPayload payload, String processDefinitionId) {
+        checkPayloadVariables(payload.getVariables(), processDefinitionId);
     }
-    
-    public StartProcessPayloadBuilder withProcessDefinitionId(String id) {
-        this.processDefinitionId = id;
-        return this;
-    }
-    
-    public StartProcessPayloadBuilder withBusinessKey(String key) {
-        this.businessKey = key;
-        return this;
-    }
-    
-    public StartProcessPayloadBuilder withVariable(String name, Object value) {
-        if (this.variables == null) {
-            this.variables = new HashMap<>();
-        }
-        this.variables.put(name, value);
-        return this;
-    }
-    
-    public StartProcessPayloadBuilder withVariables(Map<String, Object> variables) {
-        this.variables = variables;
-        return this;
-    }
-    
-    public StartProcessPayload build() {
-        validate();
-        return new StartProcessPayload(
-            processDefinitionKey,
-            processDefinitionId,
-            businessKey,
-            variables
-        );
-    }
-    
-    private void validate() {
-        if (processDefinitionKey == null && processDefinitionId == null) {
-            throw new IllegalStateException(
-                "Either processDefinitionKey or processDefinitionId must be set");
-        }
+
+    public void checkPayloadVariables(
+            SetProcessVariablesPayload payload, String processDefinitionId) {
+        checkPayloadVariables(payload.getVariables(), processDefinitionId);
     }
 }
 ```
 
-### Immutable Models
+### TaskVariablesPayloadValidator
+
+Validates task-level variable payloads:
 
 ```java
-public final class ProcessInstance {
-    
-    private final String id;
-    private final String processDefinitionId;
-    private final String businessKey;
-    private final String name;
-    private final Instant startTime;
-    private final ProcessInstanceState state;
-    
-    private ProcessInstance(Builder builder) {
-        this.id = builder.id;
-        this.processDefinitionId = builder.processDefinitionId;
-        this.businessKey = builder.businessKey;
-        this.name = builder.name;
-        this.startTime = builder.startTime;
-        this.state = builder.state;
+public class TaskVariablesPayloadValidator {
+
+    private final DateFormatterProvider dateFormatterProvider;
+    private final VariableNameValidator variableNameValidator;
+    private final ExpressionResolver expressionResolver;
+
+    public void handleCreateTaskVariablePayload(CreateTaskVariablePayload payload) {
+        // Validate name and convert value types
     }
-    
-    // Getters (no setters - immutable)
-    
-    public static Builder builder() {
-        return new Builder();
-    }
-    
-    public static class Builder {
-        private String id;
-        private String processDefinitionId;
-        // ... other fields
-        
-        public Builder id(String id) {
-            this.id = id;
-            return this;
-        }
-        
-        public ProcessInstance build() {
-            return new ProcessInstance(this);
-        }
+
+    public Map<String, Object> handlePayloadVariables(Map<String, Object> variables) {
+        // Convert date strings, validate names
     }
 }
 ```
 
----
+### VariableNameValidator
 
-## Query Implementation
-
-### Query Builder Pattern
+Standalone validator for variable name format:
 
 ```java
-public class ProcessInstanceQueryImpl implements ProcessInstanceQuery {
-    
-    private final RuntimeService runtimeService;
-    private String processDefinitionKey;
-    private String processInstanceId;
-    private String businessKey;
-    private List<String> executionIds;
-    private Integer firstResult;
-    private Integer maxResults;
-    
-    @Override
-    public ProcessInstanceQuery processDefinitionKey(String key) {
-        this.processDefinitionKey = key;
-        return this;
-    }
-    
-    @Override
-    public ProcessInstanceQuery processInstanceId(String id) {
-        this.processInstanceId = id;
-        return this;
-    }
-    
-    @Override
-    public ProcessInstanceQuery businessKey(String key) {
-        this.businessKey = key;
-        return this;
-    }
-    
-    @Override
-    public ProcessInstanceQuery listPage(int page, int size) {
-        this.firstResult = page * size;
-        this.maxResults = size;
-        return this;
-    }
-    
-    @Override
-    public List<ProcessInstance> list() {
-        org.activiti.engine.impl.ProcessInstanceQuery engineQuery = 
-            runtimeService.createProcessInstanceQuery();
-        
-        applyFilters(engineQuery);
-        
-        List<org.activiti.engine.ProcessInstance> results = 
-            engineQuery.listPage(firstResult, maxResults);
-        
-        return convertResults(results);
-    }
-    
-    private void applyFilters(org.activiti.engine.impl.ProcessInstanceQuery query) {
-        if (processDefinitionKey != null) {
-            query.processDefinitionKey(processDefinitionKey);
-        }
-        if (processInstanceId != null) {
-            query.processInstanceId(processInstanceId);
-        }
-        if (businessKey != null) {
-            query.businessKey(businessKey);
-        }
-    }
-    
-    private List<ProcessInstance> convertResults(
-            List<org.activiti.engine.ProcessInstance> engineResults) {
-        return engineResults.stream()
-            .map(this::convertToApiModel)
-            .collect(Collectors.toList());
-    }
-}
-```
-
----
-
-## Event Implementation
-
-### Event Converter
-
-```java
-@Component
-public class EventConverter {
-    
-    public ApiEvent convert(org.activiti.engine.event.RuntimeEvent engineEvent) {
-        switch (engineEvent.getType()) {
-            case ENTITY_CREATED:
-                return convertCreatedEvent(engineEvent);
-            case ENTITY_DELETED:
-                return convertDeletedEvent(engineEvent);
-            case ENTITY_UPDATED:
-                return convertUpdatedEvent(engineEvent);
-            default:
-                return new GenericApiEvent(engineEvent);
-        }
-    }
-    
-    private ApiEvent convertCreatedEvent(
-            org.activiti.engine.event.RuntimeEvent event) {
-        Object entity = event.getEntity();
-        
-        if (entity instanceof ProcessInstance) {
-            return new ProcessInstanceCreatedEvent(
-                ((ProcessInstance) entity).getId());
-        }
-        if (entity instanceof Task) {
-            return new TaskCreatedEvent(
-                ((Task) entity).getId());
-        }
-        
-        return new EntityCreatedEvent(entity.getClass().getName());
-    }
-}
-```
-
-### Event Publisher
-
-```java
-@Component
-public class ApiEventPublisher {
-    
-    @Autowired
-    private ApplicationEventPublisher springEventPublisher;
-    
-    public void publish(ApiEvent event) {
-        // Publish to Spring event system
-        springEventPublisher.publishEvent(event);
-        
-        // Also publish to Activiti event system
-        // (if needed for backward compatibility)
-    }
-}
-```
-
----
-
-## Converter Implementation
-
-### Model Converter Strategy
-
-```java
-public interface ModelConverter<FROM, TO> {
-    TO convert(FROM source);
-    FROM reverse(TO target);
-}
-
-@Component
-public class ProcessInstanceConverter 
-    implements ModelConverter<
-        org.activiti.engine.ProcessInstance, 
-        api.ProcessInstance> {
-    
-    @Override
-    public api.ProcessInstance convert(
-            org.activiti.engine.ProcessInstance engineInstance) {
-        
-        return api.ProcessInstance.builder()
-            .id(engineInstance.getId())
-            .processDefinitionId(engineInstance.getProcessDefinitionId())
-            .businessKey(engineInstance.getBusinessKey())
-            .name(engineInstance.getName())
-            .startTime(Instant.ofEpochMilli(
-                engineInstance.getStartTime().getTime()))
-            .state(convertState(engineInstance.getState()))
-            .build();
-    }
-    
-    @Override
-    public org.activiti.engine.ProcessInstance reverse(
-            api.ProcessInstance apiInstance) {
-        // For read-only models, reverse may not be needed
-        throw new UnsupportedOperationException(
-            "Reverse conversion not supported for ProcessInstance");
-    }
-    
-    private ProcessInstanceState convertState(String engineState) {
-        switch (engineState) {
-            case "ACTIVE":
-                return ProcessInstanceState.ACTIVE;
-            case "SUSPENDED":
-                return ProcessInstanceState.SUSPENDED;
-            default:
-                return ProcessInstanceState.UNKNOWN;
-        }
-    }
+public class VariableNameValidator {
+    public boolean validate(String name);
 }
 ```
 
@@ -903,111 +847,125 @@ public class ProcessInstanceConverter
 
 ## Performance Considerations
 
-### 1. Lazy Loading
+### 1. Paged Queries
+
+All list operations return `Page<T>` with pagination support:
 
 ```java
-public class TaskImpl implements Task {
-    
-    private final String taskId;
-    private final TaskService taskService;
-    private org.activiti.engine.Task engineTask;
-    
-    // Lazy load engine task
-    private org.activiti.engine.Task getEngineTask() {
-        if (engineTask == null) {
-            engineTask = taskService.createTaskQuery()
-                .taskId(taskId)
-                .singleResult();
-        }
-        return engineTask;
-    }
-    
-    @Override
-    public String getAssignee() {
-        return getEngineTask().getAssignee();
-    }
-}
+// Process instances
+Page<ProcessInstance> instances = processRuntime.processInstances(
+    Pageable.of(0, 20),
+    ProcessPayloadBuilder.processInstances()
+        .withProcessDefinitionKey("orderProcess")
+        .build()
+);
+
+// Tasks
+Page<Task> tasks = taskRuntime.tasks(
+    Pageable.of(0, 20),
+    TaskPayloadBuilder.tasks()
+        .withAssignee("john")
+        .build()
+);
 ```
 
-### 2. Batch Operations
+### 2. Converter Batch Operations
+
+Converters extend `ListConverter` which provides batch conversion:
 
 ```java
-@Override
-public List<Task> tasks(TaskQueryPayload payload) {
-    // Use batch fetching for better performance
-    return taskService.createTaskQuery()
-        .listPage(payload.getFirstResult(), payload.getMaxResults())
-        .stream()
-        .map(converter::toApiTask)
-        .collect(Collectors.toList());
-}
+// APIProcessInstanceConverter extends ListConverter and implements ModelConverter
+List<ProcessInstance> apiInstances = processInstanceConverter.from(engineInstances);
 ```
 
-### 3. Caching
+### 3. Security-Filtered Queries
+
+Process queries use `involvedUser` to leverage engine indexes:
 
 ```java
-@Component
-public class CachedProcessDefinitionConverter {
-    
-    @Cacheable(value = "processDefinitions", key = "#engineDefinition.id")
-    public api.ProcessDefinition convert(
-            org.activiti.engine.ProcessDefinition engineDefinition) {
-        // Conversion logic
-    }
-}
+internalQuery.involvedUser(currentUserId);
+```
+
+Task queries use `taskCandidateOrAssigned` for efficient lookup:
+
+```java
+taskQuery.or()
+    .taskCandidateOrAssigned(authenticatedUserId, userGroups)
+    .taskOwner(authenticatedUserId)
+    .endOr();
 ```
 
 ---
 
 ## Error Handling
 
-### Exception Translation
+### Exception Types
 
+The API implementation uses a minimal set of exception types:
+
+| Exception | Package | Usage |
+|---|---|---|
+| `NotFoundException` | `org.activiti.api.runtime.shared` | Resource not found (process instance, task, etc.) |
+| `UnprocessableEntityException` | `org.activiti.api.runtime.shared` | Entity exists but cannot be processed (e.g., wrong app version) |
+| `IllegalStateException` | `java.lang` | Invalid state (null payloads, missing assignee, unauthorized operation) |
+| `ActivitiObjectNotFoundException` | `org.activiti.engine` | Engine-level not found (wraps to `NotFoundException`) |
+| `ActivitiForbiddenException` | `org.activiti.core.common.spring.security.policies` | Security policy violation |
+
+### Error Handling Patterns
+
+**Not Found:**
 ```java
-public class ApiExceptionHandler {
-    
-    public static ApiException translate(Exception e) {
-        if (e instanceof ActivitiException) {
-            return translateActivitiException((ActivitiException) e);
-        }
-        if (e instanceof IllegalArgumentException) {
-            return new InvalidPayloadException(e.getMessage(), e);
-        }
-        return new UnknownApiException("Unexpected error", e);
-    }
-    
-    private static ApiException translateActivitiException(
-            ActivitiException e) {
-        if (e instanceof ActivitiObjectNotFoundException) {
-            return new ResourceNotFoundException(e.getMessage(), e);
-        }
-        if (e instanceof ActivitiAuthorizationException) {
-            return new AuthorizationException(e.getMessage(), e);
-        }
-        if (e instanceof ActivitiExecutionException) {
-            return new ProcessExecutionException(e.getMessage(), e);
-        }
-        return new EngineException(e.getMessage(), e);
-    }
+// ProcessRuntimeImpl.internalProcessInstance()
+if (internalProcessInstance == null) {
+    throw new NotFoundException(
+        "Unable to find process instance for the given id:'" + processInstanceId + "'");
+}
+
+// TaskRuntimeHelper.getInternalTask()
+if (internalTask == null) {
+    throw new NotFoundException(
+        "Unable to find task for the given id: " + taskId);
 }
 ```
 
-### Validation
-
+**Security Violation:**
 ```java
-public class PayloadValidator {
-    
-    public static void validate(StartProcessPayload payload) {
-        Assert.notNull(payload, "Payload cannot be null");
-        Assert.hasText(payload.getProcessDefinitionKey(), 
-            "Process definition key is required");
-        
-        if (payload.getVariables() != null) {
-            payload.getVariables().forEach((key, value) -> {
-                Assert.hasText(key, "Variable key cannot be empty");
-            });
-        }
-    }
+// ProcessRuntimeImpl - process definition write permission
+if (!securityPoliciesManager.canWrite(processDefinitionKey)) {
+    throw new ActivitiForbiddenException(
+        "Operation not permitted for " + processDefinitionKey
+        + " due security policy violation");
+}
+
+// TaskRuntimeImpl - task completion authorization
+if (!task.getAssignee().equals(authenticatedUserId)) {
+    throw new IllegalStateException(
+        "You cannot complete the task if you are not assigned to it");
+}
+```
+
+**Invalid Payload:**
+```java
+// ProcessRuntimeImpl - required fields
+if (payload.getProcessDefinitionKeys() == null) {
+    throw new IllegalStateException("payload cannot be null");
+}
+
+// TaskRuntimeImpl - task claim validation
+if (task.getAssignee() != null && !task.getAssignee().isEmpty()) {
+    throw new IllegalStateException(
+        "The task was already claimed, the assignee of this task "
+        + "needs to release it first for you to claim it");
+}
+```
+
+**App Version Mismatch:**
+```java
+// ProcessRuntimeImpl.checkProcessDefinitionBelongsToLatestDeployment()
+if (appVersion != null && !selectLatestDeployment().getVersion().equals(appVersion)) {
+    throw new UnprocessableEntityException(
+        "Process definition with the given id:'" + processDefinition.getId()
+        + "' belongs to a different application version.");
 }
 ```
 
@@ -1020,31 +978,50 @@ public class PayloadValidator {
 ```java
 @ExtendWith(MockitoExtension.class)
 class ProcessRuntimeImplTest {
-    
+
     @Mock
     private RuntimeService runtimeService;
-    
+
     @Mock
-    private ProcessPayloadConverter converter;
-    
+    private RepositoryService repositoryService;
+
+    @Mock
+    private APIProcessInstanceConverter processInstanceConverter;
+
+    @Mock
+    private APIProcessDefinitionConverter processDefinitionConverter;
+
+    @Mock
+    private ProcessVariablesPayloadValidator processVariablesValidator;
+
+    @Mock
+    private ProcessSecurityPoliciesManager securityPoliciesManager;
+
+    @Mock
+    private SecurityManager securityManager;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private ProcessRuntimeImpl processRuntime;
-    
+
     @Test
     void testStartProcess() {
-        // Arrange
-        StartProcessPayload payload = StartProcessPayloadBuilder.start()
+        StartProcessPayload payload = ProcessPayloadBuilder.start()
             .withProcessDefinitionKey("testProcess")
             .build();
-        
-        when(runtimeService.startProcessInstanceByKey("testProcess"))
-            .thenReturn(mock(org.activiti.engine.ProcessInstance.class));
-        
-        // Act
-        ProcessInstance result = processRuntime.start(payload);
-        
-        // Assert
-        verify(runtimeService).startProcessInstanceByKey("testProcess");
+
+        ProcessInstance engineInstance = mock(ProcessInstance.class);
+        when(runtimeService.createProcessInstanceBuilder())
+            .thenReturn(mock(ProcessInstanceBuilder.class));
+        when(processInstanceConverter.from(engineInstance))
+            .thenReturn(mock(api.ProcessInstance.class));
+
+        api.ProcessInstance result = processRuntime.start(payload);
+
+        verify(processVariablesValidator)
+            .checkStartProcessPayloadVariables(payload, anyString());
         assertNotNull(result);
     }
 }
@@ -1055,27 +1032,25 @@ class ProcessRuntimeImplTest {
 ```java
 @SpringBootTest
 class ProcessRuntimeIntegrationTest {
-    
+
     @Autowired
     private ProcessRuntime processRuntime;
-    
+
+    @Autowired
+    private TaskRuntime taskRuntime;
+
     @Test
     void testEndToEnd() {
-        // Start process
         ProcessInstance instance = processRuntime.start(
-            StartProcessPayloadBuilder.start()
+            ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("testProcess")
                 .build()
         );
-        
+
         assertNotNull(instance.getId());
-        
-        // Query process
-        List<ProcessInstance> instances = processRuntime.processInstances()
-            .processInstanceId(instance.getId())
-            .list();
-        
-        assertEquals(1, instances.size());
+
+        Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 10));
+        assertTrue(tasks.getItems().size() > 0);
     }
 }
 ```
@@ -1104,7 +1079,7 @@ private ProcessRuntime processRuntime;
 
 public void startProcess() {
     ProcessInstance instance = processRuntime.start(
-        StartProcessPayloadBuilder.start()
+        ProcessPayloadBuilder.start()
             .withProcessDefinitionKey("orderProcess")
             .build()
     );
@@ -1113,11 +1088,11 @@ public void startProcess() {
 
 ### Benefits
 
-- Type-safe payloads
-- Better IDE support
-- Clearer API contracts
-- Easier testing
-- Future-proof
+- Type-safe payloads with builders
+- Built-in security checks on every operation
+- Paginated queries via `Page<T>` return type
+- Event-driven architecture with Spring integration
+- Consistent model representation across process and task domains
 
 ---
 
@@ -1125,33 +1100,59 @@ public void startProcess() {
 
 ### Core Interfaces
 
-- `ProcessRuntime` - Process instance management
-- `TaskRuntime` - Task management
-- `ModelRuntime` - Model management
-- `ProcessInstanceQuery` - Process instance queries
-- `TaskQuery` - Task queries
+- `ProcessRuntime` - Process instance management (`activiti-api-process-runtime`)
+- `TaskRuntime` - Task management (`activiti-api-task-runtime`)
+- `ProcessAdminRuntime` - Admin-level process operations
+- `TaskAdminRuntime` - Admin-level task operations
 
-### Payload Classes
+### Runtime Implementations
 
-- `StartProcessPayload` - Start process parameters
-- `CompleteTaskPayload` - Complete task parameters
-- `SignalEventPayload` - Signal event parameters
-- `MessageEventPayload` - Message event parameters
+- `ProcessRuntimeImpl` - Default process runtime
+- `TaskRuntimeImpl` - Default task runtime
+- `ProcessAdminRuntimeImpl` - Admin process runtime
+- `TaskAdminRuntimeImpl` - Admin task runtime
 
-### Builder Classes
+### Model Converters
 
-- `StartProcessPayloadBuilder`
-- `CompleteTaskPayloadBuilder`
-- `SignalEventPayloadBuilder`
-- `MessageEventPayloadBuilder`
+- `APIProcessInstanceConverter` - Engine to API process instance
+- `APIProcessDefinitionConverter` - Engine to API process definition
+- `APITaskConverter` - Engine to API task
+- `APIVariableInstanceConverter` - Engine to API variable
+- `APIDeploymentConverter` - Engine to API deployment
+
+### Payload Builders
+
+- `ProcessPayloadBuilder` - Process payloads (`start()`, `signal()`, `processInstances()`, etc.)
+- `TaskPayloadBuilder` - Task payloads (`tasks()`, `complete()`, `claim()`, etc.)
+
+### Validators
+
+- `ProcessVariablesPayloadValidator` - Process variable validation
+- `TaskVariablesPayloadValidator` - Task variable validation
+- `VariableNameValidator` - Variable name format validation
+
+### Helpers
+
+- `TaskRuntimeHelper` - Shared task operations
+
+### Configuration
+
+- `ProcessRuntimeConfigurationImpl` - Process event listener configuration
+- `TaskRuntimeConfigurationImpl` - Task event listener configuration
 
 ### Exception Classes
 
-- `ApiException` - Base API exception
-- `ProcessEngineException` - Process execution errors
-- `TaskServiceException` - Task service errors
-- `ResourceNotFoundException` - Resource not found
-- `AuthorizationException` - Authorization errors
+- `NotFoundException` - Resource not found
+- `UnprocessableEntityException` - Entity in invalid state
+- `ActivitiForbiddenException` - Security policy violation
+- `IllegalStateException` - Invalid operation state
+
+### Event Listener Delegates
+
+- `ProcessCreatedListenerDelegate`, `ProcessStartedListenerDelegate`, `ProcessCompletedListenerDelegate`, etc.
+- `TaskCreatedListenerDelegate`, `TaskCompletedListenerDelegate`, etc.
+- `ActivityStartedListenerDelegate`, `ActivityCompletedListenerDelegate`, etc.
+- `SignalReceivedListenerDelegate`, `MessageReceivedListenerDelegate`, etc.
 
 ---
 

@@ -40,7 +40,7 @@ This documentation provides comprehensive technical details for the Activiti Eng
    - Memory management
    - Extension points
 
-3. **[Engine Configuration](../../../configuration.md)** - Configuration guide
+3. **[Engine Configuration](../../configuration.md)** - Configuration guide
    - ProcessEngineConfiguration
    - Database configuration
    - Job executor configuration
@@ -94,58 +94,29 @@ This documentation provides comprehensive technical details for the Activiti Eng
    - Performance reports
    - Audit trails
 
----
-
-## Additional Documentation (To Be Created)
-
-### Advanced Topics
-
-8. **08-management-service.md** - Engine administration
+8. **[management-service.md](management-service.md)** - Engine administration
    - Job management
    - Engine metrics
    - Database cleanup
    - Performance monitoring
 
-9. **09-dynamic-bpmn.md** - Runtime BPMN modification
-   - Dynamic process changes
-   - Activity manipulation
-   - Flow modification
+### Additional Documentation
 
-10. **10-event-system.md** - Event handling
-    - Event types
-    - Event listeners
-    - Event dispatching
-    - Custom events
+9. **[async-execution.md](async-execution.md)** - Async processing
+   - Job types
+   - Job execution
+   - Timer management
+   - Retry strategies
 
-11. **11-job-executor.md** - Async processing
-    - Job types
-    - Job execution
-    - Timer management
-    - Retry strategies
+10. **[scripting-engine.md](scripting-engine.md)** - Scripting support
+    - Script evaluation
+    - Supported languages
+    - Scripting configuration
 
-12. **12-database-persistence.md** - Data storage
-    - Database schema
-    - Entity mapping
-    - Query optimization
-    - Migration strategies
-
-13. **13-security-multitenancy.md** - Security model
-    - Authorization
-    - Authentication
-    - Multi-tenancy
-    - Permission management
-
-14. **14-integration-patterns.md** - External integration
-    - REST integration
-    - Message queues
-    - External systems
-    - Web services
-
-15. **15-best-practices.md** - Production recommendations
-    - Performance optimization
-    - Scalability patterns
-    - Monitoring strategies
-    - Troubleshooting guide
+11. **[dynamic-bpmn-service.md](dynamic-bpmn-service.md)** - Runtime BPMN modification
+    - Dynamic process changes
+    - Activity manipulation
+    - Flow modification
 
 ---
 
@@ -154,9 +125,9 @@ This documentation provides comprehensive technical details for the Activiti Eng
 | Category | Files | Status |
 |----------|-------|--------|
 | Core Documentation | 3 | Complete |
-| Services API | 4 | Complete |
-| Advanced Topics | 8 | To be created |
-| **Total** | **15** | **53% Complete** |
+| Services API | 5 | Complete |
+| Additional Documentation | 3 | Complete |
+| **Total** | **11** | **100% Complete** |
 
 ---
 
@@ -164,12 +135,12 @@ This documentation provides comprehensive technical details for the Activiti Eng
 
 ### For New Developers
 1. Start with [README.md](README.md)
-2. Read [Engine Configuration](../../../configuration.md)
+2. Read [Engine Configuration](../../configuration.md)
 3. Explore service documentation based on needs
 
 ### For Architects
 1. Study [../../architecture/overview.md](../../architecture/overview.md)
-2. Review [Engine Configuration](../../../configuration.md)
+2. Review [Engine Configuration](../../configuration.md)
 3. Examine integration patterns in [README.md](README.md)
 
 ### For Integration Developers
@@ -179,7 +150,7 @@ This documentation provides comprehensive technical details for the Activiti Eng
 
 ### For Compliance/Audit
 1. Focus on [history-service.md](history-service.md)
-2. Review security documentation in [Engine Configuration](../../../configuration.md)
+2. Review security documentation in [Engine Configuration](../../configuration.md)
 
 ---
 
@@ -204,6 +175,7 @@ This documentation provides comprehensive technical details for the Activiti Eng
 - Runtime (execution)
 - Task (user tasks)
 - History (auditing)
+- Management (admin)
 
 ### Best Practices
 - Deployment strategies
@@ -227,35 +199,15 @@ Each documentation file includes:
 
 ---
 
-## Next Steps
-
-### Immediate
-1. Review created documentation
-2. Test code examples
-3. Update version numbers
-
-### Short-term
-1. Create management service documentation
-2. Add event system details
-3. Document job executor
-
-### Long-term
-1. Complete all advanced topics
-2. Add integration patterns
-3. Create troubleshooting guide
-4. Add performance tuning deep-dive
-
----
-
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
 - [Activiti Core Common](../core-common/README.md)
-- [Spring Boot Starter](../engine-api/spring-boot-starter.md)
+- [Spring Boot Starter](spring-boot-starter.md)
 
 ---
 
-**Documentation Status:** **In Progress** - Core documentation complete, advanced topics pending
+**Documentation Status:** **Complete** - All core engine documentation available
 
 
 **Maintained By:** Activiti Development Team

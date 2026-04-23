@@ -16,6 +16,7 @@ description: Seamless integration of Activiti workflow engine with Spring Boot a
 - [Architecture](#architecture)
 - [Auto-Configuration](#auto-configuration)
 - [Properties Reference](#properties-reference)
+- [Async Executor Properties](#async-executor-properties)
 - [Quick Start](#quick-start)
 - [Advanced Configuration](#advanced-configuration)
 - [Customization](#customization)
@@ -33,31 +34,46 @@ The **activiti-spring-boot-starter** module provides seamless integration of Act
 
 ### Key Features
 
-- **Auto-Configuration**: Zero-configuration startup
-- **Property Binding**: Externalized configuration
-- **Actuator Integration**: Health checks and metrics
-- **Profile Support**: Environment-specific configs
-- **Conditional Beans**: Smart bean registration
-- **Lifecycle Management**: Proper startup/shutdown
+- **Auto-Configuration**: Zero-configuration startup using Spring Boot 3.x `@AutoConfiguration`
+- **Property Binding**: Externalized configuration under `spring.activiti` prefix
+- **Actuator Integration**: Process engine endpoint via `ProcessEngineEndpoint`
+- **Method Security**: Automatic Spring Security method-level configuration
+- **Lifecycle Management**: Proper startup/shutdown via `ShutdownListener`
 
 ### Module Structure
 
 ```
-activiti-spring-boot-starter/
-├── src/main/java/org/activiti/spring/boot/
-│   ├── ActivitiAutoConfiguration.java
-│   ├── ActivitiProperties.java
-│   ├── actuator/
-│   │   ├── ActivitiHealthIndicator.java
-│   │   └── ActivitiMetrics.java
-│   └── condition/
-│       ├── OnActivitiCondition.java
-│       └── OnProfileCondition.java
-├── src/main/resources/
-│   ├── META-INF/
-│   │   └── spring.factories
-│   └── application-activiti.yml
-└── pom.xml
+activiti-spring-boot-starter/src/main/java/org/activiti/spring/boot/
+├── ProcessEngineAutoConfiguration.java
+├── AbstractProcessEngineAutoConfiguration.java
+├── AbstractProcessEngineConfiguration.java
+├── ActivitiProperties.java
+├── AsyncExecutorProperties.java
+├── EndpointAutoConfiguration.java
+├── ActivitiMethodSecurityAutoConfiguration.java
+├── ShutdownListener.java
+├── ProcessEngineConfigurationConfigurer.java
+├── DefaultActivityBehaviorFactoryMappingConfigurer.java
+├── CandidateStartersDeploymentConfigurer.java
+├── ProcessDefinitionResourceFinderDescriptor.java
+├── actuate/endpoint/
+│   └── ProcessEngineEndpoint.java
+└── process/validation/
+    └── AsyncPropertyValidator.java
+```
+
+```
+activiti-spring-boot-starter/src/main/resources/
+└── META-INF/spring/
+    └── org.springframework.boot.autoconfigure.AutoConfiguration.imports
+```
+
+The auto-configuration uses Spring Boot 3.x `@AutoConfiguration` annotation and registers the following in `org.springframework.boot.autoconfigure.AutoConfiguration.imports`:
+
+```
+org.activiti.spring.boot.ActivitiMethodSecurityAutoConfiguration
+org.activiti.spring.boot.EndpointAutoConfiguration
+org.activiti.spring.boot.ProcessEngineAutoConfiguration
 ```
 
 ---
@@ -71,15 +87,23 @@ flowchart TD
     Startup["Application Startup"]
     Context["Spring Boot<br>Context"]
     Scanner["Auto<br>Configuration<br>Scanner"]
-    AutoConfig["Activiti<br>AutoConfig"]
+    AutoConfig["ProcessEngine<br>AutoConfiguration"]
+    AbstractConfig["AbstractProcessEngine<br>AutoConfiguration"]
     Engine["Process<br>Engine"]
     Properties["Activiti<br>Properties"]
-    
+    AsyncProperties["AsyncExecutor<br>Properties"]
+    EndpointConfig["Endpoint<br>AutoConfiguration"]
+    MethodSecurity["ActivitiMethodSecurity<br>AutoConfiguration"]
+
     Startup --> Context
     Context --> Scanner
     Scanner --> AutoConfig
-    AutoConfig --> Engine
+    Scanner --> EndpointConfig
+    Scanner --> MethodSecurity
+    AutoConfig --> AbstractConfig
+    AbstractConfig --> Engine
     AutoConfig --> Properties
+    AutoConfig --> AsyncProperties
 ```
 
 ### Component Diagram
@@ -87,32 +111,44 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph SpringBootApp["Spring Boot Application"]
-        subgraph AutoConfig["ActivitiAutoConfiguration"]
-            AC1["@ConditionalOnClass<br>(ProcessEngine)"]
-            AC2["@ConditionalOnProperty<br>(activiti.enabled)"]
-            
+        subgraph AutoConfig["ProcessEngineAutoConfiguration"]
+            AC1["@AutoConfiguration"]
+            AC2["@AutoConfigureAfter(DataSourceAutoConfiguration)"]
+            AC3["@EnableConfigurationProperties(ActivitiProperties, AsyncExecutorProperties)"]
+
             subgraph Beans["Beans"]
-                B1["- ProcessEngine"]
-                B2["- RuntimeService"]
-                B3["- TaskService"]
-                B4["- RepositoryService"]
-                B5["- HistoryService"]
+                B1["SpringProcessEngineConfiguration"]
+                B2["ProcessEngineFactoryBean"]
+                B3["RuntimeService"]
+                B4["TaskService"]
+                B5["RepositoryService"]
+                B6["HistoryService"]
+                B7["ManagementService"]
+                B8["SpringAsyncExecutor"]
+                B9["ShutdownListener"]
             end
         end
-        
+
         subgraph Properties["ActivitiProperties"]
-            P1["@ConfigurationProperties<br>(activiti)"]
-            
-            subgraph Props["Properties"]
-                PR1["- database-schema-update"]
-                PR2["- history-level"]
-                PR3["- async-executor-activate"]
-                PR4["- job-executor-threads"]
-            end
+            P1["@ConfigurationProperties<br>(spring.activiti)"]
+        end
+
+        subgraph AsyncProps["AsyncExecutorProperties"]
+            P2["@ConfigurationProperties<br>(spring.activiti.async-executor)"]
+        end
+
+        subgraph EndpointCfg["EndpointAutoConfiguration"]
+            E1["ProcessEngineEndpoint"]
+        end
+
+        subgraph SecurityCfg["ActivitiMethodSecurityAutoConfiguration"]
+            S1["@ConditionalOnProperty<br>(spring.activiti.security.enabled)"]
+            S2["@ConditionalOnClass<br>(GlobalMethodSecurityConfiguration)"]
         end
     end
-    
+
     AutoConfig --> Properties
+    AutoConfig --> AsyncProps
 ```
 
 ---
@@ -121,194 +157,215 @@ flowchart TD
 
 ### Main Auto-Configuration Class
 
+`ProcessEngineAutoConfiguration` (`org.activiti.spring.boot.ProcessEngineAutoConfiguration`) extends `AbstractProcessEngineAutoConfiguration` and is annotated with:
+
+- `@AutoConfiguration` - Spring Boot 3.x auto-configuration registration
+- `@AutoConfigureAfter(DataSourceAutoConfiguration, TaskExecutionAutoConfiguration)`
+- `@EnableConfigurationProperties(ActivitiProperties.class, AsyncExecutorProperties.class)`
+
+It creates the following beans:
+
+- `SpringProcessEngineConfiguration` — the core engine configuration, wired with `DataSource`, `PlatformTransactionManager`, `SpringAsyncExecutor`, and all `ActivitiProperties` values
+- `ProcessEngineFactoryBean` (via `AbstractProcessEngineAutoConfiguration`) — wraps the configuration
+- `RuntimeService`, `TaskService`, `RepositoryService`, `HistoryService`, `ManagementService` (via `AbstractProcessEngineAutoConfiguration`) — exposed from `ProcessEngine`
+- `SpringAsyncExecutor` (via `AbstractProcessEngineAutoConfiguration`) — async job executor
+- `ShutdownListener` — listens for `ContextClosedEvent` to shut down the async executor
+- `ProcessDefinitionResourceFinderDescriptor` — discovers BPMN resources for auto-deployment
+- `ProcessExtensionResourceFinderDescriptor` — discovers process extension JSON files
+- `ProcessDeployedEventProducer`, `ProcessCandidateStartersEventProducer`, `StartMessageDeployedEventProducer`, `ApplicationDeployedEventProducer` — event producers for deployment lifecycle
+- `DefaultActivityBehaviorFactoryMappingConfigurer` — configures variable mapping for activity behaviors
+- `CandidateStartersDeploymentConfigurer` — sets up default candidate starter authorizations
+- `asyncExecutorPropertiesConfigurer` — `ProcessEngineConfigurationConfigurer` that applies `AsyncExecutorProperties`
+
+### ProcessEngineConfigurationConfigurer Extension Point
+
+The `ProcessEngineConfigurationConfigurer` interface allows customizing the `SpringProcessEngineConfiguration` after auto-configuration has set defaults:
+
 ```java
-@Configuration
-@ConditionalOnClass(ProcessEngine.class)
-@ConditionalOnProperty(prefix = "activiti", name = "enabled", havingValue = "true", matchIfMissing = true)
-@EnableConfigurationProperties(ActivitiProperties.class)
-public class ActivitiAutoConfiguration {
-    
-    @Autowired
-    private ActivitiProperties properties;
-    
-    @Autowired(required = false)
-    private DataSource dataSource;
-    
-    @Autowired(required = false)
-    private PlatformTransactionManager transactionManager;
-    
-    @Bean
-    @ConditionalOnMissingBean
-    public ProcessEngine processEngine() {
-        SpringProcessEngineConfiguration cfg = 
-            new SpringProcessEngineConfiguration();
-        
-        // Apply properties
-        configureEngine(cfg);
-        
-        return cfg.buildProcessEngine();
-    }
-    
-    private void configureEngine(SpringProcessEngineConfiguration cfg) {
-        if (dataSource != null) {
-            cfg.setDataSource(dataSource);
-        }
-        if (transactionManager != null) {
-            cfg.setTransactionManager(transactionManager);
-        }
-        
-        cfg.setDatabaseSchemaUpdate(properties.getDatabaseSchemaUpdate());
-        cfg.setHistoryLevel(properties.getHistoryLevel());
-        cfg.setAsyncExecutorActivate(properties.isAsyncExecutorActivate());
-        cfg.setJobExecutorThreads(properties.getJobExecutorThreads());
-        
-        // More configuration...
-    }
-    
-    @Bean
-    @ConditionalOnMissingBean
-    public RuntimeService runtimeService(ProcessEngine processEngine) {
-        return processEngine.getRuntimeService();
-    }
-    
-    @Bean
-    @ConditionalOnMissingBean
-    public TaskService taskService(ProcessEngine processEngine) {
-        return processEngine.getTaskService();
-    }
-    
-    @Bean
-    @ConditionalOnMissingBean
-    public RepositoryService repositoryService(ProcessEngine processEngine) {
-        return processEngine.getRepositoryService();
-    }
-    
-    @Bean
-    @ConditionalOnMissingBean
-    public HistoryService historyService(ProcessEngine processEngine) {
-        return processEngine.getHistoryService();
-    }
+public interface ProcessEngineConfigurationConfigurer {
+    void configure(SpringProcessEngineConfiguration processEngineConfiguration);
 }
 ```
 
-### Conditional Configuration
+Define a bean of this type to apply custom configuration.
 
-```java
-@Configuration
-@ConditionalOnProperty(name = "activiti.async-executor-activate", havingValue = "true")
-public class AsyncExecutorConfiguration {
-    
-    @Bean
-    public JobExecutor jobExecutor(ProcessEngineConfiguration cfg) {
-        JobExecutor executor = new JobExecutor(cfg);
-        executor.setCorePoolSize(cfg.getJobExecutorThreads());
-        return executor;
-    }
-}
+### Security Auto-Configuration
 
-@Configuration
-@ConditionalOnProperty(name = "activiti.history-level", havingValue = "full")
-public class FullHistoryConfiguration {
-    
-    @Bean
-    public HistoryService historyService(ProcessEngine processEngine) {
-        // Enhanced history service
-        return processEngine.getHistoryService();
-    }
-}
-```
+`ActivitiMethodSecurityAutoConfiguration` (`org.activiti.spring.boot.ActivitiMethodSecurityAutoConfiguration`) enables method-level security when:
+
+- `spring.activiti.security.enabled` is `true` (default)
+- `GlobalMethodSecurityConfiguration` is on the classpath
+- No existing `@EnableGlobalMethodSecurity` bean is defined
+
+It configures `prePostEnabled`, `securedEnabled`, and `jsr250Enabled`.
+
+### AbstractProcessEngineAutoConfiguration
+
+`AbstractProcessEngineAutoConfiguration` (`org.activiti.spring.boot.AbstractProcessEngineAutoConfiguration`) extends `AbstractProcessEngineConfiguration` and provides shared bean definitions:
+
+- `SpringAsyncExecutor` — async executor with configurable rejection handler
+- `SpringCallerRunsRejectedJobsHandler` — default rejected job handler
+- `ProcessEngineFactoryBean` — factory for the process engine
+- Service beans: `RuntimeService`, `RepositoryService`, `TaskService`, `HistoryService`, `ManagementService`
+- `TaskExecutor` — default `SimpleAsyncTaskExecutor`
+- `IntegrationContextManager`, `IntegrationContextService` — integration context beans
 
 ---
 
 ## Properties Reference
 
-### Core Properties
+All properties use the prefix **`spring.activiti`** (not `activiti`).
+
+### Core Properties (`ActivitiProperties`)
 
 ```yaml
-activiti:
-  # Enable/disable auto-configuration
-  enabled: true
-  
-  # Database schema management
-  database-schema-update: true  # Options: true, false, create-drop, create, update
-  
-  # History level
-  history-level: full  # Options: none, activity, audit, full
-  
-  # Async execution
-  async-executor-activate: true
-  
-  # Job executor configuration
-  job-executor-threads: 10
-  job-executor-acquisition-retries: 3
-  job-executor-acquisition-retry-time-window: 5000
-  job-acquisition-batch-size: 10
+spring:
+  activiti:
+    # Whether to scan for process definitions to auto-deploy. Default: true
+    check-process-definitions: true
+
+    # Whether to activate the async executor for timer and async jobs. Default: true
+    async-executor-activate: true
+
+    # Name used when deploying process definitions. Default: "SpringAutoDeployment"
+    deployment-name: "SpringAutoDeployment"
+
+    # Database schema update strategy. Default: "true"
+    # Options: true, false, create-drop, create, validate
+    database-schema-update: true
+
+    # Database schema name (for databases that support schemas). Default: null
+    database-schema:
+
+    # Whether to use the database history tables. Default: false
+    db-history-used: false
+
+    # History level. Default: NONE
+    # Options: NONE, ACTIVITY, AUDIT, FULL
+    history-level: NONE
+
+    # Location prefix for auto-discovering process definitions.
+    # Default: "classpath*:**/processes/"
+    process-definition-location-prefix: "classpath*:**/processes/"
+
+    # File suffixes for process definition discovery.
+    # Default: ["**.bpmn20.xml", "**.bpmn"]
+    process-definition-location-suffixes:
+      - "**.bpmn20.xml"
+      - "**.bpmn"
+
+    # Custom MyBatis mapper class names (fully qualified). Default: null
+    custom-mybatis-mappers:
+      - "com.example.MyCustomMapper"
+
+    # Custom MyBatis XML mapper resource paths. Default: null
+    custom-mybatis-xml-mappers:
+      - "mappers/custom-mapper.xml"
+
+    # Whether to use strong UUIDs for generated IDs. Default: true
+    use-strong-uuids: true
+
+    # Whether to copy process variables to local scope when a task is created. Default: true
+    copy-variables-to-local-for-tasks: true
+
+    # Deployment mode. Default: "default"
+    deployment-mode: "default"
+
+    # Whether to serialize POJOs in variables to JSON. Default: true
+    serialize-po-jos-in-variables-to-json: true
+
+    # Jackson type identifier property name for polymorphic serialization.
+    # Default: "@class"
+    java-class-field-for-jackson: "@class"
+
+    # Maximum number of process definitions to cache. Default: null (no limit)
+    process-definition-cache-limit:
+
+    # Name of the Spring CacheManager cache to use for process definitions.
+    # When set, a SpringProcessDefinitionCache bean is created.
+    process-definition-cache-name:
+
+    # Mail server configuration
+    mail-server-host: "localhost"
+    mail-server-port: 1025
+    mail-server-user-name:
+    mail-server-password:
+    mail-server-default-from:
+    mail-server-use-ssl: false
+    mail-server-use-tls: false
+
+    # Security
+    security:
+      enabled: true
 ```
 
-### Advanced Properties
+### Process Extensions
+
+Process extension JSON files are discovered based on:
+
+- Prefix: same as `process-definition-location-prefix` (overridable via `spring.activiti.process.extensions.dir`)
+- Suffix: default `"**\-extensions.json"` (overridable via `spring.activiti.process.extensions.suffix`)
+
+---
+
+## Async Executor Properties
+
+`AsyncExecutorProperties` uses the prefix **`spring.activiti.async-executor`**:
 
 ```yaml
-activiti:
-  # Process engine configuration
-  process-engine-name: default
-  
-  # Mail server configuration
-  mail-server-info:
-    host: smtp.example.com
-    port: 587
-    user: smtp-user
-    password: smtp-password
-    default-from-address: no-reply@example.com
-  
-  # Form configuration
-  form:
-    enabled: true
-    default-form-handler: activiti-form-handler
-  
-  # Task configuration
-  task:
-    enable-candidate-users: true
-    enable-candidate-groups: true
-  
-  # History configuration
-  history:
-    enable-process-instance-comments: true
-    enable-activity-instance-comments: true
-    enable-task-comments: true
-  
-  # Job configuration
-  job:
-    enable-job-executor: true
-    enable-timer-job-executor: true
-    retry-time-limit: 3
-```
+spring:
+  activiti:
+    async-executor:
+      # Retry wait time in milliseconds for failed jobs. Default: 500
+      retry-wait-time-in-millis: 500
 
-### Multi-tenancy Properties
+      # Number of retries for a job. Default: 3
+      number-of-retries: 3
 
-```yaml
-activiti:
-  multi-tenancy:
-    enabled: true
-    strategy: database  # Options: database, schema, table
-    
-  tenant:
-    default-tenant-id: default
-    property-prefix: tenant_
-```
+      # Core pool size for async job execution threads. Default: 2
+      core-pool-size: 2
 
-### Security Properties
+      # Maximum pool size for async job execution threads. Default: 10
+      max-pool-size: 10
 
-```yaml
-activiti:
-  security:
-    enabled: true
-    authorization-enabled: true
-    permission-enabled: true
-    
-  basic-auth:
-    enabled: false
-    username: admin
-    password: admin
+      # Thread keep-alive time in milliseconds. Default: 5000
+      keep-alive-time: 5000
+
+      # Queue size for the job execution queue. Default: 100
+      queue-size: 100
+
+      # Seconds to wait for graceful shutdown. Default: 60
+      seconds-to-wait-on-shutdown: 60
+
+      # Max timer jobs per acquisition query. Default: 1
+      max-timer-jobs-per-acquisition: 1
+
+      # Max async jobs due per acquisition query. Default: 1
+      max-async-jobs-due-per-acquisition: 1
+
+      # Timer job acquisition wait time in milliseconds. Default: 10000
+      default-timer-job-acquire-wait-time-in-millis: 10000
+
+      # Async job acquisition wait time in milliseconds. Default: 10000
+      default-async-job-acquire-wait-time-in-millis: 10000
+
+      # Wait time when queue is full. Default: 0
+      default-queue-size-full-wait-time: 0
+
+      # Timer job lock time in milliseconds. Default: 300000 (5 min)
+      timer-lock-time-in-millis: 300000
+
+      # Async job lock time in milliseconds. Default: 300000 (5 min)
+      async-job-lock-time-in-millis: 300000
+
+      # Interval between expired job checks in milliseconds. Default: 60000 (1 min)
+      reset-expired-jobs-interval: 60000
+
+      # Page size for expired job reset queries. Default: 3
+      reset-expired-jobs-page-size: 3
+
+      # Use message queue mode. Default: false
+      message-queue-mode: false
 ```
 
 ---
@@ -322,13 +379,13 @@ activiti:
 <dependency>
     <groupId>org.activiti</groupId>
     <artifactId>activiti-spring-boot-starter</artifactId>
-    <version>8.7.2-SNAPSHOT</version>
+    <version>${activiti.version}</version>
 </dependency>
 ```
 
 **Gradle:**
 ```groovy
-implementation 'org.activiti:activiti-spring-boot-starter:8.7.2-SNAPSHOT'
+implementation "org.activiti:activiti-spring-boot-starter:${activitiVersion}"
 ```
 
 ### 2. Create Application
@@ -351,15 +408,11 @@ spring:
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
-  
-  jpa:
-    hibernate:
-      ddl-auto: update
 
-activiti:
-  database-schema-update: true
-  history-level: full
-  async-executor-activate: true
+  activiti:
+    database-schema-update: true
+    history-level: FULL
+    async-executor-activate: true
 ```
 
 ### 4. Use Services
@@ -367,18 +420,20 @@ activiti:
 ```java
 @Service
 public class WorkflowService {
-    
-    @Autowired
-    private RuntimeService runtimeService;
-    
-    @Autowired
-    private TaskService taskService;
-    
+
+    private final RuntimeService runtimeService;
+    private final TaskService taskService;
+
+    public WorkflowService(RuntimeService runtimeService, TaskService taskService) {
+        this.runtimeService = runtimeService;
+        this.taskService = taskService;
+    }
+
     public void startProcess() {
         ProcessInstance instance = runtimeService
             .startProcessInstanceByKey("orderProcess");
     }
-    
+
     public void completeTask(String taskId) {
         taskService.complete(taskId);
     }
@@ -389,49 +444,63 @@ public class WorkflowService {
 
 ## Advanced Configuration
 
-### Custom ProcessEngineConfiguration
+### Custom ProcessEngineConfiguration via Configurer
 
 ```java
 @Configuration
 public class CustomActivitiConfig {
-    
+
     @Bean
-    public ProcessEngineConfiguration processEngineConfiguration(
-            ActivitiProperties properties,
-            DataSource dataSource) {
-        
-        SpringProcessEngineConfiguration cfg = 
-            new SpringProcessEngineConfiguration();
-        
-        cfg.setDataSource(dataSource);
-        cfg.setDatabaseSchemaUpdate(properties.getDatabaseSchemaUpdate());
-        cfg.setHistoryLevel(properties.getHistoryLevel());
-        
-        // Custom configuration
-        cfg.setTaskListener(new CustomTaskListener());
-        cfg.setExecutionListener(new CustomExecutionListener());
-        
-        return cfg;
+    public ProcessEngineConfigurationConfigurer customConfigurer() {
+        return (configuration) -> {
+            // Apply custom settings after auto-configuration defaults
+            configuration.setActivityBehaviorFactory(new CustomActivityBehaviorFactory());
+        };
     }
 }
 ```
 
-### Custom Bean Post-Processor
+### Custom Resource Finder Descriptors
+
+To deploy process definitions from additional locations:
 
 ```java
-@Component
-public class ActivitiBeanPostProcessor implements BeanPostProcessor {
-    
-    @Override
-    public Object postProcessAfterInitialization(Object bean, String name) {
-        if (bean instanceof ProcessEngine) {
-            ProcessEngine engine = (ProcessEngine) bean;
-            
-            // Customize engine after initialization
-            engine.getRuntimeService()
-                .addEventListener(new CustomEventListener());
-        }
-        return bean;
+@Configuration
+public class CustomResourceConfig {
+
+    @Bean
+    public ResourceFinderDescriptor customResourceFinderDescriptor() {
+        return new ResourceFinderDescriptor() {
+            @Override
+            public String getLocationPrefix() {
+                return "classpath*:**/custom-processes/";
+            }
+
+            @Override
+            public List<String> getLocationSuffixes() {
+                return List.of("*.bpmn");
+            }
+
+            @Override
+            public boolean shouldLookUpResources() {
+                return true;
+            }
+
+            @Override
+            public String getMsgForEmptyResources() {
+                return "No custom process definitions found";
+            }
+
+            @Override
+            public String getMsgForResourcesFound(List<String> foundResources) {
+                return "Found custom process definitions: " + foundResources;
+            }
+
+            @Override
+            public void validate(List<Resource> resources) {
+                // Validation logic
+            }
+        };
     }
 }
 ```
@@ -440,17 +509,21 @@ public class ActivitiBeanPostProcessor implements BeanPostProcessor {
 
 ```yaml
 # application-dev.yml
-activiti:
-  database-schema-update: create-drop
-  history-level: full
-  async-executor-activate: true
+spring:
+  activiti:
+    database-schema-update: create-drop
+    history-level: FULL
+    async-executor-activate: true
 
 # application-prod.yml
-activiti:
-  database-schema-update: false
-  history-level: audit
-  async-executor-activate: true
-  job-executor-threads: 20
+spring:
+  activiti:
+    database-schema-update: validate
+    history-level: AUDIT
+    async-executor-activate: true
+    async-executor:
+      core-pool-size: 4
+      max-pool-size: 20
 ```
 
 ---
@@ -459,54 +532,47 @@ activiti:
 
 ### Custom Event Listeners
 
+Implement `ProcessRuntimeEventListener` for specific event types and register as beans:
+
 ```java
 @Component
-public class CustomProcessEventListener implements ProcessEventListener {
-    
+public class CustomProcessDeployedListener
+    implements ProcessRuntimeEventListener<ProcessDeployedEvent> {
+
     @Override
-    public void onEvent(ProcessEngineEvent event) {
-        if (event.getType() == ProcessEngineEventType.PROCESS_START) {
-            log.info("Process started: {}", event.getProcessInstanceId());
-        }
+    public void onEvent(ProcessDeployedEvent event) {
+        log.info("Process deployed: {}", event.getProcessDefinition().getKey());
     }
 }
 ```
 
-### Custom Job Handlers
+### Custom Async Executor
+
+Replace the default `SpringAsyncExecutor` by providing a custom bean:
 
 ```java
-@Component
-public class CustomJobHandler implements JobHandler {
-    
-    @Override
-    public void execute(Job job) {
-        // Custom job execution logic
-        String businessKey = job.getExecution()
-            .getProcessInstance()
-            .getBusinessKey();
-        
-        // Process the job
+@Configuration
+public class CustomAsyncExecutorConfig {
+
+    @Bean
+    public SpringAsyncExecutor springAsyncExecutor(TaskExecutor taskExecutor) {
+        return new SpringAsyncExecutor(taskExecutor, new CustomRejectedJobsHandler());
     }
 }
 ```
 
-### Custom Form Handlers
+### Custom Process Definition Cache
 
-```java
-@Component
-public class CustomFormHandler implements FormHandler {
-    
-    @Override
-    public String getStartFormKey(ProcessDefinition processDefinition) {
-        return "custom-start-form";
-    }
-    
-    @Override
-    public String getTaskFormKey(Task task) {
-        return "custom-task-form";
-    }
-}
+Configure a Spring-based cache for process definitions:
+
+```yaml
+spring:
+  activiti:
+    process-definition-cache-limit: 50
+    process-definition-cache-name: processDefinitions
 ```
+
+Provide a `CacheManager` with a cache named `processDefinitions`.
 
 ---
 
@@ -529,137 +595,78 @@ spring:
       max-lifetime: 1800000
 ```
 
-### 2. Connection Pool Tuning
+### 2. Async Executor Tuning
 
 ```yaml
-activiti:
-  job-executor-threads: 20
-  job-acquisition-batch-size: 50
-  async-executor-activate: true
+spring:
+  activiti:
+    async-executor-activate: true
+    async-executor:
+      core-pool-size: 4
+      max-pool-size: 20
+      queue-size: 500
+      max-async-jobs-due-per-acquisition: 5
+      max-timer-jobs-per-acquisition: 5
 ```
 
-### 3. Health Checks
+### 3. Deployment Validation
 
-```java
-@RestController
-@RequestMapping("/actuator/health/activiti")
-public class ActivitiHealthController {
-    
-    @Autowired
-    private ProcessEngine processEngine;
-    
-    @GetMapping
-    public Health check() {
-        try {
-            // Test database connection
-            processEngine.getRepositoryService()
-                .createProcessDefinitionQuery()
-                .listPage(0, 1);
-            
-            return Health.up().build();
-        } catch (Exception e) {
-            return Health.down(e).build();
-        }
-    }
-}
-```
-
-### 4. Metrics Collection
-
-```java
-@Configuration
-public class MetricsConfig {
-    
-    @Bean
-    public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags() {
-        return registry -> {
-            registry.config().commonTags("application", "activiti");
-        };
-    }
-}
+```yaml
+spring:
+  activiti:
+    database-schema-update: validate
+    check-process-definitions: true
 ```
 
 ---
 
 ## Monitoring & Observability
 
-### Spring Boot Actuator Integration
+### ProcessEngineEndpoint
+
+The starter provides a Spring Boot Actuator endpoint (`ProcessEngineEndpoint`) registered under the ID `activiti`. It returns:
+
+- `processDefinitionCount` — total deployed process definitions
+- `deployedProcessDefinitions` — list of keys and versions
+- `runningProcessInstanceCount` — per-definition running instance counts
+- `completedProcessInstanceCount` — per-definition completed instance counts
+- `openTaskCount` — total open tasks
+- `completedTaskCount` — total completed tasks
+- `completedTaskCountToday` — tasks completed in the last 24 hours
+- `completedActivities` — total completed activity instances
+- `cachedProcessDefinitionCount` — process definitions in cache (if using `DefaultDeploymentCache`)
+
+### Enabling the Endpoint
 
 ```yaml
 management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,info
+        include: activiti
   endpoint:
-    health:
-      show-details: always
+    activiti:
+      enabled: true
 ```
 
-### Custom Health Indicator
+Access via `GET /actuator/activiti`.
 
-```java
-@Component
-public class ActivitiHealthIndicator implements HealthIndicator {
-    
-    @Autowired
-    private ProcessEngine processEngine;
-    
-    @Override
-    public Health health() {
-        try {
-            // Check engine status
-            processEngine.getManagementService()
-                .getEngineName();
-            
-            return Health.up().build();
-        } catch (Exception e) {
-            return Health.down(e).build();
-        }
-    }
-}
+### Endpoint Configuration
+
+```yaml
+endpoints:
+  activiti:
+    # Endpoint configuration via ConfigurationProperties
 ```
 
-### Metrics Collection
+### Shutdown Listener
 
-```java
-@Component
-public class ActivitiMetrics {
-    
-    private final MeterRegistry meterRegistry;
-    private final Counter processStartCounter;
-    private final Counter taskCompleteCounter;
-    private final Timer processExecutionTimer;
-    
-    public ActivitiMetrics(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-        
-        this.processStartCounter = Counter.builder("activiti.process.starts")
-            .description("Number of process instances started")
-            .register(meterRegistry);
-        
-        this.taskCompleteCounter = Counter.builder("activiti.task.completions")
-            .description("Number of tasks completed")
-            .register(meterRegistry);
-        
-        this.processExecutionTimer = Timer.builder("activiti.process.duration")
-            .description("Process execution duration")
-            .register(meterRegistry);
-    }
-    
-    public void recordProcessStart() {
-        processStartCounter.increment();
-    }
-    
-    public void recordTaskComplete() {
-        taskCompleteCounter.increment();
-    }
-    
-    public void recordProcessDuration(Duration duration) {
-        processExecutionTimer.record(duration);
-    }
-}
-```
+`ShutdownListener` automatically registers on `ContextClosedEvent` and:
+
+1. Shuts down the async executor
+2. Sets `ApplicationStatusHolder` to shutdown state
+
+This ensures in-progress jobs are handled gracefully during application shutdown.
 
 ---
 
@@ -673,7 +680,7 @@ public class ActivitiMetrics {
 
 **Solution:**
 ```yaml
-# Check datasource configuration
+# Ensure datasource is configured correctly
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/activiti
@@ -687,8 +694,9 @@ spring:
 
 **Solution:**
 ```yaml
-activiti:
-  database-schema-update: true  # Enable auto-update
+spring:
+  activiti:
+    database-schema-update: true  # Enable auto-update during development
 ```
 
 #### 3. Jobs Not Executing
@@ -697,21 +705,42 @@ activiti:
 
 **Solution:**
 ```yaml
-activiti:
-  async-executor-activate: true
-  job-executor-threads: 10
+spring:
+  activiti:
+    async-executor-activate: true
+    async-executor:
+      core-pool-size: 2
+      max-pool-size: 10
 ```
 
-#### 4. Memory Issues
+#### 4. Process Definitions Not Auto-Deployed
 
-**Symptom:** OutOfMemoryError
+**Symptom:** No processes found after startup
 
 **Solution:**
 ```yaml
-activiti:
-  history-level: activity  # Reduce history level
-  job-acquisition-batch-size: 10  # Reduce batch size
+spring:
+  activiti:
+    check-process-definitions: true
+    process-definition-location-prefix: "classpath*:**/processes/"
+    process-definition-location-suffixes:
+      - "**.bpmn20.xml"
+      - "**.bpmn"
 ```
+
+#### 5. Security Not Enabled
+
+**Symptom:** Method-level security annotations not working
+
+**Solution:**
+```yaml
+spring:
+  activiti:
+    security:
+      enabled: true
+```
+
+Ensure `GlobalMethodSecurityConfiguration` is on the classpath.
 
 ### Debug Mode
 
@@ -720,12 +749,6 @@ logging:
   level:
     org.activiti: DEBUG
     org.activiti.engine.impl: DEBUG
-```
-
-### Health Check Endpoint
-
-```bash
-curl http://localhost:8080/actuator/health/activiti
 ```
 
 ---
@@ -742,53 +765,47 @@ spring:
     password: ${DATABASE_PASSWORD}
 ```
 
-### 2. Enable Actuator
+### 2. Enable the Actuator Endpoint
 
 ```yaml
 management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,info,env
+        include: activiti,health,info
 ```
 
 ### 3. Configure Proper History Level
 
 ```yaml
 # Development
-activiti:
-  history-level: full
+spring:
+  activiti:
+    history-level: FULL
 
 # Production
-activiti:
-  history-level: audit
+spring:
+  activiti:
+    history-level: AUDIT
 ```
 
-### 4. Use Connection Pooling
+### 4. Tune Async Executor for Production
 
 ```yaml
 spring:
-  datasource:
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
+  activiti:
+    async-executor:
+      core-pool-size: 4
+      max-pool-size: 20
+      queue-size: 500
 ```
 
-### 5. Monitor Performance
+### 5. Validate Schema in Production
 
-```java
-@RestController
-@RequestMapping("/metrics/activiti")
-public class ActivitiMetricsController {
-    
-    @Autowired
-    private ManagementService managementService;
-    
-    @GetMapping("/tables")
-    public Map<String, Long> getTableCounts() {
-        return managementService.getTableCounts();
-    }
-}
+```yaml
+spring:
+  activiti:
+    database-schema-update: validate
 ```
 
 ---
@@ -797,40 +814,45 @@ public class ActivitiMetricsController {
 
 ### Configuration Classes
 
-- `ActivitiAutoConfiguration` - Main auto-config
-- `ActivitiProperties` - Property bindings
-- `AsyncExecutorConfiguration` - Async config
-- `FullHistoryConfiguration` - History config
+| Class | Package | Description |
+|-------|---------|-------------|
+| `ProcessEngineAutoConfiguration` | `org.activiti.spring.boot` | Main auto-configuration. Creates `SpringProcessEngineConfiguration`, event producers, and resource finder descriptors. |
+| `AbstractProcessEngineAutoConfiguration` | `org.activiti.spring.boot` | Provides shared beans: `SpringAsyncExecutor`, `ProcessEngineFactoryBean`, service beans, `TaskExecutor`, integration context. |
+| `AbstractProcessEngineConfiguration` | `org.activiti.spring.boot` | Base class with service bean factory methods: `runtimeServiceBean`, `repositoryServiceBean`, `taskServiceBean`, etc. |
+| `EndpointAutoConfiguration` | `org.activiti.spring.boot` | Registers `ProcessEngineEndpoint` for Spring Boot Actuator. |
+| `ActivitiMethodSecurityAutoConfiguration` | `org.activiti.spring.boot` | Enables method-level security when `spring.activiti.security.enabled=true` and Spring Security is on classpath. |
 
-### Actuator Components
+### Properties Classes
 
-- `ActivitiHealthIndicator` - Health checks
-- `ActivitiMetrics` - Metrics collection
+| Class | Prefix | Description |
+|-------|--------|-------------|
+| `ActivitiProperties` | `spring.activiti` | Core engine configuration: schema, history, deployment, mail, serialization, caching. |
+| `AsyncExecutorProperties` | `spring.activiti.async-executor` | Async job executor: pool sizes, queue, retries, timeouts, acquisition settings. |
 
-### Properties Hierarchy
+### Support Classes
 
-```
-activiti
-├── enabled
-├── database-schema-update
-├── history-level
-├── async-executor-activate
-├── job-executor-threads
-├── process-engine-name
-├── mail-server-info
-├── form
-├── task
-├── history
-├── job
-├── multi-tenancy
-└── security
-```
+| Class | Package | Description |
+|-------|---------|-------------|
+| `ShutdownListener` | `org.activiti.spring.boot` | Listens for `ContextClosedEvent`, shuts down async executor and sets application status. |
+| `ProcessEngineConfigurationConfigurer` | `org.activiti.spring.boot` | Extension point interface for custom engine configuration. |
+| `DefaultActivityBehaviorFactoryMappingConfigurer` | `org.activiti.spring.boot` | Configures variable mapping and activity behavior factory. |
+| `CandidateStartersDeploymentConfigurer` | `org.activiti.spring.boot` | Sets up default candidate starter group authorizations. |
+| `ProcessDefinitionResourceFinderDescriptor` | `org.activiti.spring.boot` | Discovers BPMN process definition resources for auto-deployment. |
+| `ProcessEngineEndpoint` | `org.activiti.spring.boot.actuate.endpoint` | Actuator endpoint exposing process engine metrics. |
+| `AsyncPropertyValidator` | `org.activiti.spring.boot.process.validation` | BPMN validator that checks async properties when async executor is disabled. |
+
+### Bean Extension Points
+
+- **`ProcessEngineConfigurationConfigurer`** — implement to customize `SpringProcessEngineConfiguration`
+- **`ResourceFinderDescriptor`** — register beans to add custom process definition locations
+- **`ProcessEngineConfigurator`** — Activiti-level configurator for deep engine customization
+- **`DeploymentCache<ProcessDefinitionCacheEntry>`** — provide custom process definition cache (requires `spring.activiti.process-definition-cache-name` property)
 
 ---
 
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Spring Integration](../engine-api/spring-integration.md)
-- [Engine Documentation](../engine-api/README.md)
+- [Spring Integration](./spring-integration.md)
+- [Engine Documentation](./README.md)
 - [Spring Boot Documentation](https://spring.io/projects/spring-boot)

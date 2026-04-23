@@ -43,8 +43,15 @@ The **activiti-expression-language** module provides Expression Language (EL) su
 activiti-expression-language/
 └── src/main/java/org/activiti/core/el/
     ├── ActivitiElContext.java          # EL context implementation
-    ├── ActivitiFunctionMapper.java     # Function mapper
-    └── ActivitiVariablesMapper.java    # Variable mapper
+    ├── ELContextBuilder.java           # Builder for EL context with resolvers/functions
+    ├── ExpressionResolver.java         # Interface for expression resolution
+    ├── JuelExpressionResolver.java     # JUEL-based ExpressionResolver implementation
+    ├── ReadOnlyMapELResolver.java      # ELResolver for read-only map-based variable access
+    ├── JsonNodeELResolver.java         # ELResolver for Jackson JsonNode property access
+    ├── CommonELResolversUtil.java      # Factory for standard EL resolvers
+    ├── DateResolverHelper.java         # Date-related EL functions
+    ├── ListResolverHelper.java         # List-related EL functions
+    └── ELResolverReflectionBlockerDecorator.java # Security decorator to block reflection
 ```
 
 ---
@@ -208,6 +215,157 @@ context.setVariable("order", valueExpression);
 
 // Use in expression
 "${order.totalAmount}"  // Accesses order variable
+```
+
+### ExpressionResolver
+
+**Purpose:** Interface that defines the contract for expression resolution in Activiti.
+
+**Responsibilities:**
+- Evaluate EL expressions with variables and type hints
+- Abstract expression implementation from callers
+
+**Key Method:**
+- `<T> T resolveExpression(String expression, Map<String, Object> variables, Class<T> type)` - Resolve expression
+
+**When to Use:** Use this interface for dependency injection to decouple code from specific expression resolver implementations.
+
+**Design Pattern:** Strategy pattern - allows swapping expression resolver implementations
+
+**Example:**
+```java
+public class MyService {
+    private final ExpressionResolver expressionResolver;
+
+    public MyService(ExpressionResolver expressionResolver) {
+        this.expressionResolver = expressionResolver;
+    }
+
+    public String evaluate(String expr, Map<String, Object> vars) {
+        return expressionResolver.resolveExpression(expr, vars, String.class);
+    }
+}
+```
+
+---
+
+### JuelExpressionResolver
+
+**Purpose:** Default implementation of `ExpressionResolver` using JUEL (Jakarta EL).
+
+**Responsibilities:**
+- Parse and evaluate EL expressions via `ExpressionFactory`
+- Build EL context with standard resolvers (array, list, map, jsonNode, bean)
+- Register custom function providers
+
+**Key Constructors:**
+- `JuelExpressionResolver()` - Uses default `ExpressionFactory.newInstance()`
+- `JuelExpressionResolver(ExpressionFactory expressionFactory)` - Custom factory
+- `JuelExpressionResolver(ExpressionFactory expressionFactory, List<CustomFunctionProvider> customFunctionProviders)` - With custom functions
+
+**Internal Resolvers (in order):**
+1. `arrayResolver()` - Array index access
+2. `listResolver()` - List index access
+3. `mapResolver()` - Map key access
+4. `jsonNodeResolver()` - Jackson `JsonNode` property access
+5. `beanResolver()` - JavaBean property access
+
+**When to Use:** Default resolver for expression evaluation in Activiti services.
+
+**Example:**
+```java
+ExpressionResolver resolver = new JuelExpressionResolver();
+String result = resolver.resolveExpression("${order.status}", vars, String.class);
+```
+
+---
+
+### ELContextBuilder
+
+**Purpose:** Builder pattern class for constructing `ELContext` instances with proper resolvers, variables, and functions.
+
+**Responsibilities:**
+- Configure composite EL resolvers
+- Set variables for expression evaluation
+- Register standard date and list functions
+- Integrate custom function providers
+
+**Key Methods:**
+- `withResolvers(ELResolver... resolvers)` - Set EL resolvers (chainable)
+- `withVariables(Map<String, Object> variables)` - Set variables (chainable)
+- `build()` - Build ELContext with resolvers and variables
+- `buildWithCustomFunctions(List<CustomFunctionProvider> customFunctionProviders)` - Build with functions
+
+**Internal Behavior:**
+- Always wraps variables in a `ReadOnlyMapELResolver`
+- Automatically registers `DateResolverHelper` functions (date:*) and `ListResolverHelper` functions (list:*)
+- Iterates through `CustomFunctionProvider` instances to register additional functions
+
+**When to Use:** When building EL contexts manually outside of the standard Activiti expression evaluation pipeline.
+
+**Example:**
+```java
+ELContext context = new ELContextBuilder()
+    .withResolvers(myCustomResolver)
+    .withVariables(processVariables)
+    .buildWithCustomFunctions(customFunctions);
+```
+
+---
+
+### ReadOnlyMapELResolver
+
+**Purpose:** ELResolver that provides read-only access to map-based variables.
+
+**Responsibilities:**
+- Resolve root-level variable names from a `Map<Object, Object>`
+- Prevent modification of resolved variables
+
+**Key Constructor:**
+- `ReadOnlyMapELResolver(Map<Object, Object> map)` - Wrap a map for read-only EL access
+
+**Behavior:**
+- Only resolves properties when `base` is `null` (root-level access)
+- Always returns `true` from `isReadOnly()`, throwing `IllegalArgumentException` on `setValue()`
+
+**When to Use:** Internally used by `ELContextBuilder` to expose variables. Can be used to create read-only EL access to any map.
+
+**Example:**
+```java
+Map<String, Object> vars = Map.of("orderId", "ORD-123");
+ReadOnlyMapELResolver resolver = new ReadOnlyMapELResolver(vars);
+// "${orderId}" resolves to "ORD-123"
+```
+
+---
+
+### JsonNodeELResolver
+
+**Purpose:** ELResolver that enables property access on Jackson `JsonNode` objects within EL expressions.
+
+**Responsibilities:**
+- Resolve property access on `JsonNode` instances
+- Unwrap value nodes (boolean, number, text) to Java types
+- Convert JSON arrays to Java `List`
+- Support read/write access on `ObjectNode`
+
+**Key Constructors:**
+- `JsonNodeELResolver()` - Read/write mode
+- `JsonNodeELResolver(boolean readOnly)` - Configurable read-only
+
+**Behavior:**
+- `getValue()` unwraps value nodes: booleans → `Boolean`, numbers → `Long`/`Double`, text → `String`
+- `getValue()` converts JSON arrays to `List` via `ObjectMapper.convertValue()`
+- `setValue()` supports `BigDecimal`, `Boolean`, `Long`, `Double`, and `String` (on `ObjectNode`)
+- `isReadOnly()` returns `readOnly` flag
+
+**When to Use:** Used internally by `JuelExpressionResolver`. Useful when process variables contain JSON data that needs EL access.
+
+**Example:**
+```java
+// If process variable "data" is a JsonNode:
+// "${data.customer.name}" resolves via JsonNodeELResolver
+// "${data.items[0]}" converts JSON array to Java List
 ```
 
 ---
@@ -775,5 +933,5 @@ public class Order {
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Common Utilities](../core-common/common-util.md)
-- [Testing Framework](../core-common/core-test.md)
+- [Common Utilities](./common-util.md)
+- [Testing Framework](./core-test.md)

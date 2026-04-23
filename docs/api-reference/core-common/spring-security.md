@@ -135,7 +135,7 @@ User Authentication
            ▼
 ┌─────────────────────────────┐
 │  LocalSpringSecurityManager │
-│  getCurrentUserIdentity()   │
+│  getAuthenticatedUserId()   │
 └──────────┬──────────────────┘
            │
            ├──────────────────┬──────────────────┐
@@ -164,12 +164,12 @@ User Authentication
 - Resolve user groups and roles
 - Delegate to specialized providers
 
-**Key Methods:**
-- `getCurrentUserIdentity()` - Get current user ID
-- `getCurrentUserGroups()` - Get current user groups
-- `getCurrentUserRoles()` - Get current user roles
-- `isUserInGroup(String group)` - Check group membership
-- `isUserInRole(String role)` - Check role membership
+**Key Methods (inherited from `AbstractSecurityManager`):**
+- `getAuthenticatedUserId()` - Get authenticated user ID
+- `getAuthenticatedUserGroups()` - Get authenticated user groups
+- `getAuthenticatedUserRoles()` - Get authenticated user roles
+
+**Note:** `LocalSpringSecurityManager` extends `AbstractSecurityManager` which implements the `SecurityManager` interface. All methods are inherited from the parent class — `LocalSpringSecurityManager` itself defines no additional methods.
 
 **When to Use:** Automatically configured for security operations.
 
@@ -180,12 +180,12 @@ User Authentication
 **Example:**
 ```java
 @Autowired
-private LocalSpringSecurityManager securityManager;
+private SecurityManager securityManager;
 
 public void checkPermission() {
-    String userId = securityManager.getCurrentUserIdentity();
-    List<String> groups = securityManager.getCurrentUserGroups();
-    List<String> roles = securityManager.getCurrentUserRoles();
+    String userId = securityManager.getAuthenticatedUserId();
+    List<String> groups = securityManager.getAuthenticatedUserGroups();
+    List<String> roles = securityManager.getAuthenticatedUserRoles();
 }
 ```
 
@@ -367,11 +367,11 @@ public class UserService {
     private LocalSpringSecurityManager securityManager;
     
     public String getCurrentUser() {
-        return securityManager.getCurrentUserIdentity();
+        return securityManager.getAuthenticatedUserId();
     }
     
     public void logUserAction(String action) {
-        String userId = securityManager.getCurrentUserIdentity();
+        String userId = securityManager.getAuthenticatedUserId();
         log.info("User {} performed action: {}", userId, action);
     }
 }
@@ -387,15 +387,17 @@ public class PermissionService {
     private LocalSpringSecurityManager securityManager;
     
     public boolean canAccessResource(String requiredRole) {
-        return securityManager.isUserInRole(requiredRole);
+        List<String> roles = securityManager.getAuthenticatedUserRoles();
+        return roles.contains(requiredRole);
     }
-    
+
     public boolean canPerformAction(String requiredGroup) {
-        return securityManager.isUserInGroup(requiredGroup);
+        List<String> groups = securityManager.getAuthenticatedUserGroups();
+        return groups.contains(requiredGroup);
     }
-    
+
     public void checkAdminAccess() {
-        if (!securityManager.isUserInRole("ADMIN")) {
+        if (!securityManager.getAuthenticatedUserRoles().contains("ADMIN")) {
             throw new AccessDeniedException("Admin access required");
         }
     }
@@ -488,48 +490,74 @@ public class CustomGroupsProvider implements PrincipalGroupsProvider {
 
 ## Auto-Configuration
 
-### Conditional Configuration
+The auto-configuration uses `@AutoConfiguration` (not `@Configuration`) and does not use `@ConditionalOnClass` or `@ConditionalOnBean`. All beans are conditional on the absence of user-provided alternatives:
 
 ```java
-@Configuration
-@ConditionalOnClass({
-    SecurityContextHolder.class,
-    LocalSpringSecurityManager.class
-})
-@ConditionalOnBean(SecurityContextPrincipalProvider.class)
+@AutoConfiguration
 public class ActivitiSpringSecurityAutoConfiguration {
-    
+
     @Bean
-    @ConditionalOnMissingBean(LocalSpringSecurityManager.class)
-    public LocalSpringSecurityManager securityManager(
-            SecurityContextPrincipalProvider contextProvider,
-            PrincipalIdentityProvider identityProvider,
-            PrincipalGroupsProvider groupsProvider,
-            PrincipalRolesProvider rolesProvider) {
-        return new LocalSpringSecurityManager(
-            contextProvider,
-            identityProvider,
-            groupsProvider,
-            rolesProvider
-        );
+    @ConditionalOnMissingBean
+    public GrantedAuthoritiesResolver grantedAuthoritiesResolver() {
+        return new SimpleGrantedAuthoritiesResolver();
     }
-    
+
     @Bean
-    @ConditionalOnMissingBean(PrincipalIdentityProvider.class)
-    public PrincipalIdentityProvider identityProvider() {
+    @ConditionalOnMissingBean
+    public GrantedAuthoritiesGroupsMapper grantedAuthoritiesGroupsMapper() {
+        return new SimpleGrantedAuthoritiesGroupsMapper();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public GrantedAuthoritiesRolesMapper grantedAuthoritiesRolesMapper() {
+        return new SimpleGrantedAuthoritiesRolesMapper();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public SecurityContextPrincipalProvider securityContextPrincipalProvider() {
+        return new LocalSpringSecurityContextPrincipalProvider();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PrincipalIdentityProvider principalIdentityProvider() {
         return new AuthenticationPrincipalIdentityProvider();
     }
-    
+
     @Bean
-    @ConditionalOnMissingBean(PrincipalGroupsProvider.class)
-    public PrincipalGroupsProvider groupsProvider() {
-        return new AuthenticationPrincipalGroupsProvider();
+    @ConditionalOnMissingBean
+    public PrincipalGroupsProvider principalGroupsProvider(
+            GrantedAuthoritiesResolver grantedAuthoritiesResolver,
+            GrantedAuthoritiesGroupsMapper grantedAuthoritiesGroupsMapper) {
+        return new AuthenticationPrincipalGroupsProvider(
+            grantedAuthoritiesResolver,
+            grantedAuthoritiesGroupsMapper);
     }
-    
+
     @Bean
-    @ConditionalOnMissingBean(PrincipalRolesProvider.class)
-    public PrincipalRolesProvider rolesProvider() {
-        return new AuthenticationPrincipalRolesProvider();
+    @ConditionalOnMissingBean
+    public PrincipalRolesProvider principalRolesProvider(
+            GrantedAuthoritiesResolver grantedAuthoritiesResolver,
+            GrantedAuthoritiesRolesMapper grantedAuthoritiesRolesMapper) {
+        return new AuthenticationPrincipalRolesProvider(
+            grantedAuthoritiesResolver,
+            grantedAuthoritiesRolesMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public SecurityManager securityManager(
+            SecurityContextPrincipalProvider securityContextPrincipalProvider,
+            PrincipalIdentityProvider principalIdentityProvider,
+            PrincipalGroupsProvider principalGroupsProvider,
+            PrincipalRolesProvider principalRolesProvider) {
+        return new LocalSpringSecurityManager(
+            securityContextPrincipalProvider,
+            principalIdentityProvider,
+            principalGroupsProvider,
+            principalRolesProvider);
     }
 }
 ```
@@ -551,9 +579,9 @@ public class ProcessController {
     @GetMapping("/current-user")
     public Map<String, Object> getCurrentUser() {
         return Map.of(
-            "identity", securityManager.getCurrentUserIdentity(),
-            "groups", securityManager.getCurrentUserGroups(),
-            "roles", securityManager.getCurrentUserRoles()
+            "identity", securityManager.getAuthenticatedUserId(),
+            "groups", securityManager.getAuthenticatedUserGroups(),
+            "roles", securityManager.getAuthenticatedUserRoles()
         );
     }
     
@@ -561,7 +589,7 @@ public class ProcessController {
     public ProcessInstance startProcess(
             @AuthenticationPrincipal UserDetails user) {
         
-        String userId = securityManager.getCurrentUserIdentity();
+        String userId = securityManager.getAuthenticatedUserId();
         log.info("User {} starting process", userId);
         
         // Start process with user context
@@ -585,14 +613,15 @@ public class SecureProcessService {
     @Transactional
     public void executeSecureOperation(String processKey) {
         // Check permissions
-        if (!securityManager.isUserInRole("ADMIN") && 
-            !securityManager.isUserInGroup("MANAGEMENT")) {
+        List<String> roles = securityManager.getAuthenticatedUserRoles();
+        List<String> groups = securityManager.getAuthenticatedUserGroups();
+        if (!roles.contains("ADMIN") && !groups.contains("MANAGEMENT")) {
             throw new AccessDeniedException(
                 "Insufficient permissions to execute operation");
         }
-        
+
         // Log action with user identity
-        String userId = securityManager.getCurrentUserIdentity();
+        String userId = securityManager.getAuthenticatedUserId();
         auditLog.log(userId, "EXECUTE_OPERATION", processKey);
         
         // Execute operation
@@ -637,31 +666,28 @@ public class CustomSecurityConfig {
 ```java
 // GOOD
 public void performAction() {
-    String userId = securityManager.getCurrentUserIdentity();
-    if (userId == null) {
-        throw new SecurityException("No authenticated user");
-    }
+    String userId = securityManager.getAuthenticatedUserId();
     // Proceed with action
 }
 
 // BAD
 public void performAction() {
-    String userId = securityManager.getCurrentUserIdentity();
-    // May be null if not authenticated
-    repository.save(new Action(userId, ...));
+    // getAuthenticatedUserId() throws SecurityException if no authenticated user
+    // Need to handle this case
+    repository.save(new Action(securityManager.getAuthenticatedUserId(), ...));
 }
 ```
 
 ### 2. Use Role-Based Checks
 
 ```java
-// GOOD
-if (securityManager.isUserInRole("ADMIN")) {
+// GOOD - Direct role check using the available API
+if (securityManager.getAuthenticatedUserRoles().contains("ADMIN")) {
     performAdminAction();
 }
 
-// BAD
-if (securityManager.getCurrentUserRoles().contains("ADMIN")) {
+// BAD - Checking groups instead of roles for role-based access
+if (securityManager.getAuthenticatedUserGroups().contains("ADMIN")) {
     performAdminAction();
 }
 ```
@@ -671,7 +697,7 @@ if (securityManager.getCurrentUserRoles().contains("ADMIN")) {
 ```java
 // GOOD
 public void deleteProcess(String processId) {
-    String userId = securityManager.getCurrentUserIdentity();
+    String userId = securityManager.getAuthenticatedUserId();
     auditLog.log(userId, "DELETE_PROCESS", processId);
     processRepository.delete(processId);
 }
@@ -686,53 +712,51 @@ public void deleteProcess(String processId) {
 ### 4. Handle Security Exceptions
 
 ```java
-// GOOD
+// GOOD - Check roles and handle access denied
 try {
-    securityManager.checkPermission("ADMIN");
+    List<String> roles = securityManager.getAuthenticatedUserRoles();
+    if (!roles.contains("ADMIN")) {
+        throw new AccessDeniedException("Admin role required");
+    }
 } catch (AccessDeniedException e) {
-    log.warn("Access denied for user: {}", 
-        securityManager.getCurrentUserIdentity());
+    log.warn("Access denied for user: {}",
+        securityManager.getAuthenticatedUserId());
     throw e;
 }
 
-// BAD
-securityManager.checkPermission("ADMIN");
-// No error handling
+// BAD - No error handling for security checks
+List<String> roles = securityManager.getAuthenticatedUserRoles();
+if (!roles.contains("ADMIN")) {
+    throw new AccessDeniedException("Admin role required");
+}
 ```
 
 ---
 
 ## API Reference
 
-### LocalSpringSecurityManager
+### SecurityManager (interface)
 
-**Methods:**
+`LocalSpringSecurityManager` extends `AbstractSecurityManager` which implements the `SecurityManager` interface. The following methods are inherited:
 
 ```java
 /**
- * Get current user identity.
+ * Get the authenticated user ID.
+ * Throws SecurityException if no authenticated user.
  */
-String getCurrentUserIdentity();
+String getAuthenticatedUserId();
 
 /**
- * Get current user groups.
+ * Get the authenticated user groups.
+ * Throws SecurityException if no authenticated user.
  */
-List<String> getCurrentUserGroups();
+List<String> getAuthenticatedUserGroups();
 
 /**
- * Get current user roles.
+ * Get the authenticated user roles.
+ * Throws SecurityException if no authenticated user.
  */
-List<String> getCurrentUserRoles();
-
-/**
- * Check if user is in group.
- */
-boolean isUserInGroup(String group);
-
-/**
- * Check if user is in role.
- */
-boolean isUserInRole(String role);
+List<String> getAuthenticatedUserRoles();
 ```
 
 ---
@@ -741,17 +765,17 @@ boolean isUserInRole(String role);
 
 **PrincipalIdentityProvider:**
 ```java
-String getPrincipalIdentity(Object principal);
+String getUserId(Object principal);
 ```
 
 **PrincipalGroupsProvider:**
 ```java
-List<String> getPrincipalGroups(Object principal);
+List<String> getGroups(Object principal);
 ```
 
 **PrincipalRolesProvider:**
 ```java
-List<String> getPrincipalRoles(Object principal);
+List<String> getRoles(Object principal);
 ```
 
 ---
@@ -772,9 +796,9 @@ List<String> mapRoles(Collection<GrantedAuthority> authorities);
 
 ## Troubleshooting
 
-### User Identity is Null
+### SecurityException on getAuthenticatedUserId()
 
-**Problem:** `getCurrentUserIdentity()` returns null
+**Problem:** `getAuthenticatedUserId()` throws `SecurityException`
 
 **Solution:**
 1. Check if user is authenticated
@@ -810,5 +834,5 @@ System.out.println("Authorities: " + auth.getAuthorities());
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Spring Identity](../core-common/spring-identity.md)
-- [Security Policies](../core-common/spring-security-policies.md)
+- [Spring Identity](./spring-identity.md)
+- [Security Policies](./spring-security-policies.md)

@@ -1,655 +1,153 @@
 ---
 sidebar_label: Spring App Process
 slug: /api-reference/engine-api/spring-app-process
-description: Spring-based application process engine configuration and auto-configuration.
+description: Process entry discovery and deployment for the Activiti application framework.
 ---
 
-# Activiti Spring App Process Module - Technical Documentation
+# activiti-spring-app-process
 
 **Module:** `activiti-core/activiti-spring-app-process`
 
----
+This module provides process-specific implementations of the application entry discovery and deployment SPI defined by `activiti-spring-application`. It enables the Activiti application framework to recognize and deploy BPMN process definitions from application archives.
 
-## Table of Contents
+The module contains three classes:
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Process Application Context](#process-application-context)
-- [Spring Bean Integration](#spring-bean-integration)
-- [Process Deployment](#process-deployment)
-- [Multi-Application Support](#multi-application-support)
-- [Configuration](#configuration)
-- [Usage Examples](#usage-examples)
-- [Best Practices](#best-practices)
-- [API Reference](#api-reference)
+| Class | Package | Role |
+|---|---|---|
+| `ApplicationProcessAutoConfiguration` | `org.activiti.application.conf` | Spring Boot auto-configuration |
+| `ProcessEntryDiscovery` | `org.activiti.application.discovery` | Discovers process entries in application archives |
+| `ProcessEntryDeployer` | `org.activiti.application.deployer` | Deploys discovered processes to the engine |
 
 ---
 
-## Overview
+## SPI Overview
 
-The **activiti-spring-app-process** module provides support for running Activiti processes within Spring application contexts. It enables process applications to be deployed and managed as Spring beans, with full integration into the Spring lifecycle.
+The parent module `activiti-spring-application` defines two interfaces that form a plugin SPI:
 
-### Key Features
-
-- **Spring Application Context**: Process apps as Spring contexts
-- **Bean Integration**: Full Spring bean lifecycle support
-- **Process Deployment**: Deploy processes from Spring resources
-- **Multi-Application**: Support for multiple process applications
-- **Configuration Management**: Spring-based configuration
-- **Lifecycle Management**: Proper startup/shutdown
-
-### Module Structure
-
-```
-activiti-spring-app-process/
-├── src/main/java/org/activiti/spring/app/
-│   ├── ProcessApplication.java          # Main application interface
-│   ├── ProcessApplicationContext.java    # Spring context for processes
-│   ├── ProcessDeploymentManager.java     # Deployment management
-│   └── config/
-│       ├── ProcessAppConfiguration.java
-│       └── ProcessAppAutoConfiguration.java
-└── src/test/java/
-```
-
----
-
-## Architecture
-
-### Process Application Architecture
-
-```mermaid
-flowchart TD
-    subgraph SpringAppCtx["Spring Application Context"]
-        subgraph ProcessApp["ProcessApplication Bean"]
-            subgraph ProcessEngine["Process Engine Embedded"]
-                E1["- RuntimeService"]
-                E2["- TaskService"]
-                E3["- RepositoryService"]
-            end
-            
-            subgraph ProcessDefs["Process Definitions"]
-                D1["- Deployed from Spring resources"]
-                D2["- Managed by application"]
-            end
-        end
-        
-        subgraph BusinessBeans["Business Beans"]
-            B1["- Service delegates"]
-            B2["- Event listeners"]
-            B3["- External integrations"]
-        end
-    end
-    
-    ProcessEngine --> ProcessDefs
-```
-
-### Component Diagram
-
-```mermaid
-flowchart TD
-    subgraph ProcessApp["ProcessApplication"]
-        Engine["Process<br>Engine"]
-        DeployMgr["Process<br>Deployment<br>Manager"]
-        
-        subgraph SpringIntegration["Spring Integration"]
-            S1["- Bean factory"]
-            S2["- Event publishing"]
-            S3["- Transaction management"]
-        end
-    end
-    
-    Engine --> SpringIntegration
-    DeployMgr --> SpringIntegration
-```
-
----
-
-## Process Application Context
-
-### ProcessApplication Interface
+### `ApplicationEntryDiscovery`
 
 ```java
-public interface ProcessApplication {
-    
-    /**
-     * Get the application ID
-     */
-    String getApplicationId();
-    
-    /**
-     * Get the process engine
-     */
-    ProcessEngine getProcessEngine();
-    
-    /**
-     * Start the application
-     */
-    void start();
-    
-    /**
-     * Stop the application
-     */
-    void stop();
-    
-    /**
-     * Check if application is running
-     */
-    boolean isRunning();
+public interface ApplicationEntryDiscovery {
+    Predicate<ZipEntry> filter(ZipEntry entry);
+    String getEntryType();
 }
 ```
 
-### ProcessApplicationContext
+A discovery implementation provides a filter that selects relevant `ZipEntry` objects from an application archive, and declares an entry type string that categorizes the matched entries.
+
+### `ApplicationEntryDeployer`
 
 ```java
-public class ProcessApplicationContext 
-    extends AnnotationConfigApplicationContext 
-    implements ProcessApplication {
-    
-    private final String applicationId;
-    private ProcessEngine processEngine;
-    private boolean running = false;
-    
-    public ProcessApplicationContext(String applicationId, 
-                                     Class<?>... configurationClasses) {
-        super(configurationClasses);
-        this.applicationId = applicationId;
-    }
-    
+public interface ApplicationEntryDeployer {
+    void deployEntries(ApplicationContent application);
+}
+```
+
+A deployer receives an `ApplicationContent` — which maps entry types to lists of `FileContent` objects — and deploys the entries of the type it handles.
+
+Both interfaces are resolved through Spring's dependency injection: all beans of type `ApplicationEntryDiscovery` are wired into `ApplicationReader`, and all beans of type `ApplicationEntryDeployer` are wired into `ApplicationDeployer`.
+
+---
+
+## ProcessEntryDiscovery
+
+**Package:** `org.activiti.application.discovery`
+
+Implements `ApplicationEntryDiscovery` to identify process definition files within application archives.
+
+```java
+public class ProcessEntryDiscovery implements ApplicationEntryDiscovery {
+
+    public static final String PROCESSES = "processes";
+
     @Override
-    public void start() {
-        if (running) {
-            return;
-        }
-        
-        // Start parent context
-        super.start();
-        
-        // Initialize process engine
-        processEngine = getBean(ProcessEngine.class);
-        
-        // Deploy processes
-        deployProcesses();
-        
-        running = true;
-        log.info("Process application started: {}", applicationId);
+    public Predicate<ZipEntry> filter(ZipEntry entry) {
+        return zipEntry -> !zipEntry.isDirectory() && zipEntry.getName().contains(PROCESSES);
     }
-    
+
     @Override
-    public void stop() {
-        if (!running) {
-            return;
-        }
-        
-        running = false;
-        
-        // Close process engine
-        if (processEngine != null) {
-            processEngine.close();
-        }
-        
-        // Stop parent context
-        super.close();
-        
-        log.info("Process application stopped: {}", applicationId);
-    }
-    
-    private void deployProcesses() {
-        // Find process resources
-        ResourcePatternResolver resolver = 
-            new PathMatchingResourcePatternResolver();
-        
-        try {
-            Resource[] resources = resolver.getResources(
-                "classpath*:bpmn/*.bpmn");
-            
-            for (Resource resource : resources) {
-                deployResource(resource);
-            }
-        } catch (IOException e) {
-            throw new ActivitiException(
-                "Failed to deploy processes", e);
-        }
-    }
-    
-    private void deployResource(Resource resource) {
-        try {
-            RepositoryService repoService = 
-                processEngine.getRepositoryService();
-            
-            repoService.createDeployment()
-                .addInputStream(resource.getFilename(), 
-                               resource.getInputStream())
-                .deploy();
-            
-            log.info("Deployed: {}", resource.getFilename());
-        } catch (IOException e) {
-            throw new ActivitiException(
-                "Failed to deploy " + resource, e);
-        }
+    public String getEntryType() {
+        return PROCESSES;
     }
 }
 ```
 
+- Declares the entry type constant `"processes"`.
+- The filter selects any non-directory `ZipEntry` whose name contains the substring `processes`.
+- Matched entries are grouped under the `"processes"` type key in the resulting `ApplicationContent`.
+
 ---
 
-## Spring Bean Integration
+## ProcessEntryDeployer
 
-### Process Delegate as Spring Bean
+**Package:** `org.activiti.application.deployer`
+
+Implements `ApplicationEntryDeployer` to deploy process files to the Activiti repository.
 
 ```java
-@Component
-public class OrderServiceDelegate implements JavaDelegate {
-    
-    @Autowired
-    private OrderRepository orderRepository;
-    
-    @Autowired
-    private EmailService emailService;
-    
+public class ProcessEntryDeployer implements ApplicationEntryDeployer {
+
+    private RepositoryService repositoryService;
+
+    public ProcessEntryDeployer(RepositoryService repositoryService) {
+        this.repositoryService = repositoryService;
+    }
+
     @Override
-    public void execute(DelegateExecution execution) {
-        String orderId = (String) execution.getVariable("orderId");
-        
-        // Use Spring beans directly
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException(orderId));
-        
-        // Process order
-        order.process();
-        orderRepository.save(order);
-        
-        // Send notification
-        emailService.sendOrderNotification(order);
-        
-        // Set output variables
-        execution.setVariable("processedOrder", order);
-    }
-}
-```
-
-### Event Listener as Spring Bean
-
-```java
-@Component
-public class OrderProcessEventListener 
-    implements ProcessEventListener {
-    
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
-    
-    @Autowired
-    private MetricsService metricsService;
-    
-    @Override
-    public void onEvent(ProcessEngineEvent event) {
-        if (event.getType() == ProcessEngineEventType.PROCESS_START) {
-            ProcessInstance instance = 
-                (ProcessInstance) event.getEntity();
-            
-            // Publish Spring event
-            eventPublisher.publishEvent(
-                new OrderProcessStartedEvent(this, instance));
-            
-            // Record metrics
-            metricsService.recordProcessStart(
-                instance.getProcessDefinitionKey());
+    public void deployEntries(ApplicationContent application) {
+        List<FileContent> processContents = application.getFileContents(ProcessEntryDiscovery.PROCESSES);
+        DeploymentBuilder deploymentBuilder = repositoryService.createDeployment()
+            .enableDuplicateFiltering()
+            .name("ApplicationAutoDeployment");
+        for (FileContent processContent : processContents) {
+            deploymentBuilder.addBytes(processContent.getName(), processContent.getContent());
         }
+        deploymentBuilder.deploy();
     }
 }
 ```
 
+- Injected with `RepositoryService` via its constructor.
+- Retrieves all `FileContent` entries of type `"processes"` from the `ApplicationContent`.
+- Creates a single deployment named `"ApplicationAutoDeployment"` with duplicate filtering enabled.
+- Adds each process file as a byte array to the deployment builder, then deploys.
+
 ---
 
-## Process Deployment
+## ApplicationProcessAutoConfiguration
 
-### Auto-Deployment
+**Package:** `org.activiti.application.conf`
+
+Spring Boot auto-configuration that registers the process discovery and deployer beans.
 
 ```java
-@Configuration
-public class ProcessDeploymentConfig {
-    
+@AutoConfiguration
+public class ApplicationProcessAutoConfiguration {
+
     @Bean
-    public DeploymentListener autoDeploymentListener(
-            ProcessEngine processEngine) {
-        
-        return new DeploymentListener() {
-            @Override
-            public void notifyBeforeDeploy(Deployment deployment) {
-                // Pre-deployment validation
-                validateDeployment(deployment);
-            }
-            
-            @Override
-            public void notifyDeployed(Deployment deployment) {
-                // Post-deployment actions
-                logProcesses(deployment, processEngine);
-            }
-        };
+    public ApplicationEntryDiscovery processEntryDiscovery() {
+        return new ProcessEntryDiscovery();
     }
-    
-    private void validateDeployment(Deployment deployment) {
-        // Custom validation logic
-    }
-    
-    private void logProcesses(Deployment deployment, 
-                             ProcessEngine processEngine) {
-        RepositoryService repoService = 
-            processEngine.getRepositoryService();
-        
-        List<ProcessDefinition> processes = repoService
-            .createProcessDefinitionQuery()
-            .deploymentId(deployment.getId())
-            .list();
-        
-        log.info("Deployed {} processes", processes.size());
-    }
-}
-```
 
-### Manual Deployment
-
-```java
-@Service
-public class ProcessDeploymentService {
-    
-    @Autowired
-    private ProcessApplication processApplication;
-    
-    public void deployProcess(Resource resource) {
-        ProcessEngine engine = processApplication.getProcessEngine();
-        
-        engine.getRepositoryService()
-            .createDeployment()
-            .addInputStream(resource.getFilename(), 
-                           resource.getInputStream())
-            .deploy();
-    }
-    
-    public void undeployProcess(String deploymentId) {
-        ProcessEngine engine = processApplication.getProcessEngine();
-        
-        engine.getRepositoryService()
-            .deleteDeployment(deploymentId);
-    }
-}
-```
-
----
-
-## Multi-Application Support
-
-### Application Registry
-
-```java
-@Component
-public class ProcessApplicationRegistry {
-    
-    private final Map<String, ProcessApplication> applications = 
-        new ConcurrentHashMap<>();
-    
-    public void register(ProcessApplication application) {
-        applications.put(application.getApplicationId(), application);
-        log.info("Registered application: {}", 
-                 application.getApplicationId());
-    }
-    
-    public void unregister(String applicationId) {
-        ProcessApplication app = applications.remove(applicationId);
-        if (app != null) {
-            app.stop();
-            log.info("Unregistered application: {}", applicationId);
-        }
-    }
-    
-    public ProcessApplication getApplication(String applicationId) {
-        return applications.get(applicationId);
-    }
-    
-    public Collection<ProcessApplication> getAllApplications() {
-        return Collections.unmodifiableCollection(applications.values());
-    }
-}
-```
-
-### Multiple Applications
-
-```java
-@Configuration
-public class MultiAppConfig {
-    
-    @Autowired
-    private ProcessApplicationRegistry registry;
-    
     @Bean
-    public ProcessApplication orderApplication() {
-        ProcessApplicationContext app = new ProcessApplicationContext(
-            "order-app",
-            OrderAppConfiguration.class);
-        
-        registry.register(app);
-        app.start();
-        
-        return app;
-    }
-    
-    @Bean
-    public ProcessApplication hrApplication() {
-        ProcessApplicationContext app = new ProcessApplicationContext(
-            "hr-app",
-            HrAppConfiguration.class);
-        
-        registry.register(app);
-        app.start();
-        
-        return app;
+    public ApplicationEntryDeployer processEntryDeployer(RepositoryService repositoryService) {
+        return new ProcessEntryDeployer(repositoryService);
     }
 }
 ```
+
+- Exposes `ProcessEntryDiscovery` as a bean of type `ApplicationEntryDiscovery`, so it is picked up by the `ApplicationReader` in the parent module.
+- Exposes `ProcessEntryDeployer` as a bean of type `ApplicationEntryDeployer`, so it is picked up by the `ApplicationDeployer` in the parent module. The deployer requires `RepositoryService` (injected by Spring from the existing process engine beans).
 
 ---
 
-## Configuration
+## How It Fits Together
 
-### Application Configuration
+The deployment flow across modules:
 
-```java
-@Configuration
-@EnableTransactionManagement
-public class OrderAppConfiguration {
-    
-    @Bean
-    public ProcessEngineConfiguration processEngineConfiguration(
-            DataSource dataSource) {
-        
-        SpringProcessEngineConfiguration cfg = 
-            new SpringProcessEngineConfiguration();
-        
-        cfg.setDataSource(dataSource);
-        cfg.setProcessEngineName("order-engine");
-        cfg.setDatabaseSchemaUpdate(
-            ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
-        cfg.setHistoryLevel(ProcessEngineConfiguration.HISTORY_FULL);
-        cfg.setAsyncExecutorActivate(true);
-        
-        return cfg;
-    }
-    
-    @Bean
-    public JavaDelegate orderProcessingDelegate() {
-        return new OrderProcessingDelegate();
-    }
-}
-```
+1. `ApplicationService` (in `activiti-spring-application`) locates application archive files on the classpath and delegates reading to `ApplicationReader`.
+2. `ApplicationReader` iterates over every `ApplicationEntryDiscovery` bean. `ProcessEntryDiscovery` filters entries whose names contain `"processes"`.
+3. Matched entries are stored in `ApplicationContent` under the `"processes"` type key.
+4. `ApplicationDeployer` iterates over every `ApplicationEntryDeployer` bean. `ProcessEntryDeployer` retrieves the `"processes"` entries and deploys them as a single Activiti deployment with duplicate filtering enabled.
 
-### Properties Configuration
-
-```yaml
-activiti:
-  app:
-    order-app:
-      enabled: true
-      engine-name: order-engine
-      history-level: full
-      async-executor: true
-      deployment:
-        package: com.example.order.bpmn
-        auto-deploy: true
-    
-    hr-app:
-      enabled: true
-      engine-name: hr-engine
-      history-level: audit
-      async-executor: true
-```
-
----
-
-## Usage Examples
-
-### Simple Process Application
-
-```java
-@SpringBootApplication
-public class OrderProcessApplication {
-    
-    public static void main(String[] args) {
-        // Create and start process application
-        ProcessApplicationContext app = new ProcessApplicationContext(
-            "order-app",
-            OrderAppConfiguration.class);
-        
-        app.start();
-        
-        // Keep application running
-        try {
-            Thread.currentThread().join();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } finally {
-            app.stop();
-        }
-    }
-}
-```
-
-### Using Process Application
-
-```java
-@Service
-public class OrderService {
-    
-    @Autowired
-    @Qualifier("orderApplication")
-    private ProcessApplication processApplication;
-    
-    public void createOrder(Order order) {
-        ProcessEngine engine = processApplication.getProcessEngine();
-        
-        // Start process
-        ProcessInstance instance = engine.getRuntimeService()
-            .startProcessInstanceByKey("orderProcess", order.getId());
-        
-        log.info("Started order process: {}", instance.getId());
-    }
-}
-```
-
----
-
-## Best Practices
-
-### 1. Use Descriptive Application IDs
-
-```java
-// GOOD
-new ProcessApplicationContext("order-management-app");
-
-// BAD
-new ProcessApplicationContext("app1");
-```
-
-### 2. Proper Lifecycle Management
-
-```java
-@PreDestroy
-public void cleanup() {
-    if (processApplication.isRunning()) {
-        processApplication.stop();
-    }
-}
-```
-
-### 3. Isolate Process Applications
-
-```java
-// Each application should have its own configuration
-@Bean
-public ProcessEngineConfiguration orderEngineConfig() {
-    // Order-specific configuration
-}
-
-@Bean
-public ProcessEngineConfiguration hrEngineConfig() {
-    // HR-specific configuration
-}
-```
-
-### 4. Monitor Applications
-
-```java
-@Component
-public class ApplicationMonitor {
-    
-    @Autowired
-    private ProcessApplicationRegistry registry;
-    
-    @Scheduled(fixedRate = 60000)
-    public void checkApplications() {
-        for (ProcessApplication app : registry.getAllApplications()) {
-            if (!app.isRunning()) {
-                log.error("Application stopped unexpectedly: {}", 
-                         app.getApplicationId());
-                // Alert or restart
-            }
-        }
-    }
-}
-```
-
----
-
-## API Reference
-
-### Key Classes
-
-- `ProcessApplication` - Application interface
-- `ProcessApplicationContext` - Spring context implementation
-- `ProcessApplicationRegistry` - Application management
-- `DeploymentListener` - Deployment events
-
-### Key Methods
-
-```java
-// Application lifecycle
-void start()
-void stop()
-boolean isRunning()
-
-// Engine access
-ProcessEngine getProcessEngine()
-String getApplicationId()
-
-// Registry operations
-void register(ProcessApplication app)
-void unregister(String appId)
-ProcessApplication getApplication(String appId)
-```
-
----
-
-## See Also
-
-- [Parent Module Documentation](../overview.md)
-- [Spring Integration](../engine-api/spring-integration.md)
-- [Engine Documentation](../engine-api/README.md)
+This design allows other modules (e.g., form or model support) to plug in their own discovery and deployer implementations without modifying the core application framework.

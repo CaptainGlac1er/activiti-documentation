@@ -686,5 +686,5 @@ try {
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Connector Model](../core-common/connector-model.md)
-- [Spring Integration](../core-common/spring-application.md)
+- [Connector Model](./connector-model.md)
+- [Spring Integration](./spring-application.md)

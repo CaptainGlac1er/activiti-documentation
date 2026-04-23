@@ -74,18 +74,20 @@ activiti-connector-model/
 │  │  - description: String                               │   │
 │  │  - inputs: List<VariableDefinition>                 │   │
 │  │  - outputs: List<VariableDefinition>                │   │
-│  │  - configuration: Map<String, Object>               │   │
 │  └────────────────────┬────────────────────────────────┘   │
 │                       │                                     │
 │                       │ has                                 │
 │                       ▼                                     │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │             VariableDefinition                       │   │
+│  │  - id: String                                        │   │
 │  │  - name: String                                      │   │
-│  │  - type: String                                      │   │
 │  │  - description: String                               │   │
+│  │  - type: String                                      │   │
 │  │  - required: boolean                                 │   │
-│  │  - defaultValue: Object                              │   │
+│  │  - display: Boolean                                  │   │
+│  │  - displayName: String                               │   │
+│  │  - analytics: boolean                                │   │
 │  └─────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -102,13 +104,7 @@ ConnectorDefinition
             ├── name (display name)
             ├── description (what the action does)
             ├── inputs (list of input variables)
-            ├── outputs (list of output variables)
-            └── configuration (action-specific settings)
-                    ├── name (variable name)
-                    ├── type (data type)
-                    ├── description (variable purpose)
-                    ├── required (must be provided?)
-                    └── defaultValue (default if not provided)
+            └── outputs (list of output variables)
 ```
 
 ---
@@ -157,7 +153,6 @@ emailConnector.setActions(Map.of(
 - Specify action identity and purpose
 - Define input parameters required for execution
 - Define output parameters returned after execution
-- Configure action-specific settings
 - Enable action validation
 
 **Fields:**
@@ -166,7 +161,6 @@ emailConnector.setActions(Map.of(
 - `description` (`String`): What the action does
 - `inputs` (`List<VariableDefinition>`): Input parameters
 - `outputs` (`List<VariableDefinition>`): Output parameters
-- `configuration` (`Map<String, Object>`): Action configuration
 
 **When to Use:** When defining specific operations within a connector (e.g., sendEmail, createUser, fetchData).
 
@@ -181,10 +175,6 @@ sendEmail.setName("Send Email");
 sendEmail.setDescription("Send an email to recipients");
 sendEmail.setInputs(Arrays.asList(toVar, subjectVar, bodyVar));
 sendEmail.setOutputs(Arrays.asList(sentIdVar));
-sendEmail.setConfiguration(Map.of(
-    "smtpHost", "smtp.example.com",
-    "smtpPort", 587
-));
 ```
 
 ---
@@ -196,16 +186,18 @@ sendEmail.setConfiguration(Map.of(
 **Responsibilities:**
 - Specify variable identity and type
 - Define whether variable is required
-- Provide default values
 - Document variable purpose
 - Enable type validation
 
 **Fields:**
+- `id` (`String`): Unique variable identifier
 - `name` (`String`): Variable name
-- `type` (`String`): Data type (String, Integer, Boolean, etc.)
 - `description` (`String`): Variable purpose
+- `type` (`String`): Data type (String, Integer, Boolean, etc.)
 - `required` (boolean): Must be provided?
-- `defaultValue` (Object): Default value if not provided
+- `display` (Boolean): Whether to display this variable in UI
+- `displayName` (String): Human-readable display name
+- `analytics` (boolean): Whether to track this variable for analytics
 
 **When to Use:** When defining parameters for connector actions.
 
@@ -214,11 +206,14 @@ sendEmail.setConfiguration(Map.of(
 **Example:**
 ```java
 VariableDefinition toVar = new VariableDefinition();
+toVar.setId("to");
 toVar.setName("to");
-toVar.setType("String");
 toVar.setDescription("Recipient email address");
+toVar.setType("String");
 toVar.setRequired(true);
-toVar.setDefaultValue(null);
+toVar.setDisplay(true);
+toVar.setDisplayName("Recipient Email");
+toVar.setAnalytics(false);
 ```
 
 ---
@@ -269,20 +264,13 @@ public class EmailConnectorDefinition {
         );
         action.setOutputs(outputs);
         
-        // Configuration
-        action.setConfiguration(Map.of(
-            "smtpHost", "${email.smtp.host}",
-            "smtpPort", 587,
-            "authRequired", true,
-            "starttls", true
-        ));
-        
         return action;
     }
     
     private static VariableDefinition createVariable(
             String name, String type, String description, boolean required) {
         VariableDefinition var = new VariableDefinition();
+        var.setId(name);
         var.setName(name);
         var.setType(type);
         var.setDescription(description);
@@ -323,7 +311,6 @@ public class ConnectorDefinitionLoader {
         
         action.setInputs(loadVariables(actionNode.get("inputs")));
         action.setOutputs(loadVariables(actionNode.get("outputs")));
-        action.setConfiguration(loadConfiguration(actionNode.get("configuration")));
         
         return action;
     }
@@ -364,13 +351,11 @@ public class ActionInputDefinition {
     private static VariableDefinition createVariable(
             String name, String type, String description, boolean required) {
         VariableDefinition var = new VariableDefinition();
+        var.setId(name);
         var.setName(name);
         var.setType(type);
         var.setDescription(description);
         var.setRequired(required);
-        if (!required) {
-            var.setDefaultValue(null);
-        }
         return var;
     }
 }
@@ -398,6 +383,7 @@ public class ActionOutputDefinition {
     private static VariableDefinition createVariable(
             String name, String type, String description, boolean required) {
         VariableDefinition var = new VariableDefinition();
+        var.setId(name);
         var.setName(name);
         var.setType(type);
         var.setDescription(description);
@@ -556,31 +542,53 @@ public class RestConnectorDefinition {
 }
 ```
 
-### Using Connector in Code
+### Connector Model Usage
 
 ```java
-@Service
-public class OrderNotificationService {
+public class EmailConnectorSetup {
     
-    @Autowired
-    private ConnectorExecutor connectorExecutor;
-    
-    public void sendOrderNotification(Order order) {
-        // Execute email connector action
-        Map<String, Object> inputs = new HashMap<>();
-        inputs.put("to", order.getCustomerEmail());
-        inputs.put("subject", "Order Confirmation: " + order.getId());
-        inputs.put("body", generateOrderEmailBody(order));
-        inputs.put("isHtml", true);
+    public ConnectorDefinition buildEmailConnector() {
+        ConnectorDefinition connector = new ConnectorDefinition();
+        connector.setId("email-connector");
+        connector.setName("Email Service");
+        connector.setDescription("Send emails via SMTP");
         
-        Map<String, Object> result = connectorExecutor.execute(
-            "email-connector",
-            "sendEmail",
-            inputs
+        Map<String, ActionDefinition> actions = new HashMap<>();
+        actions.put("sendEmail", buildSendEmailAction());
+        connector.setActions(actions);
+        
+        return connector;
+    }
+    
+    private ActionDefinition buildSendEmailAction() {
+        ActionDefinition action = new ActionDefinition();
+        action.setId("sendEmail");
+        action.setName("Send Email");
+        action.setDescription("Send an email to recipients");
+        
+        List<VariableDefinition> inputs = Arrays.asList(
+            createVariable("to", "String", "Recipient email", true),
+            createVariable("subject", "String", "Email subject", true),
+            createVariable("body", "String", "Email body", true)
         );
+        action.setInputs(inputs);
         
-        // Store result
-        order.setEmailMessageId((String) result.get("messageId"));
+        List<VariableDefinition> outputs = Arrays.asList(
+            createVariable("messageId", "String", "Sent message ID", false)
+        );
+        action.setOutputs(outputs);
+        
+        return action;
+    }
+    
+    private VariableDefinition createVariable(String id, String type, String description, boolean required) {
+        VariableDefinition var = new VariableDefinition();
+        var.setId(id);
+        var.setName(id);
+        var.setType(type);
+        var.setDescription(description);
+        var.setRequired(required);
+        return var;
     }
 }
 ```
@@ -610,10 +618,13 @@ action.setName("a");
 ```java
 // GOOD
 VariableDefinition emailVar = new VariableDefinition();
+emailVar.setId("recipientEmail");
 emailVar.setName("recipientEmail");
 emailVar.setType("String");
 emailVar.setDescription("The email address of the order recipient");
 emailVar.setRequired(true);
+emailVar.setDisplayName("Recipient Email");
+emailVar.setDisplay(true);
 
 // BAD
 VariableDefinition emailVar = new VariableDefinition();
@@ -621,17 +632,16 @@ emailVar.setName("e");
 emailVar.setType("String");
 ```
 
-### 3. Use Configuration for Constants
+### 3. Separate Configuration from Input Variables
 
 ```java
-// GOOD - SMTP settings in configuration
-action.setConfiguration(Map.of(
-    "smtpHost", "${email.smtp.host}",
-    "smtpPort", 587,
-    "authRequired", true
-));
+// GOOD - SMTP settings as environment variables, not action inputs
+String smtpHost = System.getenv("EMAIL_SMTP_HOST");
+String smtpPort = System.getenv("EMAIL_SMTP_PORT");
+// Use these values in your connector runtime implementation
 
-// BAD - Hardcoded in action
+// BAD - Hardcoded connector settings as action input variables
+// This forces users to configure SMTP on every call
 inputs.add(createVariable("smtpHost", "String", "SMTP host", true));
 ```
 
@@ -640,6 +650,7 @@ inputs.add(createVariable("smtpHost", "String", "SMTP host", true));
 ```java
 // GOOD
 VariableDefinition toVar = new VariableDefinition();
+toVar.setId("to");
 toVar.setName("to");
 toVar.setType("String");
 toVar.setRequired(true);
@@ -690,7 +701,6 @@ createVariable("quantity", "String", "Item quantity", false);
 - `description` (`String`): What the action does
 - `inputs` (`List<VariableDefinition>`): Input parameters
 - `outputs` (`List<VariableDefinition>`): Output parameters
-- `configuration` (`Map<String, Object>`): Action configuration
 
 **Methods:**
 - `getId()` / `setId(String)`
@@ -698,30 +708,35 @@ createVariable("quantity", "String", "Item quantity", false);
 - `getDescription()` / `setDescription(String)`
 - `getInputs()` / `setInputs(List<VariableDefinition>)`
 - `getOutputs()` / `setOutputs(List<VariableDefinition>)`
-- `getConfiguration()` / `setConfiguration(Map<String, Object>)`
 
 ---
 
 ### VariableDefinition
 
 **Fields:**
+- `id` (`String`): Unique variable identifier
 - `name` (`String`): Variable name
-- `type` (`String`): Data type
 - `description` (`String`): Variable purpose
+- `type` (`String`): Data type
 - `required` (boolean): Must be provided
-- `defaultValue` (Object): Default value
+- `display` (Boolean): Whether to display in UI
+- `displayName` (String): Human-readable display name
+- `analytics` (boolean): Whether to track for analytics
 
 **Methods:**
+- `getId()` / `setId(String)`
 - `getName()` / `setName(String)`
-- `getType()` / `setType(String)`
 - `getDescription()` / `setDescription(String)`
+- `getType()` / `setType(String)`
 - `isRequired()` / `setRequired(boolean)`
-- `getDefaultValue()` / `setDefaultValue(Object)`
+- `getDisplay()` / `setDisplay(Boolean)`
+- `getDisplayName()` / `setDisplayName(String)`
+- `isAnalytics()` / `setAnalytics(boolean)`
 
 ---
 
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Spring Connector](../core-common/spring-connector.md)
-- [Common Utilities](../core-common/common-util.md)
+- [Spring Connector](./spring-connector.md)
+- [Common Utilities](./common-util.md)

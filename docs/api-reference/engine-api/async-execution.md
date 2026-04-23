@@ -75,42 +75,42 @@ flowchart TD
 # application.yml
 spring:
   activiti:
+    # Enable async executor (ActivitiProperties.asyncExecutorActivate)
+    async-executor-activate: true
+
     async-executor:
-      # Enable async executor
-      activate: true
-      
       # Thread pool configuration
       core-pool-size: 2          # Minimum threads kept alive
       max-pool-size: 10          # Maximum threads under load
       keep-alive-time: 5000      # Idle thread timeout (ms)
       queue-size: 100            # Job queue capacity
-      
+
       # Job acquisition
       max-async-jobs-due-per-acquisition: 1    # Jobs per acquisition cycle
       max-timer-jobs-per-acquisition: 1         # Timer jobs per cycle
-      
+
       # Wait times (milliseconds)
       default-async-job-acquire-wait-time-in-millis: 10000  # Wait between async acquisitions
       default-timer-job-acquire-wait-time-in-millis: 10000   # Wait between timer acquisitions
       default-queue-size-full-wait-time: 0              # Wait when queue is full
-      
+
       # Retry configuration
       retry-wait-time-in-millis: 500        # Wait before retrying failed job
       number-of-retries: 3                  # Default retries per job
-      
+
       # Lock times (milliseconds)
       async-job-lock-time-in-millis: 300000 # 5 minutes - prevents duplicate execution
       timer-lock-time-in-millis: 300000     # 5 minutes
-      
+
       # Expired jobs cleanup
       reset-expired-jobs-interval: 60000    # Check every 1 minute
       reset-expired-jobs-page-size: 3       # Process 3 jobs per cleanup
-      
+
       # Shutdown
       seconds-to-wait-on-shutdown: 60       # Graceful shutdown timeout
 ```
 
-**Source:** `AsyncExecutorProperties.java`
+**Source:** `AsyncExecutorProperties.java`, `ActivitiProperties.java`
 
 ### Java Configuration (Standalone)
 
@@ -161,22 +161,27 @@ public class AsyncExecutionConfig {
 ### 1. Job Creation
 
 ```xml
-<!-- Async service task creates executable job -->
-<serviceTask id="asyncTask" name="Async Processing" 
-             activiti:class="com.example.AsyncProcessor"
-             activiti:async="true"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<process xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+         xmlns:activiti="http://activiti.org/bpmn"
+         id="asyncProcess" name="Async Process">
+  <!-- Async service task creates executable job -->
+  <serviceTask id="asyncTask" name="Async Processing"
+               activiti:class="com.example.AsyncProcessor"
+               activiti:async="true"/>
 
-<!-- Timer event creates timer job -->
-<intermediateCatchEvent id="timerEvent">
-  <timerEventDefinition>
-    <timeDuration>PT1H</timeDuration>
-  </timerEventDefinition>
-</intermediateCatchEvent>
+  <!-- Timer event creates timer job -->
+  <intermediateCatchEvent id="timerEvent">
+    <timerEventDefinition>
+      <timeDuration>PT1H</timeDuration>
+    </timerEventDefinition>
+  </intermediateCatchEvent>
 
-<!-- Message event creates message job -->
-<intermediateCatchEvent id="messageEvent">
-  <messageEventDefinition messageRef="myMessage"/>
-</intermediateCatchEvent>
+  <!-- Message event creates message job -->
+  <intermediateCatchEvent id="messageEvent">
+    <messageEventDefinition messageRef="myMessage"/>
+  </intermediateCatchEvent>
+</process>
 ```
 
 ### 2. Job Acquisition
@@ -184,11 +189,11 @@ public class AsyncExecutionConfig {
 ```
 Async Executor Acquisition Loop:
 
-1. Acquire database lock (prevents multiple executors)
-2. Query for due jobs:
-   - execution_time <= now
-   - retries > 0 or not yet failed
-   - lock_expiry < now or not locked
+ 1. Acquire database lock (prevents multiple executors)
+ 2. Query for due jobs:
+    - execution_time &lt;= now
+    - retries > 0 or not yet failed
+    - lock_expiry &lt; now or not locked
 3. Lock acquired jobs:
    - Set LOCK_OWNER (executor ID)
    - Set LOCK_EXPIRY (current time + lock duration)
@@ -277,7 +282,7 @@ public void queryJobs() {
     
     // Query timer jobs
     List<Job> timerJobs = managementService.createJobQuery()
-        .jobType(JobType.TIMER)
+        .timers()
         .list();
     
     // Query jobs by process instance
@@ -310,26 +315,31 @@ Common job operations are available through `ManagementService`. See [Management
 ### Creating Timer Jobs
 
 ```xml
-<!-- Duration timer - fires after specified duration -->
-<intermediateCatchEvent id="durationTimer">
-  <timerEventDefinition>
-    <timeDuration>PT1H</timeDuration>
-  </timerEventDefinition>
-</intermediateCatchEvent>
+<?xml version="1.0" encoding="UTF-8"?>
+<process xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+         xmlns:activiti="http://activiti.org/bpmn"
+         id="timerProcess" name="Timer Process">
+  <!-- Duration timer - fires after specified duration -->
+  <intermediateCatchEvent id="durationTimer">
+    <timerEventDefinition>
+      <timeDuration>PT1H</timeDuration>
+    </timerEventDefinition>
+  </intermediateCatchEvent>
 
-<!-- Date timer - fires at specific date/time -->
-<intermediateCatchEvent id="dateTimer">
-  <timerEventDefinition>
-    <timeDate>${scheduledDate}</timeDate>
-  </timerEventDefinition>
-</intermediateCatchEvent>
+  <!-- Date timer - fires at specific date/time -->
+  <intermediateCatchEvent id="dateTimer">
+    <timerEventDefinition>
+      <timeDate>${scheduledDate}</timeDate>
+    </timerEventDefinition>
+  </intermediateCatchEvent>
 
-<!-- Cycle timer - fires repeatedly -->
-<intermediateCatchEvent id="cycleTimer">
-  <timerEventDefinition>
-    <timeCycle>R/10/PT5M</timeCycle>  <!-- 10 times, every 5 minutes -->
-  </timerEventDefinition>
-</intermediateCatchEvent>
+  <!-- Cycle timer - fires repeatedly -->
+  <intermediateCatchEvent id="cycleTimer">
+    <timerEventDefinition>
+      <timeCycle>R/10/PT5M</timeCycle>  <!-- 10 times, every 5 minutes -->
+    </timerEventDefinition>
+  </intermediateCatchEvent>
+</process>
 ```
 
 ### Timer Job Management
@@ -342,20 +352,12 @@ public class TimerJobManagement {
     
     public void manageTimerJobs() {
         // Query timer jobs
-        List<Job> timerJobs = managementService.createJobQuery()
-            .jobType(JobType.TIMER)
+        List<Job> timerJobs = managementService.createTimerJobQuery()
             .list();
         
         for (Job timerJob : timerJobs) {
-            // Get timer repetition info
-            String repetition = timerJob.getRepetitionMessage();
-            Integer repetitionNumber = timerJob.getRepetitionNumber();
-            
-            // Modify timer execution time
-            managementService.setJobRetryTime(
-                timerJob.getId(), 
-                new Date(System.currentTimeMillis() + 3600000) // 1 hour from now
-            );
+            // Get timer due date
+            Date dueDate = timerJob.getDuedate();
             
             // Set retries
             managementService.setTimerJobRetries(timerJob.getId(), 5);
@@ -382,8 +384,7 @@ public class JobMetricsCollector {
     public void collectMetrics() {
         // Job counts by type
         long executableJobs = managementService.createJobQuery().count();
-        long timerJobs = managementService.createJobQuery()
-            .jobType(JobType.TIMER)
+        long timerJobs = managementService.createTimerJobQuery()
             .count();
         long suspendedJobs = managementService.createSuspendedJobQuery().count();
         long deadLetterJobs = managementService.createDeadLetterJobQuery().count();
@@ -420,13 +421,13 @@ public class DeadLetterAnalysis {
     
     public void analyzeDeadLetterJobs() {
         List<Job> deadLetterJobs = managementService.createDeadLetterJobQuery()
-            .orderByJobCreationTime().desc()
-            .list(0, 100);
+            .orderByJobDuedate().desc()
+            .listPage(0, 100);
         
         Map<String, Long> failureReasons = new HashMap<>();
         
         for (Job job : deadLetterJobs) {
-            String exceptionMsg = managementService.getJobExceptionStacktrace(job.getId());
+            String exceptionMsg = managementService.getDeadLetterJobExceptionStacktrace(job.getId());
             
             // Categorize failures
             if (exceptionMsg.contains("Connection")) {
@@ -641,7 +642,7 @@ public class NonIdempotentHandler implements JavaDelegate {
 **Symptom:** Jobs not executing, accumulating in database
 
 **Causes:**
-- `async-executor.activate` not set to `true`
+- `async-executor-activate` not set to `true` (default is `true`)
 - Process engine not fully initialized
 - Database tables missing
 
@@ -649,8 +650,7 @@ public class NonIdempotentHandler implements JavaDelegate {
 ```yaml
 spring:
   activiti:
-    async-executor:
-      activate: true  # Must be true
+    async-executor-activate: true  # Must be true
 ```
 
 Check logs for: `Async executor started` message
@@ -688,10 +688,10 @@ if (process != null && !process.isSuspended()) {
 // 1. Analyze failure patterns
 List<Job> deadJobs = managementService.createDeadLetterJobQuery().list();
 
-for (Job job : deadJobs) {
-    String exception = managementService.getJobExceptionStacktrace(job.getId());
-    log.error("Job {} failed: {}", job.getId(), exception);
-}
+    for (Job job : deadJobs) {
+        String exception = managementService.getDeadLetterJobExceptionStacktrace(job.getId());
+        log.error("Dead letter job {} failed: {}", job.getId(), exception);
+    }
 
 // 2. Fix underlying issue
 // 3. Manually retry if appropriate
@@ -712,14 +712,14 @@ managementService.moveDeadLetterJobToExecutableJob(job.getId(), 3);
 // Check async executor is running
 // Verify timer jobs exist
 List<Job> timers = managementService.createJobQuery()
-    .jobType(JobType.TIMER)
+    .timers()
     .list();
 
-// Check execution times
+// Check due dates
 for (Job timer : timers) {
-    log.info("Timer job: {}, execution time: {}, now: {}", 
-             timer.getId(), 
-             timer.getExecutionTime(),
+    log.info("Timer job: {}, due date: {}, now: {}",
+             timer.getId(),
+             timer.getDuedate(),
              new Date());
 }
 ```
@@ -768,7 +768,7 @@ spring:
 
 - [Management Service](./management-service.md) - Job management API reference
 - [Runtime Service](./runtime-service.md) - Process execution and message correlation
-- [Engine Configuration](../../../configuration.md) - Complete engine setup
+- [Engine Configuration](../../configuration.md) - Complete engine setup
 - [Scripting Engine](./scripting-engine.md) - Async script execution
 
 ---

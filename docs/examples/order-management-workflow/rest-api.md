@@ -143,8 +143,8 @@ curl -X POST http://localhost:8080/api/orders \
 
 ```java
 import org.activiti.api.process.model.ProcessInstance;
+import org.activiti.api.process.model.builders.ProcessPayloadBuilder;
 import org.activiti.api.process.runtime.ProcessRuntime;
-import org.activiti.api.process.runtime.ProcessPayloadBuilder;
 
 @Service
 public class OrderService {
@@ -531,8 +531,7 @@ Content-Type: application/json
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `messageName` | String | Yes | Message name to receive |
-| `correlationKey` | String | No | Correlation key (if defined in BPMN) |
-| `businessKey` | String | No | Business key to match process instance |
+| `correlationKey` | String | No | Correlation key to match event subscription |
 | `variables` | Object | No | Message variables |
 
 **Supported Messages:**
@@ -555,7 +554,7 @@ curl -X POST http://localhost:8080/api/messages/receive \
   -H "Content-Type: application/json" \
   -d '{
     "messageName": "ShipmentDelivered",
-    "businessKey": "ORD-2024-001",
+    "correlationKey": "ORD-2024-001",
     "variables": {
       "deliveredAt": "2024-01-16T14:30:00Z",
       "signedBy": "J. Smith",
@@ -579,7 +578,7 @@ public class MessageService {
     public void receiveDeliveryConfirmation(String orderId, DeliveryEvent event) {
         processRuntime.receive(
             MessagePayloadBuilder.receive("ShipmentDelivered")
-                .withBusinessKey(orderId)
+                .withCorrelationKey(orderId)
                 .withVariable("deliveredAt", event.getDeliveredAt())
                 .withVariable("signedBy", event.getSignedBy())
                 .withVariable("deliveryLocation", event.getLocation())
@@ -601,13 +600,12 @@ public class MessageController {
     
     @PostMapping("/receive")
     public ResponseEntity<Void> receiveMessage(@RequestBody ReceiveMessageRequest request) {
-        processRuntime.receive(
-            MessagePayloadBuilder.receive(request.getMessageName())
-                .withBusinessKey(request.getBusinessKey())
-                .withCorrelationKey(request.getCorrelationKey())
-                .withVariables(request.getVariables())
-                .build()
-        );
+        ReceiveMessagePayloadBuilder builder = MessagePayloadBuilder.receive(request.getMessageName())
+            .withVariables(request.getVariables());
+        if (request.getCorrelationKey() != null) {
+            builder.withCorrelationKey(request.getCorrelationKey());
+        }
+        processRuntime.receive(builder.build());
         return ResponseEntity.noContent().build();
     }
 }
@@ -615,7 +613,6 @@ public class MessageController {
 class ReceiveMessageRequest {
     private String messageName;
     private String correlationKey;
-    private String businessKey;
     private Map<String, Object> variables;
     
     // getters and setters
@@ -686,11 +683,12 @@ Complete REST controller implementation:
 package com.example.ordermanagement.controllers;
 
 import org.activiti.api.process.model.ProcessInstance;
+import org.activiti.api.process.model.builders.ProcessPayloadBuilder;
 import org.activiti.api.process.runtime.ProcessRuntime;
-import org.activiti.api.process.runtime.ProcessPayloadBuilder;
+import org.activiti.api.runtime.shared.query.Pageable;
 import org.activiti.api.task.model.Task;
+import org.activiti.api.task.model.builders.TaskPayloadBuilder;
 import org.activiti.api.task.runtime.TaskRuntime;
-import org.activiti.api.task.runtime.TaskPayloadBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -751,15 +749,18 @@ public class OrderController {
         logger.info("Getting status for order: {}", orderId);
         
         // Query by business key
-        var processInstances = processRuntime.processInstanceQuery()
-            .businessKey(orderId)
-            .list();
+        var result = processRuntime.processInstances(
+            Pageable.of(0, 1),
+            ProcessPayloadBuilder.processInstances()
+                .withBusinessKey(orderId)
+                .build()
+        );
         
-        if (processInstances.isEmpty()) {
+        if (!result.hasContent()) {
             return ResponseEntity.notFound().build();
         }
         
-        return ResponseEntity.ok(processInstances.get(0));
+        return ResponseEntity.ok(result.getContent().get(0));
     }
 }
 

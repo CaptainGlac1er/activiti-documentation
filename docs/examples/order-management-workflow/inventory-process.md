@@ -468,18 +468,23 @@ public class SupplierNotificationService implements Connector {
 
 **Runtime Completion:**
 ```java
-// Approve backorder
-taskService.complete(taskId, Map.of(
-    "backorderApproved", true,
-    "approvalReason", "Customer agrees to wait",
-    "estimatedDelivery", "2024-02-15"
-));
+taskRuntime.complete(
+    TaskPayloadBuilder.complete()
+        .withTaskId(taskId)
+        .withVariable("backorderApproved", true)
+        .withVariable("approvalReason", "Customer agrees to wait")
+        .withVariable("estimatedDelivery", "2024-02-15")
+        .build()
+);
 
 // Reject backorder
-taskService.complete(taskId, Map.of(
-    "backorderApproved", false,
-    "rejectionReason", "Customer prefers cancellation"
-));
+taskRuntime.complete(
+    TaskPayloadBuilder.complete()
+        .withTaskId(taskId)
+        .withVariable("backorderApproved", false)
+        .withVariable("rejectionReason", "Customer prefers cancellation")
+        .build()
+);
 ```
 
 **Why human approval?**

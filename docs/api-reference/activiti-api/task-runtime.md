@@ -92,24 +92,49 @@ public interface TaskRuntime {
 
 ```java
 public interface TaskAdminRuntime {
-    // Extended query capabilities
+    // Task Query
+    Task task(String taskId);
+    Page<Task> tasks(Pageable pageable);
+    Page<Task> tasks(Pageable pageable, GetTasksPayload payload);
+
+    // Admin-only query
     Task lastCreatedTaskByProcessInstanceIdAndTaskDefinitionKey(
         String processInstanceId, String taskDefinitionKey);
-    
-    // Batch operations
+
+    // Task Operations
+    Task claim(ClaimTaskPayload payload);
+    Task release(ReleaseTaskPayload payload);
+    Task complete(CompleteTaskPayload payload);
+    Task update(UpdateTaskPayload payload);
+    Task delete(DeleteTaskPayload payload);
+    Task assign(AssignTaskPayload payload);
+
+    // Admin-only batch operation
     Page<Task> assignMultiple(AssignTasksPayload payload);
-    
-    // All TaskRuntime methods plus admin privileges
+
+    // Variable Operations
+    void createVariable(CreateTaskVariablePayload payload);
+    void updateVariable(UpdateTaskVariablePayload payload);
+    List<VariableInstance> variables(GetTaskVariablesPayload payload);
+
+    // Candidate Operations
+    void addCandidateUsers(CandidateUsersPayload payload);
+    void deleteCandidateUsers(CandidateUsersPayload payload);
+    void addCandidateGroups(CandidateGroupsPayload payload);
+    void deleteCandidateGroups(CandidateGroupsPayload payload);
+    List<String> userCandidates(String taskId);
+    List<String> groupCandidates(String taskId);
 }
 ```
 
 **Purpose**: Administrative task operations with elevated privileges.
 
-**Key Differences**:
-- No authorization checks
-- Access to all tasks
-- Batch operations
-- Administrative queries
+**Key Characteristics**:
+- Standalone interface — does NOT extend `TaskRuntime`
+- Does NOT include `create(CreateTaskPayload)`, `save(SaveTaskPayload)`, or `configuration()`
+- All methods bypass user-level authorization checks
+- Bypasses task visibility rules — admin can access any task
+- Includes admin-only methods: `lastCreatedTaskByProcessInstanceIdAndTaskDefinitionKey` and `assignMultiple`
 
 ---
 

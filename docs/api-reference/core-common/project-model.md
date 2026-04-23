@@ -549,5 +549,5 @@ manifest.setCreationDate(new Date().toString());
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Spring Project](../core-common/spring-project.md)
-- [Spring Application](../core-common/spring-application.md)
+- [Spring Project](./spring-project.md)
+- [Spring Application](./spring-application.md)

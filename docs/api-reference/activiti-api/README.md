@@ -15,13 +15,13 @@ The Activiti API provides a modern, type-safe interface for process automation, 
 
 | Module | Description | Documentation |
 |--------|-------------|---------------|
-| **Model Shared** | Shared data models | [View](./model-shared) |
-| **Process Model** | Process definition models | [View](./process-model) |
-| **Process Runtime** | Process execution APIs | [View](./process-runtime) |
-| **Runtime Shared** | Shared runtime interfaces | [View](./runtime-shared) |
-| **Task Model** | Task definition models | [View](./task-model) |
-| **Task Runtime** | Task management APIs | [View](./task-runtime) |
-| **API Implementation** | Implementation details | [View](./api-implementation) |
+| **Model Shared** | Shared data models | [View](./model-shared.md) |
+| **Process Model** | Process definition models | [View](./process-model.md) |
+| **Process Runtime** | Process execution APIs | [View](./process-runtime.md) |
+| **Runtime Shared** | Shared runtime interfaces | [View](./runtime-shared.md) |
+| **Task Model** | Task definition models | [View](./task-model.md) |
+| **Task Runtime** | Task management APIs | [View](./task-runtime.md) |
+| **API Implementation** | Implementation details | [View](./api-implementation.md) |
 
 ## Key Features
 
@@ -60,7 +60,7 @@ Activiti Engine Core
 private ProcessRuntime processRuntime;
 
 public ProcessInstance startProcess() {
-    return processRuntime.send(
+    return processRuntime.start(
         ProcessPayloadBuilder
             .start()
             .withProcessDefinitionKey("my-process")
