@@ -32,7 +32,7 @@ Service Tasks represent **automated work** performed by the system, such as call
 ### Standard BPMN Features
 - **Implementation** - Service interface and operation
 - **Input/Output Data** - Data associations
-- **Message Correlation** - For receive tasks
+- **Operation Reference** - External service operation
 - **Multi-instance** - Parallel executions
 
 ### Activiti Customizations
@@ -152,9 +152,9 @@ public class PaymentService implements JavaDelegate {
 - ✅ Recommended for Activiti 7+
 - ✅ Works with extension JSON variable mappings
 
-**Connector.action Format:**
+**Connector Bean with Dot in Name:**
 
-You can also specify a connector bean and action name using the `Connector.action` format:
+The `implementation` attribute value is used as a Spring bean name. If your bean name contains a dot, it's simply part of the bean name — there is no special parsing of the dot notation:
 
 ```xml
 <serviceTask id="getMovieTask" 
@@ -162,7 +162,7 @@ You can also specify a connector bean and action name using the `Connector.actio
              implementation="Movies.getMovieDesc"/>
 ```
 
-This looks up the `Movies.getMovieDesc` connector bean
+This looks up a Spring bean named `Movies.getMovieDesc`. The dot is just part of the bean name.
 
 **Connector Bean Definition:**
 
@@ -310,18 +310,18 @@ public class LegacyBeanService implements JavaDelegate {
 
 ### Comparison Table
 
-| Feature | `implementation="beanName"` | Legacy `activiti:class` | Legacy `activiti:delegateExpression` |
-|---------|----------------------------|------------------------|-------------------------------------|
-| **Bean Type** | `Connector` or `JavaDelegate` | `JavaDelegate` | `JavaDelegate` |
-| **Spring Bean** | Required (`@Component`) | Not required | Required (`@Component`) |
-| **Dependency Injection** | ✅ `@Autowired` | ❌ No (field injection only) | ✅ `@Autowired` |
-| **Interface** | `Connector` or `JavaDelegate` | `JavaDelegate` | `JavaDelegate` |
-| **Execution API** | `apply(context)` or `execute(execution)` | `execute(execution)` | `execute(execution)` |
-| **Use Case** | Modern integrations & logic | Direct instantiation | Legacy Spring beans |
-| **Activiti Version** | 8+ (recommended) | 5/6/7/8 (still supported) | 5/6/7/8 (still supported) |
-| **Namespace Required** | No | Yes (`activiti:`) | Yes (`activiti:`) |
-| **Format** | `beanName` or `Connector.action` | Full class name | `${beanName}` |
-| **Status** | ✅ Current | ⚠️ Legacy (not deprecated) | ⚠️ Legacy (not deprecated) |
+| Feature | `implementation="beanName"` | Legacy `activiti:class` | Legacy `activiti:delegateExpression` | Legacy `activiti:expression` |
+|---------|----------------------------|------------------------|-------------------------------------|-----------------------------|
+| **Bean Type** | `Connector` | `JavaDelegate` | `JavaDelegate` | N/A (EL expression) |
+| **Spring Bean** | Required (`@Component`) | Not required | Required (`@Component`) | Required (`@Component`) |
+| **Dependency Injection** | ✅ `@Autowired` | ❌ No (field injection only) | ✅ `@Autowired` | ✅ `@Autowired` |
+| **Interface** | `Connector` | `JavaDelegate` | `JavaDelegate` | N/A |
+| **Execution API** | `apply(context)` | `execute(execution)` | `execute(execution)` | EL evaluation |
+| **Use Case** | Modern integrations & logic | Direct instantiation | Legacy Spring beans | Quick inline expressions |
+| **Activiti Version** | 8+ (recommended) | 5/6/7/8 (still supported) | 5/6/7/8 (still supported) | 5/6/7/8 (still supported) |
+| **Namespace Required** | No | Yes (`activiti:`) | Yes (`activiti:`) | Yes (`activiti:`) |
+| **Format** | `beanName` | Full class name | `${beanName}` | `${beanName.method()}` |
+| **Status** | ✅ Current | ⚠️ Legacy (not deprecated) | ⚠️ Legacy (not deprecated) | ⚠️ Legacy (not deprecated) |
 
 ### Migration Example
 
@@ -361,10 +361,12 @@ public class PaymentService implements Connector {
 }
 ```
 
-**Or Using JavaDelegate (Still Works):**
+**Or Using `activiti:delegateExpression` with JavaDelegate (Legacy):**
 ```xml
-<!-- Also valid -->
-<serviceTask implementation="paymentService"/>
+<!-- For JavaDelegate, use activiti:delegateExpression -->
+<serviceTask id="paymentTask" 
+             name="Process Payment"
+             activiti:delegateExpression="${paymentService}"/>
 ```
 
 ```java
@@ -386,8 +388,8 @@ public class PaymentService implements JavaDelegate {
 3. Use bean name instead of full class name
 4. Add `@Component` annotation with bean name
 5. Use `@Autowired` instead of field injection
-6. **Recommended:** Use `Connector` interface for new development
-7. **Alternative:** `JavaDelegate` still works with `implementation`
+6. **Recommended:** Use `Connector` interface with `implementation="beanName"` for new development
+7. **Note:** `implementation="beanName"` only works with `Connector` beans. For `JavaDelegate`, use `activiti:delegateExpression="${beanName}"` instead.
 
 ### 3. Field Injection (Legacy - Use Spring @Autowired Instead)
 
@@ -649,11 +651,11 @@ Configure retry policies for failed jobs:
 ```xml
 <serviceTask id="unreliableService" 
              name="Call External API"
-             implementation="#{externalApiService}"
-             activiti:async="true">
-  
-  <extensionElements>
-    <!-- Retry 5 times -->
+              implementation="externalApiService"
+              activiti:async="true">
+   
+   <extensionElements>
+     <!-- Retry 5 times -->
     <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
@@ -662,10 +664,10 @@ Configure retry policies for failed jobs:
 **Or with exponential backoff:**
 ```xml
 <serviceTask id="unreliableService" 
-             implementation="#{externalApiService}"
-             activiti:async="true">
-  <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R5/PT1M;R3/PT5M;R2/PT30M</activiti:failedJobRetryTimeCycle>
+              implementation="externalApiService"
+              activiti:async="true">
+   <extensionElements>
+     <activiti:failedJobRetryTimeCycle>R5/PT1M;R3/PT5M;R2/PT30M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
@@ -694,8 +696,8 @@ Conditionally skip service execution:
 ```xml
 <serviceTask id="optionalService" 
              name="Enrich Data"
-             implementation="#{dataEnricher}"
-             activiti:skipExpression="${!enrichData}"/>
+              implementation="dataEnricher"
+              activiti:skipExpression="${!enrichData}"/>
 ```
 
 **Legacy Syntax (Activiti 5/6 Style - Still Supported):**
@@ -708,18 +710,24 @@ Conditionally skip service execution:
 
 ### Custom Properties
 
-Add metadata:
+Add metadata using `<activiti:field>` elements:
 
 **Modern Syntax:**
 ```xml
 <serviceTask id="customService" 
              name="Custom Processing"
-             implementation="#{customService}">
-  
+             implementation="customService">
+   
   <extensionElements>
-    <activiti:property name="department" value="finance"/>
-    <activiti:property name="version" value="2.0"/>
-    <activiti:property name="sla" value="PT1H"/>
+    <activiti:field name="department">
+      <activiti:string>finance</activiti:string>
+    </activiti:field>
+    <activiti:field name="version">
+      <activiti:string>2.0</activiti:string>
+    </activiti:field>
+    <activiti:field name="sla">
+      <activiti:string>PT1H</activiti:string>
+    </activiti:field>
   </extensionElements>
 </serviceTask>
 ```
@@ -729,11 +737,17 @@ Add metadata:
 <serviceTask id="customService" 
              name="Custom Processing"
              activiti:class="com.example.CustomService">
-  
+   
   <extensionElements>
-    <activiti:property name="department" value="finance"/>
-    <activiti:property name="version" value="2.0"/>
-    <activiti:property name="sla" value="PT1H"/>
+    <activiti:field name="department">
+      <activiti:string>finance</activiti:string>
+    </activiti:field>
+    <activiti:field name="version">
+      <activiti:string>2.0</activiti:string>
+    </activiti:field>
+    <activiti:field name="sla">
+      <activiti:string>PT1H</activiti:string>
+    </activiti:field>
   </extensionElements>
 </serviceTask>
 ```
@@ -746,12 +760,11 @@ Hook into execution lifecycle:
 ```xml
 <serviceTask id="trackedService" 
              name="Tracked Service"
-             implementation="#{trackedService}">
-  
+             implementation="trackedService">
+   
   <extensionElements>
     <activiti:executionListener event="start" class="com.example.StartTracker"/>
     <activiti:executionListener event="end" delegateExpression="${endTracker}"/>
-    <activiti:executionListener event="take" class="com.example.FlowTracker"/>
   </extensionElements>
 </serviceTask>
 ```
@@ -761,19 +774,20 @@ Hook into execution lifecycle:
 <serviceTask id="trackedService" 
              name="Tracked Service"
              activiti:class="com.example.TrackedService">
-  
+   
   <extensionElements>
     <activiti:executionListener event="start" class="com.example.StartTracker"/>
     <activiti:executionListener event="end" delegateExpression="${endTracker}"/>
-    <activiti:executionListener event="take" class="com.example.FlowTracker"/>
   </extensionElements>
 </serviceTask>
 ```
 
 **Supported Events:**
-- `start` - Before service execution
-- `end` - After service execution
-- `take` - When sequence flow is taken
+- `start` - Before the service task executes
+- `end` - After the service task completes
+- `take` - For sequence flows only (not applicable to service tasks themselves)
+
+**Note:** The `take` event fires on **sequence flows**, not on activities. To track flow transitions, add execution listeners to the `<sequenceFlow>` element, not to the `<serviceTask>`.
 
 ### Boundary Events
 
@@ -783,8 +797,8 @@ Handle exceptions (boundary events are siblings, not children):
 ```xml
 <serviceTask id="riskyService" 
              name="External Call"
-             implementation="#{externalService}"
-             activiti:async="true"/>
+              implementation="externalService"
+              activiti:async="true"/>
 
 <!-- Error boundary event -->
 <boundaryEvent id="errorHandler" attachedToRef="riskyService" cancelActivity="true">
@@ -989,8 +1003,8 @@ If you prefer the built-in mail functionality (legacy syntax only):
     </activiti:field>
     
     <activiti:field name="subject">
-      <activiti:string>Order Confirmation: ${order.id}</activiti:string>
-    </activiti:field>
+       <activiti:expression>Order Confirmation: ${order.id}</activiti:expression>
+     </activiti:field>
     
     <activiti:field name="text">
       <activiti:expression>${emailTemplate}</activiti:expression>
@@ -1174,15 +1188,15 @@ managementService.setJobRetries(jobId, 3);
 
 ### Testing Service Tasks
 
+Use `ActivitiMockSupport` to replace service task delegates with mocks:
+
 ```java
-// Mock service task for testing
-@MockActiviti
-public class PaymentServiceTest {
-    
+public class PaymentServiceTest extends ActivitiTestCase {
+
     @Test
     public void testPaymentService() {
         // Mock the delegate
-        mockSupport.mockServiceTaskWithClassDelegate(
+        mockSupport().mockServiceTaskWithClassDelegate(
             "com.example.PaymentProcessor",
             MockPaymentProcessor.class
         );
@@ -1192,6 +1206,25 @@ public class PaymentServiceTest {
         
         // Verify execution
         verify(mockPaymentProcessor).execute(any());
+    }
+}
+```
+
+For JUnit 4/5 with `ActivitiRule` or `@Rule`, use the `@MockServiceTask` annotation instead:
+
+```java
+public class PaymentServiceTest {
+    
+    @Rule
+    public ActivitiRule activitiRule = new ActivitiRule();
+
+    @Test
+    @MockServiceTask(key = "paymentProcess", 
+                     name = "processPayment", 
+                     delegateClass = MockPaymentProcessor.class)
+    public void testPaymentService() {
+        ProcessInstance process = runtimeService.startProcessInstanceByKey("paymentProcess");
+        // Process will use MockPaymentProcessor for the "processPayment" task
     }
 }
 ```
@@ -1268,7 +1301,7 @@ public class PaymentServiceTest {
 - [Business Rule Task](./business-rule-task.md)
 - [Async Execution](../advanced/async-execution.md)
 - [Connectors](../integration/connectors.md)
-- [DMN in Business Rule Tasks](./business-rule-task.md#dmn-implementation)
+- [DMN in Business Rule Tasks](./business-rule-task.md#pattern-3-dmn-integration-via-service-task-alternative)
 
 ---
 

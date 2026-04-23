@@ -7,7 +7,7 @@ description: "Complete guide to Receive Tasks in Activiti - waiting for external
 
 # Receive Task
 
-Receive Tasks represent activities that **wait for an external message** before continuing. They are similar to intermediate message catch events but are modeled as tasks, making them visible in task lists.
+Receive Tasks represent activities that **wait for an external message** before continuing. They are similar to intermediate message catch events but are modeled as tasks for semantic clarity in BPMN diagrams.
 
 ## Overview
 
@@ -27,18 +27,18 @@ Receive Tasks represent activities that **wait for an external message** before 
 
 | Feature | Description |
 |---------|-------------|
-| **Message Waiting** | Pauses execution until message arrives |
-| **Task Visibility** | Appears in task list (unlike intermediate events) |
-| **Async Support** | Can run asynchronously |
+| **Wait State** | Pauses execution until signaled to continue |
+| **Task Visibility** | Does **not** appear in task list (same as intermediate events) |
+| **Continuation** | Advanced via `RuntimeService.trigger(executionId)` |
 
 ### Differences from Service Task
 
 | Aspect | Service Task | Receive Task |
 |--------|--------------|--------------|
-| **Execution** | Active - calls external system | Passive - waits for message |
-| **Blocking** | Blocks until call completes | Blocks until message arrives |
-| **Use Case** | Outbound integration | Inbound integration |
-| **Task List** | Usually not visible | Visible as pending task |
+| **Execution** | Active - calls external system | Passive - waits for signal |
+| **Blocking** | Blocks until call completes | Waits until signaled |
+| **Use Case** | Outbound integration | Inbound / request-response |
+| **Task List** | Not visible | Not visible |
 
 ## Configuration Options
 
@@ -63,239 +63,28 @@ Wait for a message:
 <message id="responseMessage" name="Response Message"/>
 ```
 
-**Runtime API:**
-```java
-// Complete receive task by sending message
-runtimeService.messageEventReceived("responseMessage", processInstanceId);
-
-// Or via TaskRuntime (Activiti API)
-processRuntime.receiveMessage(processInstanceId, new ReceiveMessagePayloadBuilder()
-    .messageName("responseMessage")
-    .build());
-```
-
-### 2. Async Receive Task
-
-Run receive task asynchronously:
-
-```xml
-<receiveTask id="waitForExternalSystem" name="Wait for External System" 
-             activiti:async="true">
-  <messageEventDefinition messageRef="externalMessage"/>
-</receiveTask>
-```
-
-**Benefits:**
-- Doesn't block database transaction
-- Message correlation happens in async job executor
-- Better for long waits
-
-### 3. Receive Task with Timer Boundary
-
-Add timeout handling:
-
-```xml
-<receiveTask id="waitForResponse" name="Wait for Response">
-  <messageEventDefinition messageRef="responseMessage"/>
-  
-  <!-- Timeout after 24 hours -->
-  <boundaryEvent id="responseTimeout" attachedToRef="waitForResponse" 
-                 cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT24H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-</receiveTask>
-
-<sequenceFlow id="timeoutFlow" sourceRef="responseTimeout" targetRef="handleTimeout"/>
-<sequenceFlow id="responseFlow" sourceRef="waitForResponse" targetRef="processResponse"/>
-```
-
-## Complete Examples
-
-### Example 1: Request-Response Pattern
-
-```xml
-<process id="requestResponseProcess" name="Request-Response Process">
-  
-  <startEvent id="start"/>
-  
-  <!-- Send request to external system -->
-  <serviceTask id="sendRequest" name="Send Request" 
-               activiti:class="com.example.ExternalSystemClient">
-    <extensionElements>
-      <activiti:field name="operation" stringValue="createOrder"/>
-    </extensionElements>
-  </serviceTask>
-  
-  <!-- Wait for acknowledgment -->
-  <receiveTask id="waitForAck" name="Wait for Acknowledgment">
-    <messageEventDefinition messageRef="ackMessage"/>
-  </receiveTask>
-  
-  <!-- Timeout handling -->
-  <boundaryEvent id="ackTimeout" attachedToRef="waitForAck" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT5M</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-  <!-- Process acknowledgment -->
-  <serviceTask id="processAck" name="Process Acknowledgment" 
-               activiti:class="com.example.AckProcessor"/>
-  
-  <!-- Handle timeout -->
-  <serviceTask id="handleTimeout" name="Handle Timeout" 
-               activiti:class="com.example.TimeoutHandler"/>
-  
-  <endEvent id="end"/>
-  
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="sendRequest"/>
-  <sequenceFlow id="flow2" sourceRef="sendRequest" targetRef="waitForAck"/>
-  <sequenceFlow id="flow3" sourceRef="waitForAck" targetRef="processAck"/>
-  <sequenceFlow id="flow4" sourceRef="ackTimeout" targetRef="handleTimeout"/>
-  <sequenceFlow id="flow5" sourceRef="processAck" targetRef="end"/>
-  <sequenceFlow id="flow6" sourceRef="handleTimeout" targetRef="end"/>
-  
-  <!-- Message definition -->
-  <message id="ackMessage" name="Acknowledgment Message"/>
-  
-</process>
-```
-
-**Runtime Usage:**
-```java
-// Start process
-String processInstanceId = runtimeService.startProcessInstanceByKey("requestResponseProcess");
-
-// External system sends acknowledgment
-runtimeService.messageEventReceived("ackMessage", processInstanceId);
-```
-
-### Example 2: Multi-Step External Integration
-
-```xml
-<process id="multiStepIntegration" name="Multi-Step External Integration">
-  
-  <startEvent id="start"/>
-  
-  <!-- Step 1: Submit data -->
-  <serviceTask id="submitData" name="Submit Data" 
-               activiti:class="com.example.DataSubmitter"/>
-  
-  <!-- Step 2: Wait for validation -->
-  <receiveTask id="waitForValidation" name="Wait for Validation">
-    <messageEventDefinition messageRef="validationComplete"/>
-  </receiveTask>
-  
-  <!-- Step 3: Process validated data -->
-  <serviceTask id="processValidated" name="Process Validated Data" 
-               activiti:class="com.example.DataProcessor"/>
-  
-  <!-- Step 4: Wait for approval -->
-  <receiveTask id="waitForApproval" name="Wait for Approval">
-    <messageEventDefinition messageRef="approvalReceived"/>
-  </receiveTask>
-  
-  <!-- Step 5: Finalize -->
-  <serviceTask id="finalize" name="Finalize" 
-               activiti:class="com.example.Finalizer"/>
-  
-  <endEvent id="end"/>
-  
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="submitData"/>
-  <sequenceFlow id="flow2" sourceRef="submitData" targetRef="waitForValidation"/>
-  <sequenceFlow id="flow3" sourceRef="waitForValidation" targetRef="processValidated"/>
-  <sequenceFlow id="flow4" sourceRef="processValidated" targetRef="waitForApproval"/>
-  <sequenceFlow id="flow5" sourceRef="waitForApproval" targetRef="finalize"/>
-  <sequenceFlow id="flow6" sourceRef="finalize" targetRef="end"/>
-  
-  <message id="validationComplete" name="Validation Complete"/>
-  <message id="approvalReceived" name="Approval Received"/>
-  
-</process>
-```
-
-### Example 3: Receive Task with Async
-
-```xml
-<process id="asyncProcess" name="Async Receive Process">
-  
-  <startEvent id="start"/>
-  
-  <userTask id="enterOrderId" name="Enter Order ID"/>
-  
-  <!-- Wait for order confirmation with correlation -->
-  <receiveTask id="waitForConfirmation" name="Wait for Order Confirmation" 
-               activiti:async="true">
-    <messageEventDefinition messageRef="orderConfirmation"/>
-  </receiveTask>
-  
-  <serviceTask id="processConfirmation" name="Process Confirmation" 
-               activiti:class="com.example.ConfirmationProcessor"/>
-  
-  <endEvent id="end"/>
-  
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="enterOrderId"/>
-  <sequenceFlow id="flow2" sourceRef="enterOrderId" targetRef="waitForConfirmation"/>
-  <sequenceFlow id="flow3" sourceRef="waitForConfirmation" targetRef="processConfirmation"/>
-  <sequenceFlow id="flow4" sourceRef="processConfirmation" targetRef="end"/>
-  
-  <!-- Message with correlation key -->
-  <message id="orderConfirmation" name="Order Confirmation"/>
-  
-</process>
-```
-
-**Runtime with Correlation:**
-```java
-// Correlate message with variables
-Map<String, Object> businessKeys = Map.of("orderId", "12345");
-runtimeService.correlateMessage("orderConfirmation", businessKeys);
-```
-
 ## Runtime API
 
-### Completing Receive Task
+### Signaling Receive Task
 
 ```java
-// Engine API - message correlation
+// Find the execution waiting at the receive task
 RuntimeService runtimeService = processEngine.getRuntimeService();
 
-// Simple message correlation
-runtimeService.messageEventReceived("messageName", processInstanceId);
-
-// With variables
-Map<String, Object> variables = Map.of("data", "value");
-runtimeService.messageEventReceived("messageName", processInstanceId, variables);
-
-// Activiti API
-@Autowired
-private ProcessRuntime processRuntime;
-
-processRuntime.receiveMessage(new ReceiveMessagePayloadBuilder()
+Execution execution = runtimeService.createExecutionQuery()
     .processInstanceId(processInstanceId)
-    .messageName("messageName")
-    .variables(variables)
-    .build());
+    .activityId("waitForResponse")
+    .singleResult();
+
+// Trigger to continue (no variables)
+runtimeService.trigger(execution.getId());
+
+// Trigger with variables
+Map<String, Object> variables = Map.of("data", "value");
+runtimeService.trigger(execution.getId(), variables);
 ```
 
-### Querying Receive Tasks
-
-```java
-// Receive tasks appear in task query
-TaskService taskService = processEngine.getTaskService();
-
-List<Task> receiveTasks = taskService.createTaskQuery()
-    .taskDefinitionKey("waitForResponse")
-    .list();
-
-// Check task type
-for (Task task : receiveTasks) {
-    String taskType = task.getTaskDefinitionKey();
-    // Receive tasks are visible like any other task
-}
-```
+**Note:** Receive tasks do **not** create `TaskEntity` instances, so they cannot be queried via `TaskService.createTaskQuery()`. Use `RuntimeService.createExecutionQuery().activityId(...)` to find the waiting execution.
 
 ## Best Practices
 
@@ -332,18 +121,13 @@ for (Task task : receiveTasks) {
 </receiveTask>
 ```
 
-### 3. Use Async for Long Waits
+### 3. Track Waiting Executions
 
-```xml
-<!-- GOOD: Async for long waits -->
-<receiveTask id="waitForApproval" name="Wait for Approval" activiti:async="true">
-  <messageEventDefinition messageRef="approval"/>
-</receiveTask>
-
-<!-- BAD: Sync blocks transaction -->
-<receiveTask id="waitForApproval" name="Wait for Approval">
-  <messageEventDefinition messageRef="approval"/>
-</receiveTask>
+```java
+// Find waiting receive tasks via execution query
+List<Execution> waiting = runtimeService.createExecutionQuery()
+    .activityId("waitForApproval")
+    .list();
 ```
 
 ### 4. Clear Message Names
@@ -412,21 +196,18 @@ for (Task task : receiveTasks) {
 </receiveTask>
 ```
 
-### 4. Blocking Database Transaction
+### 4. Assuming Message Subscription
 
-**Problem:** Sync receive task holds DB connection
+**Problem:** Expecting `messageEventReceived()` to work on a receive task
 
 ```xml
-<!-- WRONG: Long wait blocks transaction -->
-<receiveTask id="waitForDays" name="Wait Days">
-  <messageEventDefinition messageRef="lateResponse"/>
-</receiveTask>
-
-<!-- CORRECT: Use async -->
-<receiveTask id="waitForDays" name="Wait Days" activiti:async="true">
-  <messageEventDefinition messageRef="lateResponse"/>
+<!-- The messageEventDefinition inside a receiveTask does NOT create a message subscription -->
+<receiveTask id="waitForResponse" name="Wait">
+  <messageEventDefinition messageRef="response"/>
 </receiveTask>
 ```
+
+**Solution:** Use `RuntimeService.trigger(executionId)` to advance the receive task, or use an intermediate message catch event if you need actual message correlation.
 
 ## Comparison with Alternatives
 
@@ -434,24 +215,23 @@ for (Task task : receiveTasks) {
 
 | Aspect | Receive Task | Intermediate Message Catch Event |
 |--------|--------------|----------------------------------|
-| **Task List** | Visible | Not visible |
-| **Assignable** | No | No |
-| **Human Monitoring** | Yes | No |
-| **Use Case** | Monitored waits | Pure system waits |
+| **Creates TaskEntity** | No | No |
+| **Task List Visible** | No | No |
+| **Message Subscription** | No | Yes |
+| **Continuation** | `RuntimeService.trigger(executionId)` | `RuntimeService.messageEventReceived(name, processInstanceId)` |
+| **Use Case** | Wait for external trigger / request-response | Wait for specific named message |
 
 ### When to Use Each
 
 **Use Receive Task when:**
-- You need to monitor waiting tasks
-- Tasks should appear in dashboards
-- Users might need to intervene
-- You want to track wait times per task
+- Modeling a request-response pattern (service task sends, receive task waits)
+- You want semantic clarity in the BPMN diagram that the process is "waiting"
+- You'll advance the process programmatically via `RuntimeService.trigger(executionId)`
 
 **Use Intermediate Message Catch Event when:**
-- Pure system-to-system integration
-- No human monitoring needed
-- Simple message waiting
-- Don't want task list clutter
+- You need actual message subscription and correlation
+- Multiple processes may be waiting for different messages
+- You want the engine to match incoming messages to waiting executions
 
 ## Related Documentation
 

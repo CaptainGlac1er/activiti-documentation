@@ -57,7 +57,11 @@ public interface BusinessRuleTaskDelegate extends ActivityBehavior {
 4. **Execution** your `execute()` method runs the rules logic
 5. **Output** result is stored in the specified process variable
 
-**Critical:** If no `activiti:class` is specified, the factory returns `null` - there is **no default behavior**.
+**Critical:** If no `activiti:class` is specified, the factory throws a `NullPointerException` — there is **no default behavior**. Always specify a class.
+
+**Note:** If no `activiti:resultVariable` is specified, the factory defaults to `"org.activiti.engine.rules.OUTPUT"`.
+
+**Note:** `activiti:class` instantiates the class via `Class.forName()` reflection — it does **not** look up a Spring bean. This means `@Autowired` and other Spring annotations will **not** work. For Spring integration, use a Service Task with `implementation="beanName"` instead.
 
 ## Implementation Patterns
 
@@ -71,11 +75,9 @@ This is the standard approach for Business Rule Tasks.
 import org.activiti.engine.delegate.BusinessRuleTaskDelegate;
 import org.activiti.engine.delegate.DelegateExecution;
 import org.activiti.engine.impl.delegate.Expression;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
 public class CustomBusinessRuleTask implements BusinessRuleTaskDelegate {
     
     private List<Expression> ruleVariableInputExpressions;
@@ -178,9 +180,7 @@ import org.activiti.engine.delegate.DelegateExecution;
 import org.kie.api.KieServices;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
-import org.springframework.stereotype.Component;
 
-@Component
 public class DroolsBusinessRuleTask implements BusinessRuleTaskDelegate {
     
     private String resultVariable;
@@ -325,9 +325,7 @@ For simple business logic without external rules engines:
 ```java
 import org.activiti.engine.delegate.BusinessRuleTaskDelegate;
 import org.activiti.engine.delegate.DelegateExecution;
-import org.springframework.stereotype.Component;
 
-@Component
 public class SimpleBusinessRuleTask implements BusinessRuleTaskDelegate {
     
     private String resultVariable;
@@ -429,11 +427,9 @@ public class SimpleBusinessRuleTask implements BusinessRuleTaskDelegate {
 import org.activiti.engine.delegate.BusinessRuleTaskDelegate;
 import org.activiti.engine.delegate.DelegateExecution;
 import org.activiti.engine.impl.delegate.Expression;
-import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
-@Component
 public class OrderValidationRuleTask implements BusinessRuleTaskDelegate {
     
     private String inputVariable;
@@ -593,7 +589,7 @@ Add boundary events for rule execution failures:
 
 ## Common Pitfalls
 
-- **Missing `activiti:class`**: Returns `null` - no execution occurs
+- **Missing `activiti:class`**: Throws `NullPointerException` — no default behavior exists
 - **Assuming Native DMN Support**: Does not exist - use Service Tasks instead
 - **Not Implementing Delegate Interface**: Must implement `BusinessRuleTaskDelegate`
 - **Thread Safety Issues**: Async execution requires thread-safe implementations

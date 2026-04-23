@@ -540,35 +540,6 @@ Define form fields:
 </boundaryEvent>
 ```
 
-### Task Assignment
-
-```java
-import org.activiti.engine.task.IdentityLinkType;
-
-// Assign task
-taskService.setAssignee(taskId, "john.doe");
-
-// Add candidate user
-taskService.addCandidateUser(taskId, "alice");
-
-// Add candidate group
-taskService.addCandidateGroup(taskId, "reviewers");
-
-// Claim task (if you're a candidate)
-taskService.claim(taskId, "john.doe");
-
-// Release task
-taskService.release(taskId);
-
-// Add identity link with details (for audit/custom metadata)
-taskService.addUserIdentityLink(taskId, "bob", "viewer", 
-    "Read-only access granted".getBytes());
-
-// Add identity link using built-in types
-taskService.addUserIdentityLink(taskId, "manager", IdentityLinkType.OWNER);
-taskService.addGroupIdentityLink(taskId, "auditors", IdentityLinkType.PARTICIPANT);
-```
-
 ## Runtime API Usage
 
 ### Querying User Tasks

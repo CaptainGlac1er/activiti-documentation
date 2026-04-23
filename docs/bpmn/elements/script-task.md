@@ -80,19 +80,8 @@ Store script output:
 ```xml
 <scriptTask id="calculation" 
             scriptFormat="javascript"
-            activiti:resultVariableName="calculationResult">
+            activiti:resultVariable="calculationResult">
   result = input1 + input2;
-</scriptTask>
-```
-
-### Field Injection
-
-Inject dependencies into script:
-
-```xml
-<scriptTask id="scriptWithDependencies" 
-            activiti:scriptFormat="groovy">
-  def result = orderService.process(order)
 </scriptTask>
 ```
 
@@ -107,18 +96,6 @@ Run scripts asynchronously:
             name="Long Running Script"
             scriptFormat="groovy"
             activiti:async="true">
-  // Script code
-</scriptTask>
-```
-
-### Skip Expression
-
-Conditionally skip script:
-
-```xml
-<scriptTask id="optionalScript" 
-            scriptFormat="javascript"
-            activiti:skipExpression="${!runScript}">
   // Script code
 </scriptTask>
 ```
@@ -153,7 +130,7 @@ Boundary events must be **siblings** of the script task (not nested inside it):
     <errorEventDefinition errorRef="ScriptError"/>
   </boundaryEvent>
   
-  <sequenceFlow id="flow1" sourceRef="riskyScript" targetRef="riskyScript"/>
+  <sequenceFlow id="flow1" sourceRef="riskyScript" targetRef="nextTask"/>
   <sequenceFlow id="flow2" sourceRef="scriptError" targetRef="errorEnd"/>
 </process>
 ```
@@ -166,7 +143,7 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 <scriptTask id="transformData" 
             name="Transform Order Data"
             scriptFormat="groovy"
-            activiti:resultVariableName="transformedOrder">
+            activiti:resultVariable="transformedOrder">
   
   def order = execution.getVariable('order')
   
@@ -189,7 +166,7 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 <scriptTask id="calculatePricing" 
             name="Calculate Final Price"
             scriptFormat="javascript"
-            activiti:resultVariableName="finalPrice">
+            activiti:resultVariable="finalPrice">
   
   var basePrice = execution.getVariable('basePrice');
   var quantity = execution.getVariable('quantity');
@@ -264,7 +241,7 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 <!-- JavaScript for simple calculations -->
 <scriptTask id="jsCalc" 
             scriptFormat="javascript"
-            activiti:resultVariableName="sum">
+            activiti:resultVariable="sum">
   result = a + b + c;
 </scriptTask>
 
@@ -298,11 +275,16 @@ Object result = engine.get("result");
 ### Custom Script Engine
 
 ```java
-public class CustomScriptEngine implements ScriptEngine {
+public class CustomScriptEngine implements javax.script.ScriptEngine {
     @Override
-    public Object eval(DelegateExecution execution, String script) {
+    public Object eval(String script, Bindings bindings) {
+        // DelegateExecution is available via bindings
+        DelegateExecution execution = (DelegateExecution) bindings.get("execution");
         // Custom script execution logic
+        return null;
     }
+
+    // Other required ScriptEngine methods...
 }
 ```
 

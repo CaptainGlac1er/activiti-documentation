@@ -341,13 +341,13 @@ Supported variable types:
 
 ```xml
 <serviceTask id="serviceTask" 
-             implementation="mealsConnector"
-             name="Get Meal">
-  <!-- Multi-instance support -->
-  <multiInstanceLoopCharacteristics isSequential="false">
-    <bpmn:collection elementVariable="item" 
-                     xsi:type="bpmn:tFormalExpression">${items}</bpmn:collection>
-  </multiInstanceLoopCharacteristics>
+              implementation="mealsConnector.mealAction"
+              name="Get Meal">
+   <!-- Multi-instance support -->
+   <multiInstanceLoopCharacteristics 
+     isSequential="false"
+     activiti:collection="${items}"
+     activiti:elementVariable="item"/>
 </serviceTask>
 ```
 
@@ -448,10 +448,12 @@ public class ConnectorConfiguration {
 ```java
 import org.activiti.api.process.model.IntegrationContext;
 import org.activiti.api.process.runtime.connector.Connector;
+import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Component("mealsConnector")
 public class MealsConnector implements Connector {
 
     private AtomicInteger currentMealIndex = new AtomicInteger(0);
@@ -487,23 +489,16 @@ activiti:
 
 ### Multiple Connector Directories
 
-```java
-@Configuration
-public class ConnectorsConfiguration {
-    
-    @Bean
-    public ConnectorDefinitionService connectorDefinitionService(
-            ObjectMapper objectMapper,
-            ResourcePatternResolver resourcePatternResolver) {
-        
-        return new ConnectorDefinitionService(
-            "classpath:/connectors/,classpath:/custom-connectors/",
-            objectMapper,
-            resourcePatternResolver
-        );
-    }
-}
+The `activiti.connectors.dir` property supports comma-separated paths:
+
+```yaml
+# application.yml
+activiti:
+  connectors:
+    dir: classpath:/connectors/,classpath:/custom-connectors/
 ```
+
+**Note:** `ConnectorDefinitionService` is auto-configured by Activiti. Only override it if you need custom behavior beyond what `activiti.connectors.dir` provides.
 
 ## Variable Mapping
 

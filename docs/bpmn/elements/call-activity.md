@@ -34,10 +34,9 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 
 ### Activiti Customizations
 - **Called Element Expression** - Dynamic process selection
-- **Variable Mapping** - Input/output parameters
-- **Case Support** - Integration with Case Engine
+- **Variable Mapping** - Input/output parameters via `<activiti:in>` and `<activiti:out>`
 - **Async Execution** - Background invocation
-- **Custom Properties** - Metadata extension
+- **Inherit Variables** - Pass all parent variables via `activiti:inheritVariables="true"`
 - **Execution Listeners** - Lifecycle hooks
 
 ## Configuration Options
@@ -167,18 +166,18 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 
 ```xml
 <callActivity id="batchProcessing" 
-              name="Process Batch" 
-              calledElement="itemProcessingSubProcess">
+             name="Process Batch" 
+             calledElement="itemProcessingSubProcess">
+  
+  <extensionElements>
+    <activiti:in source="item" target="currentItem"/>
+  </extensionElements>
   
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${batchItems}"
     activiti:elementVariable="item">
     <completionCondition>${processedCount >= totalCount}</completionCondition>
-    
-    <extensionElements>
-      <activiti:in source="item" target="currentItem"/>
-    </extensionElements>
   </multiInstanceLoopCharacteristics>
 </callActivity>
 ```
