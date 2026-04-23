@@ -82,7 +82,7 @@ public class TagImageConnector implements Connector {
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         // Access input variables
-        String imageUrl = context.getInBoundVariables().get("imageUrl");
+        String imageUrl = context.getInBoundVariable("imageUrl");
 
         // Business logic
         imageService.tagImage(imageUrl);
@@ -102,7 +102,7 @@ public class TagImageConnector {
 
     public Connector connector() {
         return integrationContext -> {
-            String imageUrl = integrationContext.getInBoundVariables().get("imageUrl");
+            String imageUrl = integrationContext.getInBoundVariable("imageUrl");
             // Business logic...
             integrationContext.addOutBoundVariable("tagged", true);
             return integrationContext;
@@ -144,14 +144,14 @@ public class PaymentService implements JavaDelegate {
 ```xml
 <serviceTask id="paymentTask" 
              name="Process Payment"
-             implementation="paymentService"/>
+             activiti:delegateExpression="${paymentService}"/>
 ```
 
+**Important:** `implementation="beanName"` only resolves `Connector` beans. For `JavaDelegate`, you must use `activiti:delegateExpression="${beanName}"` instead.
+
 **Benefits:**
-- ✅ Standard BPMN 2.0 compliant
 - ✅ Full Spring dependency injection (`@Autowired`)
-- ✅ Type-safe with `Connector` or `JavaDelegate` interface
-- ✅ Recommended for Activiti 7+
+- ✅ Backward compatible with Activiti 5/6/7/8
 - ✅ Works with extension JSON variable mappings
 
 **Connector Bean with Dot in Name:**
@@ -179,7 +179,7 @@ public class MoviesConnector implements Connector {
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         // Access input variables
-        String movieId = context.getInBoundVariables().get("movieId");
+        String movieId = context.getInBoundVariable("movieId");
 
         // Business logic - call external API
         String description = fetchMovieDescription(movieId);
@@ -355,7 +355,7 @@ public class PaymentService implements Connector {
 
     @Override
     public IntegrationContext apply(IntegrationContext context) {
-        String orderId = context.getInBoundVariables().get("orderId");
+        String orderId = context.getInBoundVariable("orderId");
         // Business logic...
         context.addOutBoundVariable("result", "done");
         return context;
@@ -422,7 +422,7 @@ For backward compatibility, Activiti supports field injection via XML:
 ```xml
 <serviceTask id="orderService" 
              name="Process Order"
-             implementation="com.example.OrderService">
+             activiti:class="com.example.OrderService">
   
   <extensionElements>
     <!-- String value -->
@@ -496,10 +496,7 @@ Activiti includes some built-in connectors that **only work with legacy XML synt
       <activiti:expression>${htmlContent}</activiti:expression>
     </activiti:field>
   </extensionElements>
-</sendTask>
-```
-
-**⚠️ Important:** The mail connector is actually implemented on `serviceTask` (not `sendTask`). The engine checks `serviceTask.getType().equalsIgnoreCase("mail")` in `ServiceTaskParseHandler`. Use `<serviceTask activiti:type="mail">` instead of `<sendTask>`.
+</serviceTask>
 
 **Other Built-in Connector Types (Legacy Only):**
 - `activiti:type="mule"` - Mule ESB integration
@@ -536,9 +533,9 @@ public class EmailConnector implements Connector {
 
     @Override
     public IntegrationContext apply(IntegrationContext context) {
-        String to = context.getInBoundVariables().get("to");
-        String subject = context.getInBoundVariables().get("subject");
-        String text = context.getInBoundVariables().get("text");
+        String to = context.getInBoundVariable("to");
+        String subject = context.getInBoundVariable("subject");
+        String text = context.getInBoundVariable("text");
 
         try {
             javax.mail.Message message = mailSender.createMessage();
@@ -778,9 +775,6 @@ Hook into execution lifecycle:
 **Supported Events:**
 - `start` - Before the service task executes
 - `end` - After the service task completes
-- `take` - For sequence flows only (not applicable to service tasks themselves)
-
-**Note:** The `take` event fires on **sequence flows**, not on activities. To track flow transitions, add execution listeners to the `<sequenceFlow>` element, not to the `<serviceTask>`.
 
 ### Boundary Events
 
@@ -863,8 +857,8 @@ public class PaymentProcessor implements Connector {
 
     @Override
     public IntegrationContext apply(IntegrationContext context) {
-        String orderId = context.getInBoundVariables().get("orderId");
-        Double amount = context.getInBoundVariables().get("amount");
+        String orderId = context.getInBoundVariable("orderId");
+        Double amount = context.getInBoundVariable("amount", Double.class);
 
         // Process payment
         PaymentResult result = paymentGateway.process(orderId, amount, currency);
@@ -933,9 +927,9 @@ public class EmailConnector implements Connector {
 
     @Override
     public IntegrationContext apply(IntegrationContext context) {
-        String to = context.getInBoundVariables().get("to");
-        String subject = context.getInBoundVariables().get("subject");
-        String message = context.getInBoundVariables().get("message");
+        String to = context.getInBoundVariable("to");
+        String subject = context.getInBoundVariable("subject");
+        String message = context.getInBoundVariable("message");
 
         try {
             javax.mail.Message msg = mailSender.createMessage();
@@ -1070,7 +1064,7 @@ public class RestApiClient implements Connector {
 
     @Override
     public IntegrationContext apply(IntegrationContext context) {
-        String customerId = context.getInBoundVariables().get("customerId");
+        String customerId = context.getInBoundVariable("customerId");
 
         // Call REST API
         CustomerData data = restTemplate.getForObject(
@@ -1227,7 +1221,7 @@ public class PaymentServiceTest {
 1. **Use Async for Long Operations:** Prevent blocking the process engine
 2. **Configure Retry Policies:** Handle transient failures gracefully
 3. **Add Boundary Events:** Implement error handling at task level
-4. **Field Injection:** Use Spring beans for dependency management
+4. **Dependency Injection:** Use Spring `@Autowired` in `Connector` beans; use `activiti:field` only with `activiti:class` (legacy)
 5. **Result Variables:** Store outputs for downstream activities
 6. **Execution Listeners:** Add monitoring and logging
 7. **Skip Expressions:** Implement conditional logic
