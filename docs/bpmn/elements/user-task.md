@@ -127,58 +127,14 @@ Assign task to groups/roles (comma-separated list):
 Advanced assignment with custom types for fine-grained access control:
 
 **Built-in Identity Link Types:**
-Activiti provides these predefined identity link types:
+Activiti provides these predefined identity link types via `IdentityLinkType`:
 - `assignee` - Direct task assignee
 - `candidate` - Users/groups who can claim the task
 - `owner` - Task owner (for delegation)
-- `starter` - User who started the process
-- `participant` - General participant
+- `starter` - User who started the process (runtime convention, not defined in UserTask model)
+- `participant` - General participant (runtime convention, not defined in UserTask model)
 
-**Custom Identity Link Types:**
-You can define custom types beyond the built-in ones:
-
-```xml
-<userTask id="complexTask" name="Complex Assignment" activiti:candidateUsers="alice">
-  <extensionElements>
-    <!-- Custom identity link type: viewer -->
-    <activiti:customResource name="viewer">
-      <resourceAssignmentExpression>
-        <formalExpression>user(bob), user(carol)</formalExpression>
-      </resourceAssignmentExpression>
-    </activiti:customResource>
-    
-    <!-- Custom identity link type: commenter -->
-    <activiti:customResource name="commenter">
-      <resourceAssignmentExpression>
-        <formalExpression>user(carol)</formalExpression>
-      </resourceAssignmentExpression>
-    </activiti:customResource>
-    
-    <!-- Custom identity link type: audit (group) -->
-    <activiti:customResource name="audit">
-      <resourceAssignmentExpression>
-        <formalExpression>group(auditors)</formalExpression>
-      </resourceAssignmentExpression>
-    </activiti:customResource>
-  </extensionElements>
-</userTask>
-```
-
-**How It Works:**
-- Each `<activiti:customResource>` defines a custom identity link type via the `name` attribute
-- Inside `<formalExpression>`, use:
-  - `user(username)` for individual users
-  - `group(groupname)` for groups
-- Multiple users/groups can be comma-separated in the expression
-- Custom types are stored as maps: `getCustomUserIdentityLinks()` and `getCustomGroupIdentityLinks()`
-
-**Custom Types:**
-- `viewer` - Read-only access
-- `commenter` - Can add comments
-- `audit` - Audit trail access
-- Any custom type defined by your application
-
-**Runtime API:**
+**Runtime API for Identity Links:**
 ```java
 import org.activiti.engine.task.IdentityLinkType;
 
@@ -199,10 +155,6 @@ taskService.addUserIdentityLink(taskId, "participant", IdentityLinkType.PARTICIP
 List<Task> tasks = taskService.createTaskQuery()
     .taskCandidateGroup("auditors")
     .list();
-
-// Get custom identity links
-Map<String, Set<String>> customUserLinks = userTask.getCustomUserIdentityLinks();
-Map<String, Set<String>> customGroupLinks = userTask.getCustomGroupIdentityLinks();
 ```
 
 **Use Cases:**
@@ -210,6 +162,8 @@ Map<String, Set<String>> customGroupLinks = userTask.getCustomGroupIdentityLinks
 - Audit trail tracking
 - Specialized roles (viewer, commenter, approver)
 - Custom access levels beyond standard candidate users/groups
+
+**Note:** Custom identity links are added at runtime via the Task Service API. The `<activiti:customResource>` XML element does NOT exist in the BPMN converter — it cannot be configured in BPMN XML.
 
 ### 6. Form Key
 
@@ -257,7 +211,7 @@ Set task priority:
 <UserTask id="highPriorityTask" name="Critical Issue" activiti:priority="${calculatePriority()}"/>
 ```
 
-**Default:** 50 (range: 0-99, higher = more urgent)
+**Default:** 50
 
 ### 9. Business Calendar
 

@@ -57,7 +57,7 @@ public interface BusinessRuleTaskDelegate extends ActivityBehavior {
 4. **Execution** your `execute()` method runs the rules logic
 5. **Output** result is stored in the specified process variable
 
-**Critical:** If no `activiti:class` is specified, the factory throws a `NullPointerException` — there is **no default behavior**. Always specify a class.
+**Critical:** If no `activiti:class` is specified and input variables or rules are configured, the factory may throw a `NullPointerException` — there is **no default behavior** for Business Rule Tasks. Always specify a class when using rule-related attributes.
 
 **Note:** If no `activiti:resultVariable` is specified, the factory defaults to `"org.activiti.engine.rules.OUTPUT"`.
 
@@ -589,7 +589,7 @@ Add boundary events for rule execution failures:
 
 ## Common Pitfalls
 
-- **Missing `activiti:class`**: Throws `NullPointerException` — no default behavior exists
+- **Missing `activiti:class`**: Throws `NullPointerException` if input variables or rules are configured — no default behavior exists
 - **Assuming Native DMN Support**: Does not exist - use Service Tasks instead
 - **Not Implementing Delegate Interface**: Must implement `BusinessRuleTaskDelegate`
 - **Thread Safety Issues**: Async execution requires thread-safe implementations

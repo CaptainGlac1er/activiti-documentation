@@ -98,17 +98,15 @@ Define compensation (undo) logic for completed activities:
   <startEvent id="transStart"/>
   
   <serviceTask id="reserveInventory" name="Reserve Inventory" 
-               activiti:class="com.example.InventoryReservationService"
-               activiti:cancelEndDefinition="true"/>
+                activiti:class="com.example.InventoryReservationService"/>
   
   <serviceTask id="processPayment" name="Process Payment"
-               activiti:class="com.example.PaymentProcessingService"
-               activiti:cancelEndDefinition="true"/>
+                activiti:class="com.example.PaymentProcessingService"/>
   
   <serviceTask id="updateOrderStatus" name="Update Order Status" activiti:class="com.example.OrderStatusService"/>
   
   <!-- Compensation event subprocess -->
-  <eventSubProcess id="compensationHandler" triggeredByCompensation="true">
+  <eventSubProcess id="compensationHandler">
     <startEvent id="compStart">
       <compensateEventDefinition activityRef="processPayment"/>
     </startEvent>
@@ -235,32 +233,29 @@ Transactions within transactions:
     </sequenceFlow>
     
     <serviceTask id="reserveInventory" name="Reserve Inventory Items" 
-                 activiti:class="com.example.InventoryReservation"
-                 activiti:cancelEndDefinition="true"
-                 activiti:resultVariable="reservationId"/>
+                  activiti:class="com.example.InventoryReservation"
+                  activiti:resultVariable="reservationId"/>
     
     <!-- Step 2: Process payment -->
     <serviceTask id="validatePayment" name="Validate Payment Information" activiti:class="com.example.PaymentValidator"/>
     
     <serviceTask id="processPayment" name="Process Payment" 
-                 activiti:class="com.example.PaymentProcessor"
-                 activiti:cancelEndDefinition="true"
-                 activiti:resultVariable="paymentId"/>
+                  activiti:class="com.example.PaymentProcessor"
+                  activiti:resultVariable="paymentId"/>
     
     <!-- Step 3: Update order status -->
     <serviceTask id="updateOrderStatus" name="Update Order to Processing" activiti:class="com.example.OrderStatusUpdater"/>
     
     <!-- Step 4: Create shipping label -->
     <serviceTask id="createShippingLabel" name="Generate Shipping Label"
-                 activiti:class="com.example.ShippingLabelGenerator"
-                 activiti:cancelEndDefinition="true"
-                 activiti:resultVariable="trackingNumber"/>
+                  activiti:class="com.example.ShippingLabelGenerator"
+                  activiti:resultVariable="trackingNumber"/>
     
     <!-- Step 5: Send confirmation -->
     <serviceTask id="sendConfirmation" name="Send Order Confirmation" activiti:class="com.example.OrderConfirmationService"/>
     
     <!-- Compensation handler for rollback -->
-    <eventSubProcess id="compensationHandler" triggeredByCompensation="true">
+    <eventSubProcess id="compensationHandler">
       <startEvent id="compStart">
         <compensateEventDefinition activityRef="createShippingLabel"/>
       </startEvent>

@@ -105,15 +105,16 @@ runtimeService.trigger(execution.getId(), variables);
 ### 2. Always Add Timeouts
 
 ```xml
-<!-- GOOD: With timeout -->
+<!-- GOOD: With timeout (boundary event as sibling, not child) -->
 <receiveTask id="waitForResponse" name="Wait for Response">
   <messageEventDefinition messageRef="response"/>
-  <boundaryEvent id="timeout" attachedToRef="waitForResponse" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT1H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
 </receiveTask>
+
+<boundaryEvent id="timeout" attachedToRef="waitForResponse" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT1H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 
 <!-- BAD: No timeout - can wait forever -->
 <receiveTask id="waitForResponse" name="Wait for Response">
@@ -185,15 +186,16 @@ List<Execution> waiting = runtimeService.createExecutionQuery()
   <messageEventDefinition messageRef="response"/>
 </receiveTask>
 
-<!-- CORRECT: Add boundary timer -->
+<!-- CORRECT: Add boundary timer as sibling -->
 <receiveTask id="waitForResponse" name="Wait">
   <messageEventDefinition messageRef="response"/>
-  <boundaryEvent id="timeout" attachedToRef="waitForResponse" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT1H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
 </receiveTask>
+
+<boundaryEvent id="timeout" attachedToRef="waitForResponse" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT1H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 ### 4. Assuming Message Subscription

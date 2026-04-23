@@ -7,7 +7,9 @@ description: "Complete guide to CallActivity elements for reusing global tasks a
 
 # Call Activity
 
-Call Activities **reference and execute** global tasks or sub-processes, enabling process modularity, reuse, and better organization of complex workflows.
+Call Activities **reference and execute** sub-processes, enabling process modularity, reuse, and better organization of complex workflows.
+
+**Note:** As stated in `CallActivityBehavior.java`, this is "limited currently to calling a subprocess and **not (yet) a global task**."
 
 ## Overview
 
@@ -37,6 +39,8 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 - **Variable Mapping** - Input/output parameters via `<activiti:in>` and `<activiti:out>`
 - **Async Execution** - Background invocation
 - **Inherit Variables** - Pass all parent variables via `activiti:inheritVariables="true"`
+- **Business Key** - Set a specific business key via `activiti:businessKey`
+- **Inherit Business Key** - Inherit from parent via `activiti:inheritBusinessKey="true"`
 - **Execution Listeners** - Lifecycle hooks
 
 ## Configuration Options
@@ -52,9 +56,27 @@ Call Activities **reference and execute** global tasks or sub-processes, enablin
 ### Dynamic Called Element
 
 ```xml
-<callActivity id="dynamicCall" 
-              name="Dynamic SubProcess" 
-              calledElement="${determineSubProcess()}"/>
+<callActivity id="dynamicCall"
+               name="Dynamic SubProcess"
+               calledElement="${determineSubProcess()}"/>
+```
+
+### Business Key Configuration
+
+Set a specific business key or inherit from the parent process:
+
+```xml
+<!-- Set explicit business key (supports expressions) -->
+<callActivity id="callWithBusinessKey"
+               name="Call with Business Key"
+               calledElement="subProcess"
+               activiti:businessKey="${order.id}"/>
+
+<!-- Inherit business key from parent -->
+<callActivity id="callInheritKey"
+               name="Call Inheriting Key"
+               calledElement="subProcess"
+               activiti:inheritBusinessKey="true"/>
 ```
 
 ### With Variable Mapping (Recommended)

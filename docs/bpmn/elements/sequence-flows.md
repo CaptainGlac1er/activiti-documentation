@@ -30,6 +30,7 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 - **Delegate Expressions** - Java method evaluation
 - **Variable Access** - Process variable conditions
 - **Complex Conditions** - Multiple criteria evaluation
+- **Skip Expression** - Conditionally skip the flow
 
 ## Basic Syntax
 
@@ -52,14 +53,30 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 ### Conditional Sequence Flow
 
 ```xml
-<sequenceFlow id="flow1" name="High Value" 
-              sourceRef="decisionGateway" 
-              targetRef="managerApproval">
+<sequenceFlow id="flow1" name="High Value"
+               sourceRef="decisionGateway"
+               targetRef="managerApproval">
   <conditionExpression xsi:type="tFormalExpression">
     <![CDATA[${orderAmount > 10000}]]>
   </conditionExpression>
 </sequenceFlow>
 ```
+
+### Skip Expression
+
+Conditionally skip a sequence flow (i.e., the flow is not taken):
+
+```xml
+<sequenceFlow id="flow1"
+               sourceRef="task1"
+               targetRef="task2"
+               activiti:skipExpression="${skipThisPath}"/>
+```
+
+**Behavior:**
+- When `activiti:skipExpression` evaluates to `true`, this sequence flow is skipped
+- Useful for dynamic flow routing based on process variables
+- The engine evaluates the expression when considering this flow as a candidate path
 
 ## Condition Expressions
 

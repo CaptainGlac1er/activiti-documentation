@@ -14,11 +14,12 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 ```xml
 <userTask id="myTask">
   <extensionElements>
-    <activiti:executionListener 
-      event="start" 
+    <activiti:executionListener
+      event="start"
       class="com.example.MyExecutionListener"
       onTransaction="before-commit"
-      customPropertiesResolverClass="com.example.Resolver"/>
+      customPropertiesResolverImplementationType="class"
+      customPropertiesResolverImplementation="com.example.Resolver"/>
   </extensionElements>
 </userTask>
 ```
@@ -32,9 +33,8 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 - `expression` - EL/SpEL expression to evaluate
 - `delegateExpression` - Spring bean method call
 - `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
-- `customPropertiesResolverClass` - Custom properties resolver class
-- `customPropertiesResolverExpression` - Custom properties resolver expression
-- `customPropertiesResolverDelegateExpression` - Custom properties resolver delegate expression
+- `customPropertiesResolverImplementationType` - Type of custom properties resolver (e.g., "class", "expression", "delegateExpression")
+- `customPropertiesResolverImplementation` - The resolver implementation (class name, expression, or delegate expression)
 
 ## Key Features
 
@@ -88,7 +88,8 @@ Java class implementing `ExecutionListener`:
       event="start" 
       class="com.example.MyExecutionListener"
       onTransaction="before-commit"
-      customPropertiesResolverClass="com.example.Resolver"/>
+      customPropertiesResolverImplementationType="class"
+      customPropertiesResolverImplementation="com.example.Resolver"/>
   </extensionElements>
 </userTask>
 ```
@@ -104,7 +105,7 @@ public class MyExecutionListener implements ExecutionListener {
     
     @Override
     public void notify(DelegateExecution execution) {
-        System.out.println("Activity started: " + execution.getActivityId());
+        System.out.println("Activity started: " + execution.getCurrentActivityId());
         
         // Access variables
         Object variable = execution.getVariable("myVariable");
@@ -129,7 +130,8 @@ Evaluate EL/SpEL expression:
       event="end" 
       expression="${myService.logCompletion(execution)}"
       onTransaction="committed"
-      customPropertiesResolverExpression="${resolverExpression}"/>
+      customPropertiesResolverImplementationType="expression"
+      customPropertiesResolverImplementation="${resolverExpression}"/>
   </extensionElements>
 </userTask>
 ```
@@ -150,7 +152,8 @@ Call Spring bean method:
       event="start" 
       delegateExpression="#{auditService.recordActivityStart(execution)}"
       onTransaction="rolled-back"
-      customPropertiesResolverDelegateExpression="${resolverDelegate}"/>
+      customPropertiesResolverImplementationType="delegateExpression"
+      customPropertiesResolverImplementation="${resolverDelegate}"/>
   </extensionElements>
 </userTask>
 ```
@@ -176,10 +179,10 @@ Execute JavaScript or Groovy script:
     <activiti:executionListener 
       event="end" 
       class="org.activiti.engine.impl.bpmn.listener.ScriptExecutionListener">
-      <activiti:field name="scriptFormat" stringValue="javascript"/>
-      <activiti:field name="scriptField">
+      <activiti:field name="language" stringValue="javascript"/>
+      <activiti:field name="script">
         <activiti:string>
-execution.setVariable('completedBy', execution.getCurrentUserId());
+execution.setVariable('completedBy', execution.getCurrentActivityId());
 execution.setVariable('completionTime', new Date());
         </activiti:string>
       </activiti:field>
@@ -190,14 +193,14 @@ execution.setVariable('completionTime', new Date());
 
 **Groovy Example:**
 ```xml
-<activiti:executionListener 
-  event="start" 
+  <activiti:executionListener
+  event="start"
   class="org.activiti.engine.impl.bpmn.listener.ScriptExecutionListener">
-  <activiti:field name="scriptFormat" stringValue="groovy"/>
-  <activiti:field name="scriptField">
+  <activiti:field name="language" stringValue="groovy"/>
+  <activiti:field name="script">
     <activiti:string>
 execution.variables['startTime'] = new Date()
-log.info "Task started by: ${execution.currentUserId}"
+log.info "Task started, activity: ${execution.currentActivityId}"
     </activiti:string>
   </activiti:field>
 </activiti:executionListener>
@@ -415,29 +418,29 @@ Listen to event execution:
       <activiti:executionListener 
         event="start" 
         class="org.activiti.engine.impl.bpmn.listener.ScriptExecutionListener">
-        <activiti:field name="scriptFormat" stringValue="javascript"/>
-        <activiti:field name="scriptField">
-          <activiti:string>
+      <activiti:field name="language" stringValue="javascript"/>
+      <activiti:field name="script">
+        <activiti:string>
 execution.setVariable('taskStartTime', new Date());
-execution.setVariable('startedBy', execution.getCurrentUserId());
-          </activiti:string>
-        </activiti:field>
-      </activiti:executionListener>
-      
-      <!-- Calculate duration using Groovy -->
-      <activiti:executionListener 
-        event="end" 
-        class="org.activiti.engine.impl.bpmn.listener.ScriptExecutionListener">
-        <activiti:field name="scriptFormat" stringValue="groovy"/>
-        <activiti:field name="scriptField">
-          <activiti:string>
+execution.setVariable('startedBy', execution.getCurrentActivityId());
+        </activiti:string>
+      </activiti:field>
+    </activiti:executionListener>
+    
+    <!-- Calculate duration using Groovy -->
+    <activiti:executionListener
+      event="end"
+      class="org.activiti.engine.impl.bpmn.listener.ScriptExecutionListener">
+      <activiti:field name="language" stringValue="groovy"/>
+      <activiti:field name="script">
+        <activiti:string>
 def startTime = execution.getVariable('taskStartTime')
 def endTime = new Date()
 def duration = endTime.time - startTime.time
 execution.setVariable('taskDuration', duration)
-log.info "Task completed in ${duration}ms by ${execution.getCurrentUserId()}"
-          </activiti:string>
-        </activiti:field>
+log.info "Task completed in ${duration}ms, activity: ${execution.currentActivityId}"
+        </activiti:string>
+      </activiti:field>
       </activiti:executionListener>
     </extensionElements>
   </userTask>
@@ -575,25 +578,22 @@ public void notify(DelegateExecution execution) {
 ```java
 public void notify(DelegateExecution execution) {
     // Current activity ID
-    String activityId = execution.getActivityId();
-    
+    String activityId = execution.getCurrentActivityId();
+
     // Process instance ID
     String processInstanceId = execution.getProcessInstanceId();
-    
+
     // Process definition ID
     String processDefinitionId = execution.getProcessDefinitionId();
-    
-    // Current user (if available)
-    String currentUser = execution.getCurrentUserId();
-    
+
     // Execution ID
     String executionId = execution.getId();
-    
+
     // Parent execution (for subprocesses)
-    Execution parent = execution.getParent();
-    
+    DelegateExecution parent = execution.getParent();
+
     // Child executions
-    List<Execution> children = execution.getChildExecutions();
+    List<? extends DelegateExecution> children = execution.getExecutions();
 }
 ```
 
@@ -601,12 +601,6 @@ public void notify(DelegateExecution execution) {
 
 ```java
 public void notify(DelegateExecution execution) {
-    // Get incoming sequence flows
-    List<String> incomingFlows = execution.getIncomingFlowIds();
-    
-    // Get outgoing sequence flows
-    List<String> outgoingFlows = execution.getOutgoingFlowIds();
-    
     // Check if multi-instance
     boolean isMultiInstance = execution.isMultiInstanceRoot();
 }
@@ -736,20 +730,21 @@ public void notify(DelegateExecution execution) {
 }
 ```
 
-### 3. Assuming User Context
+### 3. Wrong Method Names
 
-**Problem:** `getCurrentUserId()` may be null
+**Problem:** Using methods that don't exist on `DelegateExecution`
 
 ```java
-// BAD: No null check
-String user = execution.getCurrentUserId();
-userService.notify(user); // NPE!
+// BAD: These methods don't exist
+String activity = execution.getActivityId();           // WRONG - use getCurrentActivityId()
+String user = execution.getCurrentUserId();           // WRONG - doesn't exist
+List<Execution> children = execution.getChildExecutions();  // WRONG - use getExecutions()
+List<String> incoming = execution.getIncomingFlowIds();     // WRONG - doesn't exist
+List<String> outgoing = execution.getOutgoingFlowIds();     // WRONG - doesn't exist
 
-// GOOD: Null-safe
-String user = execution.getCurrentUserId();
-if (user != null) {
-    userService.notify(user);
-}
+// GOOD: Correct methods
+String activity = execution.getCurrentActivityId();
+List<? extends DelegateExecution> children = execution.getExecutions();
 ```
 
 ### 4. Listener Order Dependencies

@@ -37,8 +37,10 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 | **Timer** | Timeout handling | Activity deadlines |
 | **Message** | External trigger | Cancel/stop requests |
 | **Signal** | Global event | System-wide triggers |
+| **Cancel** | Cancel transactional sub-process | Sub-process cancellation |
 | **Compensate** | Undo operations | Transaction rollback |
-| **Escalation** | Escalate issues | Management notification |
+
+**Not supported:** Escalation boundary events (no `EscalationEventDefinition` class exists).
 
 ### Interrupting vs Non-Interrupting
 
@@ -186,12 +188,12 @@ Trigger compensation (undo):
 
 ```xml
 <serviceTask id="bookFlight" name="Book Flight" activiti:class="com.example.FlightBookingService">
-  
+
   <!-- Compensation boundary event -->
-  <boundaryEvent id="compensateBooking" cancelActivity="false">
+  <boundaryEvent id="compensateBooking" attachedToRef="bookFlight" cancelActivity="false">
     <compensateEventDefinition activityRef="bookFlight"/>
   </boundaryEvent>
-  
+
 </serviceTask>
 
 <sequenceFlow id="compFlow" sourceRef="compensateBooking" targetRef="cancelFlight"/>
@@ -260,9 +262,9 @@ Boundary events attach to the multi-instance activity as a whole, not inside `mu
 ```
 
 **Behavior:**
-- Each instance has its own timeout
-- Timeout cancels only that instance
-- Other instances continue
+- The boundary event attaches to the multi-instance activity as a whole, not to individual instances.
+- A single timer is created for the entire multi-instance activity.
+- When the boundary event fires, it affects the multi-instance activity as a unit.
 
 ### Nested Boundary Events
 
@@ -384,7 +386,7 @@ Boundary events inside subprocesses must be siblings of the activity within the 
   <serviceTask id="confirmPayment" name="Confirm Payment" activiti:class="com.example.PaymentConfirmation"/>
   
   <!-- Compensation event subprocess -->
-  <eventSubProcess id="compensationHandler" triggeredByCompensation="true">
+  <eventSubProcess id="compensationHandler">
     <startEvent id="compStart">
       <compensateEventDefinition activityRef="processPayment"/>
     </startEvent>

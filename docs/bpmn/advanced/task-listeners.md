@@ -14,21 +14,24 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 ```xml
 <userTask id="approvalTask" name="Approval">
   <extensionElements>
-    <activiti:taskListener 
-      event="create" 
+    <activiti:taskListener
+      event="create"
       class="com.example.TaskCreatedListener"
       onTransaction="before-commit"
-      customPropertiesResolverClass="com.example.Resolver"/>
-    <activiti:taskListener 
-      event="assignment" 
+      customPropertiesResolverImplementationType="class"
+      customPropertiesResolverImplementation="com.example.Resolver"/>
+    <activiti:taskListener
+      event="assignment"
       delegateExpression="${assignmentListener}"
       onTransaction="committed"
-      customPropertiesResolverDelegateExpression="${resolverDelegate}"/>
-    <activiti:taskListener 
-      event="complete" 
+      customPropertiesResolverImplementationType="delegateExpression"
+      customPropertiesResolverImplementation="${resolverDelegate}"/>
+    <activiti:taskListener
+      event="complete"
       class="com.example.TaskCompletedListener"
       onTransaction="rolled-back"
-      customPropertiesResolverExpression="${resolverExpression}"/>
+      customPropertiesResolverImplementationType="expression"
+      customPropertiesResolverImplementation="${resolverExpression}"/>
   </extensionElements>
 </userTask>
 ```
@@ -47,9 +50,8 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 - `expression` - EL/SpEL expression to evaluate
 - `delegateExpression` - Spring bean method call
 - `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
-- `customPropertiesResolverClass` - Custom properties resolver class
-- `customPropertiesResolverExpression` - Custom properties resolver expression
-- `customPropertiesResolverDelegateExpression` - Custom properties resolver delegate expression
+- `customPropertiesResolverImplementationType` - Type of custom properties resolver (e.g., "class", "expression", "delegateExpression")
+- `customPropertiesResolverImplementation` - The resolver implementation (class name, expression, or delegate expression)
 
 ## Supported Events
 
@@ -197,11 +199,10 @@ public class ComprehensiveTaskListener implements TaskListener {
         
         // Task execution context
         DelegateExecution execution = task.getExecution();
-        ProcessInstance processInstance = execution.getProcessInstance();
         
         // Process information
-        String processId = processInstance.getId();
-        String processDefId = processInstance.getProcessDefinitionId();
+        String processId = execution.getProcessInstanceId();
+        String processDefId = execution.getProcessDefinitionId();
         
         // Form key
         String formKey = task.getFormKey();
@@ -272,7 +273,7 @@ public class AssignmentChangeTracker implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        String event = task.getTaskListenerEvent();
+        String event = task.getEventName();
         
         if ("assignment".equals(event)) {
             String newAssignee = task.getAssignee();
@@ -388,7 +389,7 @@ public class DynamicTaskConfigurer implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        String eventName = task.getTaskListenerEvent();
+        String eventName = task.getEventName();
         
         if ("create".equals(eventName)) {
             // Set dynamic due date based on task priority
@@ -448,7 +449,7 @@ public class UniversalTaskHandler implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        String eventName = task.getTaskListenerEvent();
+        String eventName = task.getEventName();
         
         switch (eventName) {
             case "create":
@@ -550,8 +551,8 @@ public class ReassignmentTracker implements TaskListener {
         if (!newAssignee.equals(oldAssignee)) {
             logReassignment(oldAssignee, newAssignee, task.getId());
             task.setVariable("lastAssignee", newAssignee);
-            task.setVariable("reassignmentCount", 
-                ((Integer) task.getVariable("reassignmentCount") || 0) + 1);
+            task.setVariable("reassignmentCount",
+                (task.getVariable("reassignmentCount") == null ? 0 : (Integer) task.getVariable("reassignmentCount")) + 1);
         }
     }
 }
@@ -566,8 +567,8 @@ public class SLAResetListener implements TaskListener {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.HOUR, 24);
         task.setDueDate(cal.getTime());
-        task.setVariable("slaResetCount", 
-            ((Integer) task.getVariable("slaResetCount") || 0) + 1);
+        task.setVariable("slaResetCount",
+            (task.getVariable("slaResetCount") == null ? 0 : (Integer) task.getVariable("slaResetCount")) + 1);
     }
 }
 ```
@@ -834,7 +835,7 @@ public class AssumptionListener implements TaskListener {
 public class EventAwareListener implements TaskListener {
     @Override
     public void notify(DelegateTask task) {
-        if ("complete".equals(task.getTaskListenerEvent())) {
+        if ("complete".equals(task.getEventName())) {
             logCompletion(task);
         }
     }

@@ -184,23 +184,29 @@ Throw error from process or subprocess:
 
 ### 3. Programmatic Error Throwing
 
-Using Java API:
+Throw a BPMN error from a `JavaDelegate` by throwing a `BpmnError`:
 
 ```java
-// Throw error from service task
+import org.activiti.engine.delegate.BpmnError;
+import org.activiti.engine.delegate.JavaDelegate;
+import org.activiti.engine.delegate.DelegateExecution;
+
 public class PaymentService implements JavaDelegate {
     public void execute(DelegateExecution execution) {
-        throw new ActivitiException("Payment failed");
+        // Throw BPMN error with code only
+        throw new BpmnError("PaymentError");
+
+        // Or with a description message
+        throw new BpmnError("PaymentError", "Payment processing failed for order XYZ");
     }
 }
 ```
 
-Or using Runtime API:
-
-```java
-// Throw BPMN error programmatically
-runtimeService.throwError(executionId, "PaymentError");
-```
+**Important:**
+- `BpmnError` extends `ActivitiException` and is specifically designed for business faults
+- It is caught by error boundary events or error event sub-processes
+- Technical errors (e.g., database failures) should use other exception types, not `BpmnError`
+- `BpmnError` requires a non-null, non-empty error code
 
 ## Exception Mapping
 
@@ -342,11 +348,11 @@ Errors bubble up through subprocess hierarchy:
 ### 3. Call Activity Error Propagation
 
 ```xml
-<callActivity id="callPaymentProcess" 
-              activiti:calledElement="paymentProcess"/>
+<callActivity id="callPaymentProcess"
+               calledElement="paymentProcess"/>
 
-<boundaryEvent id="catchCalledError" 
-               attachedToRef="callPaymentProcess">
+<boundaryEvent id="catchCalledError"
+                attachedToRef="callPaymentProcess">
   <errorEventDefinition errorRef="PaymentError"/>
 </boundaryEvent>
 ```
@@ -532,20 +538,21 @@ Errors bubble up through subprocess hierarchy:
 
 ```xml
 <process id="mainProcess" name="Main Process">
-  
+
   <error id="CalledProcessError" name="Called Process Error" errorCode="CALL001"/>
-  
+
   <startEvent id="start"/>
-  
-  <callActivity id="callPaymentService" 
-                name="Call Payment Service" 
-                activiti:calledElement="paymentServiceProcess">
-    
+
+  <callActivity id="callPaymentService"
+                 name="Call Payment Service"
+                 calledElement="paymentServiceProcess">
+
     <!-- Catch errors from called process -->
-    <boundaryEvent id="catchCalledError">
+    <boundaryEvent id="catchCalledError"
+                    attachedToRef="callPaymentService">
       <errorEventDefinition errorRef="CalledProcessError"/>
     </boundaryEvent>
-    
+
   </callActivity>
   
   <userTask id="handleCalledError" name="Handle Called Process Error"/>
@@ -563,29 +570,42 @@ Errors bubble up through subprocess hierarchy:
 
 ### Throwing Errors Programmatically
 
-```java
-// Throw BPMN error by error ID
-runtimeService.throwError(executionId, "PaymentError");
+The core engine does **not** provide `runtimeService.throwError()`. The correct way to throw a BPMN error is from within a `JavaDelegate` by throwing a `BpmnError`:
 
-// Throw error with variables
-runtimeService.throwError(executionId, "PaymentError", 
-    Map.of("errorCode", "PAY001", "message", "Payment failed"));
+```java
+import org.activiti.engine.delegate.BpmnError;
+import org.activiti.engine.delegate.JavaDelegate;
+import org.activiti.engine.delegate.DelegateExecution;
+
+public class PaymentService implements JavaDelegate {
+    public void execute(DelegateExecution execution) {
+        throw new BpmnError("PaymentError", "Payment processing failed");
+    }
+}
 ```
 
 ### Listening to Error Events
 
+**Note:** The `ApplicationEventListener<BPMNErrorReceivedEvent>` pattern is part of the Activiti 7/8 API layer, not the core engine. In the core engine, use `ActivitiEventListener` instead:
+
 ```java
-public class ErrorEventListener implements ApplicationEventListener<BPMNErrorReceivedEvent> {
-    
+import org.activiti.engine.delegate.event.ActivitiEventListener;
+import org.activiti.engine.delegate.event.ActivitiEvent;
+import org.activiti.engine.delegate.event.ActivitiEventType;
+
+public class ErrorEventListener implements ActivitiEventListener {
+
     @Override
-    public Class<BPMNErrorReceivedEvent> getEventType() {
-        return BPMNErrorReceivedEvent.class;
+    public void onEvent(ActivitiEvent event) {
+        if (event.getType() == ActivitiEventType.ACTIVITY_ERROR_MESSAGE) {
+            System.out.println("Error on activity: " + event.getActivityId());
+            System.out.println("Execution: " + event.getExecutionId());
+        }
     }
-    
+
     @Override
-    public void apply(BPMNErrorReceivedEvent event) {
-        System.out.println("Error received: " + event.getError().getErrorCode());
-        System.out.println("Activity ID: " + event.getActivityId());
+    public boolean isFailOnException() {
+        return false;
     }
 }
 ```

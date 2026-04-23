@@ -57,28 +57,23 @@ Only **one path** is taken based on conditions.
 - Complex decision logic
 
 ### 4. [Event-Based Gateway](./event-gateway.md)
-Route based on **events** (messages, timers, errors).
+Route based on **events** (messages, timers). Minimal runtime support — actual event handling is done by intermediate catch events downstream.
 
 ```xml
 <eventBasedGateway id="eventDecision" name="Wait for Event"/>
 ```
 
 **Use Cases:**
-- Asynchronous decisions
-- Competing events
+- Competing events (first event wins)
 - Timeout handling
 
 ### 5. [Complex Gateway](./complex-gateway.md)
-Advanced routing with **conditions and dependencies**.
+**Not supported.** The engine converts complex gateways to exclusive gateways at parse time. Use Inclusive Gateway instead.
 
 ```xml
+<!-- NOT SUPPORTED - will be converted to exclusive gateway -->
 <complexGateway id="complex" name="Complex Decision"/>
 ```
-
-**Use Cases:**
-- Multi-condition evaluation
-- Completion dependencies
-- Advanced flow control
 
 ## Common Features
 
@@ -106,7 +101,7 @@ All gateways (except parallel) support conditions on outgoing sequence flows:
 Specify a default path when no conditions match:
 
 ```xml
-<exclusiveGateway id="gateway1" activiti:defaulFlow="flow1"/>
+<exclusiveGateway id="gateway1" defaultFlow="flow1"/>
 ```
 
 Or on the gateway element:
@@ -214,7 +209,7 @@ Gateways work seamlessly with multi-instance activities:
 
 ```xml
 <!-- Wait for one of several events -->
-<eventBasedGateway id="eventDecision" name="Wait for Response" instant="false"/>
+<eventBasedGateway id="eventDecision" name="Wait for Response"/>
 
 <!-- Message event: customer responds -->
 <sequenceFlow id="responseFlow" sourceRef="eventDecision" targetRef="messageCatch"/>
@@ -229,11 +224,6 @@ Gateways work seamlessly with multi-instance activities:
     <timeDuration>PT24H</timeDuration>
   </timerEventDefinition>
 </intermediateCatchEvent>
-
-<!-- Non-interrupting: send reminder (doesn't block) -->
-<sequenceFlow id="reminderFlow" sourceRef="eventDecision" targetRef="sendReminder" 
-              activiti:gatewayDirection="Dividing"/>
-<serviceTask id="sendReminder" name="Send Reminder" activiti:async="true"/>
 ```
 
 ## Best Practices

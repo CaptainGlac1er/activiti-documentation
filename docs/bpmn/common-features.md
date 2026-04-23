@@ -21,7 +21,7 @@ Activiti provides powerful extensions that can be applied to most BPMN elements:
 - **Skip Expressions** - Conditional execution
 - **Field Injection** - Dependency injection
 
-## Execution Listeners
+## Async Execution
 
 Execute activities in the **background** using job executor.
 
@@ -71,15 +71,16 @@ managementService.setJobPriority(jobId, 10);
 Configure retry policy using `failedJobRetryTimeCycle`:
 
 ```xml
-<serviceTask id="retryTask" 
+<serviceTask id="retryTask"
              activiti:async="true">
   
-  <!-- Retry 5 times -->
-  <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
-  
-  <!-- Retry with intervals -->
-  <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
-  
+  <extensionElements>
+    <!-- Retry 5 times -->
+    <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
+    
+    <!-- Retry with intervals -->
+    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
+  </extensionElements>
 </serviceTask>
 ```
 

@@ -38,10 +38,10 @@ End Events mark the **completion** of a process or sub-process. They can be simp
 | **Terminator** | Normal completion | Standard process end |
 | **Error** | End with error | Exception termination |
 | **Cancel** | Cancel parent sub-process | Sub-process cancellation |
-| **Signal** | Send signal on end | Cross-process notification |
 | **Message** | Send message on end | External system notification |
 | **Terminate** | End entire process instance | Force termination of all branches |
-| **Escalation** | Escalate on end | Escalation workflows |
+
+**Not supported:** Signal end events (fall through to none end event behavior), Escalation end events (no `EscalationEventDefinition` class exists).
 
 ## Configuration Options
 
@@ -88,27 +88,7 @@ End process with an error:
 
 ### 3. Signal End Event
 
-Send a global signal on completion:
-
-```xml
-<serviceTask id="completeOrder" name="Complete Order"/>
-
-<sequenceFlow id="flow1" sourceRef="completeOrder" targetRef="signalEnd"/>
-
-<endEvent id="signalEnd">
-  <signalEventDefinition signalRef="orderCompleted"/>
-</endEvent>
-```
-
-**Signal Definition:**
-```xml
-<signal id="orderCompleted" name="Order Completed"/>
-```
-
-**Use Case:**
-- Notify other waiting processes
-- Trigger parallel process instances
-- Broadcast completion status
+**NOT supported.** The `EndEventParseHandler` does not handle `SignalEventDefinition` on end events — they fall through to `NoneEndEventActivityBehavior`. A signal end event will NOT broadcast a signal; it behaves as a none end event (normal completion).
 
 ### 4. Message End Event
 
@@ -160,6 +140,31 @@ Force termination of entire process instance:
 - Force terminates process instance
 - Useful for early completion scenarios
 
+**Terminate Event Attributes:**
+
+The `TerminateEventDefinition` model supports two additional attributes:
+
+- `terminateAll` (boolean, default `false`): When `true`, terminates all parent process instances (e.g., in the case of a call activity), ending the entire process tree. When `false` (BPMN spec compliant), only the current parent scope is terminated (e.g., the containing subprocess).
+
+- `terminateMultiInstance` (boolean, default `false`): When `true` and used within a multi-instance, terminates all multi-instance instances of the embedded subprocess/call activity. Only the first parent multi-instance structure is affected. If `terminateAll` is `true`, it takes precedence over this attribute.
+
+```xml
+<!-- Standard terminate end — terminates current scope -->
+<endEvent id="terminateEnd">
+  <terminateEventDefinition/>
+</endEvent>
+
+<!-- Terminate all parent process instances -->
+<endEvent id="terminateAllEnd">
+  <terminateEventDefinition activiti:terminateAll="true"/>
+</endEvent>
+
+<!-- Terminate multi-instance iterations -->
+<endEvent id="terminateMIEnd">
+  <terminateEventDefinition activiti:terminateMultiInstance="true"/>
+</endEvent>
+```
+
 ### 6. Cancel End Event
 
 Cancel parent sub-process:
@@ -196,18 +201,7 @@ Cancel parent sub-process:
 
 ### 7. Escalation End Event
 
-Escalate on process completion:
-
-```xml
-<endEvent id="escalationEnd">
-  <escalationEventDefinition escalationCode="ESCALATION_001"/>
-</endEvent>
-```
-
-**Use Case:**
-- Notify management of completion
-- Trigger escalation workflows
-- Report to external systems
+**NOT supported.** There is no `EscalationEventDefinition` model class in the Activiti codebase. Escalation end events will not function.
 
 ## Advanced Features
 
@@ -226,9 +220,7 @@ A process can have multiple end events:
   <conditionExpression>${!success}</conditionExpression>
 </sequenceFlow>
 
-<endEvent id="successEnd">
-  <signalEventDefinition signalRef="processSuccess"/>
-</endEvent>
+<endEvent id="successEnd"/>
 
 <endEvent id="errorEnd">
   <errorEventDefinition errorRef="ProcessError"/>

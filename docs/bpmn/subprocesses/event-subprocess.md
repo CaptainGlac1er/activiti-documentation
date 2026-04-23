@@ -12,56 +12,61 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 ## Overview
 
 ```xml
-<eventSubProcess id="errorHandler" triggeredByError="true">
-  <errorEvent id="errorStart" errorRef="Error001"/>
+<eventSubProcess id="errorHandler">
+  <startEvent id="errorStart">
+    <errorEventDefinition errorRef="Error001"/>
+  </startEvent>
   <userTask id="handleError" name="Handle Error"/>
   <endEvent id="errorEnd"/>
+  <sequenceFlow id="flow1" sourceRef="errorStart" targetRef="handleError"/>
+  <sequenceFlow id="flow2" sourceRef="handleError" targetRef="errorEnd"/>
 </eventSubProcess>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Multiple event types, interrupting/non-interrupting
+**BPMN 2.0 Standard:** Fully Supported
+
+**Important:** The `EventSubProcess` class in Activiti extends `SubProcess` with no additional fields. The trigger type (error, message, timer, signal, compensation) is determined entirely by the start event definition **inside** the event subprocess, not by attributes on the `<eventSubProcess>` element itself. Similarly, interrupting vs non-interrupting behavior is controlled by the `isInterrupting` attribute on the **inner `<startEvent>`**, not on the event subprocess.
 
 ## Key Features
 
 ### Types of Event SubProcesses
 
-| Type | Trigger | Behavior | Use Case |
-|------|---------|----------|----------|
-| **Interrupting** | Any event | Cancels parent activities | Exception handling |
-| **Non-Interrupting** | Any event | Runs parallel to parent | Logging, notifications |
-| **Error** | Error event | Catches errors | Error recovery |
-| **Message** | Message event | Waits for message | External triggers |
-| **Timer** | Timer event | Time-based trigger | Timeouts, delays |
-| **Signal** | Signal event | Global broadcast | Cross-process communication |
-| **Compensation** | Compensation event | Undo operations | Transaction rollback |
+| Type | Trigger (on start event) | Behavior | Use Case |
+|------|--------------------------|----------|----------|
+| **Interrupting** | Any event with `isInterrupting="true"` (default) on start event | Cancels parent activities | Exception handling |
+| **Non-Interrupting** | Any event with `isInterrupting="false"` on start event | Runs parallel to parent | Logging, notifications |
+| **Error** | `<errorEventDefinition errorRef="..."/>` | Catches errors | Error recovery |
+| **Message** | `<messageEventDefinition messageRef=""/>` | Waits for message | External triggers |
+| **Timer** | `<timerEventDefinition>` | Time-based trigger | Timeouts, delays |
+| **Signal** | `<signalEventDefinition signalRef=""/>` | Global broadcast | Cross-process communication |
+| **Compensation** | `<compensateEventDefinition activityRef=""/>` | Undo operations | Transaction rollback |
 
 ## Configuration Options
 
 ### 1. Interrupting Event SubProcess
 
-Cancels parent activities when triggered:
+Cancels parent activities when triggered. By default, start events in event subprocesses are interrupting. Set `isInterrupting="true"` explicitly for clarity:
 
 ```xml
 <subProcess id="mainProcess" name="Main Process">
   <startEvent id="start"/>
   <userTask id="task1" name="Long Running Task"/>
   <endEvent id="end"/>
-  
-  <!-- Interrupting event subprocess -->
-  <eventSubProcess id="timeoutHandler" triggeredByTimer="true" isInterrupting="true">
-    <startEvent id="timerStart">
+
+  <!-- Interrupting event subprocess (default behavior) -->
+  <eventSubProcess id="timeoutHandler">
+    <startEvent id="timerStart" isInterrupting="true">
       <timerEventDefinition>
         <timeDuration>PT5M</timeDuration>
       </timerEventDefinition>
     </startEvent>
     <userTask id="handleTimeout" name="Handle Timeout"/>
     <endEvent id="timeoutEnd"/>
-    
+
     <sequenceFlow id="timeoutFlow1" sourceRef="timerStart" targetRef="handleTimeout"/>
     <sequenceFlow id="timeoutFlow2" sourceRef="handleTimeout" targetRef="timeoutEnd"/>
   </eventSubProcess>
-  
+
   <sequenceFlow id="flow1" sourceRef="start" targetRef="task1"/>
   <sequenceFlow id="flow2" sourceRef="task1" targetRef="end"/>
 </subProcess>
@@ -82,19 +87,19 @@ Runs parallel without canceling parent:
   <startEvent id="start"/>
   <serviceTask id="task1" name="Process Data"/>
   <endEvent id="end"/>
-  
+
   <!-- Non-interrupting message event subprocess -->
-  <eventSubProcess id="cancelHandler" triggeredByMessage="true" isInterrupting="false">
-    <startEvent id="messageStart">
+  <eventSubProcess id="cancelHandler">
+    <startEvent id="messageStart" isInterrupting="false">
       <messageEventDefinition messageRef="cancelMessage"/>
     </startEvent>
     <serviceTask id="logCancel" name="Log Cancellation Request"/>
     <endEvent id="cancelEnd"/>
-    
+
     <sequenceFlow id="cancelFlow1" sourceRef="messageStart" targetRef="logCancel"/>
     <sequenceFlow id="cancelFlow2" sourceRef="logCancel" targetRef="cancelEnd"/>
   </eventSubProcess>
-  
+
   <sequenceFlow id="flow1" sourceRef="start" targetRef="task1"/>
   <sequenceFlow id="flow2" sourceRef="task1" targetRef="end"/>
 </subProcess>
@@ -113,30 +118,30 @@ Catches and handles errors:
 ```xml
 <process id="errorHandlingProcess" name="Error Handling Process">
   <startEvent id="start"/>
-  
+
   <subProcess id="riskyOperation" name="Risky Operation">
     <startEvent id="subStart"/>
     <serviceTask id="riskyTask" name="Risky Service Call" activiti:class="com.example.RiskyService"/>
     <endEvent id="subEnd"/>
-    
+
     <!-- Error event subprocess -->
-    <eventSubProcess id="errorHandler" triggeredByError="true">
+    <eventSubProcess id="errorHandler">
       <startEvent id="errorStart">
         <errorEventDefinition errorRef="ApplicationError"/>
       </startEvent>
       <userTask id="handleError" name="Handle Application Error"/>
       <endEvent id="errorEnd"/>
-      
+
       <sequenceFlow id="errorFlow1" sourceRef="errorStart" targetRef="handleError"/>
       <sequenceFlow id="errorFlow2" sourceRef="handleError" targetRef="errorEnd"/>
     </eventSubProcess>
-    
+
     <sequenceFlow id="subFlow1" sourceRef="subStart" targetRef="riskyTask"/>
     <sequenceFlow id="subFlow2" sourceRef="riskyTask" targetRef="subEnd"/>
   </subProcess>
-  
+
   <endEvent id="end"/>
-  
+
   <sequenceFlow id="mainFlow1" sourceRef="start" targetRef="riskyOperation"/>
   <sequenceFlow id="mainFlow2" sourceRef="riskyOperation" targetRef="end"/>
 </process>
@@ -146,7 +151,7 @@ Catches and handles errors:
 ```xml
 <definitions>
   <error id="ApplicationError" name="Application Error" errorCode="APP001"/>
-  
+
   <!-- Process definition here -->
 </definitions>
 ```
@@ -160,19 +165,19 @@ Waits for external messages:
   <startEvent id="start"/>
   <userTask id="prepareOrder" name="Prepare Order"/>
   <endEvent id="end"/>
-  
+
   <!-- Message event subprocess for cancellation -->
-  <eventSubProcess id="cancelOrder" triggeredByMessage="true" isInterrupting="true">
+  <eventSubProcess id="cancelOrder">
     <startEvent id="cancelStart">
       <messageEventDefinition messageRef="cancelOrderMessage"/>
     </startEvent>
     <serviceTask id="refundOrder" name="Process Refund" activiti:class="com.example.RefundService"/>
     <endEvent id="cancelEnd"/>
-    
+
     <sequenceFlow id="cancelFlow1" sourceRef="cancelStart" targetRef="refundOrder"/>
     <sequenceFlow id="cancelFlow2" sourceRef="refundOrder" targetRef="cancelEnd"/>
   </eventSubProcess>
-  
+
   <sequenceFlow id="flow1" sourceRef="start" targetRef="prepareOrder"/>
   <sequenceFlow id="flow2" sourceRef="prepareOrder" targetRef="end"/>
 </subProcess>
@@ -192,19 +197,19 @@ Responds to global signals:
   <startEvent id="start"/>
   <serviceTask id="task1" name="Process Data"/>
   <endEvent id="end"/>
-  
+
   <!-- Signal event subprocess -->
-  <eventSubProcess id="emergencyStop" triggeredBySignal="true" isInterrupting="true">
+  <eventSubProcess id="emergencyStop">
     <startEvent id="signalStart">
       <signalEventDefinition signalRef="EmergencyStop"/>
     </startEvent>
     <serviceTask id="cleanup" name="Emergency Cleanup" activiti:class="com.example.CleanupService"/>
     <endEvent id="signalEnd"/>
-    
+
     <sequenceFlow id="signalFlow1" sourceRef="signalStart" targetRef="cleanup"/>
     <sequenceFlow id="signalFlow2" sourceRef="cleanup" targetRef="signalEnd"/>
   </eventSubProcess>
-  
+
   <sequenceFlow id="flow1" sourceRef="start" targetRef="task1"/>
   <sequenceFlow id="flow2" sourceRef="task1" targetRef="end"/>
 </subProcess>
@@ -222,35 +227,35 @@ Handles compensation (undo) operations:
 ```xml
 <process id="compensationProcess" name="Process with Compensation">
   <startEvent id="start"/>
-  
+
   <subProcess id="transactionalProcess" name="Transactional Process">
     <startEvent id="subStart"/>
-    
-    <serviceTask id="bookFlight" name="Book Flight" activiti:class="com.example.FlightBookingService" activiti:cancelEndDefinition="true"/>
-    
-    <serviceTask id="bookHotel" name="Book Hotel" activiti:class="com.example.HotelBookingService" activiti:cancelEndDefinition="true"/>
-    
+
+    <serviceTask id="bookFlight" name="Book Flight" activiti:class="com.example.FlightBookingService"/>
+
+    <serviceTask id="bookHotel" name="Book Hotel" activiti:class="com.example.HotelBookingService"/>
+
     <endEvent id="subEnd"/>
-    
+
     <!-- Compensation event subprocess -->
-    <eventSubProcess id="compensationHandler" triggeredByCompensation="true">
+    <eventSubProcess id="compensationHandler">
       <startEvent id="compStart">
         <compensateEventDefinition activityRef="bookHotel"/>
       </startEvent>
       <serviceTask id="cancelHotel" name="Cancel Hotel Booking" activiti:class="com.example.HotelCancellationService"/>
       <endEvent id="compEnd"/>
-      
+
       <sequenceFlow id="compFlow1" sourceRef="compStart" targetRef="cancelHotel"/>
       <sequenceFlow id="compFlow2" sourceRef="cancelHotel" targetRef="compEnd"/>
     </eventSubProcess>
-    
+
     <sequenceFlow id="subFlow1" sourceRef="subStart" targetRef="bookFlight"/>
     <sequenceFlow id="subFlow2" sourceRef="bookFlight" targetRef="bookHotel"/>
     <sequenceFlow id="subFlow3" sourceRef="bookHotel" targetRef="subEnd"/>
   </subProcess>
-  
+
   <endEvent id="end"/>
-  
+
   <sequenceFlow id="mainFlow1" sourceRef="start" targetRef="transactionalProcess"/>
   <sequenceFlow id="mainFlow2" sourceRef="transactionalProcess" targetRef="end"/>
 </process>
@@ -262,42 +267,42 @@ Handles compensation (undo) operations:
 
 ```xml
 <process id="orderProcess" name="E-Commerce Order Process">
-  
-  <!-- Message definition for order cancellation -->
+
+  <!-- Message definitions -->
   <message id="cancelOrder" name="Cancel Order"/>
   <message id="expediteOrder" name="Expedite Order"/>
-  
+
   <!-- Signal definition for system-wide emergency -->
   <signal id="systemEmergency" name="System Emergency"/>
-  
+
   <!-- Error definition -->
   <error id="paymentError" name="Payment Error" errorCode="PAY001"/>
-  
+
   <startEvent id="start"/>
-  
+
   <subProcess id="orderFulfillment" name="Order Fulfillment">
     <startEvent id="fulfillStart"/>
-    
+
     <serviceTask id="checkInventory" name="Check Inventory" activiti:class="com.example.InventoryService"/>
-    
+
     <exclusiveGateway id="inventoryCheck"/>
-    
+
     <sequenceFlow id="noStock" sourceRef="inventoryCheck" targetRef="notifyBackorder">
       <conditionExpression>${!inStock}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="inStock" sourceRef="inventoryCheck" targetRef="processPayment">
       <conditionExpression>${inStock}</conditionExpression>
     </sequenceFlow>
-    
+
     <userTask id="notifyBackorder" name="Notify Backorder"/>
     <serviceTask id="processPayment" name="Process Payment" activiti:class="com.example.PaymentService"/>
-    
+
     <userTask id="shipOrder" name="Ship Order"/>
-    
+
     <endEvent id="fulfillEnd"/>
-    
+
     <!-- Timer event subprocess for order timeout -->
-    <eventSubProcess id="orderTimeout" triggeredByTimer="true" isInterrupting="true">
+    <eventSubProcess id="orderTimeout">
       <startEvent id="timeoutStart">
         <timerEventDefinition>
           <timeDuration>PT24H</timeDuration>
@@ -305,56 +310,56 @@ Handles compensation (undo) operations:
       </startEvent>
       <serviceTask id="cancelTimeout" name="Cancel Timed Out Order" activiti:class="com.example.OrderCancellationService"/>
       <endEvent id="timeoutEnd"/>
-      
+
       <sequenceFlow id="timeoutFlow1" sourceRef="timeoutStart" targetRef="cancelTimeout"/>
       <sequenceFlow id="timeoutFlow2" sourceRef="cancelTimeout" targetRef="timeoutEnd"/>
     </eventSubProcess>
-    
+
     <!-- Message event subprocess for order cancellation -->
-    <eventSubProcess id="orderCancellation" triggeredByMessage="true" isInterrupting="true">
+    <eventSubProcess id="orderCancellation">
       <startEvent id="cancelStart">
         <messageEventDefinition messageRef="cancelOrder"/>
       </startEvent>
       <serviceTask id="processRefund" name="Process Refund" activiti:class="com.example.RefundService"/>
       <endEvent id="cancelEnd"/>
-      
+
       <sequenceFlow id="cancelFlow1" sourceRef="cancelStart" targetRef="processRefund"/>
       <sequenceFlow id="cancelFlow2" sourceRef="processRefund" targetRef="cancelEnd"/>
     </eventSubProcess>
-    
+
     <!-- Non-interrupting message event subprocess for expediting -->
-    <eventSubProcess id="orderExpedite" triggeredByMessage="true" isInterrupting="false">
-      <startEvent id="expediteStart">
+    <eventSubProcess id="orderExpedite">
+      <startEvent id="expediteStart" isInterrupting="false">
         <messageEventDefinition messageRef="expediteOrder"/>
       </startEvent>
       <serviceTask id="updatePriority" name="Update Order Priority" activiti:class="com.example.PriorityUpdateService"/>
       <endEvent id="expediteEnd"/>
-      
+
       <sequenceFlow id="expediteFlow1" sourceRef="expediteStart" targetRef="updatePriority"/>
       <sequenceFlow id="expediteFlow2" sourceRef="updatePriority" targetRef="expediteEnd"/>
     </eventSubProcess>
-    
+
     <!-- Signal event subprocess for emergency stop -->
-    <eventSubProcess id="emergencyStop" triggeredBySignal="true" isInterrupting="true">
+    <eventSubProcess id="emergencyStop">
       <startEvent id="emergencyStart">
         <signalEventDefinition signalRef="systemEmergency"/>
       </startEvent>
       <serviceTask id="emergencyCleanup" name="Emergency Cleanup" activiti:class="com.example.EmergencyCleanupService"/>
       <endEvent id="emergencyEnd"/>
-      
+
       <sequenceFlow id="emergencyFlow1" sourceRef="emergencyStart" targetRef="emergencyCleanup"/>
       <sequenceFlow id="emergencyFlow2" sourceRef="emergencyCleanup" targetRef="emergencyEnd"/>
     </eventSubProcess>
-    
+
     <sequenceFlow id="flow1" sourceRef="fulfillStart" targetRef="checkInventory"/>
     <sequenceFlow id="flow2" sourceRef="checkInventory" targetRef="inventoryCheck"/>
     <sequenceFlow id="flow3" sourceRef="notifyBackorder" targetRef="fulfillEnd"/>
     <sequenceFlow id="flow4" sourceRef="processPayment" targetRef="shipOrder"/>
     <sequenceFlow id="flow5" sourceRef="shipOrder" targetRef="fulfillEnd"/>
   </subProcess>
-  
+
   <endEvent id="end"/>
-  
+
   <sequenceFlow id="mainFlow1" sourceRef="start" targetRef="orderFulfillment"/>
   <sequenceFlow id="mainFlow2" sourceRef="orderFulfillment" targetRef="end"/>
 </process>
@@ -365,11 +370,14 @@ Handles compensation (undo) operations:
 ### Sending Messages to Event SubProcess
 
 ```java
-// Send message to trigger event subprocess
-runtimeService.sendSignal("cancelOrder", Map.of("orderId", "12345"));
+// Send message to trigger event subprocess (correlate with a specific execution)
+runtimeService.messageEventReceived("cancelOrder", executionId);
 
-// Or using RuntimeService
-runtimeService.sendMessage("cancelOrder", processInstanceId);
+// Or with variables
+runtimeService.messageEventReceived("cancelOrder", executionId, variables);
+
+// Start a new process instance by message
+runtimeService.startProcessInstanceByMessage("cancelOrder");
 ```
 
 ### Sending Signals
@@ -406,7 +414,7 @@ runtimeService.startProcessInstanceByKey("orderProcess", vars);
 ## Common Pitfalls
 
 - **Event Not Triggering** - Check message/signal/error definitions match
-- **Wrong Interrupting Setting** - Verify `isInterrupting` attribute
+- **Wrong Interrupting Setting** - Verify `isInterrupting` attribute is on the **start event**, not the event subprocess
 - **Scope Confusion** - Event subprocess only works within its parent scope
 - **Timer Precision** - Timers may not fire exactly on time
 - **Signal Broadcasting** - Signals trigger ALL matching event subprocesses
@@ -421,4 +429,3 @@ runtimeService.startProcessInstanceByKey("orderProcess", vars);
 - [Start Events](../events/start-event.md) - Process initiation events
 
 ---
-

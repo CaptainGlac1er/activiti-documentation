@@ -21,8 +21,11 @@ Ad-hoc SubProcesses allow activities to be executed in **arbitrary order** based
 </adHocSubProcess>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Completion conditions, user-driven execution
+**BPMN 2.0 Standard:** Fully Supported
+
+The `AdhocSubProcess` model class in Activiti has two standard BPMN 2.0 attributes:
+- **`ordering`** (default: `Parallel`) — controls whether activities execute in parallel or sequentially
+- **`cancelRemainingInstances`** (default: `true`) — whether unfinished activities are cancelled when the subprocess completes
 
 ## Key Features
 
@@ -30,13 +33,7 @@ Ad-hoc SubProcesses allow activities to be executed in **arbitrary order** based
 - **Arbitrary Execution Order** - No fixed sequence
 - **Activity Selection** - Users choose which activities to execute
 - **Completion Condition** - Define when subprocess completes
-- **Parallel Execution** - Multiple activities can run simultaneously
-
-### Activiti Extensions
-- **Dynamic Activity Enabling** - Control which activities are available
-- **Custom Completion Logic** - Complex completion conditions
-- **Variable-Based Conditions** - Runtime evaluation
-- **User Interface Integration** - Task selection UI
+- **Parallel/Sequential Execution** - Controlled by `ordering` attribute
 
 ## Configuration Options
 
@@ -75,59 +72,50 @@ Simple ad-hoc subprocess with multiple activities:
 - Subprocess completes when 2 or more tasks are done
 - Remaining tasks become unavailable
 
-### 2. Ad-hoc SubProcess with Activity Conditions
+### 2. Ad-hoc SubProcess with Parallel Execution
 
-Control which activities are enabled based on conditions:
+The default behavior is parallel (`ordering="Parallel"`), allowing multiple activities to run simultaneously:
 
 ```xml
-<adHocSubProcess id="conditionalAdHoc" name="Conditional Tasks">
+<adHocSubProcess id="parallelAdHoc" name="Parallel Tasks" ordering="Parallel">
   <userTask id="basicReview" name="Basic Review" activiti:assignee="${reviewer}"/>
-  
-  <!-- Only enabled if amount > 10000 -->
-  <userTask id="seniorApproval" name="Senior Approval" 
-            activiti:condition="${orderAmount > 10000}"
-            activiti:assignee="${seniorManager}"/>
-  
-  <!-- Only enabled if international order -->
-  <serviceTask id="customsProcessing" name="Process Customs"
-               activiti:condition="${isInternational}"
-               activiti:class="com.example.CustomsService"/>
-  
+
+  <userTask id="seniorApproval" name="Senior Approval" activiti:assignee="${seniorManager}"/>
+
+  <serviceTask id="customsProcessing" name="Process Customs" activiti:class="com.example.CustomsService"/>
+
   <userTask id="finalSignoff" name="Final Sign-off" activiti:assignee="${director}"/>
-  
+
   <completionCondition>${allRequiredTasksCompleted}</completionCondition>
 </adHocSubProcess>
 ```
 
 **Behavior:**
-- `basicReview` and `finalSignoff` always available
-- `seniorApproval` only available if `orderAmount > 10000`
-- `customsProcessing` only available if `isInternational` is true
+- All activities can be started and run simultaneously
+- Any number of activities can be active at the same time
 - Completion based on custom condition
 
 ### 3. Ad-hoc SubProcess with Sequential Activities
 
-Prevent parallel execution of certain activities:
+Execute activities one at a time using the `ordering` attribute:
 
 ```xml
-<adHocSubProcess id="sequentialAdHoc" name="Sequential Flexible Process">
-  <properties>
-    <property id="seqProp" name="sequential" value="true"/>
-  </properties>
+<adHocSubProcess id="sequentialAdHoc" name="Sequential Flexible Process" ordering="Sequential" cancelRemainingInstances="true">
   
   <userTask id="phase1Task" name="Phase 1 Task" activiti:assignee="${phase1User}"/>
   
-  <userTask id="phase2Task" name="Phase 2 Task" 
-            activiti:condition="${phase1Completed}"
-            activiti:assignee="${phase2User}"/>
+  <userTask id="phase2Task" name="Phase 2 Task" activiti:assignee="${phase2User}"/>
   
-  <userTask id="phase3Task" name="Phase 3 Task"
-            activiti:condition="${phase2Completed}"
-            activiti:assignee="${phase3User}"/>
+  <userTask id="phase3Task" name="Phase 3 Task" activiti:assignee="${phase3User}"/>
   
   <completionCondition>${phase3Completed}</completionCondition>
 </adHocSubProcess>
 ```
+
+**Behavior:**
+- Only one activity can be active at a time
+- Next activity is chosen by the user from available (non-completed) activities
+- Subprocess completes when the completion condition evaluates to true
 
 ### 4. Ad-hoc SubProcess with Multiple Completion Conditions
 
@@ -151,14 +139,10 @@ Complex completion logic:
 
 ### 5. Ad-hoc SubProcess with Cancel Behavior
 
-Define what happens to running activities when subprocess completes:
+Control whether remaining activities are cancelled when the subprocess completes using the `cancelRemainingInstances` attribute:
 
 ```xml
-<adHocSubProcess id="cancelAdHoc" name="Ad-hoc with Cancel">
-  <properties>
-    <!-- Cancel remaining activities on completion -->
-    <property id="cancelProp" name="cancelRemaining" value="true"/>
-  </properties>
+<adHocSubProcess id="cancelAdHoc" name="Ad-hoc with Cancel" cancelRemainingInstances="true">
   
   <userTask id="task1" name="Task 1"/>
   <userTask id="task2" name="Task 2"/>
@@ -167,6 +151,10 @@ Define what happens to running activities when subprocess completes:
   <completionCondition>${completedTasks >= 2}</completionCondition>
 </adHocSubProcess>
 ```
+
+**Behavior:**
+- When completion condition is met, any unfinished activities are automatically cancelled
+- Set `cancelRemainingInstances="false"` to allow remaining activities to stay available
 
 ## Complete Real-World Example
 
@@ -177,39 +165,34 @@ Define what happens to running activities when subprocess completes:
   
   <startEvent id="start"/>
   
-  <adHocSubProcess id="onboardingTasks" name="Complete Onboarding">
-    <properties>
-      <property id="seqProp" name="sequential" value="false"/>
-      <property id="cancelProp" name="cancelRemaining" value="true"/>
-    </properties>
-    
+  <adHocSubProcess id="onboardingTasks" name="Complete Onboarding" ordering="Parallel" cancelRemainingInstances="true">
     <!-- HR Tasks -->
     <userTask id="hrForm" name="Complete HR Forms" activiti:assignee="${newEmployee}" activiti:candidateGroups="hr_department"/>
-    
-    <userTask id="benefitsEnrollment" name="Enroll in Benefits" activiti:assignee="${newEmployee}" activiti:condition="${eligibleForBenefits}"/>
-    
+
+    <userTask id="benefitsEnrollment" name="Enroll in Benefits" activiti:assignee="${newEmployee}"/>
+
     <!-- IT Tasks -->
     <serviceTask id="createAccounts" name="Create System Accounts" activiti:class="com.example.AccountCreationService" activiti:candidateGroups="it_support"/>
-    
+
     <userTask id="equipmentSetup" name="Setup Equipment" activiti:assignee="${itSpecialist}" activiti:candidateGroups="it_support"/>
-    
+
     <!-- Training Tasks -->
     <userTask id="safetyTraining" name="Complete Safety Training" activiti:assignee="${newEmployee}" activiti:formKey="safety-training-form"/>
-    
-    <userTask id="complianceTraining" name="Complete Compliance Training" activiti:assignee="${newEmployee}" activiti:condition="${requiresCompliance}" activiti:formKey="compliance-training-form"/>
-    
+
+    <userTask id="complianceTraining" name="Complete Compliance Training" activiti:assignee="${newEmployee}" activiti:formKey="compliance-training-form"/>
+
     <userTask id="roleTraining" name="Complete Role-Specific Training" activiti:assignee="${newEmployee}" activiti:candidateUsers="${trainingManager}"/>
-    
+
     <!-- Manager Tasks -->
     <userTask id="managerIntro" name="Meet with Manager" activiti:assignee="${manager}" activiti:candidateUsers="${newEmployee},${manager}"/>
-    
+
     <userTask id="teamIntro" name="Team Introduction" activiti:assignee="${teamLead}"/>
-    
+
     <!-- Final Tasks -->
     <serviceTask id="sendWelcomeEmail" name="Send Welcome Email" activiti:class="com.example.WelcomeEmailService"/>
-    
-    <userTask id="onboardingReview" name="Onboarding Review" activiti:assignee="${hrManager}" activiti:condition="${allCoreTasksCompleted}"/>
-    
+
+    <userTask id="onboardingReview" name="Onboarding Review" activiti:assignee="${hrManager}"/>
+
     <!-- Completion: At least 6 core tasks must be completed -->
     <completionCondition>${completedCoreTasks >= 6}</completionCondition>
   </adHocSubProcess>
@@ -222,52 +205,26 @@ Define what happens to running activities when subprocess completes:
 ```
 
 **Behavior:**
-- New employee can complete tasks in any order
-- Some tasks only available based on conditions (benefits, compliance)
+- New employee can complete tasks in any order (parallel execution)
 - Different users/groups can complete different tasks
 - Process completes when 6+ core tasks are done
 - Remaining tasks are cancelled on completion
 
 ## Runtime API
 
-### Getting Available Activities
+Ad-hoc subprocess execution is managed by the engine automatically. There are no dedicated RuntimeService methods for controlling ad-hoc subprocesses. To check the state of a process execution:
 
 ```java
-// Get all enabled activities in ad-hoc subprocess
-List<FlowNode> enabledActivities = runtimeService
-    .getEnabledActivitiesForAdHocSubProcess(executionId);
+// Check current activity
+Execution execution = runtimeService.createExecutionQuery()
+    .processInstanceId(processInstanceId)
+    .singleResult();
 
-// Get completed activities
-List<String> completedActivities = runtimeService
-    .getCompletedActivitiesForAdHocSubProcess(executionId);
+// Complete a user task normally
+taskService.complete(taskId);
 ```
 
-### Starting Specific Activities
-
-```java
-// Start a specific activity in ad-hoc subprocess
-runtimeService.executeActivityForAdHocSubProcess(
-    executionId, 
-    "taskA_id"  // Activity ID to start
-);
-```
-
-### Completing Ad-hoc SubProcess
-
-```java
-// Manually complete ad-hoc subprocess
-runtimeService.completeAdhocSubProcess(executionId);
-```
-
-### Checking Completion Status
-
-```java
-// Check if ad-hoc subprocess is complete
-boolean isComplete = runtimeService.isAdHocSubProcessComplete(executionId);
-
-// Get completion condition result
-boolean conditionMet = runtimeService.evaluateAdHocCompletionCondition(executionId);
-```
+Completion of the ad-hoc subprocess is driven by the `<completionCondition>` expression evaluating to true.
 
 ## Best Practices
 

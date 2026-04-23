@@ -193,10 +193,7 @@ public class VariableOperationsDelegate implements JavaDelegate {
         if (execution.hasVariable("optionalVar")) {
             Object optional = execution.getVariable("optionalVar");
         }
-        
-        // Get variable with default
-        Object withDefault = execution.getVariable("maybeMissing", "defaultValue");
-        
+
         // Set variable (process scope)
         execution.setVariable("result", "completed");
         execution.setVariable("timestamp", new Date());
@@ -231,24 +228,18 @@ public class ExecutionContextDelegate implements JavaDelegate {
         
         // Process definition ID
         String processDefinitionId = execution.getProcessDefinitionId();
-        
-        // Process definition key
-        String processDefinitionKey = execution.getProcessDefinitionKey();
-        
+
         // Current activity ID
-        String activityId = execution.getActivityId();
-        
-        // Current user (if available)
-        String currentUser = execution.getCurrentUserId();
-        
+        String activityId = execution.getCurrentActivityId();
+
         // Business key
         String businessKey = execution.getProcessInstanceBusinessKey();
-        
+
         // Parent execution (for subprocesses)
         DelegateExecution parent = execution.getParent();
-        
+
         // Child executions
-        List<DelegateExecution> children = execution.getChildExecutions();
+        List<? extends DelegateExecution> children = execution.getExecutions();
         
         // Check if multi-instance
         boolean isMultiInstance = execution.isMultiInstanceRoot();
@@ -263,24 +254,18 @@ public class FlowControlDelegate implements JavaDelegate {
     
     @Override
     public void execute(DelegateExecution execution) {
-        // Get incoming sequence flows
-        List<String> incomingFlows = execution.getIncomingFlowIds();
-        
-        // Get outgoing sequence flows
-        List<String> outgoingFlows = execution.getOutgoingFlowIds();
-        
         // Set variable to control gateway
         execution.setVariable("decision", "optionA");
-        
+
         // Throw error to trigger boundary event
         if (someCondition) {
             throw new ActivitiException("Business rule violated");
         }
-        
+
         // Throw BPMN error for specific error handling
+        // BpmnError extends ActivitiException — throw it directly
         if (errorCondition) {
-            BpmnError bpmnError = new BpmnError("VALIDATION_ERROR", "Validation failed");
-            throw new ActivitiException(bpmnError);
+            throw new BpmnError("VALIDATION_ERROR", "Validation failed");
         }
     }
 }
@@ -293,17 +278,17 @@ public class ProcessInstanceDelegate implements JavaDelegate {
     
     @Override
     public void execute(DelegateExecution execution) {
-        // Get process instance
-        ProcessInstance processInstance = execution.getProcessInstance();
-        
-        // Process instance details
-        String processInstanceId = processInstance.getId();
-        String processDefinitionId = processInstance.getProcessDefinitionId();
-        String businessKey = processInstance.getBusinessKey();
+        // Process instance ID (always available on DelegateExecution)
+        String processInstanceId = execution.getProcessInstanceId();
+        String businessKey = execution.getProcessInstanceBusinessKey();
+
+        // For full process instance details, query via RuntimeService:
+        ProcessEngineConfiguration config = execution.getEngineServices();
+        ProcessInstance processInstance = config.getRuntimeService()
+            .createProcessInstanceQuery()
+            .processInstanceId(processInstanceId)
+            .singleResult();
         String startDate = processInstance.getStartDate().toString();
-        
-        // Update business key
-        // execution.getProcessInstance().setBusinessKey("new-key"); // Not directly available
         
         // Get process engine services
         ProcessEngineConfiguration config = execution.getEngineServices();
@@ -416,7 +401,6 @@ public class DataTransformationDelegate implements JavaDelegate {
             
             // Add metadata
             transformedData.put("transformedAt", new Date());
-            transformedData.put("transformedBy", execution.getCurrentUserId());
         }
         
         // Set transformed data
@@ -467,9 +451,9 @@ public class ValidationDelegate implements JavaDelegate {
             
             // Option 2: Throw exception to trigger boundary event
             throw new ActivitiException("Validation failed: " + String.join(", ", errors));
-            
+
             // Option 3: Throw BPMN error for specific handling
-            // throw new ActivitiException(new BpmnError("VALIDATION_ERROR", errors.toString()));
+            // throw new BpmnError("VALIDATION_ERROR", errors.toString());
         } else {
             execution.setVariable("validationPassed", true);
         }
@@ -486,22 +470,18 @@ public class MultiInstanceDelegate implements JavaDelegate {
     public void execute(DelegateExecution execution) {
         // Check if running in multi-instance
         if (execution.isMultiInstanceRoot()) {
-            // Get multi-instance collection
-            List<Object> collection = (List<Object>) execution.getVariable(
-                execution.getMultiInstanceVariableName()
-            );
-            
-            // Get current index
-            Integer currentIndex = execution.getLoopCounter();
-            
-            // Get current element
-            Object currentElement = collection.get(currentIndex - 1);
+            // Get multi-instance collection — use the variable name from your BPMN definition
+            List<Object> collection = (List<Object>) execution.getVariable("orderCollection");
+
+            // Current element variable — set by engine from BPMN collection config
+            Object currentElement = execution.getVariable("orderItem");
             
             // Process current element
             processElement(currentElement, execution);
             
-            // Set completion condition
-            if (currentIndex >= collection.size()) {
+            // Set completion condition — check against collection size
+            // The engine sets loop variables based on BPMN configuration
+            if (execution.isEnded()) {
                 execution.setVariable("allProcessed", true);
             }
         } else {
@@ -658,7 +638,6 @@ public class DataEnrichmentDelegate implements JavaDelegate {
         
         // 6. Set enrichment timestamp
         execution.setVariable("enrichmentTimestamp", new Date());
-        execution.setVariable("enrichedBy", execution.getCurrentUserId());
     }
 }
 ```

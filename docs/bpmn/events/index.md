@@ -41,11 +41,10 @@ Events represent **something that happens** during the execution of a process. T
 2. **Timer Events** - Time-based triggers
 3. **Signal Events** - Broadcast communication
 4. **Error Events** - Exception handling
-5. **Conditional Events** - Condition-based triggers
-6. **Link Events** - Internal process jumps
-7. **Compensate Events** - Compensation handling
-8. **Terminate Events** - Immediate termination
-9. **Cancel Events** - Sub-process cancellation
+5. **Link Events** - Internal process jumps
+6. **Compensate Events** - Compensation handling
+7. **Terminate Events** - Immediate termination
+8. **Cancel Events** - Sub-process cancellation
 
 ## Event Definitions
 
@@ -107,14 +106,6 @@ Events represent **something that happens** during the execution of a process. T
 <error id="paymentError" name="Payment Error" errorCode="PAY001"/>
 ```
 
-### Conditional Event Definition
-
-```xml
-<conditionalEventDefinition>
-  <condition>${orderAmount > 10000}</condition>
-</conditionalEventDefinition>
-```
-
 ### Link Event Definition
 
 ```xml
@@ -155,17 +146,7 @@ Events represent **something that happens** during the execution of a process. T
   </timerEventDefinition>
 </startEvent>
 
-<!-- Signal start event -->
-<startEvent id="signalStart" name="External Trigger">
-  <signalEventDefinition signalRef="processTrigger"/>
-</startEvent>
-
-<!-- Conditional start event -->
-<startEvent id="conditionalStart" name="Condition Met">
-  <conditionalEventDefinition>
-    <condition>${systemReady}</condition>
-  </conditionalEventDefinition>
-</startEvent>
+<!-- Timer and signal start events are only supported within event sub-processes -->
 
 <!-- Multiple start events (any can trigger) -->
 <startEvent id="altStart1">
@@ -201,13 +182,6 @@ Events represent **something that happens** during the execution of a process. T
 <!-- Signal catch -->
 <intermediateCatchEvent id="waitForSignal" name="Wait for Signal">
   <signalEventDefinition signalRef="globalSignal"/>
-</intermediateCatchEvent>
-
-<!-- Conditional catch -->
-<intermediateCatchEvent id="waitForCondition" name="Wait for Condition">
-  <conditionalEventDefinition>
-    <condition>${status == 'READY'}</condition>
-  </conditionalEventDefinition>
 </intermediateCatchEvent>
 
 <!-- Multiple event definitions (any can trigger) -->
@@ -286,10 +260,7 @@ Events represent **something that happens** during the execution of a process. T
   <errorEventDefinition errorRef="ProcessError"/>
 </endEvent>
 
-<!-- Signal end -->
-<endEvent id="signalEnd" name="Completed with Signal">
-  <signalEventDefinition signalRef="processFinished"/>
-</endEvent>
+<!-- Signal end events are NOT supported — they fall through to none end event behavior -->
 
 <!-- Message end -->
 <endEvent id="messageEnd" name="Send Completion Message">
@@ -347,7 +318,7 @@ Events represent **something that happens** during the execution of a process. T
 **Runtime Message Correlation:**
 ```java
 // Send message to correlate
-runtimeService.sendMessage("orderMessage", processInstanceId, 
+runtimeService.messageEventReceived("orderMessage", processInstanceId, 
     Map.of("orderId", "12345"));
 ```
 
@@ -402,7 +373,7 @@ runtimeService.signalEventReceived("globalSignal",
 **Throw Errors:**
 ```java
 // In JavaDelegate
-throw new ActivitiException("PAY001", "Payment failed");
+throw new ActivitiError("PAY001", "Payment failed");
 ```
 
 ## Best Practices
@@ -434,7 +405,7 @@ throw new ActivitiException("PAY001", "Payment failed");
 
 ```java
 // Send message to specific process instance
-runtimeService.sendMessage("orderReceived", processInstanceId);
+runtimeService.messageEventReceived("orderReceived", processInstanceId);
 
 // Send message to start process
 ProcessInstance process = runtimeService.startProcessInstanceByMessage("orderReceived");

@@ -32,17 +32,13 @@ Intermediate Events occur **during process execution** between the start and end
 - **Message** - Wait for external message
 - **Timer** - Wait for time condition
 - **Signal** - Wait for global signal
-- **Conditional** - Wait for condition to be true
-- **Error** - Catch errors
 - **Link** - Jump from link throw event
-- **Escalation** - Wait for escalation
 
 ### Throw Events (Trigger Events)
 - **Message** - Send message to external system
 - **Signal** - Broadcast signal globally
 - **Link** - Jump to link catch event
 - **Compensate** - Trigger compensation
-- **Escalation** - Throw escalation
 
 ## Configuration Options
 
@@ -195,39 +191,7 @@ Send a global signal:
 
 **Use Case:** Notify other processes of completion
 
-### 4. Conditional Intermediate Events
-
-Wait for a condition to become true:
-
-```xml
-<intermediateCatchEvent id="waitForCondition">
-  <conditionalEventDefinition>
-    <condition>${orderStatus == 'APPROVED'}</condition>
-  </conditionalEventDefinition>
-</intermediateCatchEvent>
-```
-
-**Configuration:**
-- Condition is evaluated periodically
-- Process continues when condition becomes true
-- Can be interrupting or non-interrupting
-
-### 5. Error Intermediate Events
-
-Catch errors from downstream activities:
-
-```xml
-<intermediateCatchEvent id="catchError">
-  <errorEventDefinition errorRef="PaymentError"/>
-</intermediateCatchEvent>
-```
-
-**Error Definition:**
-```xml
-<error id="PaymentError" name="Payment Error" errorCode="PAY001"/>
-```
-
-### 6. Link Intermediate Events
+### 4. Link Intermediate Events
 
 Create internal process jumps:
 
@@ -249,7 +213,7 @@ Create internal process jumps:
 
 **Use Case:** Avoid complex flow lines, create clear jump points
 
-### 7. Compensate Intermediate Events
+### 5. Compensate Intermediate Events
 
 Trigger compensation (undo) operations:
 
@@ -261,63 +225,7 @@ Trigger compensation (undo) operations:
 
 **Use Case:** Rollback completed activities
 
-### 8. Escalation Intermediate Events
-
-#### Catch Escalation
-
-```xml
-<intermediateCatchEvent id="catchEscalation">
-  <escalationEventDefinition escalationCode="ESCALATION_001"/>
-</intermediateCatchEvent>
-```
-
-#### Throw Escalation
-
-```xml
-<intermediateThrowEvent id="throwEscalation">
-  <escalationEventDefinition escalationCode="ESCALATION_001"/>
-</intermediateThrowEvent>
-```
-
 ## Advanced Features
-
-### Non-Interrupting Boundary Events
-
-Events that don't cancel the current activity:
-
-```xml
-<!-- Non-interrupting timer boundary event on a UserTask -->
-<userTask id="longRunningTask" name="Long Running Task">
-  <boundaryEvent id="progressUpdate" cancelActivity="false">
-    <timerEventDefinition>
-      <timeDuration>PT1H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-</userTask>
-```
-
-### Multi-Instance with Events
-
-```xml
-<userTask id="reviewTask" name="Review">
-  <multiInstanceLoopCharacteristics 
-    isSequential="false"
-    activiti:collection="${reviewers}">
-    
-    <startEvent id="miStart"/>
-    <task id="miTask"/>
-    <endEvent id="miEnd"/>
-    
-    <!-- Event within multi-instance -->
-    <intermediateCatchEvent id="waitForAll">
-      <timerEventDefinition>
-        <timeDuration>PT30M</timeDuration>
-      </timerEventDefinition>
-    </intermediateCatchEvent>
-    
-  </multiInstanceLoopCharacteristics>
-</userTask>
-```
 
 ## Complete Examples
 
@@ -364,32 +272,6 @@ Events that don't cancel the current activity:
   </sequenceFlow>
   <sequenceFlow id="flow7" sourceRef="processOrder" targetRef="notifyCompletion"/>
   <sequenceFlow id="flow8" sourceRef="notifyCompletion" targetRef="end"/>
-</process>
-```
-
-### Example 2: Conditional Wait
-
-```xml
-<process id="approvalProcess" name="Approval Process">
-  <startEvent id="start"/>
-  
-  <userTask id="submitRequest" name="Submit Request"/>
-  
-  <!-- Wait until approved -->
-  <intermediateCatchEvent id="waitForApproval">
-    <conditionalEventDefinition>
-      <condition>${requestStatus == 'APPROVED'}</condition>
-    </conditionalEventDefinition>
-  </intermediateCatchEvent>
-  
-  <serviceTask id="processRequest" name="Process Request"/>
-  
-  <endEvent id="end"/>
-  
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="submitRequest"/>
-  <sequenceFlow id="flow2" sourceRef="submitRequest" targetRef="waitForApproval"/>
-  <sequenceFlow id="flow3" sourceRef="waitForApproval" targetRef="processRequest"/>
-  <sequenceFlow id="flow4" sourceRef="processRequest" targetRef="end"/>
 </process>
 ```
 

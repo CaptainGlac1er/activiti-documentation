@@ -262,9 +262,13 @@ public ProcessEngineConfiguration processEngineConfiguration() {
     config.setAsyncExecutorMaxPoolSize(10);
     config.setAsyncExecutorThreadPoolQueueSize(1000);
     
-    // Configure job acquisition
+    // Configure async job acquisition
     config.setAsyncExecutorMaxAsyncJobsDuePerAcquisition(10);
     config.setAsyncExecutorDefaultAsyncJobAcquireWaitTime(1000);
+    
+    // Configure timer job acquisition
+    config.setAsyncExecutorMaxTimerJobsPerAcquisition(1);    // Timer jobs per query (default: 1)
+    config.setAsyncExecutorDefaultTimerJobAcquireWaitTime(10000); // Wait between timer acquisitions (default: 10000ms)
     
     // Configure lock times
     config.setAsyncJobLockTimeInMillis(300000);  // 5 minutes
@@ -281,7 +285,7 @@ public ProcessEngineConfiguration processEngineConfiguration() {
     // Advanced: Reset expired jobs configuration
     // Interval for checking and resetting expired jobs (0 = disabled)
     config.setResetExpiredJobsInterval(60000);  // Check every minute
-    config.setResetExpiredJobsPageSize(100);     // Process 100 jobs per check
+    config.setResetExpiredJobsPageSize(3);       // Process 3 jobs per check (default)
     
     return config;
 }
@@ -302,7 +306,9 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 | `setRetryWaitTimeInMillis(long)` | Wait between retries (ms) | 500 |
 | `setDefaultQueueSizeFullWaitTimeInMillis(long)` | Wait when queue full (ms) | 1000 |
 | `setResetExpiredJobsInterval(long)` | Expired job check interval (ms) | 0 (disabled) |
-| `setResetExpiredJobsPageSize(int)` | Jobs per expired check | 100 |
+| `setResetExpiredJobsPageSize(int)` | Jobs per expired check | 3 |
+| `setAsyncExecutorMaxTimerJobsPerAcquisition(int)` | Timer jobs fetched per query | 1 |
+| `setAsyncExecutorDefaultTimerJobAcquireWaitTime(int)` | Wait between timer acquisitions (ms) | 10000 |
 
 ### AsyncExecutor vs JobExecutor
 

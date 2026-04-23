@@ -217,12 +217,32 @@ If no completion condition is specified, the multi-instance completes when **all
 
 Multi-instance activities provide these **automatic variables**:
 
-| Variable                 | Description                   | Sequential | Parallel |
-|--------------------------|-------------------------------|------------|----------|
-| `nrOfInstances`          | Total number of instances     | ✅         | ✅       |
-| `nrOfCompletedInstances` | Number of completed instances | ✅         | ✅       |
-| `loopCounter`            | Current iteration (1-based)   | ✅         | ❌       |
-| `elementVariable`        | Current collection element    | ✅         | ✅       |
+| Variable                 | Description                          | Sequential | Parallel |
+|--------------------------|--------------------------------------|------------|----------|
+| `nrOfInstances`          | Total number of instances             | ✅         | ✅       |
+| `nrOfActiveInstances`    | Number of currently active instances  | ✅         | ✅       |
+| `nrOfCompletedInstances` | Number of completed instances         | ✅         | ✅       |
+| `loopCounter`            | Current iteration index (0-based)     | ✅         | ✅       |
+| `<elementVariable>`      | Current collection element (name varies) | ✅      | ✅       |
+
+**Notes:**
+- `loopCounter` is the 0-based index of the current instance. Its variable name defaults to `loopCounter` but can be customized with `activiti:elementIndexVariable`.
+- `<elementVariable>` refers to the name set via `activiti:elementVariable` (e.g., if `activiti:elementVariable="item"`, the variable is called `item`).
+- All counter variables (`nrOfInstances`, `nrOfActiveInstances`, `nrOfCompletedInstances`) are set on the **multi-instance scope execution** (parent), not on individual child executions. Child executions can access them through variable inheritance.
+- `loopCounter` and the element variable are **local** to each child execution.
+
+### elementIndexVariable
+
+By default, the loop index variable is named `loopCounter`. Use `activiti:elementIndexVariable` to customize it:
+
+```xml
+<multiInstanceLoopCharacteristics 
+  isSequential="false"
+  activiti:collection="${items}"
+  activiti:elementVariable="item"
+  activiti:elementIndexVariable="itemIndex">
+</multiInstanceLoopCharacteristics>
+```
 
 ### Using Built-in Variables
 
@@ -240,15 +260,16 @@ Multi-instance activities provide these **automatic variables**:
 ```java
 // In delegate
 public void execute(DelegateExecution execution) {
-    // Get current item
+    // Get current item (local to this child execution)
     Object currentItem = execution.getVariable("item");
     
-    // Get loop counter (sequential only)
+    // Get loop counter (available in both sequential and parallel)
     Integer counter = (Integer) execution.getVariable("loopCounter");
     
-    // Get completion stats
+    // Get completion stats (on parent execution scope)
     Integer completed = (Integer) execution.getVariable("nrOfCompletedInstances");
     Integer total = (Integer) execution.getVariable("nrOfInstances");
+    Integer active = (Integer) execution.getVariable("nrOfActiveInstances");
 }
 ```
 
@@ -256,9 +277,11 @@ public void execute(DelegateExecution execution) {
 
 Map data to and from each instance.
 
+**Important:** The `inputDataItem` and `outputDataItem` elements are parsed from the `name` attribute only — they do **not** support nested `<assignment>`/`<from>`/`<to>` children. Use simple attribute syntax.
+
 ### Input Data Items
 
-Pass data **into** each instance:
+The `inputDataItem` name attribute maps to the `elementVariable`. It specifies what variable name to use for the current collection element inside each instance:
 
 ```xml
 <multiInstanceLoopCharacteristics 
@@ -266,41 +289,24 @@ Pass data **into** each instance:
   activiti:collection="${reviewers}"
   activiti:elementVariable="reviewer">
   
-  <!-- Input to each instance -->
-  <inputDataItem name="reviewerId">
-    <assignment>
-      <from>${reviewer.id}</from>
-      <to>${reviewerId}</to>
-    </assignment>
-  </inputDataItem>
-  
-  <inputDataItem name="reviewerName">
-    <assignment>
-      <from>${reviewer.name}</from>
-      <to>${reviewerName}</to>
-    </assignment>
-  </inputDataItem>
+  <!-- Maps collection element to 'reviewer' variable in each instance -->
+  <inputDataItem name="reviewer"/>
   
 </multiInstanceLoopCharacteristics>
 ```
 
 ### Output Data Items
 
-Collect results **from** each instance:
+The `outputDataItem` name attribute specifies the variable name used to collect results from each instance. Results are aggregated into a collection:
 
 ```xml
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${reviewers}"
-  activiti:elementVariable="reviewer">
+  activiti:elementVariable="reviewer"
+  activiti:outputDataItem="reviewResult">
   
-  <!-- Output from each instance -->
-  <outputDataItem name="reviewResult" collection="${reviewResults}">
-    <assignment>
-      <from>${review}</from>
-      <to>${reviewResult}</to>
-    </assignment>
-  </outputDataItem>
+  <!-- Each instance should set 'reviewResult' variable -->
   
 </multiInstanceLoopCharacteristics>
 ```
@@ -308,7 +314,7 @@ Collect results **from** each instance:
 ### Complete Input/Output Example
 
 ```xml
-<userTask id="approvalTask" name="Approve Document"  activiti:assignee="${approver.email}">
+<userTask id="approvalTask" name="Approve Document" activiti:assignee="${approver.email}">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${approvers}"
@@ -316,34 +322,22 @@ Collect results **from** each instance:
     
     <completionCondition>${nrOfCompletedInstances >= 2}</completionCondition>
     
-    <!-- Input: Pass approver info to each instance -->
-    <inputDataItem name="approverName">
-      <assignment>
-        <from>${approver.name}</from>
-        <to>${approverName}</to>
-      </assignment>
-    </inputDataItem>
-    
-    <inputDataItem name="approverEmail">
-      <assignment>
-        <from>${approver.email}</from>
-        <to>${approverEmail}</to>
-      </assignment>
-    </inputDataItem>
-    
-    <!-- Output: Collect approval results -->
-    <outputDataItem name="approvalResult" collection="${approvalResults}">
-      <assignment>
-        <from>${approved}</from>
-        <to>${approvalResult}</to>
-      </assignment>
-    </outputDataItem>
-    
   </multiInstanceLoopCharacteristics>
   <extensionElements>
     <activiti:formProperty name="approved" type="bool"/>
   </extensionElements>
 </userTask>
+```
+
+**Note:** Each child execution receives the current collection element as the variable named by `activiti:elementVariable` (here: `approver`). To collect results, have each instance set a variable and reference it with the `outputDataItem` attribute:
+
+```xml
+<multiInstanceLoopCharacteristics 
+  isSequential="false"
+  activiti:collection="${approvers}"
+  activiti:elementVariable="approver"
+  activiti:outputDataItem="approvalResult">
+</multiInstanceLoopCharacteristics>
 ```
 
 ## Complete Examples
@@ -360,19 +354,14 @@ Collect results **from** each instance:
     <!-- Complete when all approve -->
     <completionCondition>${approvedCount == nrOfInstances}</completionCondition>
     
-    <!-- Pass approver details -->
-    <inputDataItem name="approverName">
-      <assignment>
-        <from>${approver.name}</from>
-        <to>${approverName}</to>
-      </assignment>
-    </inputDataItem>
+    <!-- The 'approver' variable contains the current element from the collection -->
     
   </multiInstanceLoopCharacteristics>
   <extensionElements>
     <activiti:formProperty name="approved" type="bool"/>
   </extensionElements>
 </userTask>
+```
 ```
 
 ### Example 2: Parallel Notifications
@@ -382,66 +371,34 @@ Collect results **from** each instance:
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${recipients}"
-    activiti:elementVariable="recipient">
+    activiti:elementVariable="recipient"
+    activiti:outputDataItem="deliveryStatus">
     
     <!-- Complete when all sent -->
     <completionCondition>${nrOfCompletedInstances == nrOfInstances}</completionCondition>
     
-    <!-- Input: recipient data -->
-    <inputDataItem name="recipientEmail">
-      <assignment>
-        <from>${recipient.email}</from>
-        <to>${recipientEmail}</to>
-      </assignment>
-    </inputDataItem>
-    
-    <inputDataItem name="recipientName">
-      <assignment>
-        <from>${recipient.name}</from>
-        <to>${recipientName}</to>
-      </assignment>
-    </inputDataItem>
-    
-    <!-- Output: delivery status -->
-    <outputDataItem name="deliveryStatus" collection="${deliveryResults}">
-      <assignment>
-        <from>${sent}</from>
-        <to>${deliveryStatus}</to>
-      </assignment>
-    </outputDataItem>
+    <!-- 'recipient' contains the current collection element in each instance -->
+    <!-- Service task should set 'deliveryStatus' variable for output aggregation -->
     
   </multiInstanceLoopCharacteristics>
-
 </serviceTask>
 ```
 
 ### Example 3: Batch Processing with Retry
 
 ```xml
-<serviceTask id="batchProcess" name="Process Batch"  activiti:class="com.example.BatchProcessor" activiti:async="true">
+<serviceTask id="batchProcess" name="Process Batch" activiti:class="com.example.BatchProcessor" activiti:async="true">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${batchItems}"
-    activiti:elementVariable="item">
+    activiti:elementVariable="item"
+    activiti:outputDataItem="processResult">
     
     <!-- Complete when 95% processed successfully -->
     <completionCondition>${successCount / nrOfInstances >= 0.95}</completionCondition>
     
-    <!-- Input: item data -->
-    <inputDataItem name="itemId">
-      <assignment>
-        <from>${item.id}</from>
-        <to>${itemId}</to>
-      </assignment>
-    </inputDataItem>
-    
-    <!-- Output: processing result -->
-    <outputDataItem name="processResult" collection="${results}">
-      <assignment>
-        <from>${result}</from>
-        <to>${processResult}</to>
-      </assignment>
-    </outputDataItem>
+    <!-- 'item' contains the current collection element in each instance -->
+    <!-- Service task should set 'processResult' variable for output aggregation -->
     
   </multiInstanceLoopCharacteristics>
   <extensionElements>
@@ -490,7 +447,8 @@ Collect results **from** each instance:
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${voters}"
-    activiti:elementVariable="voter">
+    activiti:elementVariable="voter"
+    activiti:outputDataItem="voteResult">
     
     <!-- Complete when majority votes OR all voted -->
     <completionCondition>
@@ -499,21 +457,8 @@ Collect results **from** each instance:
        nrOfCompletedInstances == nrOfInstances}
     </completionCondition>
     
-    <!-- Input: voter info -->
-    <inputDataItem name="voterName">
-      <assignment>
-        <from>${voter.name}</from>
-        <to>${voterName}</to>
-      </assignment>
-    </inputDataItem>
-    
-    <!-- Output: vote result -->
-    <outputDataItem name="voteResult" collection="${votes}">
-      <assignment>
-        <from>${vote}</from>
-        <to>${voteResult}</to>
-      </assignment>
-    </outputDataItem>
+    <!-- 'voter' contains the current collection element in each instance -->
+    <!-- User task should set 'vote' variable, collected into 'voteResult' via outputDataItem -->
     
   </multiInstanceLoopCharacteristics>
   <extensionElements>
@@ -617,18 +562,18 @@ Listeners must be inside `extensionElements`:
 </multiInstanceLoopCharacteristics>
 ```
 
-### 3. Use Input/Output Data Items
+### 3. Use elementVariable and outputDataItem
 
 ```xml
-<!-- GOOD: Explicit data mapping -->
-<inputDataItem name="itemId">
-  <assignment>
-    <from>${item.id}</from>
-    <to>${itemId}</to>
-  </assignment>
-</inputDataItem>
+<!-- GOOD: Use elementVariable to pass data, outputDataItem to collect results -->
+<multiInstanceLoopCharacteristics
+  isSequential="false"
+  activiti:collection="${items}"
+  activiti:elementVariable="item"
+  activiti:outputDataItem="result">
+</multiInstanceLoopCharacteristics>
 
-<!-- BAD: Relying on global variables -->
+<!-- BAD: Relying on global variables without clear mapping -->
 <!-- Hard to track which instance set what -->
 ```
 

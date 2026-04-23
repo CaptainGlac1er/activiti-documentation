@@ -16,19 +16,17 @@ public interface DelegateExecution extends VariableScope {
     // Execution context methods
     String getId();
     String getProcessInstanceId();
+    String getRootProcessInstanceId();
     String getProcessDefinitionId();
-    String getActivityId();
-    
-    // Variable access (inherits from VariableScope)
-    Object getVariable(String variableName);
-    void setVariable(String variableName, Object value);
-    
-    // Flow control
-    List<String> getIncomingFlowIds();
-    List<String> getOutgoingFlowIds();
-    
-    // Process instance access
-    ProcessInstance getProcessInstance();
+    String getCurrentActivityId();
+    String getTenantId();
+
+    // Flow element access
+    FlowElement getCurrentFlowElement();
+
+    // Execution hierarchy
+    DelegateExecution getParent();
+    List<? extends DelegateExecution> getExecutions();
 
     // Engine access
     ProcessEngineConfiguration getEngineServices();
@@ -57,16 +55,9 @@ public class ExecutionIdDelegate implements JavaDelegate {
         String processDefinitionId = execution.getProcessDefinitionId();
         // Example: "orderProcess:1:abc123"
         
-        // Process definition key
-        String processDefinitionKey = execution.getProcessDefinitionKey();
-        // Example: "orderProcess"
-        
         // Current activity ID
-        String activityId = execution.getActivityId();
-        
-        // Current user (if available)
-        String currentUser = execution.getCurrentUserId();
-        
+        String activityId = execution.getCurrentActivityId();
+
         // Tenant ID (for multi-tenant)
         String tenantId = execution.getTenantId();
     }
@@ -95,21 +86,15 @@ public class VariableAccessDelegate implements JavaDelegate {
         if (execution.hasVariable("optionalVar")) {
             Object optional = execution.getVariable("optionalVar");
         }
-        
-        // Get with default
-        Object withDefault = execution.getVariable("maybeMissing", "default");
-        
+
         // Get all variable names
         Set<String> variableNames = execution.getVariableNames();
-        
+
         // Get all variables
         Map<String, Object> allVariables = execution.getVariables();
-        
+
         // Remove variable
         execution.removeVariable("obsolete");
-        
-        // Remove all variables
-        execution.clearVariables();
     }
 }
 ```
@@ -163,45 +148,36 @@ public class TypedVariableDelegate implements JavaDelegate {
         Integer count = execution.getVariable("itemCount", Integer.class);
         Double amount = execution.getVariable("totalAmount", Double.class);
         Date created = execution.getVariable("createdAt", Date.class);
-        
-        // Get variable with type and default
-        String withDefault = execution.getVariable("optional", String.class, "default");
-        
-        // Set strongly-typed variables
-        execution.setVariable("name", "John Doe", String.class);
-        execution.setVariable("count", 42, Integer.class);
     }
 }
 ```
 
 ## Process Instance Access
 
-### Getting Process Instance
+### Process Instance Identification
+
+DelegateExecution provides process instance identification directly. For full process instance details (name, start date, version), query via the RuntimeService:
 
 ```java
 public class ProcessInstanceDelegate implements JavaDelegate {
-    
+
     @Override
     public void execute(DelegateExecution execution) {
-        // Get process instance
-        ProcessInstance processInstance = execution.getProcessInstance();
-        
-        // Process instance properties
-        String processInstanceId = processInstance.getId();
-        String processDefinitionId = processInstance.getProcessDefinitionId();
-        String processDefinitionKey = processInstance.getProcessDefinitionKey();
-        String processDefinitionName = processInstance.getProcessDefinitionName();
-        String businessKey = processInstance.getBusinessKey();
-        Date startDate = processInstance.getStartDate();
-        String superProcessInstanceId = processInstance.getSuperProcessInstanceId();
-        String superCaseInstanceId = processInstance.getSuperCaseInstanceId();
-        String rootProcessInstanceId = processInstance.getRootProcessInstanceId();
-        
-        // Version info
-        int definitionVersion = processInstance.getProcessDefinitionVersion();
-        
-        // State
-        boolean isEnded = processInstance.isEnded(); // Usually false during execution
+        // Process instance ID (always available)
+        String processInstanceId = execution.getProcessInstanceId();
+
+        // Root process instance ID (for sub-processes)
+        String rootProcessInstanceId = execution.getRootProcessInstanceId();
+
+        // Check if this is the root execution
+        boolean isRoot = execution.isRootExecution();
+
+        // For full process instance details, use RuntimeService
+        ProcessEngineConfiguration config = execution.getEngineServices();
+        ProcessInstance processInstance = config.getRuntimeService()
+            .createProcessInstanceQuery()
+            .processInstanceId(processInstanceId)
+            .singleResult();
     }
 }
 ```
@@ -248,18 +224,20 @@ public class ExecutionHierarchyDelegate implements JavaDelegate {
         }
         
         // Get child executions
-        List<DelegateExecution> children = execution.getChildExecutions();
-        
+        List<? extends DelegateExecution> children = execution.getExecutions();
+
         for (DelegateExecution child : children) {
-            String childActivityId = child.getActivityId();
+            String childActivityId = child.getCurrentActivityId();
             Object childVar = child.getVariable("childVar");
         }
-        
-        // Get root execution
-        DelegateExecution root = execution.getRootProcessInstance();
-        
-        // Set variable at root level (process-wide)
-        root.setVariable("processWideVar", "value");
+
+        // Navigate to root by walking parent chain
+        DelegateExecution current = execution;
+        while (current.getParent() != null) {
+            current = current.getParent();
+        }
+        // current is now the root execution
+        current.setVariable("processWideVar", "value");
     }
 }
 ```
@@ -268,35 +246,27 @@ public class ExecutionHierarchyDelegate implements JavaDelegate {
 
 ```java
 public class MultiInstanceDelegate implements JavaDelegate {
-    
+
     @Override
     public void execute(DelegateExecution execution) {
         // Check if multi-instance
         boolean isMultiInstance = execution.isMultiInstanceRoot();
-        
+
         if (isMultiInstance) {
-            // Get multi-instance collection variable name
-            String collectionVarName = execution.getMultiInstanceVariableName();
-            
-            // Get the collection
-            List<Object> collection = (List<Object>) execution.getVariable(collectionVarName);
-            
-            // Get current loop counter (1-based)
-            Integer loopCounter = execution.getLoopCounter();
-            
-            // Get total number of instances
-            Integer totalInstances = execution.getMultiInstanceTotalInstances();
-            
-            // Get current element in collection
-            if (collection != null && loopCounter != null) {
-                Object currentElement = collection.get(loopCounter - 1);
-            }
-            
-            // Set completion condition
-            execution.setVariable("completedInstances", loopCounter);
-            
-            // Check if all instances completed
-            boolean allCompleted = loopCounter >= totalInstances;
+            // The collection variable name is defined in the BPMN model
+            // (e.g., <activiti:collectionElements="orderCollection"/>)
+            // You must know the variable name from your process definition.
+            List<Object> collection = (List<Object>) execution.getVariable("orderCollection");
+
+            // Multi-instance loop data variables are set as process variables
+            // by the engine. Access them by their configured variable names.
+            // There is no getLoopCounter() on DelegateExecution — the engine
+            // sets the loop variable for each iteration.
+            Object loopElement = execution.getVariable("orderItem");
+
+            // Set completion condition variable
+            // (defined in <completionCondition>${nrOfCompletedInstances >= nrOfInstances}</completionCondition>)
+            execution.setVariable("completedInstances", 1);
         }
     }
 }
@@ -304,34 +274,29 @@ public class MultiInstanceDelegate implements JavaDelegate {
 
 ## Flow Control
 
-### Sequence Flow Information
+### Current Activity Information
 
 ```java
 public class FlowInfoDelegate implements JavaDelegate {
-    
+
     @Override
     public void execute(DelegateExecution execution) {
-        // Get incoming sequence flow IDs
-        List<String> incomingFlows = execution.getIncomingFlowIds();
-        
-        // Get outgoing sequence flow IDs
-        List<String> outgoingFlows = execution.getOutgoingFlowIds();
-        
-        // Determine which path was taken
-        if (incomingFlows.contains("flowFromApproval")) {
-            execution.setVariable("approvedPath", true);
-        }
-        
-        // Prepare for next gateway
-        if (outgoingFlows.size() > 1) {
-            // Multiple paths available - set variable to control
+        // Current activity ID
+        String activityId = execution.getCurrentActivityId();
+
+        // Current flow element (the BPMN element the execution is currently on)
+        FlowElement flowElement = execution.getCurrentFlowElement();
+
+        // Determine path taken — set variables for the next gateway to evaluate
+        if ("userTask1".equals(activityId)) {
             execution.setVariable("decision", "optionA");
+        } else if ("userTask2".equals(activityId)) {
+            execution.setVariable("decision", "optionB");
         }
-        
+
         // Log flow information
-        System.out.println("Activity: " + execution.getActivityId());
-        System.out.println("Incoming flows: " + incomingFlows);
-        System.out.println("Outgoing flows: " + outgoingFlows);
+        System.out.println("Activity: " + activityId);
+        System.out.println("Flow element: " + flowElement);
     }
 }
 ```
@@ -340,29 +305,21 @@ public class FlowInfoDelegate implements JavaDelegate {
 
 ```java
 public class ErrorHandlingDelegate implements JavaDelegate {
-    
+
     @Override
     public void execute(DelegateExecution execution) {
         // Throw generic exception (triggers error boundary events)
         if (someErrorCondition) {
             throw new ActivitiException("Business rule violated");
         }
-        
+
         // Throw BPMN error (for specific error handling)
+        // BpmnError extends ActivitiException — throw it directly, do NOT wrap it
         if (validationFailed) {
-            BpmnError bpmnError = new BpmnError("VALIDATION_ERROR", "Validation failed");
-            throw new ActivitiException(bpmnError);
+            throw new BpmnError("VALIDATION_ERROR", "Validation failed");
         }
-        
-        // Throw error with variables
-        if (externalSystemError) {
-            BpmnError error = new BpmnError("EXTERNAL_ERROR");
-            error.setVariable("errorCode", "EXT001");
-            error.setVariable("errorMessage", "External system unavailable");
-            throw new ActivitiException(error);
-        }
-        
-        // Set error variable instead of throwing
+
+        // Set error variables instead of throwing
         if (recoverableError) {
             execution.setVariable("error", errorDetails);
             execution.setVariable("canProceed", false);
@@ -437,7 +394,7 @@ public class ActivityInfoDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) {
         // Current activity ID
-        String activityId = execution.getActivityId();
+        String activityId = execution.getCurrentActivityId();
         
         // Activity can be:
         // - Task ID (userTask, serviceTask, etc.)
@@ -488,7 +445,6 @@ public class VariableManagementDelegate implements JavaDelegate {
         // 4. Set output variables (global scope)
         execution.setVariable("calculatedTotal", total);
         execution.setVariable("processingTimestamp", new Date());
-        execution.setVariable("processedBy", execution.getCurrentUserId());
         
         // 5. Set temporary variables (local scope)
         execution.setVariableLocal("validationDetails", validationReport);
@@ -510,8 +466,7 @@ public class VariableManagementDelegate implements JavaDelegate {
         OrderProcessingResult result = new OrderProcessingResult(
             orderId,
             total,
-            new Date(),
-            execution.getCurrentUserId()
+            new Date()
         );
         execution.setVariable("processingResult", result);
     }
@@ -527,13 +482,11 @@ public class BatchProcessingDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) {
         if (execution.isMultiInstanceRoot()) {
-            // Get collection
-            String collectionVar = execution.getMultiInstanceVariableName();
-            List<Order> orders = (List<Order>) execution.getVariable(collectionVar);
-            
-            // Get current index
-            int currentIndex = execution.getLoopCounter();
-            Order currentOrder = orders.get(currentIndex - 1);
+            // Get collection — use the variable name from your BPMN definition
+            List<Order> orders = (List<Order>) execution.getVariable("orderCollection");
+
+            // Current element variable — set by engine from BPMN collection config
+            Order currentOrder = (Order) execution.getVariable("orderItem");
             
             // Process current order
             OrderResult result = processOrder(currentOrder);
@@ -594,18 +547,21 @@ public class SubprocessDelegate implements JavaDelegate {
             // Or write directly to parent
             parent.setVariable("fromSubprocess", "subprocess result");
             
-            // Get root process
-            DelegateExecution root = execution.getRootProcessInstance();
-            
+            // Navigate to root by walking the parent chain
+            DelegateExecution root = execution;
+            while (root.getParent() != null) {
+                root = root.getParent();
+            }
+
             // Set process-wide variable
             root.setVariable("processWide", "available everywhere");
         }
-        
+
         // Navigate children (for multi-instance or embedded subprocesses)
-        List<DelegateExecution> children = execution.getChildExecutions();
-        
+        List<? extends DelegateExecution> children = execution.getExecutions();
+
         for (DelegateExecution child : children) {
-            String childActivity = child.getActivityId();
+            String childActivity = child.getCurrentActivityId();
             Object childData = child.getVariable("childData");
         }
     }
@@ -617,7 +573,7 @@ public class SubprocessDelegate implements JavaDelegate {
 ### 1. Use Type-Safe Access
 
 ```java
-// GOOD: Type-safe
+// GOOD: Type-safe (via VariableScope)
 String name = execution.getVariable("name", String.class);
 Integer count = execution.getVariable("count", Integer.class);
 
@@ -634,8 +590,13 @@ if (value != null) {
     process(value);
 }
 
-// OR with default
-String name = execution.getVariable("name", String.class, "Unknown");
+// OR with hasVariable check
+String name = null;
+if (execution.hasVariable("name")) {
+    name = execution.getVariable("name", String.class);
+} else {
+    name = "Unknown";
+}
 
 // BAD: No null check
 process(execution.getVariable("mightBeNull")); // NPE risk
@@ -729,11 +690,11 @@ execution.setVariable("items", items);
 
 ```java
 // Problem: Activity ID can be null
-String activityId = execution.getActivityId();
+String activityId = execution.getCurrentActivityId();
 process(activityId); // NPE possible
 
 // Solution: Check for null
-String activityId = execution.getActivityId();
+String activityId = execution.getCurrentActivityId();
 if (activityId != null) {
     process(activityId);
 }
@@ -753,14 +714,19 @@ if (activityId != null) {
 | `removeVariable(String)` | Remove variable | Global |
 | `getId()` | Get execution ID | - |
 | `getProcessInstanceId()` | Get process instance ID | - |
+| `getRootProcessInstanceId()` | Get root process instance ID | - |
 | `getProcessDefinitionId()` | Get process definition ID | - |
-| `getActivityId()` | Get current activity ID | - |
-| `getProcessInstance()` | Get process instance | - |
+| `getCurrentActivityId()` | Get current activity ID | - |
+| `getCurrentFlowElement()` | Get current BPMN flow element | - |
 | `getEngineServices()` | Get process engine configuration | - |
 | `getParent()` | Get parent execution | - |
-| `getChildExecutions()` | Get child executions | - |
+| `getExecutions()` | Get child executions | - |
 | `isMultiInstanceRoot()` | Check multi-instance | - |
-| `getLoopCounter()` | Get loop counter | Multi-instance |
+| `isRootExecution()` | Check if root execution | - |
+| `isActive()` | Check if execution is active | - |
+| `isEnded()` | Check if execution has ended | - |
+| `getTenantId()` | Get tenant ID | - |
+| `getEventName()` | Get event name | - |
 
 ## Related Documentation
 

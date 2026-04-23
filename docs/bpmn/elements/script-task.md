@@ -78,12 +78,27 @@ Specify if script is inline or external:
 Store script output:
 
 ```xml
-<scriptTask id="calculation" 
-            scriptFormat="javascript"
-            activiti:resultVariable="calculationResult">
+<scriptTask id="calculation"
+             scriptFormat="javascript"
+             activiti:resultVariable="calculationResult">
   result = input1 + input2;
 </scriptTask>
 ```
+
+### Auto Store Variables
+
+By default, scripts run with a copy of all process variables. Changes made to variables within the script are **not** automatically stored back to the process scope. Set `activiti:autoStoreVariables="true"` to automatically persist all variable changes:
+
+```xml
+<scriptTask id="updateScript"
+             scriptFormat="groovy"
+             activiti:autoStoreVariables="true">
+  execution.setVariable('updatedValue', newValue)
+  // Changes are automatically persisted when autoStoreVariables=true
+</scriptTask>
+```
+
+**Default:** `false` (changes are not persisted automatically)
 
 ## Advanced Features
 

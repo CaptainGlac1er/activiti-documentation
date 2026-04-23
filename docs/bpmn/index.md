@@ -77,11 +77,10 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | **Message** | Both | Communication | [Intermediate Events](./events/intermediate-events.md) |
 | **Timer** | Catch | Wait for time | [Intermediate Events](./events/intermediate-events.md) |
 | **Signal** | Both | Broadcast | [Intermediate Events](./events/intermediate-events.md) |
-| **Conditional** | Catch | Wait for condition | [Intermediate Events](./events/intermediate-events.md) |
-| **Error** | Catch | Exception handling | [Intermediate Events](./events/intermediate-events.md) |
 | **Link** | Both | Internal jumps | [Intermediate Events](./events/intermediate-events.md) |
 | **Compensate** | Throw | Compensation | [Intermediate Events](./events/intermediate-events.md) |
-| **Escalation** | Both | Escalation | [Intermediate Events](./events/intermediate-events.md) |
+
+**Unsupported:** Conditional, Error, and Escalation events are NOT supported as intermediate catch/throw events.
 
 #### End Events
 
@@ -89,9 +88,10 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 |------|-------------|----------|---------------|
 | **None** | Normal completion | Standard end | [End Event](./events/end-event.md) |
 | **Error** | End with error | Exception end | [End Event](./events/end-event.md) |
-| **Signal** | Send signal | Notification | [End Event](./events/end-event.md) |
 | **Message** | Send message | Communication | [End Event](./events/end-event.md) |
 | **Terminate** | End all | Force termination | [End Event](./events/end-event.md) |
+
+**Unsupported:** Signal and Escalation end events are NOT supported.
 
 #### Boundary Events
 
@@ -152,7 +152,6 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | Parallel work | Parallel Gateway |
 | Multiple options | Inclusive Gateway |
 | Event-based | Event-Based Gateway |
-| Complex logic | Complex Gateway |
 
 ### Event Selection Guide
 
@@ -219,7 +218,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | **class** | Java class |
 | **delegateExpression** | Spring bean |
 | **expression** | EL/SpEL |
-| **resultVariable** | Output variable |
+| **resultVariableName** | Output variable |
 | **field** | Dependency injection |
 | **type** | Connector type |
 | **operationRef** | Operation reference |
@@ -232,6 +231,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | **script** | Inline code |
 | **resource** | External script |
 | **resultVariable** | Output |
+| **autoStoreVariables** | Auto-persist script variable changes |
 
 ---
 
@@ -280,6 +280,8 @@ Execute custom logic at task lifecycle events:
 - `create` - When task is created
 - `assignment` - When assignee/candidates change
 - `complete` - When task is completed
+- `delete` - When task is deleted
+- `all` - All of the above events
 
 ### 3. **Execution Listeners**
 Hook into activity execution:

@@ -25,10 +25,7 @@ Compensation Events provide a mechanism to **undo or compensate for completed ac
   <compensateEventDefinition activityRef="placeOrder"/>
 </intermediateThrowEvent>
 
-<!-- Compensation end event -->
-<endEvent id="compensateAndEnd">
-  <compensateEventDefinition activityRef="placeOrder"/>
-</endEvent>
+<!-- Compensation end events are NOT supported — falls through to "What to do?" in source -->
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
@@ -42,7 +39,8 @@ Compensation Events provide a mechanism to **undo or compensate for completed ac
 |------|----------|---------|
 | **Boundary Compensation** | Attached to activity | Listen for compensation requests |
 | **Intermediate Throw** | In flow | Trigger compensation |
-| **End Event** | Process end | Compensate and terminate |
+
+**Not supported:** Compensation end events. The `CompensateEventDefinitionParseHandler` only handles `ThrowEvent` and `BoundaryEvent` — compensation on end events falls through with no behavior assigned.
 
 ### Compensation Characteristics
 
@@ -50,9 +48,11 @@ Compensation Events provide a mechanism to **undo or compensate for completed ac
 |---------|-------------|
 | **Non-Interrupting** | Always `cancelActivity="false"` |
 | **Completed Activities** | Only compensates completed tasks |
-| **Activity Reference** | Must reference specific activity |
+| **Activity Reference** | `activityRef` is optional — if empty/null, compensation broadcasts to ALL completed activities in the current scope |
+| **waitForCompletion** | Attribute exists on `CompensateEventDefinition` but is **not yet implemented** (TODO in source). Always defaults to `true` |
 | **Order** | Compensates in reverse order |
 | **Variables** | Original variables available |
+| **isForCompensation** | Compensation handler activities must have `isForCompensation="true"` attribute, otherwise the engine will throw an `ActivitiException` |
 
 ## When to Use Compensation
 
@@ -192,28 +192,39 @@ Compensate and terminate in one step:
     <conditionExpression>${valid}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Validation failed - compensate and end -->
-  <endEvent id="compensateAndEnd">
+  <!-- Validation failed - trigger compensation via intermediate throw events -->
+  <sequenceFlow id="failed" sourceRef="validationCheck" targetRef="compensate1">
+    <conditionExpression>${!valid}</conditionExpression>
+  </sequenceFlow>
+  
+  <!-- Compensation throw events (intermediate throw) -->
+  <intermediateThrowEvent id="compensate1">
     <compensateEventDefinition activityRef="processData"/>
+  </intermediateThrowEvent>
+  
+  <intermediateThrowEvent id="compensate2">
     <compensateEventDefinition activityRef="allocateResource"/>
-  </endEvent>
+  </intermediateThrowEvent>
+  
+  <sequenceFlow id="flow4" sourceRef="compensate1" targetRef="compensate2"/>
+  <sequenceFlow id="flow5" sourceRef="compensate2" targetRef="failureEnd"/>
   
   <serviceTask id="commit" name="Commit Changes"/>
   
   <endEvent id="successEnd"/>
+  <endEvent id="failureEnd"/>
   
   <sequenceFlow id="flow1" sourceRef="start" targetRef="allocateResource"/>
   <sequenceFlow id="flow2" sourceRef="allocateResource" targetRef="processData"/>
   <sequenceFlow id="flow3" sourceRef="processData" targetRef="validationCheck"/>
-  <sequenceFlow id="flow4" sourceRef="validationCheck" targetRef="compensateAndEnd">
-    <conditionExpression>${!valid}</conditionExpression>
-  </sequenceFlow>
-  <sequenceFlow id="flow5" sourceRef="commit" targetRef="successEnd"/>
+  <sequenceFlow id="flow6" sourceRef="commit" targetRef="successEnd"/>
   
 </process>
 ```
 
-**Note:** Multiple `compensateEventDefinition` elements compensate in reverse order of completion.
+**Note:** `activityRef` is optional. When omitted, the compensation event broadcasts to ALL completed activities in the current compensation scope.
+
+**Note:** `waitForCompletion` attribute exists on `CompensateEventDefinition` but is not yet implemented (marked as TODO in source code).
 
 ## Complete Examples
 
@@ -445,27 +456,23 @@ Compensate and terminate in one step:
     <conditionExpression>${success}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Failure - use compensation end event -->
-  <endEvent id="compensateAndEnd">
-    <compensateEventDefinition activityRef="arrangeDelivery"/>
-    <compensateEventDefinition activityRef="processPayment"/>
-    <compensateEventDefinition activityRef="reserveInventory"/>
-    <compensateEventDefinition activityRef="createOrder"/>
-  </endEvent>
-  
-  <serviceTask id="confirmSaga" name="Confirm Saga Completion"/>
-  <endEvent id="successEnd"/>
-  
-  <!-- Main flow -->
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="createOrder"/>
-  <sequenceFlow id="flow2" sourceRef="createOrder" targetRef="reserveInventory"/>
-  <sequenceFlow id="flow3" sourceRef="reserveInventory" targetRef="processPayment"/>
-  <sequenceFlow id="flow4" sourceRef="processPayment" targetRef="arrangeDelivery"/>
-  <sequenceFlow id="flow5" sourceRef="arrangeDelivery" targetRef="finalValidation"/>
-  <sequenceFlow id="flow6" sourceRef="finalValidation" targetRef="compensateAndEnd">
+  <!-- Failure - use intermediate throw compensation events -->
+  <sequenceFlow id="invalid" sourceRef="shipmentValidation" targetRef="compensatePaymentEvent">
     <conditionExpression>${!success}</conditionExpression>
   </sequenceFlow>
-  <sequenceFlow id="flow7" sourceRef="confirmSaga" targetRef="successEnd"/>
+  
+  <!-- Compensation throw events (intermediate throw) -->
+  <intermediateThrowEvent id="compensatePaymentEvent">
+    <compensateEventDefinition activityRef="processPayment"/>
+  </intermediateThrowEvent>
+  
+  <intermediateThrowEvent id="compensateReserveEvent">
+    <compensateEventDefinition activityRef="reserveInventory"/>
+  </intermediateThrowEvent>
+  
+  <sequenceFlow id="flow5" sourceRef="compensatePaymentEvent" targetRef="compensateReserveEvent"/>
+  <sequenceFlow id="flow6" sourceRef="compensateReserveEvent" targetRef="failureEnd"/>
+  <sequenceFlow id="flow7" sourceRef="confirmOrder" targetRef="successEnd"/>
   
 </process>
 ```
@@ -609,7 +616,7 @@ public class UnsafeCompensator implements JavaDelegate {
 public class LoggedCompensator implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) {
-        String activityId = execution.getActivityId();
+        String activityId = execution.getCurrentActivityId();
         String processInstanceId = execution.getProcessInstanceId();
         
         logger.info("Compensation started: activity={}, process={}", 

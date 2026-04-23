@@ -6,13 +6,15 @@ description: Complete guide to connectors in Activiti for external system integr
 
 # Connectors
 
-Connectors in Activiti provide a **declarative way to integrate with external systems** from your BPMN processes. They enable you to call APIs, send emails, process data, and perform external operations using **JSON definitions** instead of writing custom Java code.
+**Important:** The Connector API (`org.activiti.api.process.runtime.connector.Connector` and `org.activiti.api.process.model.IntegrationContext`) belongs to the **Activiti 7/8 API layer** (`activiti-api` module), NOT the core engine (`activiti-engine` module). The core engine's `ServiceTaskParseHandler` does **not** handle connectors — it handles service tasks via `activiti:class`, `activiti:delegateExpression`, `activiti:expression`, `activiti:type` (mail, mule, camel, shell), and `operationRef` (webservice).
+
+Connectors in the Activiti 7/8 API layer provide a **declarative way to integrate with external systems** from your BPMN processes. They enable you to call APIs, send emails, process data, and perform external operations using **JSON definitions** instead of writing custom Java code.
 
 ## Overview
 
 ```xml
-<serviceTask id="processImage" 
-             name="Process Image" 
+<serviceTask id="processImage"
+             name="Process Image"
              implementation="Process Image Connector.processImageActionName"/>
 ```
 
@@ -186,8 +188,8 @@ Supported variable types:
 **BPMN Usage**:
 
 ```xml
-<serviceTask id="Task_1ylvdew" 
-             name="Process Image" 
+<serviceTask id="Task_1ylvdew"
+             name="Process Image"
              implementation="Process Image Connector.processImageActionName"/>
 ```
 
@@ -243,8 +245,8 @@ Supported variable types:
 **BPMN Usage**:
 
 ```xml
-<serviceTask id="Task_0snvh02" 
-             name="Tag categorized Image" 
+<serviceTask id="Task_0snvh02"
+             name="Tag categorized Image"
              implementation="Tag Image Connector.tagImageActionName"/>
 ```
 
@@ -302,7 +304,7 @@ Supported variable types:
 **BPMN Usage**:
 
 ```xml
-<serviceTask id="serviceTask" 
+<serviceTask id="serviceTask"
              implementation="Variable Mapping Connector.variableMappingActionName"/>
 ```
 
@@ -340,11 +342,11 @@ Supported variable types:
 **BPMN Usage**:
 
 ```xml
-<serviceTask id="serviceTask" 
-              implementation="mealsConnector.mealAction"
-              name="Get Meal">
+<serviceTask id="serviceTask"
+             implementation="mealsConnector.mealAction"
+             name="Get Meal">
    <!-- Multi-instance support -->
-   <multiInstanceLoopCharacteristics 
+   <multiInstanceLoopCharacteristics
      isSequential="false"
      activiti:collection="${items}"
      activiti:elementVariable="item"/>
@@ -358,8 +360,8 @@ Supported variable types:
 Reference a connector action in the `implementation` attribute:
 
 ```xml
-<serviceTask id="task1" 
-             name="Task Name" 
+<serviceTask id="task1"
+             name="Task Name"
              implementation="Connector Name.Action Name"/>
 ```
 
@@ -373,7 +375,7 @@ Reference a connector action in the `implementation` attribute:
 Process variables are **automatically mapped** to connector inputs based on name matching:
 
 ```xml
-<serviceTask id="processImage" 
+<serviceTask id="processImage"
              implementation="Process Image Connector.processImageActionName"/>
 ```
 
@@ -404,22 +406,22 @@ import org.activiti.api.process.runtime.connector.Connector;
 import org.activiti.api.process.model.IntegrationContext;
 
 public class CustomConnector implements Connector {
-    
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
         // Get input variables
         String input1 = context.getInBoundVariable("input_variable_name_1", String.class);
         Boolean expectedKey = context.getInBoundVariable("expectedKey", Boolean.class);
-        
+
         // Perform operation
         boolean approved = processInput(input1, expectedKey);
-        
+
         // Set output variables
         context.addOutBoundVariable("approved", approved);
-        
+
         return context;
     }
-    
+
     private boolean processInput(String input1, Boolean expectedKey) {
         // Your business logic here
         return true;
@@ -435,7 +437,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ConnectorConfiguration {
-    
+
     @Bean
     public Connector customConnector() {
         return new CustomConnector();
@@ -549,7 +551,7 @@ Map<String, Object> variables = Map.of(
 Some connectors support expressions in variable mapping:
 
 ```xml
-<serviceTask id="serviceTask" 
+<serviceTask id="serviceTask"
              implementation="Variable Mapping Expression Connector.variableMappingExpressionActionName"/>
 ```
 
@@ -560,20 +562,20 @@ Some connectors support expressions in variable mapping:
 ```java
 @SpringBootTest
 public class CustomConnectorTest {
-    
+
     @Autowired
     private Connector customConnector;
-    
+
     @Test
     public void testConnectorExecution() {
         // Create test context
         IntegrationContext context = new IntegrationContext();
         context.addInBoundVariable("input_variable_name_1", "test value");
         context.addInBoundVariable("expectedKey", true);
-        
+
         // Execute connector
         IntegrationContext result = customConnector.apply(context);
-        
+
         // Verify outputs
         Boolean approved = result.getOutBoundVariable("approved", Boolean.class);
         assertTrue(approved);
@@ -586,10 +588,10 @@ public class CustomConnectorTest {
 ```java
 @SpringBootTest
 public class ProcessWithConnectorIT {
-    
+
     @Autowired
     private ProcessRuntime processRuntime;
-    
+
     @Test
     public void testProcessWithConnector() {
         // Start process with required variables
@@ -600,17 +602,17 @@ public class ProcessWithConnectorIT {
                 .withVariable("expectedKey", true)
                 .build()
         );
-        
+
         // Process should complete automatically
         assertThat(process.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
-        
+
         // Verify output variables
         List<VariableInstance> variables = processRuntime.variables(
             ProcessPayloadBuilder.variables()
                 .withProcessInstance(process)
                 .build()
         );
-        
+
         assertThat(variables)
             .extracting(VariableInstance::getName, VariableInstance::getValue)
             .containsTuple("approved", true);
@@ -698,7 +700,7 @@ public IntegrationContext apply(IntegrationContext context) {
 ### 5. Use Async for Long Operations
 
 ```xml
-<serviceTask id="longRunningTask" 
+<serviceTask id="longRunningTask"
              implementation="Heavy Processing Connector.process"
              activiti:async="true"/>
 ```
@@ -821,4 +823,3 @@ If process variable `count` is a String, the connector may fail.
 - [Async Execution](../advanced/async-execution.md) - Background processing
 
 ---
-

@@ -21,12 +21,14 @@ Start Events **initiate process instances** and define how a process can be star
 ## Key Features
 
 ### Standard BPMN Features
-- **None** - Manual start
-- **Message** - Event-driven start
-- **Timer** - Scheduled start
-- **Signal** - Broadcast start
-- **Conditional** - Condition-based start
-- **Multiple** - Combined triggers
+- **None** - Manual start (supported)
+- **Message** - Event-driven start (supported within event sub-processes)
+- **Timer** - Scheduled start (**only within event sub-processes**, not as main process start)
+- **Signal** - Broadcast start (**only within event sub-processes**, not as main process start)
+- **Conditional** - Condition-based start (**NOT supported** — no `ConditionalEventDefinition` class exists)
+
+**Unsupported as standalone process starts:** Timer, Signal, Conditional, and Multiple event definitions.
+The `StartEventParseHandler` only handles: (1) message start events within event sub-processes, (2) error start events within event sub-processes, (3) none start events for main processes.
 
 ### Activiti Customizations
 - **Form Key** - Startup form
@@ -76,72 +78,25 @@ ProcessInstance process = runtimeService
 
 ### 3. Timer Start Event
 
-**Date Timer:**
-```xml
-<startEvent id="dateStart" name="Scheduled Start">
-  <timerEventDefinition>
-    <timeDate>${scheduledDate}</timeDate>
-  </timerEventDefinition>
-</startEvent>
-```
+**NOT supported as a main process start event.** Timer start events are only supported within event sub-processes.
 
-**Duration Timer:**
-```xml
-<startEvent id="durationStart" name="Start After Duration">
-  <timerEventDefinition>
-    <timeDuration>PT24H</timeDuration>
-  </timerEventDefinition>
-</startEvent>
-```
-
-**Cycle Timer:**
-```xml
-<startEvent id="cycleStart" name="Recurring Start">
-  <timerEventDefinition>
-    <timeCycle>RRULE:FREQ=DAILY;INTERVAL=1;HOUR=9</timeCycle>
-  </timerEventDefinition>
-</startEvent>
-```
+The `StartEventParseHandler` does not assign any behavior to timer start events on main processes. If you define a timer start event outside of an event sub-process, the process will be treated as having a none start event.
 
 ### 4. Signal Start Event
 
-```xml
-<startEvent id="signalStart" name="Signal Received">
-  <signalEventDefinition signalRef="processTrigger"/>
-</startEvent>
-```
+**NOT supported as a main process start event.** Signal start events are only supported within event sub-processes.
 
-**Signal Definition:**
-```xml
-<signal id="processTrigger" name="Process Trigger"/>
-```
-
-**Runtime Usage:**
-```java
-// Broadcast signal (starts all waiting processes)
-runtimeService.signalEventReceived("processTrigger");
-```
+The `StartEventParseHandler` does not assign any behavior to signal start events on main processes.
 
 ### 5. Conditional Start Event
 
-```xml
-<startEvent id="conditionalStart" name="Condition Met">
-  <conditionalEventDefinition>
-    <condition>${systemReady and maintenanceMode == false}</condition>
-  </conditionalEventDefinition>
-</startEvent>
-```
+**NOT supported.** There is no `ConditionalEventDefinition` model class, parse handler, or activity behavior in the Activiti codebase.
 
 ### 6. Multiple Event Definitions
 
-```xml
-<startEvent id="multiStart" name="Multiple Triggers">
-  <messageEventDefinition messageRef="message1"/>
-  <timerEventDefinition>
-    <timeDuration>PT1H</timeDuration>
-  </timerEventDefinition>
-</startEvent>
-```
+**NOT supported on main process start events.** The parser only handles a single event definition on main process start events, and only for none start events (no event definitions).
+
+Within event sub-processes, only message and error start event definitions are handled.
 
 ## Activiti Customizations
 
@@ -172,24 +127,16 @@ runtimeService.signalEventReceived("processTrigger");
 ### Example 1: Multiple Start Events
 
 ```xml
-<!-- Process can be started in multiple ways -->
+<!-- Process can be started manually or by message -->
 
 <startEvent id="manualStart" name="Manual Start"/>
 
 <startEvent id="messageStart" name="Order Received">
   <messageEventDefinition messageRef="newOrder"/>
 </startEvent>
-
-<startEvent id="scheduledStart" name="Daily Batch">
-  <timerEventDefinition>
-    <timeCycle>RRULE:FREQ=DAILY;HOUR=2</timeCycle>
-  </timerEventDefinition>
-</startEvent>
-
-<startEvent id="signalStart" name="External Trigger">
-  <signalEventDefinition signalRef="batchProcessingSignal"/>
-</startEvent>
 ```
+
+**Note:** Timer, signal, and conditional start events are only supported within event sub-processes. Use a none start event or message start event for main process initiation.
 
 ### Example 2: Message Start with Correlation
 
@@ -216,32 +163,37 @@ ProcessInstance process = runtimeService
         ));
 ```
 
-### Example 3: Scheduled Process
+### Example 3: Scheduled Process via Event Sub-Process
+
+**Note:** Timer start events are not supported as main process starts. Use an event sub-process instead:
 
 ```xml
-<startEvent id="scheduledStart" name="Nightly Report">
-  <timerEventDefinition>
-    <timeCycle>RRULE:FREQ=DAILY;HOUR=23;MINUTE=0</timeCycle>
-  </timerEventDefinition>
-</startEvent>
+<!-- Main process with none start -->
+<startEvent id="mainStart"/>
 
-<serviceTask id="generateReport" 
-             name="Generate Report" 
-             activiti:class="com.example.ReportGenerator"
-             activiti:async="true"/>
+<!-- Event sub-process for scheduled triggering -->
+<eventSubProcess id="scheduledSubProcess">
+  <startEvent id="timerStart">
+    <timerEventDefinition>
+      <timeCycle>RRULE:FREQ=DAILY;HOUR=23;MINUTE=0</timeCycle>
+    </timerEventDefinition>
+  </startEvent>
 
-<endEvent id="reportEnd" name="Report Complete"/>
+  <serviceTask id="generateReport" 
+               name="Generate Report" 
+               activiti:class="com.example.ReportGenerator"
+               activiti:async="true"/>
+
+  <endEvent id="reportEnd"/>
+  
+  <sequenceFlow id="subFlow1" sourceRef="timerStart" targetRef="generateReport"/>
+  <sequenceFlow id="subFlow2" sourceRef="generateReport" targetRef="reportEnd"/>
+</eventSubProcess>
 ```
 
 ### Example 4: Conditional Start
 
-```xml
-<startEvent id="conditionalStart" name="Auto-Start When Ready">
-  <conditionalEventDefinition>
-    <condition>${environment == 'PRODUCTION' and featureFlagEnabled}</condition>
-  </conditionalEventDefinition>
-</startEvent>
-```
+**NOT supported.** There is no `ConditionalEventDefinition` class in the Activiti codebase. Conditional start events will not function.
 
 ### Example 5: Start Event with Initial Variables
 

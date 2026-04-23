@@ -17,29 +17,34 @@ public interface DelegateTask extends VariableScope {
     String getId();
     String getName();
     String getDescription();
-    
+    String getTaskDefinitionKey();
+    String getFormKey();
+    void setFormKey(String formKey);
+
     // Task ownership
     String getAssignee();
     void setAssignee(String assignee);
-    List<String> getCandidateUsers();
-    List<String> getCandidateGroups();
-    
+    String getOwner();
+    void setOwner(String owner);
+    Set<IdentityLink> getCandidates();
+    void addCandidateUser(String userId);
+    void addCandidateGroup(String groupId);
+
     // Task properties
     Date getDueDate();
     void setDueDate(Date dueDate);
     Integer getPriority();
     void setPriority(int priority);
-    
+    String getCategory();
+    void setCategory(String category);
+
     // Execution context
     DelegateExecution getExecution();
-    
-    // Form support
-    String getFormKey();
-    void setFormKey(String formKey);
-    
-    // Variable access (inherits from VariableScope)
-    Object getVariable(String variableName);
-    void setVariable(String variableName, Object value);
+
+    // Event and listener info
+    String getEventName();
+    ActivitiListener getCurrentActivitiListener();
+    DelegationState getDelegationState();
 }
 ```
 
@@ -72,9 +77,6 @@ public class TaskInfoListener implements TaskListener {
         
         // Task creation time
         Date createTime = task.getCreateTime();
-        
-        // Task claim time
-        Date claimTime = task.getClaimTime();
     }
 }
 ```
@@ -109,10 +111,6 @@ public class TaskAssignmentListener implements TaskListener {
         
         // Delete candidate group
         task.deleteCandidateGroup("managers");
-        
-        // Clear all candidates
-        task.deleteCandidateUsers(candidateUsers);
-        task.deleteCandidateGroups(candidateGroups);
     }
 }
 ```
@@ -127,21 +125,17 @@ public class TaskPropertyListener implements TaskListener {
         // Due date
         Date dueDate = task.getDueDate();
         task.setDueDate(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)); // +24h
-        
-        // Follow up date
-        Date followUpDate = task.getFollowUpDate();
-        task.setFollowUpDate(new Date(System.currentTimeMillis() + 2 * 60 * 60 * 1000)); // +2h
-        
+
         // Priority (0-100, default 50)
         Integer priority = task.getPriority();
         task.setPriority(80); // High priority
-        
+
         // Owner (different from assignee)
         String owner = task.getOwner();
         task.setOwner("system");
-        
+
         // Delegation state
-        String delegatedTo = task.getDelegatedTo();
+        DelegationState delegationState = task.getDelegationState();
         
         // Form key
         String formKey = task.getFormKey();
@@ -228,10 +222,7 @@ public class TypedVariableListener implements TaskListener {
         String name = task.getVariable("customerName", String.class);
         Integer count = task.getVariable("attemptCount", Integer.class);
         BigDecimal amount = task.getVariable("totalAmount", BigDecimal.class);
-        
-        // Get with default
-        String withDefault = task.getVariable("optional", String.class, "default");
-        
+
         // Check existence
         if (task.hasVariable("mightNotExist")) {
             Object value = task.getVariable("mightNotExist");
@@ -256,15 +247,14 @@ public class ExecutionContextListener implements TaskListener {
         String executionId = execution.getId();
         String processInstanceId = execution.getProcessInstanceId();
         String processDefinitionId = execution.getProcessDefinitionId();
-        String activityId = execution.getActivityId();
-        
-        // Access process instance
-        ProcessInstance processInstance = execution.getProcessInstance();
-        String businessKey = processInstance.getBusinessKey();
-        
+        String activityId = execution.getCurrentActivityId();
+
+        // Business key
+        String businessKey = execution.getProcessInstanceBusinessKey();
+
         // Navigate execution hierarchy
         DelegateExecution parent = execution.getParent();
-        List<DelegateExecution> children = execution.getChildExecutions();
+        List<? extends DelegateExecution> children = execution.getExecutions();
         
         // Set process variables via execution
         execution.setVariable("processVar", "value");
@@ -285,8 +275,8 @@ public class TaskClaimListener implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        String event = task.getTaskListenerEvent();
-        
+        String event = task.getEventName();
+
         if ("create".equals(event)) {
             // Auto-assign based on process variable
             String assignee = (String) task.getExecution().getVariable("requestedBy");
@@ -356,8 +346,8 @@ public class TaskAnnotationListener implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        String eventId = task.getTaskListenerEvent();
-        
+        String eventId = task.getEventName();
+
         if ("complete".equals(eventId)) {
             // Get completion comment
             String comment = (String) task.getVariable("completionComment");
@@ -394,8 +384,8 @@ public class DynamicTaskConfigurer implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        String event = task.getTaskListenerEvent();
-        
+        String event = task.getEventName();
+
         if ("create".equals(event)) {
             configureNewTask(task);
         } else if ("assignment".equals(event)) {
@@ -505,7 +495,7 @@ public class DynamicTaskConfigurer implements TaskListener {
         Map<String, Object> context = new HashMap<>();
         context.put("taskName", task.getName());
         context.put("processVariables", task.getVariables());
-        context.put("processDefinitionKey", task.getExecution().getProcessDefinitionKey());
+        context.put("processDefinitionId", task.getExecution().getProcessDefinitionId());
         return context;
     }
     
@@ -534,8 +524,8 @@ public class TaskValidationListener implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        String event = task.getTaskListenerEvent();
-        
+        String event = task.getEventName();
+
         if ("complete".equals(event)) {
             // Validate required variables before completion
             List<String> missingVariables = new ArrayList<>();
@@ -580,8 +570,8 @@ public class TaskCoordinationListener implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        String event = task.getTaskListenerEvent();
-        
+        String event = task.getEventName();
+
         if ("create".equals(event)) {
             // Register this task in coordination list
             DelegateExecution execution = task.getExecution();
@@ -652,7 +642,7 @@ public class TaskCoordinationListener implements TaskListener {
 ```java
 // GOOD: Check event
 public void notify(DelegateTask task) {
-    if ("create".equals(task.getTaskListenerEvent())) {
+    if ("create".equals(task.getEventName())) {
         configureTask(task);
     }
 }
@@ -761,12 +751,16 @@ if (autoAssign) {
 |--------|---------|-------|
 | `getId()` | Get task ID | Unique identifier |
 | `getName()` | Get task name | From BPMN |
+| `getDescription()` | Get task description | From BPMN |
+| `getTaskDefinitionKey()` | Get task definition key | Activity ID from BPMN |
+| `getCreateTime()` | Get creation time | - |
 | `getAssignee()` | Get assignee | Null if not claimed |
 | `setAssignee(String)` | Set assignee | Clears candidates |
-| `getCandidateUsers()` | Get candidate users | List of user IDs |
+| `getOwner()` | Get owner | - |
+| `setOwner(String)` | Set owner | - |
 | `addCandidateUser(String)` | Add candidate user | - |
-| `getCandidateGroups()` | Get candidate groups | List of group IDs |
 | `addCandidateGroup(String)` | Add candidate group | - |
+| `getCandidates()` | Get all identity links | Set of IdentityLink |
 | `getDueDate()` | Get due date | Can be null |
 | `setDueDate(Date)` | Set due date | - |
 | `getPriority()` | Get priority | 0-100, default 50 |
@@ -774,6 +768,11 @@ if (autoAssign) {
 | `getFormKey()` | Get form key | For task forms |
 | `setFormKey(String)` | Set form key | - |
 | `getExecution()` | Get execution | Access process context |
+| `getEventName()` | Get task listener event | create, assignment, complete, delete |
+| `getCurrentActivitiListener()` | Get current listener | ActivitiListener instance |
+| `getDelegationState()` | Get delegation state | DelegationState enum |
+| `getTenantId()` | Get tenant ID | For multi-tenant |
+| `isSuspended()` | Check if suspended | - |
 | `getVariable(String)` | Get variable | Task then process scope |
 | `setVariable(String, Object)` | Set variable | Task scope |
 | `getVariables()` | Get all variables | Task variables only |

@@ -64,7 +64,9 @@ Use the standard BPMN `implementation` attribute to reference a Spring bean by i
 
 The engine will look up a Spring bean named `tagImageConnector` from the ApplicationContext.
 
-#### For Connector Implementations (Recommended):
+#### For Connector Implementations (Activiti 7/8 API Layer):
+
+**Important:** The `Connector` interface and `IntegrationContext` are from the Activiti 7/8 API layer (`activiti-api` module), NOT the core engine. The core engine's `ServiceTaskParseHandler` does NOT handle connectors — it handles service tasks via `activiti:class`, `activiti:delegateExpression`, `activiti:expression`, `activiti:type` (mail, mule, camel, shell), and `operationRef` (webservice).
 
 ```java
 import org.activiti.api.process.runtime.connector.Connector;
@@ -297,8 +299,8 @@ public class LegacyBeanService implements JavaDelegate {
 ```xml
 <serviceTask id="legacyExpression" 
              name="Legacy Expression"
-             activiti:expression="${calculator.compute()}"
-             activiti:resultVariable="computationResult"/>
+              activiti:expression="${calculator.compute()}"
+              activiti:resultVariableName="computationResult"/>
 ```
 
 **⚠️ Legacy Syntax Note:**
@@ -468,9 +470,9 @@ Activiti includes some built-in connectors that **only work with legacy XML synt
 **Mail Connector (Legacy - Still Supported):**
 
 ```xml
-<sendTask id="sendEmail" 
-          name="Send Email"
-          activiti:type="mail">
+<serviceTask id="sendEmail"
+             name="Send Email"
+             activiti:type="mail">
   
   <extensionElements>
     <activiti:field name="to">
@@ -497,16 +499,7 @@ Activiti includes some built-in connectors that **only work with legacy XML synt
 </sendTask>
 ```
 
-**Supported Mail Fields:**
-- `to` - Recipient email address(es)
-- `cc` - Carbon copy recipients
-- `bcc` - Blind carbon copy recipients
-- `subject` - Email subject
-- `text` - Plain text body
-- `html` - HTML body
-- `from` - Sender address (overrides default)
-
-**⚠️ Important:** The built-in mail connector does NOT support modern `implementation` syntax. You must use `activiti:type="mail"` with field injection.
+**⚠️ Important:** The mail connector is actually implemented on `serviceTask` (not `sendTask`). The engine checks `serviceTask.getType().equalsIgnoreCase("mail")` in `ServiceTaskParseHandler`. Use `<serviceTask activiti:type="mail">` instead of `<sendTask>`.
 
 **Other Built-in Connector Types (Legacy Only):**
 - `activiti:type="mule"` - Mule ESB integration
@@ -1118,7 +1111,7 @@ For reference, here's how these examples would look using legacy syntax:
 <!-- Legacy: Using delegateExpression -->
 <serviceTask id="validateOrder" 
              activiti:delegateExpression="${orderValidator.validate()}"
-             activiti:resultVariable="validationResult"/>
+              activiti:resultVariableName="validationResult"/>
 ```
 
 **Why Modern Approach is Better:**

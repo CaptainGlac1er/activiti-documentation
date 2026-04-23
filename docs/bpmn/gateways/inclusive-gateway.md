@@ -45,9 +45,10 @@ When the process reaches an Inclusive Gateway:
 ### Join Behavior (Converging)
 
 When paths converge at an Inclusive Gateway:
-1. **Wait for all activated paths to complete**
-2. **Continue process flow**
-3. **Merge variables from all paths**
+1. **Each arriving execution is inactivated** and waits at the gateway
+2. **The engine checks reachability** using `ExecutionGraphUtil.isReachable()` to determine if any other execution can still reach the gateway
+3. **When no other execution can reach the gateway**, the inactivated executions are released and the gateway continues
+4. **Note on variables:** The engine does NOT explicitly merge variables from parallel paths. Variables set on sibling executions are lost when those executions are deleted upon join. Only variables on the parent/scope execution are shared across paths. If you need to share data between parallel branches, set variables on the parent execution scope explicitly.
 
 ## Configuration Options
 
@@ -341,12 +342,11 @@ List<Execution> gatewayExecutions = runtimeService.createExecutionQuery()
 
 // Check which paths are active
 for (Execution execution : gatewayExecutions) {
-    String currentActivity = runtimeService.createActivityInstanceQuery()
-        .processInstanceId(execution.getProcessInstanceId())
-        .activityId(execution.getActivityId())
-        .list()
-        .get(0)
-        .getActivityId();
+    String processInstanceId = execution.getProcessInstanceId();
+    List<ActivityInstance> activities = runtimeService.createActivityInstanceQuery()
+        .processInstanceId(processInstanceId)
+        .active()
+        .list();
 }
 ```
 
@@ -355,7 +355,7 @@ for (Execution execution : gatewayExecutions) {
 1. **Clear Conditions** - Make conditions mutually understandable
 2. **Default Flow** - Always define a default flow to prevent stalls
 3. **Parallel Awareness** - Remember selected paths run in parallel
-4. **Variable Merging** - Plan how variables from different paths merge
+4. **Variable Scope** - Be aware that sibling execution variables are lost at join. Only variables set on the parent/scope execution persist after the gateway completes. Use `execution.setVariableLocal()` carefully and prefer setting variables on the parent scope.
 5. **Performance** - Too many parallel paths can impact performance
 6. **Testing** - Test all condition combinations
 7. **Documentation** - Document which conditions can be true simultaneously

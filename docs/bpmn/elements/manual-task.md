@@ -28,6 +28,7 @@ Manual Tasks represent work that is performed **outside the workflow engine**, t
 ### Activiti Customizations
 - **Execution Listeners** - Track when the task is passed through
 - **Documentation** - Standard BPMN `<documentation>` child element
+- **Async Execution** - Supports `activiti:async="true"` (inherited from `FlowNode`)
 
 ## Configuration Options
 

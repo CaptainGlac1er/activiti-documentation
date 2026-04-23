@@ -38,6 +38,7 @@ Link Events allow you to **create jumps within a process** without drawing seque
 | **Diagram Clarity** | Reduces crossing flow lines |
 | **Multiple Sources** | One catch can have multiple throws |
 | **Single Target** | One throw goes to one catch (by name) |
+| **Internal Fields** | The `LinkEventDefinition` model includes `target` (catch event ID), `name` (link name), and `sources` (list of throw event IDs) — these are populated internally by the parser and are not set directly in BPMN XML |
 
 ### Link Event vs Sequence Flow
 
@@ -511,7 +512,9 @@ List<Execution> executions = runtimeService.createExecutionQuery()
 
 // Check current activity (could be a link event)
 for (Execution execution : executions) {
-    String activityId = execution.getActivityId();
+    String activityId = runtimeService.getActiveActivityIds(execution.getProcessInstanceId()).stream()
+        .findFirst()
+        .orElse("none");
     if ("throwLink".equals(activityId) || "catchLink".equals(activityId)) {
         System.out.println("At link event: " + activityId);
     }
