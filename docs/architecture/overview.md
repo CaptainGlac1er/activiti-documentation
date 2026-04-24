@@ -32,7 +32,7 @@ The Activiti Engine is built on a layered architecture that separates concerns a
 ### Architectural Principles
 
 1. **Separation of Concerns** - Clear boundaries between services, execution, and persistence layers
-2. **Command Pattern** - All operations go through a centralized command manager for consistency
+2. **Command Pattern** - All operations go through a centralized command executor for consistency
 3. **Transaction Safety** - ACID compliance for all engine operations
 4. **Extensibility** - Pluggable components for customization without modifying core code
 5. **Performance** - Optimized for high-throughput process execution
@@ -61,26 +61,30 @@ flowchart TD
     end
 
     subgraph CmdLayer["Command Execution Layer"]
-        CmdExec["CommandExecutor\n- Interceptor chain\n- LogInterceptor\n- TransactionInterceptor\n- CommandContextInterceptor\n- CommandInvoker"]
+        CmdExec["CommandExecutor\n- LogInterceptor\n- TransactionInterceptor\n- CommandContextInterceptor\n- TransactionContextInterceptor\n- CommandInvoker"]
     end
 
     subgraph Core["Engine Core Layer"]
-        Context["CommandContext\n- Thread-local scope\n- Session management\n- Entity cache"]
-
-        subgraph Managers["Managers"]
-            EntityMgr["EntityManager\n- CRUD for executions/tasks/variables"]
-            HistoryMgr["HistoryManager\n- History recording\n- Cleanup"]
-            EventMgr["EventManager\n- Event dispatching\n- Listener management"]
+        subgraph ContextLayer["Context (Thread-Local)"]
+            Ctx["Context\n- ThreadLocal stacks\n- CommandContext per-thread\n- ProcessEngineConfiguration per-thread"]
         end
 
-        BPMN["BPMN Executor\n- Activity behaviors\n- Gateway evaluation\n- Event handling"]
-        Agenda["Agenda\n- Priority-queued execution tasks"]
-        JobExec["Job Executor\n- Async job processing\n- Timer management"]
+        Context["CommandContext\n- Entity manager delegation\n- Session management\n- Agenda access"]
+
+        subgraph Managers["Managers"]
+            EntityMgrs["Entity Managers\n- ExecutionEntityManager\n- TaskEntityManager\n- VariableInstanceEntityManager"]
+            HistoryMgr["HistoryManager\n- History recording"]
+            EventDisp["ActivitiEventDispatcher\n- Event dispatching\n- Listener management"]
+        end
+
+        BPMN["BPMN Execution\n- ActivityBehavior pattern\n- BpmnParse\n- ProcessInstanceHelper"]
+        Agenda["Agenda\n- Planned operation queue\n- ActivitiEngineAgenda"]
+        AsyncExec["AsyncExecutor\n- Async job processing\n- Timer management\n- Job handlers"]
     end
 
     subgraph Persistence["Persistence Layer"]
         Sessions["Sessions\n- DbSqlSession\n- EntityCache\n- IdentityMgmtSession"]
-        DataMgrs["Data Managers\n- MybatisTaskDataManager\n- MybatisExecutionDataManager\n- MybatisVariableDataManager"]
+        DataMgrs["Data Managers\n- MybatisTaskDataManager\n- MybatisExecutionDataManager\n- MybatisVariableInstanceDataManager"]
         MyBatis["MyBatis SqlSessionFactory\n- SQL mapping\n- Result mapping"]
         DS["DataSource / JDBC"]
         DB["Database\n(PostgreSQL, MySQL, etc.)"]
@@ -101,12 +105,16 @@ flowchart TD
     Mgmt --- CmdExec
     Dynamic --- CmdExec
 
-    CmdExec --> Context
-    Context --> Managers
-    Managers --> BPMN
-    BPMN --> Agenda
+    CmdExec --> Ctx
+    Ctx --> Context
+    Context --> EntityMgrs
+    Context --> HistoryMgr
+    Context --> EventDisp
+    Context --> BPMN
+    Context --> Agenda
     Agenda --> BPMN
-    BPMN --> JobExec
+    BPMN --> Agenda
+    BPMN --> AsyncExec
 
     Context --> Sessions
     Sessions --> DataMgrs
@@ -122,6 +130,8 @@ flowchart TD
 ### 1. ProcessEngine
 
 **Purpose:** Central coordinator and service provider
+
+**Source:** `org.activiti.engine.ProcessEngine`
 
 **Responsibilities:**
 - Manage engine lifecycle (start/stop)
@@ -148,38 +158,39 @@ public ProcessEngineConfiguration getProcessEngineConfiguration();
 
 **Purpose:** Central configuration hub
 
+**Source:** `org.activiti.engine.ProcessEngineConfiguration` (abstract base) and `org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl`
+
 **Responsibilities:**
 - Configure all engine components
 - Manage database connections
-- Set up transaction managers
-- Configure job executor
+- Set up transaction management
+- Configure async executor
 - Enable/disable features
 
 **Configuration Categories:**
 ```java
 // Database
-setJdbcUrl(), setJdbcDriver(), setJdbcUsername(), setJdbcPassword()
-setDatabaseSchemaUpdate(), setDatabaseSchemaCheck()
+setJdbcDriver(), setJdbcUrl(), setJdbcUsername(), setJdbcPassword()
+setDatabaseSchemaUpdate(), setDatabaseType(), setDatabaseTablePrefix()
 
-// Job Executor
-setAsyncExecutorActivate(), setAsyncExecutorAcquireFrequency()
-setJobExecutorThreads(), setJobExecutorQueueSize()
+// Async Executor
+setAsyncExecutorActivate(), setAsyncExecutorCorePoolSize(), setAsyncExecutorMaxPoolSize()
+setAsyncExecutorThreadPoolQueueSize(), setAsyncExecutorDefaultAsyncJobAcquireWaitTime()
 
 // History
-setHistoryLevel(), setEnableHistoryAudit()
+setHistory(String), setHistoryLevel(HistoryLevel)
 
-// Security
-setAuthorizationManager(), setPermissionFactory()
-
-// Custom
-setCustomLogger(), setCustomTaskListener()
+// Transaction
+createTransactionInterceptor() // overridden per environment (Standalone, JTA, Spring)
 ```
 
 **Design Pattern:** Builder + Configuration
 
-### 3. Command Manager
+### 3. Command Executor
 
 **Purpose:** Central gateway for all engine operations
+
+**Source:** `org.activiti.engine.impl.interceptor.CommandExecutor`
 
 **Responsibilities:**
 - Execute commands with proper transaction handling
@@ -187,177 +198,240 @@ setCustomLogger(), setCustomTaskListener()
 - Ensure thread safety
 - Handle retries and error propagation
 
-**Command Execution Flow:**
+**Command Interceptor Chain:**
 ```
-1. Command submitted
-2. Transaction started (if needed)
-3. Context initialized
-4. Command executed
-5. Events dispatched
-6. Transaction committed/rolled back
-7. Context cleared
+1. LogInterceptor — debug logging of command start/finish
+2. TransactionInterceptor — begins/commits/rollbacks transaction (environment-specific)
+3. CommandContextInterceptor — creates and manages CommandContext
+4. TransactionContextInterceptor — manages transaction context resources
+5. CommandInvoker — executes command, processes agenda operations
 ```
 
 **Key Interface:**
 ```java
-public interface Command<T> {
-    T execute(CommandContext context);
+public interface CommandExecutor {
+    CommandConfig getDefaultConfig();
+    <T> T execute(CommandConfig config, Command<T> command);
+    <T> T execute(Command<T> command);
 }
 ```
 
-**Design Pattern:** Command + Template Method
+**Design Pattern:** Command + Interceptor Chain
 
-### 4. Entity Manager
+### 4. Entity Managers
 
 **Purpose:** Persistence operations for runtime entities
 
+**Source:** `org.activiti.engine.impl.persistence.entity.EntityManager<EntityImpl extends Entity>` (generic base)
+
 **Responsibilities:**
-- CRUD operations for executions, tasks, variables
+- CRUD operations for entities
 - Entity caching and lifecycle management
 - Database query optimization
-- Multi-tenancy support
 
-**Managed Entities:**
-- `ExecutionEntity` - Process executions
-- `TaskEntity` - User tasks
-- `VariableInstanceEntity` - Variables
-- `JobEntity` - Async jobs
+**Base Interface:**
+```java
+public interface EntityManager<EntityImpl extends Entity> {
+    EntityImpl create();
+    EntityImpl findById(String entityId);
+    void insert(EntityImpl entity);
+    void insert(EntityImpl entity, boolean fireCreateEvent);
+    EntityImpl update(EntityImpl entity);
+    EntityImpl update(EntityImpl entity, boolean fireUpdateEvent);
+    void delete(String id);
+    void delete(EntityImpl entity);
+    void delete(EntityImpl entity, boolean fireDeleteEvent);
+}
+```
 
-**Design Pattern:** Repository + Unit of Work
+**Per-Entity-Type Managers:**
+- `ExecutionEntityManager` — Process executions (`ExecutionEntity`)
+- `TaskEntityManager` — User tasks (`TaskEntity`)
+- `VariableInstanceEntityManager` — Variables (`VariableInstanceEntity`)
+- `JobEntityManager` — Async jobs (`JobEntity`)
+
+**Design Pattern:** Repository + Unit of Work + Generic CRUD
 
 ### 5. History Manager
 
-**Purpose:** Historical data management
+**Purpose:** Historical data recording
+
+**Source:** `org.activiti.engine.impl.history.HistoryManager`
 
 **Responsibilities:**
 - Record process instance history
 - Track task history
 - Store variable history
-- Manage history cleanup
+- Record activity instance data
 
 **History Levels:**
 ```java
 public enum HistoryLevel {
-    NONE,           // No history
-    ACTIVITY,       // Activity instances only
-    AUDIT,          // + Task instances, variables
-    FULL            // + Detailed execution history
+    NONE,     // No history
+    ACTIVITY, // Activity instances only
+    AUDIT,    // + Task instances, variables
+    FULL      // + Detailed execution history
 }
 ```
 
-**Design Pattern:** Event Sourcing (partial)
+**Key Methods (representative):**
+```java
+    void recordProcessInstanceStart(ExecutionEntity processInstance, FlowElement startElement);
+    void recordProcessInstanceEnd(String processInstanceId, String deleteReason, String activityId);
+    void recordTaskCreated(TaskEntity task, ExecutionEntity execution);
+    void recordTaskEnd(String taskId, String deleteReason);
+    void recordVariableCreate(VariableInstanceEntity variable);
+    void recordVariableUpdate(VariableInstanceEntity variable);
+```
 
-### 6. Event Manager
+**Design Pattern:** Recorder (not Event Sourcing — stores structured history tables)
+
+### 6. ActivitiEventDispatcher
 
 **Purpose:** Event dispatching and listener management
+
+**Source:** `org.activiti.engine.delegate.event.ActivitiEventDispatcher`
 
 **Responsibilities:**
 - Dispatch engine events
 - Manage event listeners
-- Support synchronous/asynchronous events
-- Event filtering and routing
+- Support event filtering
+- Handle listener exceptions
 
-**Event Types:**
+**Event Types (ActivitiEventType enum, representative):**
 ```java
+// Entity lifecycle
+ENTITY_CREATED, ENTITY_INITIALIZED, ENTITY_UPDATED, ENTITY_DELETED
+
 // Task events
-TaskCreatedEvent, TaskCompletedEvent, TaskAssignedEvent
+TASK_CREATED, TASK_ASSIGNED, TASK_COMPLETED
 
 // Process events
-ProcessStartedEvent, ProcessCompletedEvent, ActivityTakenEvent
+PROCESS_STARTED, PROCESS_COMPLETED, PROCESS_COMPLETED_WITH_ERROR_END_EVENT, PROCESS_CANCELLED
 
-// Job events
-JobExecutedEvent, JobExecutionFailedEvent
+// Activity events
+ACTIVITY_STARTED, ACTIVITY_COMPLETED, ACTIVITY_CANCELLED, ACTIVITY_SIGNALED
+
+// Sequence flow
+SEQUENCEFLOW_TAKEN
 
 // Variable events
-VariableCreatedEvent, VariableUpdatedEvent
+VARIABLE_CREATED, VARIABLE_UPDATED, VARIABLE_DELETED
+
+// Job events
+JOB_EXECUTION_SUCCESS, JOB_EXECUTION_FAILURE, JOB_RETRIES_DECREMENTED, JOB_CANCELED
+
+// Timer events
+TIMER_SCHEDULED, TIMER_FIRED
+
+// Engine lifecycle
+ENGINE_CREATED, ENGINE_CLOSED
+```
+
+**Listener Interface:**
+```java
+public interface ActivitiEventListener {
+    void onEvent(ActivitiEvent event);
+    boolean isFailOnException();
+}
 ```
 
 **Design Pattern:** Publisher-Subscriber
 
-### 7. BPMN Executor
+### 7. BPMN Execution — ActivityBehavior Pattern
 
 **Purpose:** Core BPMN 2.0 execution engine
 
+**Source:** `org.activiti.engine.impl.delegate.ActivityBehavior` (interface), `org.activiti.engine.impl.bpmn.parser.BpmnParse` (parser)
+
 **Responsibilities:**
-- Parse BPMN definitions
-- Execute process flows
+- Parse BPMN definitions (`BpmnParse`)
+- Execute process flows via activity behaviors
 - Handle gateways and events
 - Manage parallel execution
 - Process business rules
 
-**Components:**
+**Architecture:**
 
-```mermaid
-flowchart LR
-    subgraph BPMNExecutor["BPMN Executor"]
-        direction TB
-        StartHandler["Start<br>Handler"]
-        ActivityHandlers["Activity<br>Handlers"]
-        GatewayHandler["Gateway<br>Handler"]
-        EventHandlers["Event<br>Handlers"]
-        SequenceFlowHandler["Sequence<br>Flow Handler"]
-        SignalMessageHandler["Signal/<br>Message<br>Handler"]
-    end
+Each BPMN element has a corresponding `ActivityBehavior` implementation that defines what happens when the engine reaches that element. Behaviors are created by `ActivityBehaviorFactory` during parsing.
 
-    StartHandler --> ActivityHandlers
-    GatewayHandler --> EventHandlers
-    SequenceFlowHandler --> SignalMessageHandler
+```java
+public interface ActivityBehavior {
+    void execute(DelegateExecution execution);
+}
 ```
 
-**Design Pattern:** Strategy + Chain of Responsibility
+**Key Behavior Classes:**
+- `StartEventActivityBehavior` — Process start
+- `EndEventActivityBehavior` — Process end
+- `TaskActivityBehavior` — User/service tasks
+- `ExclusiveGatewayActivityBehavior` — XOR gateway
+- `ParallelGatewayActivityBehavior` — AND gateway
+- `SubProcessActivityBehavior` — Embedded/called sub-processes
+- `IntermediateCatchEventActivityBehavior` — Signal/message/timer catches
+- `BoundaryEventActivityBehavior` — Boundary events
+
+**Process Startup:**
+`ProcessInstanceHelper.createAndStartProcessInstance()` orchestrates execution creation and initial element activation.
+
+**Design Pattern:** Strategy + Element-specific behaviors
 
 ### 8. Agenda
 
-**Purpose:** Execution task management
+**Purpose:** Execution task management via planned operations
+
+**Source:** `org.activiti.engine.ActivitiEngineAgenda` (interface), `org.activiti.engine.impl.agenda.DefaultActivitiEngineAgenda` (implementation)
 
 **Responsibilities:**
-- Queue execution tasks
-- Prioritize work items
+- Queue execution operations
 - Manage execution order
-- Handle exceptions
+- Handle operation completion
 
-**Agenda Items:**
+**Operations (planned via agenda):**
 ```java
-- TakeSequenceFlow
-- ActivateExecution
-- CompleteActivity
-- EvaluateGateway
-- SignalEvent
-- ThrowException
+void planContinueProcessOperation(ExecutionEntity execution);
+void planContinueProcessSynchronousOperation(ExecutionEntity execution);
+void planContinueProcessInCompensation(ExecutionEntity execution);
+void planContinueMultiInstanceOperation(ExecutionEntity execution);
+void planTakeOutgoingSequenceFlowsOperation(ExecutionEntity execution, boolean evaluateConditions);
+void planEndExecutionOperation(ExecutionEntity execution);
+void planTriggerExecutionOperation(ExecutionEntity execution);
+void planDestroyScopeOperation(ExecutionEntity execution);
+void planExecuteInactiveBehaviorsOperation();
 ```
 
-**Design Pattern:** Priority Queue
+**Execution:** Operations are retrieved via `getNextOperation()` and executed by `CommandInvoker.executeOperations()`, which drains the agenda until empty.
 
-### 9. Job Executor
+**Design Pattern:** Operation Queue
+
+### 9. AsyncExecutor
 
 **Purpose:** Asynchronous job processing
+
+**Source:** `org.activiti.engine.impl.asyncexecutor.AsyncExecutor` (interface), `DefaultAsyncJobExecutor` / `ManagedAsyncJobExecutor`
 
 **Responsibilities:**
 - Execute timer jobs
 - Process async service tasks
 - Handle job retries
 - Manage job queues
-- Multi-tenant job isolation
 
-**Job Types:**
+**Job Handlers:**
+- `TimerStartEventJobHandler` — Starts process on timer (`"timer-start-event"`)
+- `TriggerTimerEventJobHandler` — Fires timer boundary/intermediate events (`"trigger-timer"`)
+- `AsyncContinuationJobHandler` — Continues async service tasks (`"async-continuation"`)
+- `ProcessEventJobHandler` — Fires process events (signal/message) (`"process-event"`)
+- `TimerSuspendProcessDefinitionHandler` — Suspends process definition on timer
+- `TimerActivateProcessDefinitionHandler` — Activates process definition on timer
+
+**Configuration:**
 ```java
-- TimerStartJob - Start process on timer
-- TimerCatchJob - Wait for timer in process
-- ServiceJob - Async service task
-- SignalJob - Send signal
-- Job - Generic async job
-```
-
-**Threading Model:**
-
-```mermaid
-flowchart LR
-    subgraph ThreadPool["Job Executor Thread Pool"]
-        direction TB
-        TenantA["Job Executor 1<br>(Tenant A)"]
-        TenantB["Job Executor 2<br>(Tenant B)"]
-        Shared["Job Executor 3<br>(Shared)"]
-    end
+setAsyncExecutorCorePoolSize(int)
+setAsyncExecutorMaxPoolSize(int)
+setAsyncExecutorThreadPoolQueueSize(int)
+setAsyncExecutorDefaultAsyncJobAcquireWaitTime(int)
+setAsyncExecutorDefaultTimerJobAcquireWaitTime(int)
+setAsyncExecutorNumberOfRetries(int)
 ```
 
 **Design Pattern:** Thread Pool + Worker
@@ -370,41 +444,41 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    App["Application"] --> Runtime["RuntimeService<br>startProcessInstance()"]
-    Runtime --> CmdMgr["CommandExecutor<br>new StartProcessInstanceCmd()"]
-    CmdMgr --> TxMgr["TransactionManager<br>begin()"]
-    TxMgr --> Context["CommandContext<br>initialized"]
-    Context --> Execute["StartProcessCmd<br>execute()"]
-    
-    Execute --> CreateDef["Create process definition"]
-    Execute --> CreateExec["Create execution"]
-    Execute --> InitVars["Initialize variables"]
-    Execute --> Trigger["Trigger start event"]
-    
-    CreateDef --> BPMN["BPMN Executor<br>executeStartEvent()"]
-    CreateExec --> BPMN
-    InitVars --> BPMN
-    Trigger --> BPMN
-    
-    BPMN --> Agenda["Agenda<br>add tasks"]
-    Agenda --> ExecAgenda["Execute Agenda<br>process items"]
-    ExecAgenda --> EventMgr["EventManager<br>dispatch events"]
-    EventMgr --> HistoryMgr["HistoryManager<br>record history"]
-    HistoryMgr --> Commit["TransactionManager<br>commit()"]
+    App["Application"] --> Runtime["RuntimeService\nstartProcessInstanceByKey()"]
+    Runtime --> CmdExec["CommandExecutor\nexecute(StartProcessInstanceCmd)"]
+    CmdExec --> Interceptors["Interceptor Chain:\nLog → Transaction → Context → Invoker"]
+    Interceptors --> Cmd["StartProcessInstanceCmd\nexecute()"]
+
+    Cmd --> Retrieve["ProcessDefinitionRetriever\nfind process definition"]
+    Retrieve --> DeployMgr["DeploymentManager\ncache lookup"]
+    DeployMgr --> Helper["ProcessInstanceHelper\ncreateAndStartProcessInstance()"]
+
+    Helper --> CreateExec["Create execution entities"]
+    Helper --> InitVars["Initialize variables"]
+    Helper --> Activate["Activate start event\nvia ActivityBehavior"]
+
+    CreateExec --> EntityMgr["ExecutionEntityManager"]
+    InitVars --> VarMgr["VariableInstanceEntityManager"]
+    Activate --> Agenda["Agenda\nplan operations"]
+
+    Agenda --> CmdInvoker["CommandInvoker\nexecuteOperations()\ndrains agenda"]
+    CmdInvoker --> EventDisp["ActivitiEventDispatcher\ndispatch events"]
+    EventDisp --> HistoryMgr["HistoryManager\nrecord history"]
+    HistoryMgr --> Commit["Transaction commit"]
 ```
 
 ### Task Completion Flow
 
 ```mermaid
 flowchart TD
-    TaskComplete["Task Complete"] --> TaskSvc["TaskService<br>complete()"]
-    TaskSvc --> CmdMgr["CommandExecutor<br>CompleteTaskCmd"]
-    CmdMgr --> EntityMgr["EntityManager<br>update task, delete task, save variables"]
-    EntityMgr --> BPMN["BPMN Executor<br>complete activity, take sequence, evaluate gateway"]
-    BPMN --> Agenda["Agenda<br>add next steps"]
-    Agenda --> ExecAgenda["Execute Agenda<br>until idle"]
-    ExecAgenda --> EventMgr["EventManager<br>TaskCompletedEvent"]
-    EventMgr --> HistoryMgr["HistoryManager<br>record completion"]
+    TaskComplete["Task Complete"] --> TaskSvc["TaskService\ncomplete(taskId, variables)"]
+    TaskSvc --> CmdExec["CommandExecutor\nCompleteTaskCmd"]
+    CmdExec --> EntityOps["Entity Managers\n- update variables\n- delete task"]
+    EntityOps --> ActivityBehavior["TaskActivityBehavior\ncomplete task execution"]
+    ActivityBehavior --> Agenda["Agenda\nplanTakeOutgoingSequenceFlowsOperation"]
+    Agenda --> CmdInvoker["CommandInvoker\nexecuteOperations()"]
+    CmdInvoker --> EventDisp["ActivitiEventDispatcher\nTASK_COMPLETED"]
+    EventDisp --> HistoryMgr["HistoryManager\nrecordTaskEnd()"]
 ```
 
 ---
@@ -413,21 +487,50 @@ flowchart TD
 
 ### Command Execution Context
 
+The `Context` class manages thread-local stacks for engine state. `CommandContext` holds per-command state and delegates manager access to `ProcessEngineConfigurationImpl`.
+
 ```java
-public class CommandContext implements InMemoryObjectCache {
-    
-    private EntityManager entityManager;
-    private HistoryManager historyManager;
-    private EventManager eventManager;
-    private Agenda agenda;
-    private JobManager jobManager;
-    
-    // Thread-local storage for engine state
-    private static final ThreadLocal<CommandContext> context = 
+// Context.java — thread-local storage
+public class Context {
+    protected static ThreadLocal<Stack<CommandContext>> commandContextThreadLocal =
         new ThreadLocal<>();
-    
-    public static CommandContext getContext() {
-        return context.get();
+
+    protected static ThreadLocal<Stack<ProcessEngineConfigurationImpl>>
+        processEngineConfigurationStackThreadLocal = new ThreadLocal<>();
+
+    public static CommandContext getCommandContext() {
+        Stack<CommandContext> commandContextStack = commandContextThreadLocal.get();
+        if (commandContextStack != null && !commandContextStack.isEmpty()) {
+            return commandContextStack.peek();
+        }
+        return null;
+    }
+}
+
+// CommandContext.java — delegates managers to configuration
+public class CommandContext {
+    private ProcessEngineConfigurationImpl processEngineConfiguration;
+    private ActivitiEngineAgenda agenda;
+
+    // Manager access delegates to configuration
+    public ExecutionEntityManager getExecutionEntityManager() {
+        return getProcessEngineConfiguration().getExecutionEntityManager();
+    }
+
+    public TaskEntityManager getTaskEntityManager() {
+        return getProcessEngineConfiguration().getTaskEntityManager();
+    }
+
+    public VariableInstanceEntityManager getVariableInstanceEntityManager() {
+        return getProcessEngineConfiguration().getVariableInstanceEntityManager();
+    }
+
+    public HistoryManager getHistoryManager() {
+        return getProcessEngineConfiguration().getHistoryManager();
+    }
+
+    public ActivitiEventDispatcher getEventDispatcher() {
+        return getProcessEngineConfiguration().getEventDispatcher();
     }
 }
 ```
@@ -438,17 +541,19 @@ public class CommandContext implements InMemoryObjectCache {
 flowchart TD
     subgraph TransactionBoundary["Transaction Boundary"]
         subgraph CommandExec["Command Execution"]
-            Begin["1. Begin Transaction"]
-            Execute["2. Execute Command"]
+            Begin["1. TransactionInterceptor\nbegin()"]
+            Init["2. CommandContextInterceptor\ncreate context"]
+            Execute["3. CommandInvoker\nexecute command"]
             Modify["   - Modify entities"]
             CreateJobs["   - Create jobs"]
             Dispatch["   - Dispatch events"]
-            Commit["3. Commit Transaction"]
+            Commit["4. TransactionInterceptor\ncommit()"]
         end
-        Async["4. Async Processing outside transaction"]
+        Async["5. Async Processing (outside transaction)"]
     end
 
-    Begin --> Execute
+    Begin --> Init
+    Init --> Execute
     Execute --> Modify
     Execute --> CreateJobs
     Execute --> Dispatch
@@ -462,125 +567,78 @@ flowchart TD
 
 ## Command Pattern
 
-### Command Hierarchy
+### Single Command Interface
 
-```mermaid
-classDiagram
-    class Command {
-        <<interface>>
-        +execute(CommandContext context) T
-    }
-    
-    class ReadOnlyCommand {
-        <<abstract>>
-        Query commands
-        No DB modifications
-    }
-    
-    class WriteCommand {
-        <<abstract>>
-        Process commands
-        Repository commands
-        Task commands
-        Management commands
-    }
-    
-    class ConfigCommand {
-        <<abstract>>
-        Configuration changes
-    }
-    
-    class StartProcessInstanceCmd {
-        +execute() Execution
-    }
-    
-    class CompleteTaskCmd {
-        +execute() void
-    }
-    
-    class SignalEventCmd {
-        +execute() void
-    }
-    
-    class DeployCmd {
-        +execute() Deployment
-    }
-    
-    class DeleteDeploymentCmd {
-        +execute() void
-    }
-    
-    class SaveProcessDefinitionCmd {
-        +execute() ProcessDefinition
-    }
-    
-    class CreateTaskCmd {
-        +execute() Task
-    }
-    
-    class ClaimTaskCmd {
-        +execute() Task
-    }
-    
-    class ExecuteJobsCmd {
-        +execute() int
-    }
-    
-    class CleanupCmd {
-        +execute() void
-    }
-    
-    Command <|-- ReadOnlyCommand
-    Command <|-- WriteCommand
-    Command <|-- ConfigCommand
-    
-    WriteCommand <|-- StartProcessInstanceCmd
-    WriteCommand <|-- CompleteTaskCmd
-    WriteCommand <|-- SignalEventCmd
-    WriteCommand <|-- DeployCmd
-    WriteCommand <|-- DeleteDeploymentCmd
-    WriteCommand <|-- SaveProcessDefinitionCmd
-    WriteCommand <|-- CreateTaskCmd
-    WriteCommand <|-- ClaimTaskCmd
-    WriteCommand <|-- ExecuteJobsCmd
-    WriteCommand <|-- CleanupCmd
+All engine operations implement the single `Command<T>` interface. There is no hierarchy of command types — `StartProcessInstanceCmd`, `CompleteTaskCmd`, `DeployCmd`, etc. all implement `Command<T>` directly.
+
+```java
+@Internal
+public interface Command<T> {
+    T execute(CommandContext commandContext);
+}
+```
+
+### Command Examples by Service
+
+```java
+// RuntimeService commands
+StartProcessInstanceCmd<T>     // starts a process instance
+SignalEventReceivedCmd         // signals an event to an execution
+SetVariableCmd                 // sets a process variable
+DeleteProcessInstanceCmd       // deletes a process instance
+
+// TaskService commands
+CompleteTaskCmd                // completes a task
+SetAssigneeTaskCmd             // assigns a task
+AddCandidateUserTaskCmd        // adds a candidate user
+
+// RepositoryService commands
+DeployCmd                      // deploys a process archive
+DeleteDeploymentCmd            // deletes a deployment
+SaveProcessDefinitionCmd       // saves a process definition
+
+// ManagementService commands
+ExecuteJobsCmd                 // executes due jobs
+CleanupCmd                     // cleans up expired history
 ```
 
 ### Command Implementation Example
 
 ```java
-public class StartProcessInstanceCmd<T> implements WriteCommand<T> {
-    
-    private String processDefinitionKey;
-    private String businessKey;
-    private Map<String, Object> variables;
-    
-    @Override
-    public T execute(CommandContext context) {
-        // 1. Get process definition
-        ProcessDefinitionEntity def = context.getEntityManager()
-            .findLatestProcessDefinitionByKey(processDefinitionKey);
-        
-        // 2. Create root execution
-        ExecutionEntity execution = context.getEntityManager()
-            .createRootExecution(def);
-        
-        // 3. Set business key
-        execution.setBusinessKey(businessKey);
-        
-        // 4. Initialize variables
-        for (Map.Entry<String, Object> entry : variables.entrySet()) {
-            context.getEntityManager().createVariable(execution, entry);
-        }
-        
-        // 5. Trigger start event
-        context.getBpmnExecutor().executeStartEvent(execution);
-        
-        // 6. Execute agenda
-        context.getAgenda().execute();
-        
-        // 7. Return process instance
-        return (T) execution;
+public class StartProcessInstanceCmd<T> implements Command<ProcessInstance>, Serializable {
+
+    protected String processDefinitionKey;
+    protected String processDefinitionId;
+    protected String businessKey;
+    protected Map<String, Object> variables;
+    protected Map<String, Object> transientVariables;
+    protected String tenantId;
+    protected ProcessInstanceHelper processInstanceHelper;
+
+    public StartProcessInstanceCmd(String processDefinitionKey, String processDefinitionId,
+                                   String businessKey, Map<String, Object> variables) {
+        this.processDefinitionKey = processDefinitionKey;
+        this.processDefinitionId = processDefinitionId;
+        this.businessKey = businessKey;
+        this.variables = variables;
+    }
+
+    public ProcessInstance execute(CommandContext commandContext) {
+        // 1. Resolve process definition from cache
+        DeploymentManager deploymentCache = commandContext.getProcessEngineConfiguration()
+            .getDeploymentManager();
+        ProcessDefinitionRetriever processRetriever =
+            new ProcessDefinitionRetriever(this.tenantId, deploymentCache);
+        ProcessDefinition processDefinition = processRetriever.getProcessDefinition(
+            this.processDefinitionId, this.processDefinitionKey);
+
+        // 2. Create and start process instance via helper
+        processInstanceHelper = commandContext.getProcessEngineConfiguration()
+            .getProcessInstanceHelper();
+        ProcessInstance processInstance = processInstanceHelper.createAndStartProcessInstance(
+            processDefinition, businessKey, processInstanceName, variables, transientVariables);
+
+        return processInstance;
     }
 }
 ```
@@ -589,31 +647,48 @@ public class StartProcessInstanceCmd<T> implements WriteCommand<T> {
 
 ## Transaction Management
 
-### Transaction Strategy
+### Interceptor-Based Approach
+
+Transaction management is handled through the command interceptor chain. The `ProcessEngineConfiguration` subclass determines the transaction strategy by overriding `createTransactionInterceptor()`.
 
 ```java
-public interface TransactionStrategy {
-    void begin();
-    void commit();
-    void rollback();
-    boolean isActive();
-}
+// ProcessEngineConfigurationImpl
+public abstract CommandInterceptor createTransactionInterceptor();
 ```
 
-### Built-in Strategies
+### Environment-Specific Implementations
 
-1. **JdbcTransactionStrategy** - JDBC transactions
-2. **JtaTransactionStrategy** - JTA distributed transactions
-3. **SpringTransactionStrategy** - Spring transaction management
+```java
+// StandaloneProcessEngineConfiguration — JDBC transactions
+@Override
+public CommandInterceptor createTransactionInterceptor() {
+    return new TransactionInterceptor(
+        new JdbcTransactionFactory(dataSource, autoCommit),
+        this
+    );
+}
+
+// SpringProcessEngineConfiguration — Spring PlatformTransactionManager
+@Override
+public CommandInterceptor createTransactionInterceptor() {
+    return new SpringTransactionInterceptor(transactionManager);
+}
+
+// JtaProcessEngineConfiguration — JTA UserTransaction
+@Override
+public CommandInterceptor createTransactionInterceptor() {
+    return new JtaTransactionInterceptor(userTransaction);
+}
+```
 
 ### Transaction Propagation
 
 ```mermaid
 flowchart TD
-    ServiceLayer["Service Layer<br/>@Transactional (REQUIRED)"] --> CmdMgr["CommandExecutor<br/>execute()"]
-    CmdMgr --> TxBegin["Transaction<br/>begin()"]
-    TxBegin --> CmdExec["Command.execute()<br/>(in transaction)"]
-    CmdExec --> TxCommit["Transaction<br/>commit()"]
+    ServiceLayer["Service Layer\n@Transactional (Spring) or standalone"] --> CmdMgr["CommandExecutor\nexecute()"]
+    CmdMgr --> TxInterceptor["TransactionInterceptor\nbegin()"]
+    TxInterceptor --> CmdExec["Command.execute()\n(in transaction context)"]
+    CmdExec --> TxCommit["TransactionInterceptor\ncommit() / rollback()"]
 ```
 
 ---
@@ -625,17 +700,18 @@ flowchart TD
 ```java
 // Thread-safe components
 - ProcessEngine (singleton)
-- Services (stateless)
-- CommandManager (synchronized)
+- Services (stateless delegates to CommandExecutor)
+- CommandExecutor (interceptor chain, thread-safe)
 
-// Thread-local storage
-- CommandContext
-- Engine state
-- Transaction context
+// Thread-local storage (Context class)
+- CommandContext stack
+- ProcessEngineConfiguration
+- TransactionContext
+- BPMN override context
 
 // Not thread-safe
-- Query objects
-- Builder objects
+- Query objects (single-use per query)
+- Builder objects (e.g., ProcessInstanceBuilder)
 ```
 
 ### Concurrency Control
@@ -643,45 +719,45 @@ flowchart TD
 ```mermaid
 flowchart TD
     Main["Main Thread"]
-    
+
     subgraph ServiceCalls["Service Calls"]
         Service1["Service Call 1"]
         Service2["Service Call 2"]
     end
-    
+
     subgraph CommandExecution["Command Execution"]
         Cmd1["Command 1"]
         Cmd2["Command 2"]
     end
-    
+
     subgraph Transactions["Transactions"]
         Tx1["Transaction 1"]
         Tx2["Transaction 2"]
     end
-    
-    subgraph JobExecutor["Job Executor Threads"]
-        subgraph JobThreads["Worker Threads"]
-            Job1["Job Thread 1"]
-            Job2["Job Thread 2"]
-            JobN["Job Thread N"]
+
+    subgraph AsyncExecutor["AsyncExecutor Thread Pool"]
+        subgraph WorkerThreads["Worker Threads"]
+            W1["Worker 1"]
+            W2["Worker 2"]
+            WN["Worker N"]
         end
     end
-    
+
     subgraph AsyncJobs["Async Jobs"]
-        Async1["Async Job 1"]
-        Async2["Async Job 2"]
-        AsyncN["Async Job N"]
+        Job1["Async Job 1"]
+        Job2["Async Job 2"]
+        JobN["Async Job N"]
     end
-    
+
     Main --> ServiceCalls
     Service1 --> Cmd1
     Service2 --> Cmd2
     Cmd1 --> Tx1
     Cmd2 --> Tx2
-    Main --> JobExecutor
-    Job1 --> Async1
-    Job2 --> Async2
-    JobN --> AsyncN
+    Main --> AsyncExecutor
+    W1 --> Job1
+    W2 --> Job2
+    WN --> JobN
 ```
 
 ---
@@ -691,75 +767,108 @@ flowchart TD
 ### Caching Strategy
 
 ```java
-// First-level cache (transaction-scoped)
-- Entity cache
-- Variable cache
-- Execution cache
+// Transaction-scoped cache (CommandContext level)
+- Entity cache via DbSqlSession.insertNewEntity()
+- Entities inserted within a command are cached to avoid duplicate DB reads
 
-// Second-level cache (engine-scoped)
-- Process definition cache
-- Deployment cache
-- BPMN model cache
+// Engine-scoped cache (ProcessEngineConfiguration level)
+- DeploymentManager — caches process definitions and BPMN models
+- ProcessDefinition cache — in-memory by deployment
 ```
 
 ### Memory Optimization
 
-1. **Lazy Loading**: Load entities on demand
-2. **Batch Operations**: Process multiple items together
-3. **Connection Pooling**: Reuse database connections
-4. **History Cleanup**: Remove old history data
-5. **Variable Serialization**: Efficient storage
+1. **Lazy Loading**: Load entities on demand through entity managers
+2. **Batch Operations**: Process multiple items together where possible
+3. **Connection Pooling**: Reuse database connections via configured DataSource
+4. **History Cleanup**: Remove old history data using `ManagementService.executeCustomSql()` or history cleanup commands
+5. **Variable Serialization**: Efficient storage of typed variables
 
 ---
 
 ## Extension Points
 
-### Custom Components
+### Custom Activity Behavior
 
 ```java
 // 1. Custom Activity Behavior
+@Internal
+public interface ActivityBehavior {
+    void execute(DelegateExecution execution);
+}
+
+// Implementation example:
 public class CustomActivityBehavior implements ActivityBehavior {
-    public void execute(Execution execution) { ... }
-}
-
-// 2. Custom Task Listener
-public class CustomTaskListener implements TaskListener {
-    public void notify(DelegateTask task) { ... }
-}
-
-// 3. Custom Event Listener
-public class CustomEventListener implements EngineEventListener {
-    public void notify(EngineEvent event) { ... }
-}
-
-// 4. Custom Job Handler
-public class CustomJobHandler implements JobHandler {
-    public void execute(JobJob job) { ... }
-}
-
-// 5. Custom History Provider
-public class CustomHistoryProvider implements HistoryProvider {
-    public void recordHistory(Execution execution) { ... }
+    @Override
+    public void execute(DelegateExecution execution) {
+        // Custom logic
+        execution.setVariable("result", "done");
+        // Continue to next element
+        ((ActivitiExecutionEntity) execution).setActive(true);
+    }
 }
 ```
 
-### Plugin Architecture
+### Custom Task Listener
 
-```mermaid
-flowchart TD
-    Config["ProcessEngineConfiguration"]
-    
-    subgraph Plugins["Engine Plugins"]
-        History["HistoryPlugin"]
-        Audit["AuditPlugin"]
-        Security["SecurityPlugin"]
-        Custom["CustomPlugin"]
-    end
-    
-    Config --> History
-    Config --> Audit
-    Config --> Security
-    Config --> Custom
+```java
+// 2. Custom Task Listener
+public interface TaskListener extends BaseTaskListener {
+    void notify(DelegateTask delegateTask);
+}
+
+// Implementation example:
+public class CustomTaskListener implements TaskListener {
+    @Override
+    public void notify(DelegateTask delegateTask) {
+        // Custom logic on create/assignment/complete events
+    }
+}
+```
+
+### Custom Event Listener
+
+```java
+// 3. Custom Event Listener
+public interface ActivitiEventListener {
+    void onEvent(ActivitiEvent event);
+    boolean isFailOnException();
+}
+
+// Implementation example:
+public class CustomEventListener implements ActivitiEventListener {
+    @Override
+    public void onEvent(ActivitiEvent event) {
+        if (event.getType() == ActivitiEventType.TASK_COMPLETED) {
+            // Handle task completion
+        }
+    }
+
+    @Override
+    public boolean isFailOnException() {
+        return false; // Don't fail the engine on listener exceptions
+    }
+}
+```
+
+### Custom Execution Listener
+
+```java
+// 4. Custom Execution Listener (for BPMN events)
+public interface ExecutionListener extends BaseExecutionListener {
+    void notify(DelegateExecution execution);
+}
+```
+
+### Custom Job Handler
+
+```java
+// 5. Custom Job Handler (internal API)
+@Internal
+public interface JobHandler {
+    String getType();
+    void execute(JobEntity job, String configuration, ExecutionEntity execution, CommandContext commandContext);
+}
 ```
 
 ---
@@ -769,11 +878,11 @@ flowchart TD
 ### Optimization Strategies
 
 1. **Batch Processing**: Use batch operations for bulk updates
-2. **Query Optimization**: Index frequently queried columns
-3. **Connection Pooling**: Configure appropriate pool sizes
-4. **Async Execution**: Use async for long-running tasks
-5. **History Level**: Choose appropriate history level
-6. **Caching**: Enable definition caching
+2. **Query Optimization**: Index frequently queried columns; use typed queries over native SQL
+3. **Connection Pooling**: Configure appropriate pool sizes in DataSource
+4. **Async Execution**: Use async continuations for long-running tasks to reduce transaction scope
+5. **History Level**: Choose appropriate history level — `NONE` for maximum performance, `FULL` for complete audit
+6. **Caching**: Process definitions are cached in memory after deployment — no reload needed
 
 ### Monitoring
 
@@ -782,9 +891,9 @@ flowchart TD
 - Command execution time
 - Transaction duration
 - Database connection usage
-- Job queue size
-- Memory usage
-- Thread pool utilization
+- AsyncExecutor job queue size
+- Memory usage (entity cache, definition cache)
+- Thread pool utilization (AsyncExecutor threads)
 ```
 
 ---
