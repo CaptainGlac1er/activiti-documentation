@@ -36,7 +36,6 @@ Activate detailed logging to trace workflow execution:
 **application.properties:**
 ```properties
 logging.level.org.activiti=DEBUG
-logging.level.org.flowable=DEBUG
 logging.level.org.activiti.engine.impl=DEBUG
 ```
 
@@ -45,7 +44,6 @@ logging.level.org.activiti.engine.impl=DEBUG
 logging:
   level:
     org.activiti: DEBUG
-    org.flowable: DEBUG
     org.activiti.engine.impl: DEBUG
 ```
 
@@ -217,9 +215,10 @@ definitions.getContent().forEach(def ->
 // src/main/resources/bpmn/*.bpmn
 
 // Or deploy programmatically
-@RepositoryService
+@Autowired
+private RepositoryService repositoryService;
+
 public void deployProcess() {
-    RepositoryService repositoryService = ...;
     repositoryService.createDeployment()
         .addClasspathResource("bpmn/order-process.bpmn")
         .deploy();
@@ -447,7 +446,7 @@ activeTasks.getContent().forEach(task ->
 ```properties
 # Enable async executor
 spring.activiti.async-executor-activate=true
-spring.activiti.job-executor-threads=10
+spring.activiti.async-executor.core-pool-size=10
 ```
 
 **Solution 2: Force Job Execution (Development Only)**

@@ -1206,9 +1206,9 @@ public class PaymentServiceTest {
     public ActivitiRule activitiRule = new ActivitiRule();
 
     @Test
-    @MockServiceTask(key = "paymentProcess", 
-                     name = "processPayment", 
-                     delegateClass = MockPaymentProcessor.class)
+    @MockServiceTask(id = "processPayment", 
+                      originalClassName = "com.example.PaymentProcessor",
+                      mockedClassName = MockPaymentProcessor.class.getName())
     public void testPaymentService() {
         ProcessInstance process = runtimeService.startProcessInstanceByKey("paymentProcess");
         // Process will use MockPaymentProcessor for the "processPayment" task

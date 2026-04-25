@@ -160,24 +160,8 @@ config.setJdbcPassword("activiti");
 config.setJdbcDriver("org.postgresql.Driver");
 config.setDatabaseType("postgresql");
 
-// Connection pool settings (when not using external pool)
-config.setJdbcMaxActiveConnections(20);
-config.setJdbcMaxIdleConnections(10);
-config.setJdbcMaxCheckoutTime(30000);  // Max time to hold a connection
-config.setJdbcMaxWaitTime(30000);      // Max time to wait for connection
-config.setJdbcPingEnabled(true);       // Enable connection validation
-config.setJdbcPingQuery("SELECT 1");   // Validation query
-config.setJdbcPingConnectionNotUsedFor(300); // Ping if not used for 5 minutes
-config.setJdbcDefaultTransactionIsolationLevel(Connection.TRANSACTION_READ_COMMITTED);
+// For connection pooling, use an external DataSource (see below)
 ```
-
-**Why use these:**
-- `setJdbcMaxActiveConnections`: Controls maximum concurrent database connections
-- `setJdbcMaxIdleConnections`: Maintains pool of idle connections for faster response
-- `setJdbcMaxCheckoutTime`: Prevents connection starvation by limiting hold time
-- `setJdbcMaxWaitTime`: Controls timeout when no connections available
-- `setJdbcPingEnabled`: Validates connections before use to prevent stale connection errors
-- `setJdbcDefaultTransactionIsolationLevel`: Ensures consistent transaction behavior across databases
 
 ### Database Schema Management
 
@@ -398,16 +382,12 @@ config.setHistoryLevel(HistoryLevel.FULL);
 // Enable/disable database history
 config.setDbHistoryUsed(true);
 
-// Set custom history implementation
-config.setHistory(new CustomHistory());
-
 // Configure history manager
 config.setHistoryManager(new CustomHistoryManager());
 ```
 
 **Why use these:**
 - `setDbHistoryUsed`: Disable history storage entirely for performance-critical scenarios
-- `setHistory`: Replace default history with custom implementation
 - `setHistoryManager`: Control how history is written and managed
 
 ---
@@ -423,9 +403,6 @@ config.setProcessDefinitionCacheLimit(1000);
 // Knowledge base cache limit (DMN)
 config.setKnowledgeBaseCacheLimit(100);
 
-// Enable process definition info cache
-config.setEnableProcessDefinitionInfoCache(true);
-
 // Custom cache implementations
 DeploymentCache<ProcessDefinitionCacheEntry> customCache = new CustomCache<>();
 config.setProcessDefinitionCache(customCache);
@@ -437,7 +414,6 @@ config.setKnowledgeBaseCache(kbCache);
 **Why use these:**
 - `setProcessDefinitionCacheLimit`: Control memory usage for cached process definitions
 - `setKnowledgeBaseCacheLimit`: Limit DMN decision table cache size
-- `setEnableProcessDefinitionInfoCache`: Speed up process definition metadata access
 - Custom caches: Implement specialized caching strategies (LRU, TTL, distributed)
 
 ### Batch Operations
@@ -1069,13 +1045,13 @@ public class ProdProcessEngineConfiguration {
     @Autowired
     private DataSource dataSource;
     
-    @Value("${activiti.history-level:AUDIT}")
+    @Value("${spring.activiti.history-level:AUDIT}")
     private String historyLevel;
-    
-    @Value("${activiti.async-executor-activate:true}")
+
+    @Value("${spring.activiti.async-executor-activate:true}")
     private boolean asyncExecutorActivate;
-    
-    @Value("${activiti.query-limit:1000}")
+
+    @Value("${spring.activiti.query-limit:1000}")
     private int queryLimit;
     
     public ProcessEngine createEngine() {
@@ -1106,15 +1082,11 @@ public class ProdProcessEngineConfiguration {
         // Performance optimizations
         config.setBulkInsertEnabled(true);
         config.setMaxNrOfStatementsInBulkInsert(1000);
-        config.setEnableProcessDefinitionInfoCache(true);
         config.setProcessDefinitionCacheLimit(1000);
-        
+
         // Event dispatcher for monitoring
         config.setEnableEventDispatcher(true);
-        
-        // External transaction management
-        config.setTransactionsExternallyManaged(true);
-        
+
         return config.buildProcessEngine();
     }
 }
@@ -1137,66 +1109,42 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
-activiti:
-  database-schema-update: false
-  history-level: AUDIT
-  async-executor-activate: true
-  async-executor-core-pool-size: 10
-  async-executor-max-pool-size: 20
-  async-executor-queue-size: 1000
-  execution-query-limit: 1000
-  task-query-limit: 1000
-  historic-task-query-limit: 1000
-  bulk-insert-enabled: true
-  max-statements-in-bulk-insert: 1000
-  process-definition-cache-limit: 1000
-  enable-event-dispatcher: true
-  transactions-externally-managed: true
+spring:
+  activiti:
+    database-schema-update: false
+    history-level: AUDIT
+    async-executor-activate: true
+    async-executor-core-pool-size: 10
+    async-executor-max-pool-size: 20
+    async-executor-queue-size: 1000
+    process-definition-cache-limit: 1000
 ```
 
 ```java
 @Configuration
 public class ActivitiConfiguration {
-    
+
     @Bean
     public ProcessEngineConfiguration processEngineConfiguration(
             DataSource dataSource,
             ActivitiProperties properties) {
-        
-        ProcessEngineConfiguration config = 
+
+        ProcessEngineConfiguration config =
             ProcessEngineConfiguration.createSpringProcessEngineConfiguration();
-        
+
         // Database
         config.setDataSource(dataSource);
         config.setDatabaseSchemaUpdate(
             ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE);
-        config.setHistoryLevel(HistoryLevel.valueOf(properties.getHistoryLevel()));
-        
+        config.setHistoryLevel(properties.getHistoryLevel());
+
         // Async executor
         config.setAsyncExecutorActivate(properties.isAsyncExecutorActivate());
-        config.setAsyncExecutorCorePoolSize(properties.getAsyncExecutorCorePoolSize());
-        config.setAsyncExecutorMaxPoolSize(properties.getAsyncExecutorMaxPoolSize());
-        config.setAsyncExecutorThreadPoolQueueSize(properties.getAsyncExecutorQueueSize());
-        
-        // Query limits
-        config.setExecutionQueryLimit(properties.getExecutionQueryLimit());
-        config.setTaskQueryLimit(properties.getTaskQueryLimit());
-        config.setHistoricTaskQueryLimit(properties.getHistoricTaskQueryLimit());
-        
+
         // Performance
-        config.setBulkInsertEnabled(properties.isBulkInsertEnabled());
-        config.setMaxNrOfStatementsInBulkInsert(
-            properties.getMaxStatementsInBulkInsert());
         config.setProcessDefinitionCacheLimit(
             properties.getProcessDefinitionCacheLimit());
-        
-        // Events
-        config.setEnableEventDispatcher(properties.isEnableEventDispatcher());
-        
-        // Transactions
-        config.setTransactionsExternallyManaged(
-            properties.isTransactionsExternallyManaged());
-        
+
         return config;
     }
 }
@@ -1262,7 +1210,6 @@ public class HighPerformanceConfiguration {
         config.setAsyncExecutorThreadKeepAliveTime(30L);
         
         // Caching
-        config.setEnableProcessDefinitionInfoCache(true);
         config.setProcessDefinitionCacheLimit(5000);
         config.setKnowledgeBaseCacheLimit(500);
         

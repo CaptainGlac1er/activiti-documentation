@@ -35,13 +35,7 @@ Add the following dependencies to your project's `pom.xml`:
 <dependencies>
     <dependency>
         <groupId>org.activiti</groupId>
-        <artifactId>activiti-api-process-runtime</artifactId>
-        <version>8.7.2-SNAPSHOT</version>
-    </dependency>
-    
-    <dependency>
-        <groupId>org.activiti</groupId>
-        <artifactId>activiti-api-task-runtime</artifactId>
+        <artifactId>activiti-spring-boot-starter</artifactId>
         <version>8.7.2-SNAPSHOT</version>
     </dependency>
 </dependencies>
@@ -53,8 +47,7 @@ Add to your `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'org.activiti:activiti-api-process-runtime:8.7.2-SNAPSHOT'
-    implementation 'org.activiti:activiti-api-task-runtime:8.7.2-SNAPSHOT'
+    implementation 'org.activiti:activiti-spring-boot-starter:8.7.2-SNAPSHOT'
 }
 ```
 
@@ -103,7 +96,7 @@ public class ProcessDeploymentService {
     @PostConstruct
     public void deployProcesses() {
         // Activiti automatically deploys BPMN files from classpath
-        // when configured with spring.activiti.deployment-enabled=true
+        // when configured with spring.activiti.check-process-definitions=true
         
         // Verify deployment
         Page<ProcessDefinition> definitions = processRuntime.processDefinitions(Pageable.of(0, 10));
@@ -404,16 +397,17 @@ public class WorkflowEventListener {
     }
     
     /**
-     * Handles process error events.
+     * Handles process cancellation events.
      */
     @EventListener
-    public void onProcessError(ProcessErrorEvent event) {
-        log.error("Process error: ID={}, Error={}", 
-                  event.getProcessInstanceId(), event.getErrorMessage());
+    public void onProcessCancelled(ProcessCancelledEvent event) {
+        ProcessInstance process = event.getEntity();
+        log.error("Process cancelled: ID={}, Cause={}", 
+                  process.getId(), event.getCause());
         
         notificationService.sendAlert(
-            "Process Error",
-            String.format("Workflow encountered an error: %s", event.getErrorMessage())
+            "Process Cancelled",
+            String.format("Workflow was cancelled: %s", event.getCause())
         );
     }
     
@@ -479,15 +473,13 @@ spring:
       path: /h2-console
   
   activiti:
-    bpmn-enable-history-level: full
+    history-level: full
     db-schema-update: true
     async-executor-activate: true
-    deployment-enabled: true
 
 logging:
   level:
     org.activiti: INFO
-    org.flowable: INFO
     com.example.workflow: DEBUG
 ```
 
@@ -775,11 +767,11 @@ taskRuntime.complete(
 );
 
 // Verify variables are set
-Map<String, Object> variables = processRuntime.variables(
+List<VariableInstance> variables = processRuntime.variables(
     ProcessPayloadBuilder.variables()
         .withProcessInstanceId(processInstanceId)
         .build()
-).getContent();
+);
 
 log.info("Process variables: {}", variables);
 ```

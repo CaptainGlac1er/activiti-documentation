@@ -618,8 +618,7 @@ Timer events enable **time-based process automation**:
 // No manual intervention needed
 
 // Check timer jobs
-List<Job> timerJobs = managementService.createJobQuery()
-    .jobType(JobTypes.TIMER_JOB_TYPE)
+List<Job> timerJobs = managementService.createTimerJobQuery()
     .list();
 ```
 

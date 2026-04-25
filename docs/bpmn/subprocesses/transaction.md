@@ -85,9 +85,10 @@ Simple transaction with automatic rollback:
 ```
 
 **Behavior:**
-- If any task fails, ALL changes are rolled back
-- Debit, credit, and record are atomic
-- Either all succeed or all are undone
+- If an error occurs, the transaction subprocess triggers compensation via `<cancelEventDefinition>` boundary events
+- Activiti does NOT automatically roll back side effects from service tasks (e.g., external API calls, database writes outside the engine)
+- You must define compensation logic to undo completed activities
+- Use transactions to coordinate compensating activities, not as automatic DB-style rollbacks
 
 ### 2. Transaction with Compensation
 
@@ -292,12 +293,10 @@ Transactions within transactions:
 ```
 
 **Transaction Guarantees:**
-- Inventory reserved, payment processed, order updated, label created - ALL succeed
-- ❌ If ANY step fails, ALL changes are rolled back:
-  - Payment refunded
-  - Inventory released
-  - Shipping label cancelled
-  - Order status reverted
+- If any step throws an error, the cancel boundary event on the transaction subprocess is triggered
+- Activiti does NOT automatically undo side effects from service tasks (payments, inventory changes, etc.)
+- You must explicitly define compensation handlers to reverse completed activities
+- The transaction subprocess provides structured compensation flow, not automatic rollback
 
 ## Runtime API
 

@@ -327,8 +327,8 @@ Run activities asynchronously:
 
 **Note:** Job priority is configured at runtime via Management Service, not through BPMN properties:
 ```java
-// Set job priority via Management Service
-managementService.setJobPriority(jobId, 5);
+// Set job retries via Management Service
+managementService.setJobRetries(jobId, 3);
 ```
 
 ### 7. **Job Retry Configuration**

@@ -33,7 +33,7 @@ public interface DelegateTask extends VariableScope {
     // Task properties
     Date getDueDate();
     void setDueDate(Date dueDate);
-    Integer getPriority();
+    int getPriority();
     void setPriority(int priority);
     String getCategory();
     void setCategory(String category);
@@ -94,17 +94,22 @@ public class TaskAssignmentListener implements TaskListener {
         // Set assignee
         task.setAssignee("john.doe");
         
-        // Get candidate users
-        List<String> candidateUsers = task.getCandidateUsers();
+        // Get candidate users and groups
+        Set<IdentityLink> candidates = task.getCandidates();
+        List<String> candidateUsers = candidates.stream()
+            .filter(link -> IdentityLinkType.CANDIDATE.equals(link.getType()) && link.getUserId() != null)
+            .map(IdentityLink::getUserId)
+            .collect(Collectors.toList());
+        List<String> candidateGroups = candidates.stream()
+            .filter(link -> IdentityLinkType.CANDIDATE.equals(link.getType()) && link.getGroupId() != null)
+            .map(IdentityLink::getGroupId)
+            .collect(Collectors.toList());
         
         // Add candidate user
         task.addCandidateUser("jane.doe");
         
         // Delete candidate user
         task.deleteCandidateUser("john.doe");
-        
-        // Get candidate groups
-        List<String> candidateGroups = task.getCandidateGroups();
         
         // Add candidate group
         task.addCandidateGroup("managers");
@@ -127,7 +132,7 @@ public class TaskPropertyListener implements TaskListener {
         task.setDueDate(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)); // +24h
 
         // Priority (0-100, default 50)
-        Integer priority = task.getPriority();
+        int priority = task.getPriority();
         task.setPriority(80); // High priority
 
         // Owner (different from assignee)
@@ -706,12 +711,17 @@ public class DocumentedListener implements TaskListener {
 
 ```java
 // BAD: ConcurrentModificationException
-for (String user : task.getCandidateUsers()) {
-    task.deleteCandidateUser(user); // Exception!
+for (IdentityLink link : task.getCandidates()) {
+    if (link.getUserId() != null) {
+        task.deleteCandidateUser(link.getUserId()); // Exception!
+    }
 }
 
 // GOOD: Collect first, then modify
-List<String> toRemove = new ArrayList<>(task.getCandidateUsers());
+List<String> toRemove = task.getCandidates().stream()
+    .filter(link -> link.getUserId() != null)
+    .map(IdentityLink::getUserId)
+    .collect(Collectors.toList());
 for (String user : toRemove) {
     task.deleteCandidateUser(user);
 }
@@ -763,7 +773,7 @@ if (autoAssign) {
 | `getCandidates()` | Get all identity links | Set of IdentityLink |
 | `getDueDate()` | Get due date | Can be null |
 | `setDueDate(Date)` | Set due date | - |
-| `getPriority()` | Get priority | 0-100, default 50 |
+| `getPriority()` | Get priority | int, 0-100, default 50 |
 | `setPriority(int)` | Set priority | - |
 | `getFormKey()` | Get form key | For task forms |
 | `setFormKey(String)` | Set form key | - |

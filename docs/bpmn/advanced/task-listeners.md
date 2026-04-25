@@ -18,20 +18,17 @@ Task listeners allow you to **execute custom logic at specific points** in the l
       event="create"
       class="com.example.TaskCreatedListener"
       onTransaction="before-commit"
-      customPropertiesResolverImplementationType="class"
-      customPropertiesResolverImplementation="com.example.Resolver"/>
+      customPropertiesResolverClass="com.example.Resolver"/>
     <activiti:taskListener
       event="assignment"
       delegateExpression="${assignmentListener}"
       onTransaction="committed"
-      customPropertiesResolverImplementationType="delegateExpression"
-      customPropertiesResolverImplementation="${resolverDelegate}"/>
+      customPropertiesResolverDelegateExpression="${resolverDelegate}"/>
     <activiti:taskListener
       event="complete"
       class="com.example.TaskCompletedListener"
       onTransaction="rolled-back"
-      customPropertiesResolverImplementationType="expression"
-      customPropertiesResolverImplementation="${resolverExpression}"/>
+      customPropertiesResolverExpression="${resolverExpression}"/>
   </extensionElements>
 </userTask>
 ```
@@ -50,8 +47,9 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 - `expression` - EL/SpEL expression to evaluate
 - `delegateExpression` - Spring bean method call
 - `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
-- `customPropertiesResolverImplementationType` - Type of custom properties resolver (e.g., "class", "expression", "delegateExpression")
-- `customPropertiesResolverImplementation` - The resolver implementation (class name, expression, or delegate expression)
+- `customPropertiesResolverClass` - Fully qualified class name of the custom properties resolver
+- `customPropertiesResolverExpression` - EL/SpEL expression to evaluate for the resolver
+- `customPropertiesResolverDelegateExpression` - Expression resolving to a Spring bean implementing the resolver
 
 ## Supported Events
 
@@ -186,8 +184,16 @@ public class ComprehensiveTaskListener implements TaskListener {
         
         // Task ownership
         String assignee = task.getAssignee();
-        List<String> candidateUsers = task.getCandidateUsers();
-        List<String> candidateGroups = task.getCandidateGroups();
+        // Get candidates (users and groups)
+        Set<IdentityLink> candidates = task.getCandidates();
+        List<String> candidateUsers = candidates.stream()
+            .filter(link -> IdentityLinkType.CANDIDATE.equals(link.getType()) && link.getUserId() != null)
+            .map(IdentityLink::getUserId)
+            .collect(Collectors.toList());
+        List<String> candidateGroups = candidates.stream()
+            .filter(link -> IdentityLinkType.CANDIDATE.equals(link.getType()) && link.getGroupId() != null)
+            .map(IdentityLink::getGroupId)
+            .collect(Collectors.toList());
         
         // Task variables
         Map<String, Object> variables = task.getVariables();
@@ -209,7 +215,7 @@ public class ComprehensiveTaskListener implements TaskListener {
         
         // Due date and priority
         Date dueDate = task.getDueDate();
-        Integer priority = task.getPriority();
+        int priority = task.getPriority();
     }
 }
 ```
@@ -244,13 +250,16 @@ public class TaskCreatedNotificationListener implements TaskListener {
         task.setVariable("createdBy", task.getExecution().getVariable("initiator"));
         
         // Send to candidate users if no assignee
-        if (assignee == null && !task.getCandidateUsers().isEmpty()) {
-            for (String candidate : task.getCandidateUsers()) {
-                notificationService.sendEmail(
-                    candidate,
-                    "New Task Available",
-                    String.format("Task available: %s (%s)", taskName, taskId)
-                );
+        if (assignee == null) {
+            Set<IdentityLink> candidates = task.getCandidates();
+            for (IdentityLink link : candidates) {
+                if (link.getUserId() != null) {
+                    notificationService.sendEmail(
+                        link.getUserId(),
+                        "New Task Available",
+                        String.format("Task available: %s (%s)", taskName, taskId)
+                    );
+                }
             }
         }
     }
@@ -753,8 +762,10 @@ public class AssignmentNotificationListener implements TaskListener {
 public class BadListener implements TaskListener {
     @Override
     public void notify(DelegateTask task) {
-        for (String candidate : task.getCandidateUsers()) {
-            task.addCandidateUser(candidate + "_backup"); // ConcurrentModificationException!
+        for (IdentityLink link : task.getCandidates()) {
+            if (link.getUserId() != null) {
+                task.addCandidateUser(link.getUserId() + "_backup"); // ConcurrentModificationException!
+            }
         }
     }
 }
@@ -764,8 +775,10 @@ public class GoodListener implements TaskListener {
     @Override
     public void notify(DelegateTask task) {
         List<String> newCandidates = new ArrayList<>();
-        for (String candidate : task.getCandidateUsers()) {
-            newCandidates.add(candidate + "_backup");
+        for (IdentityLink link : task.getCandidates()) {
+            if (link.getUserId() != null) {
+                newCandidates.add(link.getUserId() + "_backup");
+            }
         }
         for (String newCandidate : newCandidates) {
             task.addCandidateUser(newCandidate);

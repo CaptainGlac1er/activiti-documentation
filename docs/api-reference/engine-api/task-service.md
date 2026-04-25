@@ -79,24 +79,26 @@ task.setDescription("Review submitted documents");
 taskService.saveTask(task);
 
 // Create task with parent
-Task task = taskService.newTask("task-456", "parent-task-id");
-task.setName("Sub-task");
-taskService.saveTask(task);
+Task subTask = taskService.newTask("task-456");
+subTask.setParentTaskId("parent-task-id");
+subTask.setName("Sub-task");
+taskService.saveTask(subTask);
 ```
 
-### Task Builder Pattern
+### Task Creation with Properties
 
 ```java
-Task task = Tasks.newTask(taskService)
-    .id("task-789")
-    .name("Document Approval")
-    .description("Approve or reject document")
-    .owner("system")
-    .priority(TaskPriority.HIGH)
-    .dueDate(LocalDate.now().plusDays(7))
-    .build();
-
+Task task = taskService.newTask();
+task.setId("task-789");
+task.setName("Document Approval");
+task.setDescription("Approve or reject document");
+task.setOwner("system");
+task.setPriority(50);
+task.setDueDate(new Date());
 taskService.saveTask(task);
+
+// Default priority is Task.DEFAULT_PRIORITY (0)
+int currentPriority = task.getPriority();
 ```
 
 ---
@@ -238,8 +240,10 @@ variables.put("approver", "john.doe");
 
 taskService.complete(taskId, variables);
 
-// Complete and skip to specific activity
-taskService.complete(taskId, variables, "nextActivityId");
+// Complete with transient variables (not persisted)
+Map<String, Object> transientVariables = new HashMap<>();
+transientVariables.put("transientFlag", true);
+taskService.complete(taskId, variables, transientVariables);
 ```
 
 ### Updating Tasks
@@ -263,10 +267,7 @@ taskService.setOwner(taskId, "task.owner");
 taskService.setPriority(taskId, 5);
 
 // Update due date
-taskService.setDueDate(taskId, LocalDate.now().plusDays(7));
-
-// Update follow date
-taskService.setFollowUpDate(taskId, LocalDate.now().plusDays(1));
+taskService.setDueDate(taskId, new Date());
 ```
 
 ### Deleting Tasks
@@ -441,29 +442,32 @@ public class TaskDelegationService {
 // Add comment to task
 taskService.addComment(taskId, executionId, "Review completed successfully");
 
-// Add comment with user
-taskService.addComment(taskId, executionId, "Needs more information", "john.doe");
+// Add comment with type
+taskService.addComment(taskId, executionId, "feedback", "Needs more information");
 ```
 
 ### Querying Comments
 
 ```java
 // Get all comments for task
-List<Comment> comments = taskService.getComments(taskId);
+List<Comment> comments = taskService.getTaskComments(taskId);
 
-// Get all comments for execution
-List<Comment> executionComments = taskService.getComments(null, executionId);
+// Get all comments for process instance
+List<Comment> processComments = taskService.getProcessInstanceComments(processInstanceId);
 ```
 
 ### Attachments
 
 ```java
 // Create attachment
-taskService.createAttachment("attachment-1", taskId, executionId, 
+Attachment attachment = taskService.createAttachment("url", taskId, processInstanceId,
     "Document", "contract.pdf", inputStream);
 
-// Get attachment
-InputStream attachment = taskService.getAttachment("attachment-1");
+// Get attachment metadata
+Attachment att = taskService.getAttachment("attachment-1");
+
+// Get attachment content stream
+InputStream content = taskService.getAttachmentContent("attachment-1");
 
 // Delete attachment
 taskService.deleteAttachment("attachment-1");
@@ -477,54 +481,65 @@ taskService.deleteAttachment("attachment-1");
 
 ```java
 // Task Creation
-Task newTask(String id);
-Task newTask(String id, String parentTaskId);
+Task newTask();
+Task newTask(String taskId);
 void saveTask(Task task);
 void deleteTask(String taskId);
-void deleteTask(String taskId, boolean cascadeDelete);
+void deleteTask(String taskId, boolean cascade);
 
 // Task Queries
 TaskQuery createTaskQuery();
-Task getTask(String taskId);
+NativeTaskQuery createNativeTaskQuery();
 
 // Task Assignment
-void claim(String taskId, String assignee);
+void claim(String taskId, String userId);
 void unclaim(String taskId);
-void setAssignee(String taskId, String assignee);
-void setOwner(String taskId, String owner);
+void setAssignee(String taskId, String userId);
+void setOwner(String taskId, String userId);
 
 // Task Completion
 void complete(String taskId);
 void complete(String taskId, Map<String, Object> variables);
-void complete(String taskId, Map<String, Object> variables, String nextActivityId);
+void complete(String taskId, Map<String, Object> variables, Map<String, Object> transientVariables);
+void complete(String taskId, Map<String, Object> variables, boolean localScope);
 
 // Task Updates
 void setPriority(String taskId, int priority);
 void setDueDate(String taskId, Date dueDate);
-void setFollowUpDate(String taskId, Date followUpDate);
 
 // Candidates
-void addCandidateUser(String taskId, String candidateUser);
-void addCandidateUsers(String taskId, Collection<String> candidateUsers);
-void addCandidateGroup(String taskId, String candidateGroup);
-void addCandidateGroups(String taskId, Collection<String> candidateGroups);
-void deleteCandidateUser(String taskId, String candidateUser);
-void deleteCandidateGroup(String taskId, String candidateGroup);
+void addCandidateUser(String taskId, String userId);
+void addCandidateGroup(String taskId, String groupId);
+void deleteCandidateUser(String taskId, String userId);
+void deleteCandidateGroup(String taskId, String groupId);
 
 // Delegation
-void delegateTask(String taskId, String assignee);
+void delegateTask(String taskId, String userId);
 void resolveTask(String taskId);
+void resolveTask(String taskId, Map<String, Object> variables);
+void resolveTask(String taskId, Map<String, Object> variables, Map<String, Object> transientVariables);
 
 // Variables
 Object getVariable(String taskId, String variableName);
 Map<String, Object> getVariables(String taskId);
 void setVariable(String taskId, String variableName, Object value);
-void setVariables(String taskId, Map<String, Object> variables);
+void setVariables(String taskId, Map<String, ? extends Object> variables);
 
 // Comments
-void addComment(String taskId, String executionId, String message);
-List<Comment> getComments(String taskId);
-List<Comment> getComments(String taskId, String executionId);
+Comment addComment(String taskId, String processInstanceId, String message);
+Comment addComment(String taskId, String processInstanceId, String type, String message);
+List<Comment> getTaskComments(String taskId);
+List<Comment> getTaskComments(String taskId, String type);
+List<Comment> getProcessInstanceComments(String processInstanceId);
+List<Comment> getProcessInstanceComments(String processInstanceId, String type);
+
+// Attachments
+Attachment createAttachment(String attachmentType, String taskId, String processInstanceId, String attachmentName, String attachmentDescription, InputStream content);
+Attachment createAttachment(String attachmentType, String taskId, String processInstanceId, String attachmentName, String attachmentDescription, String url);
+Attachment getAttachment(String attachmentId);
+InputStream getAttachmentContent(String attachmentId);
+List<Attachment> getTaskAttachments(String taskId);
+List<Attachment> getProcessInstanceAttachments(String processInstanceId);
 ```
 
 ### TaskQuery
@@ -572,7 +587,7 @@ TaskQuery createTaskQuery();
 .orderByTaskCreateTime()
 .orderByTaskDueDate()
 .orderByTaskPriority()
-.orderByTaskFollowUpDate()
+
 .asc()
 .desc()
 

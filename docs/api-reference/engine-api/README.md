@@ -96,7 +96,8 @@ Executes process instances:
 RuntimeService runtimeService = engine.getRuntimeService();
 
 // Start process
-String processInstanceId = runtimeService.startProcessInstanceByKey("orderProcess");
+ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("orderProcess");
+String processInstanceId = processInstance.getId();
 
 // Query instances
 List<ProcessInstance> instances = runtimeService
@@ -306,7 +307,7 @@ taskService.claim(taskId, "john.doe");
 taskService.setAssignee(taskId, "jane.doe");
 
 // Release task
-taskService.release(taskId);
+taskService.unclaim(taskId);
 ```
 
 ### 4. History Queries

@@ -382,7 +382,7 @@ spring:
 
 ```sql
 -- Example indexes for performance
-CREATE INDEX idx_task_assignee ON ACT_RU_TASK(ASSIGNEE_;
+CREATE INDEX idx_task_assignee ON ACT_RU_TASK(ASSIGNEE_);
 CREATE INDEX idx_task_process_instance ON ACT_RU_TASK(PROC_INST_ID_;
 CREATE INDEX idx_process_instance_status ON ACT_RU_EXECUTION(PROC_INST_ID_, SUSPENDED_);
 ```

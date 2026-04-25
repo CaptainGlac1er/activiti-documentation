@@ -222,31 +222,29 @@ Events represent **something that happens** during the execution of a process. T
 ### Example 4: Boundary Events
 
 ```xml
-<serviceTask id="externalCall" name="Call External Service" activiti:async="true">
-  
-  <!-- Error boundary (interrupting) -->
-  <boundaryEvent id="errorBoundary" cancelActivity="true">
-    <errorEventDefinition errorRef="ExternalServiceError"/>
-  </boundaryEvent>
-  
-  <!-- Timer boundary (interrupting) -->
-  <boundaryEvent id="timeoutBoundary" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT30S</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-  <!-- Message boundary (non-interrupting) -->
-  <boundaryEvent id="cancelBoundary" cancelActivity="false">
-    <messageEventDefinition messageRef="cancelRequest"/>
-  </boundaryEvent>
-  
-  <!-- Signal boundary (non-interrupting) -->
-  <boundaryEvent id="escalateBoundary" cancelActivity="false">
-    <signalEventDefinition signalRef="escalationSignal"/>
-  </boundaryEvent>
-  
-</serviceTask>
+<serviceTask id="externalCall" name="Call External Service" activiti:async="true"/>
+
+<!-- Error boundary (interrupting) -->
+<boundaryEvent id="errorBoundary" attachedToRef="externalCall" cancelActivity="true">
+  <errorEventDefinition errorRef="ExternalServiceError"/>
+</boundaryEvent>
+
+<!-- Timer boundary (interrupting) -->
+<boundaryEvent id="timeoutBoundary" attachedToRef="externalCall" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT30S</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
+
+<!-- Message boundary (non-interrupting) -->
+<boundaryEvent id="cancelBoundary" attachedToRef="externalCall" cancelActivity="false">
+  <messageEventDefinition messageRef="cancelRequest"/>
+</boundaryEvent>
+
+<!-- Signal boundary (non-interrupting) -->
+<boundaryEvent id="escalateBoundary" attachedToRef="externalCall" cancelActivity="false">
+  <signalEventDefinition signalRef="escalationSignal"/>
+</boundaryEvent>
 ```
 
 ### Example 5: End Events
@@ -373,7 +371,7 @@ runtimeService.signalEventReceived("globalSignal",
 **Throw Errors:**
 ```java
 // In JavaDelegate
-throw new ActivitiError("PAY001", "Payment failed");
+throw new BpmnError("PAY001", "Payment failed");
 ```
 
 ## Best Practices
@@ -444,7 +442,7 @@ managementService.deleteJob(timerJobId);
 ```java
 // Throw error from JavaDelegate
 public void execute(DelegateExecution execution) {
-    throw new ActivitiError("PAY001", "Payment failed");
+throw new BpmnError("PAY001", "Payment failed");
 }
 ```
 

@@ -58,10 +58,10 @@ Set execution priority via Management Service (not through BPMN properties):
 
 **Runtime Configuration:**
 ```java
-// Set job priority via Management Service
-managementService.setJobPriority(jobId, 10);
+// Set job retries via Management Service
+managementService.setJobRetries(jobId, 3);
 
-// Higher number = higher priority (default: 0)
+// Number of retries for the job
 ```
 
 **Note:** Job priority is configured at runtime through the Management Service, not via `activiti:property` in the BPMN definition. Properties are for custom metadata only.
@@ -98,13 +98,11 @@ Handle **exceptions and interruptions** at activity level.
 ### Error Boundary Event
 
 ```xml
-<serviceTask id="riskyTask" name="Risky Operation">
-  
-  <boundaryEvent id="errorHandler" cancelActivity="true">
-    <errorEventDefinition errorRef="MyError"/>
-  </boundaryEvent>
-  
-</serviceTask>
+<serviceTask id="riskyTask" name="Risky Operation"/>
+
+<boundaryEvent id="errorHandler" attachedToRef="riskyTask" cancelActivity="true">
+  <errorEventDefinition errorRef="MyError"/>
+</boundaryEvent>
 
 <error id="MyError" name="My Error" errorCode="ERR001"/>
 ```
@@ -112,52 +110,46 @@ Handle **exceptions and interruptions** at activity level.
 ### Timer Boundary Event
 
 ```xml
-<userTask id="timeLimitedTask" name="Time Limited Task">
-  
-  <boundaryEvent id="timeout" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT1H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-</userTask>
+<userTask id="timeLimitedTask" name="Time Limited Task"/>
+
+<boundaryEvent id="timeout" attachedToRef="timeLimitedTask" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT1H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 ### Message Boundary Event (Non-Interrupting)
 
 ```xml
-<serviceTask id="cancellableTask" name="Cancellable Task">
-  
-  <boundaryEvent id="cancel" cancelActivity="false">
-    <messageEventDefinition messageRef="cancelMessage"/>
-  </boundaryEvent>
-  
-</serviceTask>
+<serviceTask id="cancellableTask" name="Cancellable Task"/>
+
+<boundaryEvent id="cancel" attachedToRef="cancellableTask" cancelActivity="false">
+  <messageEventDefinition messageRef="cancelMessage"/>
+</boundaryEvent>
 ```
 
 ### Multiple Boundary Events
 
 ```xml
-<serviceTask id="complexTask" name="Complex Task">
-  
-  <!-- Error boundary -->
-  <boundaryEvent id="errorBoundary" cancelActivity="true">
-    <errorEventDefinition errorRef="TaskError"/>
-  </boundaryEvent>
-  
-  <!-- Timer boundary -->
-  <boundaryEvent id="timerBoundary" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT30M</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-  <!-- Message boundary (non-interrupting) -->
-  <boundaryEvent id="messageBoundary" cancelActivity="false">
-    <messageEventDefinition messageRef="updateMessage"/>
-  </boundaryEvent>
-  
-</serviceTask>
+<serviceTask id="complexTask" name="Complex Task"/>
+
+<!-- Error boundary -->
+<boundaryEvent id="errorBoundary" attachedToRef="complexTask" cancelActivity="true">
+  <errorEventDefinition errorRef="TaskError"/>
+</boundaryEvent>
+
+<!-- Timer boundary -->
+<boundaryEvent id="timerBoundary" attachedToRef="complexTask" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT30M</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
+
+<!-- Message boundary (non-interrupting) -->
+<boundaryEvent id="messageBoundary" attachedToRef="complexTask" cancelActivity="false">
+  <messageEventDefinition messageRef="updateMessage"/>
+</boundaryEvent>
 ```
 
 ## Extension Elements
@@ -280,48 +272,49 @@ public class MyDelegate implements JavaDelegate {
 ## Complete Example
 
 ```xml
-<userTask id="complexTask" 
+<userTask id="complexTask"
           name="Complex Review Task"
           activiti:assignee="${reviewer}"
           activiti:candidateGroups="reviewers"
           activiti:dueDate="${addDays(3)}"
           activiti:skipExpression="${skipReview}"
           activiti:formKey="review-form.html">
-  
+
   <!-- Multi-instance with collection -->
-  <multiInstanceLoopCharacteristics 
+  <multiInstanceLoopCharacteristics
     isSequential="false"
     activiti:collection="${reviewers}"
     activiti:elementVariable="reviewer">
     <completionCondition>${approvedCount >= 2}</completionCondition>
   </multiInstanceLoopCharacteristics>
-  
-  <!-- Task listeners -->
-  <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
-  <activiti:taskListener event="complete" delegateExpression="${completionListener}"/>
-  
-  <!-- Execution listeners -->
-  <activiti:executionListener event="start" class="com.example.StartListener"/>
-  <activiti:executionListener event="end" class="com.example.EndListener"/>
-  
-  <!-- Boundary events -->
-  <boundaryEvent id="timeout" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT24H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
+
   <!-- Extension elements -->
   <extensionElements>
+    <!-- Task listeners -->
+    <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
+    <activiti:taskListener event="complete" delegateExpression="${completionListener}"/>
+
+    <!-- Execution listeners -->
+    <activiti:executionListener event="start" class="com.example.StartListener"/>
+    <activiti:executionListener event="end" class="com.example.EndListener"/>
+
+    <!-- Custom properties -->
     <activiti:property name="department" value="finance"/>
     <activiti:property name="priority" value="high"/>
+
+    <!-- Form properties -->
+    <activiti:formProperty name="comment" type="string"/>
+    <activiti:formProperty name="approved" type="bool"/>
   </extensionElements>
-  
-  <!-- Form properties -->
-  <activiti:formProperty name="comment" type="string"/>
-  <activiti:formProperty name="approved" type="bool"/>
-  
+
 </userTask>
+
+<!-- Boundary event (sibling of userTask, not a nested child) -->
+<boundaryEvent id="timeout" attachedToRef="complexTask" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT24H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 ## Best Practices

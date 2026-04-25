@@ -178,7 +178,7 @@ setAsyncExecutorActivate(), setAsyncExecutorCorePoolSize(), setAsyncExecutorMaxP
 setAsyncExecutorThreadPoolQueueSize(), setAsyncExecutorDefaultAsyncJobAcquireWaitTime()
 
 // History
-setHistory(String), setHistoryLevel(HistoryLevel)
+setHistoryLevel(HistoryLevel)
 
 // Transaction
 createTransactionInterceptor() // overridden per environment (Standalone, JTA, Spring)

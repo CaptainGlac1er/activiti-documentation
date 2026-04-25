@@ -25,7 +25,7 @@ The **activiti-spring-resource-finder** module provides resource discovery and l
 ### Key Classes
 
 - `ResourceFinder` - Main resource discovery service
-- `ResourceFinderDescriptor` - Resource finder strategy
+- `ResourceFinderDescriptor` - Resource finder strategy interface
 - `ResourceReader` - Resource content reader
 - `ResourceFinderAutoConfiguration` - Spring auto-configuration
 
@@ -35,12 +35,8 @@ The **activiti-spring-resource-finder** module provides resource discovery and l
 @Autowired
 private ResourceFinder resourceFinder;
 
-public List<Resource> findBpmnFiles() {
-    return resourceFinder.findResources("**/*.bpmn");
-}
-
-public String readResource(String path) throws IOException {
-    return resourceFinder.readResource(path);
+public List<Resource> discoverBpmnFiles(ResourceFinderDescriptor descriptor) throws IOException {
+    return resourceFinder.discoverResources(descriptor);
 }
 ```
 
@@ -50,87 +46,59 @@ public String readResource(String path) throws IOException {
 
 ```
 ResourceFinder
-    ├── ResourceFinderDescriptor (strategy)
-    │   ├── ClassPathResourceDescriptor
-    │   ├── FileSystemResourceDescriptor
-    │   └── UrlResourceDescriptor
-    └── ResourceReader (content loading)
+    └── ResourceFinderDescriptor (strategy interface)
+        └── implementors define location prefix, suffixes, validation, etc.
 ```
 
 ---
 
 ## Resource Discovery
 
-### Finding Resources
-
 ```java
-// Find all BPMN files
-List<Resource> bpmnFiles = resourceFinder.findResources("**/*.bpmn");
-
-// Find resources in specific location
-List<Resource> processFiles = resourceFinder.findResources(
-    "classpath:processes/**/*.bpmn");
-
-// Find by multiple patterns
-List<Resource> allResources = resourceFinder.findResources(
-    Arrays.asList("**/*.bpmn", "**/*.xml"));
-```
-
-### Reading Resources
-
-```java
-// Read as string
-String content = resourceFinder.readResource("classpath:process/order.bpmn");
-
-// Read as input stream
-try (InputStream is = resourceFinder.getResourceAsStream("process.bpmn")) {
-    // Process stream
-}
-
-// Read as byte array
-byte[] bytes = resourceFinder.getResourceAsByteArray("process.bpmn");
+// ResourceFinder takes a descriptor that defines where and how to look
+ResourceFinderDescriptor descriptor = new MyProcessDefinitionFinderDescriptor();
+List<Resource> resources = resourceFinder.discoverResources(descriptor);
 ```
 
 ---
 
-## Custom Resource Finder
+## Custom Resource Finder Descriptor
 
 ```java
-@Component
 public class CustomResourceFinderDescriptor implements ResourceFinderDescriptor {
     
     @Override
-    public boolean supports(String location) {
-        return location.startsWith("custom:");
+    public List<String> getLocationSuffixes() {
+        return Arrays.asList("/**/*.bpmn", "/**/*.xml");
     }
-    
+
     @Override
-    public List<Resource> findResources(String pattern) {
-        // Custom resource finding logic
-        return customResourceLocator.find(pattern);
+    public String getLocationPrefix() {
+        return "classpath:/processes/";
     }
-    
+
     @Override
-    public Resource getResource(String location) {
-        // Custom resource loading
-        return customResourceLoader.load(location);
+    public boolean shouldLookUpResources() {
+        return true;
+    }
+
+    @Override
+    public void validate(List<Resource> resources) throws IOException {
+        if (resources.isEmpty()) {
+            throw new IOException("No process definitions found");
+        }
+    }
+
+    @Override
+    public String getMsgForEmptyResources() {
+        return "No resources found";
+    }
+
+    @Override
+    public String getMsgForResourcesFound(List<String> foundResources) {
+        return "Found resources: " + foundResources;
     }
 }
-```
-
----
-
-## Configuration
-
-```yaml
-activiti:
-  resources:
-    locations:
-      - classpath:processes/
-      - file:/opt/activiti/processes/
-    patterns:
-      - "*.bpmn"
-      - "*.xml"
 ```
 
 ---
@@ -150,20 +118,46 @@ activiti:
 ### ResourceFinder
 
 ```java
-List<Resource> findResources(String pattern);
-List<Resource> findResources(List<String> patterns);
-Resource getResource(String location);
-String readResource(String location) throws IOException;
-InputStream getResourceAsStream(String location) throws IOException;
-byte[] getResourceAsByteArray(String location) throws IOException;
+/**
+ * Discover resources using the provided descriptor.
+ * Iterates over the descriptor's location suffixes, resolves them via
+ * ResourcePatternResolver, and returns the combined list of resources.
+ */
+List<Resource> discoverResources(ResourceFinderDescriptor resourceFinderDescriptor) throws IOException;
 ```
 
 ### ResourceFinderDescriptor
 
 ```java
-boolean supports(String location);
-List<Resource> findResources(String pattern);
-Resource getResource(String location);
+/**
+ * List of path suffixes to append to the location prefix (e.g., "**/*.bpmn").
+ */
+List<String> getLocationSuffixes();
+
+/**
+ * The location prefix (e.g., "classpath:/processes/").
+ */
+String getLocationPrefix();
+
+/**
+ * Whether resource discovery should be performed.
+ */
+boolean shouldLookUpResources();
+
+/**
+ * Validate the discovered resources.
+ */
+void validate(List<Resource> resources) throws IOException;
+
+/**
+ * Message to log when no resources are found.
+ */
+String getMsgForEmptyResources();
+
+/**
+ * Message to log when resources are found.
+ */
+String getMsgForResourcesFound(List<String> foundResources);
 ```
 
 ---
@@ -181,8 +175,8 @@ Resource getResource(String location);
 
 ```java
 // Debug
-System.out.println("Looking for: " + pattern);
-List<Resource> resources = resourceFinder.findResources(pattern);
+ResourceFinderDescriptor descriptor = new MyProcessDefinitionFinderDescriptor();
+List<Resource> resources = resourceFinder.discoverResources(descriptor);
 System.out.println("Found: " + resources.size() + " resources");
 ```
 

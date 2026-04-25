@@ -18,8 +18,7 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
       event="start"
       class="com.example.MyExecutionListener"
       onTransaction="before-commit"
-      customPropertiesResolverImplementationType="class"
-      customPropertiesResolverImplementation="com.example.Resolver"/>
+      customPropertiesResolverClass="com.example.Resolver"/>
   </extensionElements>
 </userTask>
 ```
@@ -33,8 +32,9 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 - `expression` - EL/SpEL expression to evaluate
 - `delegateExpression` - Spring bean method call
 - `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
-- `customPropertiesResolverImplementationType` - Type of custom properties resolver (e.g., "class", "expression", "delegateExpression")
-- `customPropertiesResolverImplementation` - The resolver implementation (class name, expression, or delegate expression)
+- `customPropertiesResolverClass` - Fully qualified class name of the custom properties resolver
+- `customPropertiesResolverExpression` - EL/SpEL expression to evaluate for the resolver
+- `customPropertiesResolverDelegateExpression` - Expression resolving to a Spring bean implementing the resolver
 
 ## Key Features
 
@@ -88,8 +88,7 @@ Java class implementing `ExecutionListener`:
       event="start" 
       class="com.example.MyExecutionListener"
       onTransaction="before-commit"
-      customPropertiesResolverImplementationType="class"
-      customPropertiesResolverImplementation="com.example.Resolver"/>
+      customPropertiesResolverClass="com.example.Resolver"/>
   </extensionElements>
 </userTask>
 ```
@@ -130,8 +129,7 @@ Evaluate EL/SpEL expression:
       event="end" 
       expression="${myService.logCompletion(execution)}"
       onTransaction="committed"
-      customPropertiesResolverImplementationType="expression"
-      customPropertiesResolverImplementation="${resolverExpression}"/>
+      customPropertiesResolverExpression="${resolverExpression}"/>
   </extensionElements>
 </userTask>
 ```
@@ -152,8 +150,7 @@ Call Spring bean method:
       event="start" 
       delegateExpression="#{auditService.recordActivityStart(execution)}"
       onTransaction="rolled-back"
-      customPropertiesResolverImplementationType="delegateExpression"
-      customPropertiesResolverImplementation="${resolverDelegate}"/>
+      customPropertiesResolverDelegateExpression="${resolverDelegate}"/>
   </extensionElements>
 </userTask>
 ```

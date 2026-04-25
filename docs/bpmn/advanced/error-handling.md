@@ -153,7 +153,7 @@ Handle different errors differently:
 </boundaryEvent>
 ```
 
-**Important:** Only ONE boundary event can be attached per activity type. Use error codes for specificity.
+**Important:** Multiple boundary events can be attached to the same activity. Use error codes for specificity to distinguish handlers.
 
 ## Throwing Errors
 
@@ -597,7 +597,7 @@ public class ErrorEventListener implements ActivitiEventListener {
 
     @Override
     public void onEvent(ActivitiEvent event) {
-        if (event.getType() == ActivitiEventType.ACTIVITY_ERROR_MESSAGE) {
+        if (event.getType() == ActivitiEventType.ACTIVITY_ERROR_RECEIVED) {
             System.out.println("Error on activity: " + event.getActivityId());
             System.out.println("Execution: " + event.getExecutionId());
         }
@@ -613,11 +613,11 @@ public class ErrorEventListener implements ActivitiEventListener {
 ### Querying Error Information
 
 ```java
-// Get historic activity instances with errors
+// Get historic activity instances related to errors
 List<HistoricActivityInstance> errorActivities = historyService
     .createHistoricActivityInstanceQuery()
     .processInstanceId(processInstanceId)
-    .activityTypeError()
+    .activityType("error")
     .list();
 ```
 

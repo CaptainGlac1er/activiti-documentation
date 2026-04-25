@@ -271,6 +271,8 @@ Execute custom logic at task lifecycle events:
 - `create` - When task is created
 - `assignment` - When assignee or candidates change
 - `complete` - When task is completed
+- `delete` - When task is deleted
+- `all` - All of the above events
 
 **Listener Types:**
 1. **Class:** `class="com.example.ListenerClass"`

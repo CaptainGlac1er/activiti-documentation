@@ -247,11 +247,11 @@ spring:
 ## Programmatic Configuration
 
 ```java
-import org.activiti.engine.impl.cfg.AsyncExecutor;
+import org.activiti.engine.impl.asyncexecutor.AsyncExecutor;
 
 @Bean
 public ProcessEngineConfiguration processEngineConfiguration() {
-    ProcessEngineConfiguration config = ProcessEngineConfiguration
+    ProcessEngineConfigurationImpl config = ProcessEngineConfigurationImpl
         .createStandaloneInMemProcessEngineConfiguration();
     
     // Enable async execution
@@ -271,21 +271,20 @@ public ProcessEngineConfiguration processEngineConfiguration() {
     config.setAsyncExecutorDefaultTimerJobAcquireWaitTime(10000); // Wait between timer acquisitions (default: 10000ms)
     
     // Configure lock times
-    config.setAsyncJobLockTimeInMillis(300000);  // 5 minutes
-    config.setTimerLockTimeInMillis(300000);     // 5 minutes
+    config.setAsyncExecutorAsyncJobLockTimeInMillis(300000);  // 5 minutes
+    config.setAsyncExecutorTimerLockTimeInMillis(300000);     // 5 minutes
     
     // Configure retry settings
-    config.setNumberOfRetries(3);
-    config.setRetryWaitTimeInMillis(5000);
+    config.setAsyncExecutorNumberOfRetries(3);
     
     // Advanced: Default queue size full wait time
     // Time to wait when queue is full before adding new thread
-    config.setDefaultQueueSizeFullWaitTimeInMillis(1000);
+    config.setAsyncExecutorDefaultQueueSizeFullWaitTime(1000);
     
     // Advanced: Reset expired jobs configuration
     // Interval for checking and resetting expired jobs (0 = disabled)
-    config.setResetExpiredJobsInterval(60000);  // Check every minute
-    config.setResetExpiredJobsPageSize(3);       // Process 3 jobs per check (default)
+    config.setAsyncExecutorResetExpiredJobsInterval(60000);  // Check every minute
+    config.setAsyncExecutorResetExpiredJobsPageSize(3);       // Process 3 jobs per check (default)
     
     return config;
 }
@@ -300,13 +299,12 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 | `setAsyncExecutorThreadPoolQueueSize(int)` | Job queue capacity | 100 |
 | `setAsyncExecutorMaxAsyncJobsDuePerAcquisition(int)` | Jobs fetched per query | 1 |
 | `setAsyncExecutorDefaultAsyncJobAcquireWaitTime(long)` | Wait between acquisitions (ms) | 10000 |
-| `setAsyncJobLockTimeInMillis(long)` | Job lock duration (ms) | 300000 |
-| `setTimerLockTimeInMillis(long)` | Timer lock duration (ms) | 300000 |
-| `setNumberOfRetries(int)` | Default retry count | 3 |
-| `setRetryWaitTimeInMillis(long)` | Wait between retries (ms) | 500 |
-| `setDefaultQueueSizeFullWaitTimeInMillis(long)` | Wait when queue full (ms) | 1000 |
-| `setResetExpiredJobsInterval(long)` | Expired job check interval (ms) | 0 (disabled) |
-| `setResetExpiredJobsPageSize(int)` | Jobs per expired check | 3 |
+| `setAsyncExecutorAsyncJobLockTimeInMillis(int)` | Job lock duration (ms) | 300000 |
+| `setAsyncExecutorTimerLockTimeInMillis(int)` | Timer lock duration (ms) | 300000 |
+| `setAsyncExecutorNumberOfRetries(int)` | Default retry count | 3 |
+| `setAsyncExecutorDefaultQueueSizeFullWaitTime(int)` | Wait when queue full (ms) | 1000 |
+| `setAsyncExecutorResetExpiredJobsInterval(int)` | Expired job check interval (ms) | 0 (disabled) |
+| `setAsyncExecutorResetExpiredJobsPageSize(int)` | Jobs per expired check | 3 |
 | `setAsyncExecutorMaxTimerJobsPerAcquisition(int)` | Timer jobs fetched per query | 1 |
 | `setAsyncExecutorDefaultTimerJobAcquireWaitTime(int)` | Wait between timer acquisitions (ms) | 10000 |
 
@@ -347,20 +345,14 @@ long jobCount = managementService.createJobQuery().count();
 ### Job Control
 
 ```java
-// Retry failed job
-managementService.retryJob(jobId);
-
-// Retry multiple jobs
-managementService.retryJobs(jobIds);
+// Retry failed job by moving from dead letter to executable
+managementService.moveDeadLetterJobToExecutableJob(jobId, 3);
 
 // Delete job
 managementService.deleteJob(jobId);
 
 // Set job retries
 managementService.setJobRetries(jobId, 3);
-
-// Set job priority (higher = more important)
-managementService.setJobPriority(jobId, 10);
 ```
 
 **Note:** In Activiti 8, the `AsyncExecutor` automatically handles job acquisition and execution. Manual job locking/unlocking is typically not needed unless implementing custom execution strategies.
@@ -384,8 +376,8 @@ Delay async activation:
 
 **Runtime Configuration:**
 ```java
-// Set async after duration
-managementService.setJobLockTime(jobId, 60000); // 60 seconds
+// Set job retries to retry a failed job
+managementService.setJobRetries(jobId, 3);
 ```
 
 ### Pattern 2: Conditional Async
@@ -450,19 +442,16 @@ Activiti stores job information in database tables:
 
 ### Query Job History
 
+Job execution details can be retrieved from the runtime and history services:
+
 ```java
-// Get job execution history
-List<HistoricJobLog> jobLogs = historyService.createHistoricJobLogQuery()
+// Query dead letter jobs for failed execution info
+List<Job> deadLetterJobs = managementService.createDeadLetterJobQuery()
     .processInstanceId("processInstanceId")
     .list();
 
-// Get failed job details
-for (HistoricJobLog log : jobLogs) {
-    System.out.println("Job: " + log.getJobId());
-    System.out.println("Message: " + log.getJobDefinitionId());
-    System.out.println("Retries: " + log.getRetries());
-    System.out.println("Exception: " + log.getExceptionMessage());
-}
+// Get exception stacktrace for a failed job
+String stacktrace = managementService.getJobExceptionStacktrace(jobId);
 ```
 
 ### AsyncExecutor Metrics

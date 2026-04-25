@@ -170,6 +170,8 @@ User Login
 
 **Thread Safety:** Thread-safe (stateless, delegates to UserDetailsService)
 
+**IMPORTANT:** `getGroups()` and `getUsers()` internally cast `userDetailsService` to `ExtendedInMemoryUserDetailsManager`. If you use a different `UserDetailsService` implementation (e.g., `JdbcUserDetailsManager`, `LdapUserDetailsService`), these methods will throw a `ClassCastException`. Only `getUserGroups(String)` and `getUserRoles(String)` work with any `UserDetailsService`.
+
 **Example:**
 ```java
 @Autowired

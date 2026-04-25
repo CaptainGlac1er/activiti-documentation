@@ -227,7 +227,7 @@ Object principal = auth.getPrincipal();
 - Provide consistent identity format
 
 **Key Methods:**
-- `getPrincipalIdentity(Object principal)` - Extract identity
+- `getUserId(Principal principal)` - Extract user ID
 
 **When to Use:** For user identity resolution.
 
@@ -235,7 +235,7 @@ Object principal = auth.getPrincipal();
 
 **Example:**
 ```java
-String userId = identityProvider.getPrincipalIdentity(principal);
+String userId = identityProvider.getUserId(principal);
 // Returns: "john" from UsernamePasswordAuthenticationToken
 ```
 
@@ -251,7 +251,7 @@ String userId = identityProvider.getPrincipalIdentity(principal);
 - Provide group list
 
 **Key Methods:**
-- `getPrincipalGroups(Object principal)` - Get groups
+- `getGroups(Principal principal)` - Get groups
 
 **When to Use:** For group membership resolution.
 
@@ -259,7 +259,7 @@ String userId = identityProvider.getPrincipalIdentity(principal);
 
 **Example:**
 ```java
-List<String> groups = groupsProvider.getPrincipalGroups(principal);
+List<String> groups = groupsProvider.getGroups(principal);
 // Returns: ["HR", "IT"] from [GROUP_HR, GROUP_IT]
 ```
 
@@ -275,7 +275,7 @@ List<String> groups = groupsProvider.getPrincipalGroups(principal);
 - Provide role list
 
 **Key Methods:**
-- `getPrincipalRoles(Object principal)` - Get roles
+- `getRoles(Principal principal)` - Get roles
 
 **When to Use:** For role-based access control.
 
@@ -283,7 +283,7 @@ List<String> groups = groupsProvider.getPrincipalGroups(principal);
 
 **Example:**
 ```java
-List<String> roles = rolesProvider.getPrincipalRoles(principal);
+List<String> roles = rolesProvider.getRoles(principal);
 // Returns: ["USER", "ADMIN"] from [ROLE_USER, ROLE_ADMIN]
 ```
 
@@ -299,7 +299,7 @@ List<String> roles = rolesProvider.getPrincipalRoles(principal);
 - Provide authority access
 
 **Key Methods:**
-- `resolveAuthorities(Object principal)` - Get authorities
+- `getAuthorities(Principal principal)` - Get authorities
 
 **When to Use:** For authority resolution.
 
@@ -317,7 +317,7 @@ List<String> roles = rolesProvider.getPrincipalRoles(principal);
 - Transform to Activiti format
 
 **Key Methods:**
-- `mapGroups(Collection<GrantedAuthority> authorities)` - Map groups
+- `getGroups(Collection<? extends GrantedAuthority> authorities)` - Map groups
 
 **When to Use:** For group mapping.
 
@@ -325,7 +325,7 @@ List<String> roles = rolesProvider.getPrincipalRoles(principal);
 
 **Example:**
 ```java
-List<String> groups = mapper.mapGroups(authorities);
+List<String> groups = mapper.getGroups(authorities);
 // [GROUP_HR, GROUP_IT] → ["HR", "IT"]
 ```
 
@@ -341,7 +341,7 @@ List<String> groups = mapper.mapGroups(authorities);
 - Transform to Activiti format
 
 **Key Methods:**
-- `mapRoles(Collection<GrantedAuthority> authorities)` - Map roles
+- `getRoles(Collection<? extends GrantedAuthority> authorities)` - Map roles
 
 **When to Use:** For role mapping.
 
@@ -349,7 +349,7 @@ List<String> groups = mapper.mapGroups(authorities);
 
 **Example:**
 ```java
-List<String> roles = mapper.mapRoles(authorities);
+List<String> roles = mapper.getRoles(authorities);
 // [ROLE_USER, ROLE_ADMIN] → ["USER", "ADMIN"]
 ```
 
@@ -430,17 +430,17 @@ Spring Security authorities are mapped as follows:
 ### Custom Authority Mapping
 
 ```java
-@Component
-public class CustomAuthoritiesMapper implements GrantedAuthoritiesGroupsMapper {
+    @Component
+    public class CustomAuthoritiesMapper implements GrantedAuthoritiesGroupsMapper {
     
-    @Override
-    public List<String> mapGroups(Collection<GrantedAuthority> authorities) {
-        return authorities.stream()
-            .filter(a -> a.getAuthority().startsWith("CUSTOM_GROUP_"))
-            .map(a -> a.getAuthority().substring("CUSTOM_GROUP_".length()))
-            .collect(Collectors.toList());
+        @Override
+        public List<String> getGroups(Collection<? extends GrantedAuthority> authorities) {
+            return authorities.stream()
+                .filter(a -> a.getAuthority().startsWith("CUSTOM_GROUP_"))
+                .map(a -> a.getAuthority().substring("CUSTOM_GROUP_".length()))
+                .collect(Collectors.toList());
+        }
     }
-}
 ```
 
 ---
@@ -454,13 +454,13 @@ public class CustomAuthoritiesMapper implements GrantedAuthoritiesGroupsMapper {
 public class CustomIdentityProvider implements PrincipalIdentityProvider {
     
     @Override
-    public String getPrincipalIdentity(Object principal) {
+    public String getUserId(Principal principal) {
         if (principal instanceof UserDetails) {
             UserDetails user = (UserDetails) principal;
             // Return custom identity format
             return "USER_" + user.getUsername();
         }
-        return principal.toString();
+        return principal.getName();
     }
 }
 ```
@@ -475,7 +475,7 @@ public class CustomGroupsProvider implements PrincipalGroupsProvider {
     private UserRepository userRepository;
     
     @Override
-    public List<String> getPrincipalGroups(Object principal) {
+    public List<String> getGroups(Principal principal) {
         if (principal instanceof UserDetails) {
             String username = ((UserDetails) principal).getUsername();
             // Fetch groups from database
@@ -538,7 +538,7 @@ public class ActivitiSpringSecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public PrincipalRolesProvider principalRolesProvider(
+    public PrincipalRolesProvider principalRolessProvider(
             GrantedAuthoritiesResolver grantedAuthoritiesResolver,
             GrantedAuthoritiesRolesMapper grantedAuthoritiesRolesMapper) {
         return new AuthenticationPrincipalRolesProvider(
@@ -552,12 +552,13 @@ public class ActivitiSpringSecurityAutoConfiguration {
             SecurityContextPrincipalProvider securityContextPrincipalProvider,
             PrincipalIdentityProvider principalIdentityProvider,
             PrincipalGroupsProvider principalGroupsProvider,
-            PrincipalRolesProvider principalRolesProvider) {
+            PrincipalRolesProvider principalRolessProvider) {
+        // NOTE: The bean name is `principalRolessProvider` (with double "s"), which is a typo in the source code.
         return new LocalSpringSecurityManager(
             securityContextPrincipalProvider,
             principalIdentityProvider,
             principalGroupsProvider,
-            principalRolesProvider);
+            principalRolessProvider);
     }
 }
 ```
@@ -765,17 +766,17 @@ List<String> getAuthenticatedUserRoles();
 
 **PrincipalIdentityProvider:**
 ```java
-String getUserId(Object principal);
+String getUserId(Principal principal);
 ```
 
 **PrincipalGroupsProvider:**
 ```java
-List<String> getGroups(Object principal);
+List<String> getGroups(Principal principal);
 ```
 
 **PrincipalRolesProvider:**
 ```java
-List<String> getRoles(Object principal);
+List<String> getRoles(Principal principal);
 ```
 
 ---
@@ -784,12 +785,12 @@ List<String> getRoles(Object principal);
 
 **GrantedAuthoritiesGroupsMapper:**
 ```java
-List<String> mapGroups(Collection<GrantedAuthority> authorities);
+List<String> getGroups(Collection<? extends GrantedAuthority> authorities);
 ```
 
 **GrantedAuthoritiesRolesMapper:**
 ```java
-List<String> mapRoles(Collection<GrantedAuthority> authorities);
+List<String> getRoles(Collection<? extends GrantedAuthority> authorities);
 ```
 
 ---

@@ -184,9 +184,10 @@ public List<ConnectorDefinition> loadConnectors() throws IOException {
 - Integrate with Spring context
 
 **Key Features:**
-- Conditional on ObjectMapper presence
-- Configurable connector root
-- Automatic bean creation
+- Uses `@AutoConfiguration` (not `@Configuration`)
+- Beans are conditional on absence of user-provided alternatives (`@ConditionalOnMissingBean`)
+- ObjectMapper bean is provided only when `Jackson2ObjectMapperBuilder` is missing (`@ConditionalOnMissingClass`)
+- Connector root path configured via `@Value("${activiti.connectors.dir:classpath:/connectors/}")`
 
 **When to Use:** Automatically applied when module is on classpath.
 
@@ -194,20 +195,35 @@ public List<ConnectorDefinition> loadConnectors() throws IOException {
 
 **Example:**
 ```java
-@Configuration
-@ConditionalOnClass(ObjectMapper.class)
-@ConditionalOnProperty(prefix = "activiti.connector", name = "enabled")
+@AutoConfiguration
 public class ConnectorAutoConfiguration {
     
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnMissingClass(value = "org.springframework.http.converter.json.Jackson2ObjectMapperBuilder")
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
+    
+    @Bean
+    @ConditionalOnMissingBean
     public ConnectorDefinitionService connectorDefinitionService(
+            @Value("${activiti.connectors.dir:classpath:/connectors/}") String connectorRoot,
             ObjectMapper objectMapper,
             ResourcePatternResolver resourceLoader) {
         return new ConnectorDefinitionService(
-            "${activiti.connector.root:classpath:/connectors}",
+            connectorRoot,
             objectMapper,
             resourceLoader
         );
+    }
+    
+    @Bean
+    @ConditionalOnMissingBean
+    public List<ConnectorDefinition> connectorDefinitions(
+            ConnectorDefinitionService connectorDefinitionService) throws IOException {
+        List<ConnectorDefinition> defs = connectorDefinitionService.get();
+        return defs == null ? Collections.emptyList() : defs;
     }
 }
 ```
@@ -300,9 +316,8 @@ protected void validate(List<ConnectorDefinition> connectorDefinitions) {
 ```yaml
 # application.yml
 activiti:
-  connector:
-    enabled: true
-    root: classpath:/connectors  # or file:/path/to/connectors
+  connectors:
+    dir: classpath:/connectors/  # or file:/path/to/connectors/
 ```
 
 ### Custom Configuration
@@ -311,7 +326,7 @@ activiti:
 @Configuration
 public class CustomConnectorConfig {
     
-    @Value("${activiti.connector.root:classpath:/connectors}")
+    @Value("${activiti.connectors.dir:classpath:/connectors/}")
     private String connectorRoot;
     
     @Bean
@@ -637,8 +652,8 @@ protected void validate(List<ConnectorDefinition> connectorDefinitions);
 ```yaml
 # Verify configuration
 activiti:
-  connector:
-    root: classpath:/connectors
+  connectors:
+    dir: classpath:/connectors/
 ```
 
 ### Validation Error

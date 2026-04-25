@@ -171,7 +171,6 @@ Object result = expression.getValue(context);
 **Key Methods:**
 - `setFunction(String prefix, String localName, Method method)` - Register function
 - `resolveFunction(String prefix, String localName)` - Resolve function
-- `getFunction(String prefix, String localName)` - Get function method
 
 **When to Use:** When adding custom functions to EL expressions.
 
@@ -202,7 +201,6 @@ context.setFunction("math", "add",
 **Key Methods:**
 - `setVariable(String name, ValueExpression expression)` - Set variable
 - `resolveVariable(String name)` - Resolve variable
-- `getVariable(String name)` - Get variable expression
 
 **When to Use:** Automatically used for process variable access in expressions.
 

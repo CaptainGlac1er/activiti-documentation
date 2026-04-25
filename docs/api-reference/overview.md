@@ -1108,8 +1108,8 @@ public interface TaskService {
     Task saveTask(Task task);
     void deleteTask(String taskId);
     void deleteTask(String taskId, boolean cascade);
-    Task createTaskQuery();
-    Task createNativeTaskQuery();
+    TaskQuery createTaskQuery();
+    NativeTaskQuery createNativeTaskQuery();
     // ... additional assignment, variable, comment, and attachment methods
 }
 ```

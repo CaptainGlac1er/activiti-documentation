@@ -70,11 +70,11 @@ Conditionally skip a sequence flow (i.e., the flow is not taken):
 <sequenceFlow id="flow1"
                sourceRef="task1"
                targetRef="task2"
-               activiti:skipExpression="${skipThisPath}"/>
+                skipExpression="${skipThisPath}"/>
 ```
 
 **Behavior:**
-- When `activiti:skipExpression` evaluates to `true`, this sequence flow is skipped
+- When `skipExpression` evaluates to `true`, this sequence flow is skipped
 - Useful for dynamic flow routing based on process variables
 - The engine evaluates the expression when considering this flow as a candidate path
 

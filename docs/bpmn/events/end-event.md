@@ -88,7 +88,13 @@ End process with an error:
 
 ### 3. Signal End Event
 
-**NOT supported.** The `EndEventParseHandler` does not handle `SignalEventDefinition` on end events — they fall through to `NoneEndEventActivityBehavior`. A signal end event will NOT broadcast a signal; it behaves as a none end event (normal completion).
+Signal end events are NOT supported by Activiti. The `EndEventParseHandler` does not have a case for `SignalEventDefinition` — it falls through to `NoneEndEventActivityBehavior`. If you need to broadcast a signal, use an intermediate throw event instead:
+
+```xml
+<intermediateThrowEvent id="signalThrow">
+  <signalEventDefinition signalRef="completionSignal"/>
+</intermediateThrowEvent>
+```
 
 ### 4. Message End Event
 
@@ -277,10 +283,13 @@ public class VariableSetter implements JavaDelegate {
   
   <serviceTask id="shipOrder" name="Ship Order"/>
   
-  <!-- Success end with signal -->
-  <endEvent id="successEnd">
+  <!-- Signal end events are NOT supported — use a none end event followed by a signal throw intermediate event if needed -->
+  <endEvent id="successEnd"/>
+
+  <!-- To broadcast a signal, use an intermediate throw event before the end -->
+  <!-- <intermediateThrowEvent id="shipSignal">
     <signalEventDefinition signalRef="orderShipped"/>
-  </endEvent>
+  </intermediateThrowEvent> -->
   
   <!-- Error end for rejection -->
   <endEvent id="rejectEnd">
@@ -292,6 +301,10 @@ public class VariableSetter implements JavaDelegate {
   <sequenceFlow id="flow3" sourceRef="validateOrder" targetRef="validationCheck"/>
   <sequenceFlow id="flow4" sourceRef="processOrder" targetRef="shipOrder"/>
   <sequenceFlow id="flow5" sourceRef="shipOrder" targetRef="successEnd"/>
+  <sequenceFlow id="flow6" sourceRef="validationCheck" targetRef="processOrder"/>
+
+  <!-- Signal definition -->
+  <signal id="orderShipped" name="Order Shipped"/>
 </process>
 ```
 
