@@ -39,12 +39,14 @@ const sidebars: SidebarsConfig = {
           items: [
             'bpmn/elements/user-task',
             'bpmn/elements/service-task',
+            'bpmn/elements/send-task',
             'bpmn/elements/script-task',
             'bpmn/elements/receive-task',
             'bpmn/elements/business-rule-task',
             'bpmn/elements/call-activity',
             'bpmn/elements/manual-task',
             'bpmn/elements/sequence-flows',
+            'bpmn/elements/data-objects',
           ],
         },
         {
@@ -116,6 +118,64 @@ const sidebars: SidebarsConfig = {
             'bpmn/integration/index',
             'bpmn/integration/connectors',
             'bpmn/integration/jpa-process-variables',
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'Advanced Features',
+      link: {type: 'doc', id: 'advanced/index'},
+      items: [
+        {
+          type: 'category',
+          label: 'Engine Events & Monitoring',
+          link: {type: 'generated-index', title: 'Events and Monitoring Overview'},
+          items: [
+            'advanced/engine-event-system',
+            'advanced/database-event-logging',
+            'advanced/historic-variable-updates',
+            'advanced/execution-debug-tree',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Process Lifecycle Control',
+          link: {type: 'generated-index', title: 'Lifecycle Control Overview'},
+          items: [
+            'advanced/process-instance-suspension',
+            'advanced/create-then-start',
+            'advanced/runtime-process-control',
+            'advanced/task-delegation',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Deployment & Configuration',
+          link: {type: 'generated-index', title: 'Deployment Overview'},
+          items: [
+            'advanced/auto-deployment-modes',
+            'advanced/deployment-builder',
+            'advanced/model-api',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Authorization & Identity',
+          link: {type: 'generated-index', title: 'Authorization Overview'},
+          items: [
+            'advanced/process-definition-authorization',
+            'advanced/process-identity-links',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Engine Extensibility',
+          link: {type: 'generated-index', title: 'Extensibility Overview'},
+          items: [
+            'advanced/custom-parse-handlers',
           ],
         },
       ],
