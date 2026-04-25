@@ -5,6 +5,8 @@ title: "API Reference"
 description: "Complete reference for all Activiti API interfaces, classes, methods, and payload builders. Essential guide for developers implementing workflow automation."
 ---
 
+# API Reference
+
 **Community-Maintained Guide**
 
 Complete reference for all Activiti API interfaces, classes, and methods. This documentation serves as a community-contributed guide for developers implementing workflow automation solutions.

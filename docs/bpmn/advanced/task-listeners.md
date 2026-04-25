@@ -65,28 +65,12 @@ Task listeners support **four lifecycle events**:
 
 ### Event Timing
 
-```
-Task Lifecycle
-       │
-       ▼
-┌─────────────┐
-│ Task Created│───► event="create"
-└─────────────┘
-       │
-       ▼
-┌─────────────┐
-│ Assignee Set │───► event="assignment"
-└─────────────┘
-       │
-       ▼
-┌─────────────┐
-│ Task Done   │───► event="complete"
-└─────────────┘
-       │
-       ▼
-┌─────────────┐
-│ Task Deleted│───► event="delete"
-└─────────────┘
+```mermaid
+flowchart TD
+    A["Task Created"] -->|"event=create"| B["Assignee Set"]
+    B -->|"event=assignment"| C["Task Done"]
+    C -->|"event=complete"| D["Task Deleted"]
+    D -->|"event=delete"| E["End"]
 ```
 
 ## Configuration

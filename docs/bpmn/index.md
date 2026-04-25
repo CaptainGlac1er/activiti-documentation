@@ -1,5 +1,6 @@
 ---
 sidebar_label: BPMN Guide
+title: "BPMN 2.0 Elements in Activiti"
 slug: /bpmn/index
 description: Comprehensive guide to BPMN 2.0 elements supported by Activiti and their customizations
 ---

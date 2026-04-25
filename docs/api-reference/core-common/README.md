@@ -1,5 +1,6 @@
 ---
 sidebar_label: Overview
+title: "Core Common Overview"
 slug: /api-reference/core-common/overview
 description: Overview of core common utilities and shared modules.
 ---

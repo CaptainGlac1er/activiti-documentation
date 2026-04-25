@@ -1087,16 +1087,15 @@ public ProcessInstance startOrderFulfillment(Order order) {
 
 **DO:** Use subprocesses for complex logic
 
-```
-Main Process
-├── Start Event
-├── Call Activity: Order Validation (Subprocess)
-│   ├── Validate Customer
-│   ├── Validate Items
-│   └── Validate Payment
-├── Call Activity: Process Payment (Subprocess)
-├── Call Activity: Fulfill Order (Subprocess)
-└── End Event
+```mermaid
+flowchart TD
+    Start["Start Event"] --> CV["Call Activity: Order Validation"]
+    CV --> VC["Validate Customer"]
+    CV --> VI["Validate Items"]
+    CV --> VP["Validate Payment"]
+    CV --> PP["Call Activity: Process Payment"]
+    PP --> FO["Call Activity: Fulfill Order"]
+    FO --> End["End Event"]
 ```
 
 **Benefit:** Improves readability and maintainability.
@@ -1121,31 +1120,31 @@ Main Process
 
 **DO:** Use parallel gateways for concurrent tasks
 
-```
-Start Event
-    ↓
-Parallel Gateway (Split)
-    ↓       ↓       ↓
-Task 1   Task 2   Task 3
-    ↓       ↓       ↓
-Parallel Gateway (Join)
-    ↓
-End Event
+```mermaid
+flowchart TD
+    Start["Start Event"] --> Split["Parallel Gateway Split"]
+    Split --> T1["Task 1"]
+    Split --> T2["Task 2"]
+    Split --> T3["Task 3"]
+    T1 --> Join["Parallel Gateway Join"]
+    T2 --> Join
+    T3 --> Join
+    Join --> End["End Event"]
 ```
 
 ### 4. Conditional Flow Pattern
 
 **DO:** Use exclusive gateways for decisions
 
-```
-Start Event
-    ↓
-Exclusive Gateway
-    ├─ (amount > 1000) → Manager Approval Task
-    ├─ (amount > 500)  → Supervisor Approval Task
-    └─ (else)          → Auto Approve
-    ↓
-End Event
+```mermaid
+flowchart TD
+    Start["Start Event"] --> GW["Exclusive Gateway"]
+    GW -->|"amount > 1000"| MA["Manager Approval Task"]
+    GW -->|"amount > 500"| SA["Supervisor Approval Task"]
+    GW -->|"else"| AA["Auto Approve"]
+    MA --> End["End Event"]
+    SA --> End
+    AA --> End
 ```
 
 ---

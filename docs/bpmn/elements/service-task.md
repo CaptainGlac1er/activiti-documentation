@@ -1,6 +1,6 @@
 ---
 sidebar_label: Service Task
-title: Service Task
+title: "Service Task"
 slug: /bpmn/elements/service-task
 description: Complete guide to ServiceTask elements with Activiti customizations for automated processing
 ---

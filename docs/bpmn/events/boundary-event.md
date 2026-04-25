@@ -12,14 +12,14 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 ## Overview
 
 ```xml
-<userTask id="task1" name="Process Order">
-  <!-- Boundary event attached to task -->
-  <boundaryEvent id="timeout" attachedToRef="task1" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT1H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-</userTask>
+<userTask id="task1" name="Process Order"/>
+
+<!-- Boundary event as sibling of the task -->
+<boundaryEvent id="timeout" attachedToRef="task1" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT1H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
@@ -56,16 +56,14 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 Handle activity timeouts:
 
 ```xml
-<userTask id="approvalTask" name="Approve Request" activiti:assignee="${manager}">
-  
-  <!-- Interrupting timer - cancels task after 24 hours -->
-  <boundaryEvent id="approvalTimeout" attachedToRef="approvalTask" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT24H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-</userTask>
+<userTask id="approvalTask" name="Approve Request" activiti:assignee="${manager}"/>
+
+<!-- Interrupting timer - cancels task after 24 hours -->
+<boundaryEvent id="approvalTimeout" attachedToRef="approvalTask" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT24H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 
 <sequenceFlow id="timeoutFlow" sourceRef="approvalTimeout" targetRef="escalateTask"/>
 <userTask id="escalateTask" name="Escalate to Director"/>

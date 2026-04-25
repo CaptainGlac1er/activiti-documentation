@@ -31,33 +31,11 @@ Connectors are **JSON-defined integration components** that bridge your BPMN pro
 
 ### Connector Architecture
 
-```
-┌─────────────────┐
-│   BPMN Process  │
-│  Service Task   │
-│  implementation=│
-│  "Connector.Action"│
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   Connector     │
-│   Definition    │
-│   (JSON)        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   Connector     │
-│   Implementation│
-│   (Java Bean)   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  External System│
-│  (API, DB, etc) │
-└─────────────────┘
+```mermaid
+flowchart TD
+    A["BPMN Process\nService Task\nimplementation=Connector.Action"] --> B["Connector Definition\nJSON"]
+    B --> C["Connector Implementation\nJava Bean"]
+    C --> D["External System\nAPI, DB, etc"]
 ```
 
 ## Connector Definition Structure

@@ -5,7 +5,7 @@ title: "Architecture Overview"
 description: "Comprehensive guide to Activiti Engine architecture, internal components, design patterns, and extension mechanisms."
 ---
 
-# Activiti Engine Architecture
+# Architecture Overview
 
 **Module:** `activiti-core/activiti-engine`
 
@@ -898,7 +898,7 @@ public interface JobHandler {
 
 ---
 
-## See Also
+## Related Documentation
 
 - [Engine Configuration](../configuration.md)
 - [Engine API Overview](../api-reference/engine-api/README.md)

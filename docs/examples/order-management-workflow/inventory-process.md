@@ -648,35 +648,21 @@ Out of Stock → Human Decision → Approve/Reject
 
 ## Variable Flow
 
-```
-Input (from main process)
-    ↓
-orderId, orderItems
-    ↓
-[Check Stock Availability]
-    ↓
-inStock, inventoryStatus, stockDetails
-    ↓
-    ├─ In Stock Path
-    │   ↓
-    │ [Reserve Inventory]
-    │   ↓
-    │ reservationId, reservedItems
-    │   ↓
-    │ ┌─ Parallel ───────────┐
-    │ ↓                      ↓
-    │ [Warehouse]      [Supplier]
-    │   ↓                      ↓
-    │ └────→ Join ←────────────┘
-    │   ↓
-    │ End (Inventory Reserved)
-    │
-    └─ Out of Stock Path
-        ↓
-    [Backorder Approval]
-        ↓
-        ├─ Approved → End (Backorder Approved)
-        └─ Rejected → End (Backorder Rejected - Terminate)
+```mermaid
+flowchart TD
+    Input["Input from main process\norderId, orderItems"] --> Check["Check Stock Availability"]
+    Check -->|"inStock, inventoryStatus"| InStock["Reserve Inventory"]
+    Check -->|"outOfStock"| Backorder["Backorder Approval"]
+
+    InStock -->|"reservationId, reservedItems"| Split["Parallel Split"]
+    Split --> Warehouse["Warehouse"]
+    Split --> Supplier["Supplier"]
+    Warehouse --> Join["Parallel Join"]
+    Supplier --> Join
+    Join --> EndReserved["End: Inventory Reserved"]
+
+    Backorder -->|"Approved"| EndBackorder["End: Backorder Approved"]
+    Backorder -->|"Rejected"| EndRejected["End: Backorder Rejected\nTerminate"]
 ```
 
 ---

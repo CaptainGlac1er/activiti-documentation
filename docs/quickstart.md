@@ -61,7 +61,7 @@ Create a file named `simple-process.bpmn` in `src/main/resources/bpmn/`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:activiti="http://activiti.org/bpmn">
     <bpmn:process id="greetingProcess" name="Greeting Process">
         <bpmn:startEvent id="start"/>
         <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="task1"/>

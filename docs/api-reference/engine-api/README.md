@@ -1,5 +1,6 @@
 ---
 sidebar_label: Engine API
+title: "Engine API"
 slug: /api-reference/engine-api
 description: Reference documentation for the Activiti Process Engine API and services.
 ---

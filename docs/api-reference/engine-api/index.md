@@ -1,5 +1,6 @@
 ---
 sidebar_label: Engine Documentation Index
+title: "Engine Documentation Index"
 slug: /activiti-core/engine-index
 description: Complete index of Activiti Engine documentation with navigation guides.
 ---

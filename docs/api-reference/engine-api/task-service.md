@@ -1,5 +1,6 @@
 ---
 sidebar_label: Task Service
+title: "Task Service"
 slug: /api-reference/engine-api/task-service
 description: Complete guide to the Task Service for managing user tasks and human interactions.
 ---
@@ -791,7 +792,7 @@ taskService.complete(taskId, variables);
 
 ---
 
-## See Also
+## Related Documentation
 
 - [Parent Documentation](README.md)
 - [Runtime Service](runtime-service.md)

@@ -1,6 +1,6 @@
 ---
 sidebar_label: User Task
-title: User Task
+title: "User Task"
 slug: /bpmn/elements/user-task
 description: Complete guide to UserTask elements with Activiti customizations for human interaction
 ---
@@ -56,7 +56,7 @@ User Tasks represent work items that require **human interaction** in a business
 Directly assign the task to a specific user:
 
 ```xml
-<UserTask id="approvalTask" name="Approve Request" activiti:assignee="${managerId}"/>
+<userTask id="approvalTask" name="Approve Request" activiti:assignee="${managerId}"/>
 ```
 
 **Expression Support:**
@@ -74,7 +74,7 @@ Directly assign the task to a specific user:
 Set the task owner (useful for delegation):
 
 ```xml
-<UserTask id="delegableTask" name="Review" activiti:owner="${requester}"/>
+<userTask id="delegableTask" name="Review" activiti:owner="${requester}"/>
 ```
 
 **Use Cases:**
@@ -87,14 +87,14 @@ Set the task owner (useful for delegation):
 Specify users who can claim the task (comma-separated list):
 
 ```xml
-<UserTask id="reviewTask" 
+<userTask id="reviewTask" 
           name="Review Document" 
           activiti:candidateUsers="alice,bob,charlie"/>
 ```
 
 **Or using expression:**
 ```xml
-<UserTask id="reviewTask" activiti:candidateUsers="${reviewers}"/>
+<userTask id="reviewTask" activiti:candidateUsers="${reviewers}"/>
 ```
 
 **Runtime Behavior:**
@@ -107,14 +107,14 @@ Specify users who can claim the task (comma-separated list):
 Assign task to groups/roles (comma-separated list):
 
 ```xml
-<UserTask id="approvalTask" 
+<userTask id="approvalTask" 
           name="Manager Approval" 
           activiti:candidateGroups="managers,admins"/>
 ```
 
 **Or using expression:**
 ```xml
-<UserTask id="approvalTask" activiti:candidateGroups="${approvalGroups}"/>
+<userTask id="approvalTask" activiti:candidateGroups="${approvalGroups}"/>
 ```
 
 **Use Cases:**
@@ -170,7 +170,7 @@ List<Task> tasks = taskService.createTaskQuery()
 Associate a form with the task:
 
 ```xml
-<UserTask id="dataEntryTask" name="Enter Data" activiti:formKey="forms/data-entry-form.html"/>
+<userTask id="dataEntryTask" name="Enter Data" activiti:formKey="forms/data-entry-form.html"/>
 ```
 
 **Form Key Types:**
@@ -188,19 +188,19 @@ Associate a form with the task:
 Set task deadline:
 
 ```xml
-<UserTask id="urgentTask" name="Urgent Review" activiti:dueDate="${addDays(now(), 3)}"/>
+<userTask id="urgentTask" name="Urgent Review" activiti:dueDate="${addDays(now(), 3)}"/>
 ```
 
 **Expression Examples:**
 ```xml
 <!-- Fixed date -->
-<UserTask activiti:dueDate="2024-12-31"/>
+<userTask activiti:dueDate="2024-12-31"/>
 
 <!-- EL Expression -->
-<UserTask activiti:dueDate="${dueDateCalculator.calculate()}"/>
+<userTask activiti:dueDate="${dueDateCalculator.calculate()}"/>
 
 <!-- SpEL Expression -->
-<UserTask activiti:dueDate="#{#calendar.addDays(new Date(), 7)}"/>
+<userTask activiti:dueDate="#{#calendar.addDays(new Date(), 7)}"/>
 ```
 
 ### 8. Priority
@@ -208,7 +208,7 @@ Set task deadline:
 Set task priority:
 
 ```xml
-<UserTask id="highPriorityTask" name="Critical Issue" activiti:priority="${calculatePriority()}"/>
+<userTask id="highPriorityTask" name="Critical Issue" activiti:priority="${calculatePriority()}"/>
 ```
 
 **Default:** 50
@@ -218,7 +218,7 @@ Set task priority:
 Define working time calculations:
 
 ```xml
-<UserTask id="workingDaysTask" name="Review" 
+<userTask id="workingDaysTask" name="Review" 
           activiti:dueDate="${addBusinessDays(3)}"
           activiti:businessCalendarName="standard"/>
 ```
@@ -233,7 +233,7 @@ Define working time calculations:
 Classify tasks:
 
 ```xml
-<UserTask id="approvalTask" name="Approve" activiti:category="approval"/>
+<userTask id="approvalTask" name="Approve" activiti:category="approval"/>
 ```
 
 **Runtime Usage:**
@@ -304,7 +304,7 @@ public class TaskCreatedListener implements TaskListener {
 Conditionally skip task execution:
 
 ```xml
-<UserTask id="optionalReview" name="Optional Review" 
+<userTask id="optionalReview" name="Optional Review" 
           activiti:skipExpression="${skipOptionalReview || userIsManager}"/>
 ```
 
@@ -319,24 +319,24 @@ Execute task for multiple users:
 
 **Using Collection (Activiti Extension - Recommended):**
 ```xml
-<UserTask id="groupReview" name="Group Review">
+<userTask id="groupReview" name="Group Review">
   <multiInstanceLoopCharacteristics 
     isSequential="false" 
     activiti:collection="${reviewers}"
     activiti:elementVariable="reviewer">
     <completionCondition>${reviewCount >= requiredApprovals}</completionCondition>
   </multiInstanceLoopCharacteristics>
-</UserTask>
+</userTask>
 ```
 
 **Using Loop Cardinality (BPMN Standard):**
 ```xml
-<UserTask id="groupReview" name="Group Review">
+<userTask id="groupReview" name="Group Review">
   <multiInstanceLoopCharacteristics isSequential="false">
     <loopCardinality>${reviewers.size()}</loopCardinality>
     <completionCondition>${reviewCount >= requiredApprovals}</completionCondition>
   </multiInstanceLoopCharacteristics>
-</UserTask>
+</userTask>
 ```
 
 **Configuration:**
@@ -355,7 +355,7 @@ Execute task for multiple users:
 
 **Multi-Instance with Input/Output Data:**
 ```xml
-<UserTask id="reviewTask" name="Review">
+<userTask id="reviewTask" name="Review">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${reviewers}"
@@ -375,7 +375,7 @@ Execute task for multiple users:
       </assignment>
     </outputDataItem>
   </multiInstanceLoopCharacteristics>
-</UserTask>
+</userTask>
 ```
 
 ### Form Properties
