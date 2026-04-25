@@ -115,6 +115,7 @@ const sidebars: SidebarsConfig = {
           items: [
             'bpmn/integration/index',
             'bpmn/integration/connectors',
+            'bpmn/integration/jpa-process-variables',
           ],
         },
       ],
