@@ -219,6 +219,28 @@ The entity is fetched fresh from the database when the condition is evaluated, e
 | **Flush timing** | Activiti flushes the EntityManager before storing the variable to ensure the PK is assigned |
 | **Type resolution** | When JPA is configured, entity types are registered before `SerializableType`, preventing blob serialization |
 
+```mermaid
+graph TD
+    subgraph Store["Storing a JPA Entity Variable"]
+        S1["execution.setVariable('loan', entity)"]
+        S2["EntityManager.flush() - ensure PK assigned"]
+        S3["Store class name in TEXT_"]
+        S4["Store PK value in TEXT2_"]
+        S1 --> S2 --> S3 --> S4
+    end
+```
+
+```mermaid
+graph TD
+    subgraph Retrieve["Retrieving a JPA Entity Variable"]
+        R1["execution.getVariable('loan')"]
+        R2["Read class name from TEXT_"]
+        R3["Read PK from TEXT2_"]
+        R4["EntityManager.find(class, pk)"]
+        R1 --> R2 --> R3 --> R4
+    end
+```
+
 ## Complete Example
 
 Process definition (`LoanRequestProcess.bpmn20.xml`):
