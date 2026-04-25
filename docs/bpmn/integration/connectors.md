@@ -797,7 +797,7 @@ If process variable `count` is a String, the connector may fail.
 
 - [Service Task](../elements/service-task.md) - Using connectors in service tasks
 - [Integration Patterns](../integration/index.md) - Other integration approaches
-- [Variables](../advanced/variables.md) - Variable mapping and scope
-- [Async Execution](../advanced/async-execution.md) - Background processing
+- [Variables](../reference/variables.md) - Variable mapping and scope
+- [Async Execution](../reference/async-execution.md) - Background processing
 
 ---

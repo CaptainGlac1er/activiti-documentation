@@ -454,8 +454,8 @@ throw new BpmnError("PAY001", "Payment failed");
 - [Boundary Events](./boundary-event.md)
 - [Event Sub-Processes](../subprocesses/event-subprocess.md)
 - [Intermediate Events](./intermediate-events.md#1-message-intermediate-events) - Message catch and throw events
-- [Error Handling](../advanced/error-handling.md)
-- [Execution Listeners](../advanced/execution-listeners.md)
+- [Error Handling](../reference/error-handling.md)
+- [Execution Listeners](../reference/execution-listeners.md)
 
 ---
 

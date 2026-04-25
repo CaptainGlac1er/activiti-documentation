@@ -1,6 +1,6 @@
 ---
 sidebar_label: DelegateExecution API
-slug: /bpmn/advanced/delegate-execution-api
+slug: /bpmn/reference/delegate-execution-api
 title: "DelegateExecution API"
 description: "Complete reference for the DelegateExecution API in Activiti - accessing and manipulating process execution context."
 ---

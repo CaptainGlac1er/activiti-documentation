@@ -185,4 +185,4 @@ If you set `assignee` after delegation, you overwrite the delegation state. Use 
 ## Related Documentation
 
 - [Task Service API](../../api-reference/engine-api/task-service.md) — Full task operations
-- [Task Listeners](../bpmn/advanced/task-listeners.md) — Dynamic delegation in listeners
+- [Task Listeners](../bpmn/reference/task-listeners.md) — Dynamic delegation in listeners

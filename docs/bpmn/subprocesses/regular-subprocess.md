@@ -316,7 +316,7 @@ runtimeService.setVariable(processInstanceId, "sharedVariable", "value");
 - [Ad-hoc SubProcess](./adhoc-subprocess.md) - Flexible activity execution
 - [Transaction](./transaction.md) - Atomic subprocesses
 - [Call Activity](../elements/call-activity.md) - Reusable global subprocesses
-- [Multi-Instance](../advanced/multi-instance.md) - Iterative execution
+- [Multi-Instance](../reference/multi-instance.md) - Iterative execution
 
 ---
 

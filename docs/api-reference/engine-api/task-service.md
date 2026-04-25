@@ -797,4 +797,4 @@ taskService.complete(taskId, variables);
 - [Parent Documentation](README.md)
 - [Runtime Service](runtime-service.md)
 - [History Service](history-service.md)
-- [Best Practices](../../best-practices/overview.md)
+- [Best Practices](../../best-practices/guide.md)

@@ -483,4 +483,4 @@ Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
 
 - [Activiti API](../activiti-api/README.md) - Modern interface-driven API
 - [Configuration Guide](../../configuration.md) - Quick start guide
-- [Best Practices](../../best-practices/overview.md) - Performance optimization
+- [Best Practices](../../best-practices/guide.md) - Performance optimization

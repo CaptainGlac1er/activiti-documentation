@@ -148,4 +148,4 @@ runtimeService.signalEventReceivedWithTenantId("signalName", "tenantId");
 
 - [Process-Level Identity Links](./process-identity-links.md) — Detailed identity management
 - [Message Events](../bpmn/events/intermediate-events.md) — BPMN message handling
-- [Variables](../bpmn/advanced/variables.md) — Transient vs persistent variables
+- [Variables](../bpmn/reference/variables.md) — Transient vs persistent variables

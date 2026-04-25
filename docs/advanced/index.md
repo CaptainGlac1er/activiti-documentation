@@ -1,11 +1,11 @@
 ---
-sidebar_label: Advanced Features Overview
-slug: /advanced/features
-title: "Advanced Features"
+sidebar_label: Advanced Topics Overview
+slug: /advanced/topics
+title: "Advanced Topics"
 description: "Overview of advanced Activiti features for power users."
 ---
 
-# Advanced Features
+# Advanced Topics
 
 This section covers advanced capabilities of the Activiti engine that go beyond standard BPMN usage. These features are essential for production deployments, complex integrations, and operational tooling.
 
@@ -39,3 +39,7 @@ This section covers advanced capabilities of the Activiti engine that go beyond 
 ### Engine Extensibility
 
 - [Custom BPMN Parse Handlers](./custom-parse-handlers.md) — Modify how BPMN elements are parsed during deployment
+
+### See Also
+
+- [Advanced BPMN](../bpmn/reference/async-execution.md) — Async execution, multi-instance, listeners, delegates, variables, error handling, and process extensions are covered in the **BPMN Reference** section.

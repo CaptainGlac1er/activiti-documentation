@@ -685,9 +685,9 @@ Continue your learning journey with these resources:
 |-------|----------|-------------|
 | **BPMN Fundamentals** | [BPMN Documentation](./bpmn/elements/user-task.md) | Learn BPMN 2.0 notation and elements |
 | **Event Handling** | [Implementation Patterns](./implementation-patterns.md#event-handling-patterns) | Master event-driven architecture |
-| **Security** | [Security Best Practices](./best-practices/overview.md#security-best-practices) | Implement authentication and authorization |
+| **Security** | [Security Best Practices](./best-practices/guide.md#security-best-practices) | Implement authentication and authorization |
 | **Connectors** | [Integration Guide](./bpmn/integration/connectors.md) | Integrate with external systems |
-| **Performance** | [Performance Optimization](./best-practices/overview.md#performance-optimization) | Scale your workflows effectively |
+| **Performance** | [Performance Optimization](./best-practices/guide.md#performance-optimization) | Scale your workflows effectively |
 
 ## Troubleshooting
 
@@ -808,7 +808,7 @@ spring:
 ## Additional Resources
 
 - [API Reference](./api-reference/overview.md) - Complete API documentation
-- [Best Practices](./best-practices/overview.md) - Production-ready patterns
+- [Best Practices](./best-practices/guide.md) - Production-ready patterns
 - [Troubleshooting Guide](./troubleshooting/overview.md) - Detailed issue resolution
 - [GitHub Examples](https://github.com/Activiti/Activiti) - Sample applications
 
@@ -816,4 +816,4 @@ spring:
 
 **Congratulations!** You've completed the quick start guide. You now have the foundation to build workflow automation solutions with Activiti.
 
-**Ready for more?** Explore the [API Reference](./api-reference/overview.md) or dive into [Best Practices](./best-practices/overview.md).
+**Ready for more?** Explore the [API Reference](./api-reference/overview.md) or dive into [Best Practices](./best-practices/guide.md).

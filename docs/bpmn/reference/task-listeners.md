@@ -1,6 +1,6 @@
 ---
 sidebar_label: Task Listeners
-slug: /bpmn/advanced/task-listeners
+slug: /bpmn/reference/task-listeners
 title: "Task Listeners"
 description: "Complete guide to task listeners in Activiti for user task lifecycle events - notifications, auditing, and dynamic configuration."
 ---
@@ -877,7 +877,7 @@ public class EventAwareListener implements TaskListener {
 - [User Task](../elements/user-task.md) - User task configuration
 - [Execution Listeners](../common-features.md#execution-listeners) - Activity-level listeners
 - [Common Features](../common-features.md) - Other BPMN extensions
-- [Variables](../advanced/variables.md) - Task variables
+- [Variables](./variables.md) - Task variables
 
 ---
 

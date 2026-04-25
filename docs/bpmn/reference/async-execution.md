@@ -1,6 +1,6 @@
 ---
 sidebar_label: Async Execution
-slug: /bpmn/advanced/async-execution
+slug: /bpmn/reference/async-execution
 title: "Async Execution"
 description: "Complete guide to asynchronous execution in Activiti - background job processing, retry policies, and scalability optimization."
 ---
@@ -533,7 +533,7 @@ try {
 - [Service Task](../elements/service-task.md) - Async service tasks
 - [Common Features](../common-features.md) - Listeners and extensions
 - [Events](../events/index.md) - Boundary events for error handling
-- [Multi-Instance](../advanced/multi-instance.md) - Async multi-instance
+- [Multi-Instance](./multi-instance.md) - Async multi-instance
 
 ---
 

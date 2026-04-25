@@ -337,8 +337,8 @@ taskService.complete(taskId2);
 - [Gateways Overview](./index.md)
 - [Exclusive Gateway](./exclusive-gateway.md)
 - [Inclusive Gateway](./inclusive-gateway.md)
-- [Async Execution](../advanced/async-execution.md)
-- [Multi-Instance](../advanced/multi-instance.md)
+- [Async Execution](../reference/async-execution.md)
+- [Multi-Instance](../reference/multi-instance.md)
 
 ---
 

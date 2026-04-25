@@ -1,6 +1,6 @@
 ---
 sidebar_label: Process Extensions
-slug: /bpmn/advanced/process-extensions
+slug: /bpmn/reference/process-extensions
 title: "Process Extensions"
 description: "Complete guide to using *-extension.json files for variable mapping, properties, and constants in Activiti processes - separation of concerns for maintainable workflows."
 ---

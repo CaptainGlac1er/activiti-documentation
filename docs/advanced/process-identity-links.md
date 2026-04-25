@@ -122,4 +122,4 @@ graph TD
 ## Related Documentation
 
 - [Process Definition Authorization](./process-definition-authorization.md) — Candidate starters
-- [Variables and Variable Scope](../bpmn/advanced/variables.md) — Task variables
+- [Variables and Variable Scope](../bpmn/reference/variables.md) — Task variables

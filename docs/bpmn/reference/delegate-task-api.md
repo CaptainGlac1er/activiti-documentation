@@ -1,6 +1,6 @@
 ---
 sidebar_label: DelegateTask API
-slug: /bpmn/advanced/delegate-task-api
+slug: /bpmn/reference/delegate-task-api
 title: "DelegateTask API"
 description: "Complete reference for the DelegateTask API in Activiti - accessing and manipulating user tasks from task listeners and delegates."
 ---

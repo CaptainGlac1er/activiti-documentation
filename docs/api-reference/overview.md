@@ -1234,4 +1234,4 @@ Two caching subsystems are available in core-common:
 
 **End of API Reference**
 
-For implementation examples, see [Quick Start Guide](../quickstart.md) and [Best Practices](../best-practices/overview.md).
+For implementation examples, see [Quick Start Guide](../quickstart.md) and [Best Practices](../best-practices/guide.md).

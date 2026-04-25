@@ -154,5 +154,5 @@ graph TD
 
 ## Related Documentation
 
-- [Variables and Variable Scope](../advanced/variables.md) — Process variables
+- [Variables and Variable Scope](../reference/variables.md) — Process variables
 - [Service Task](./service-task.md) — Reading/writing data objects in delegates

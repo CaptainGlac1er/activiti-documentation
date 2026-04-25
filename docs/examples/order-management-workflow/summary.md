@@ -276,4 +276,4 @@ curl -X POST http://localhost:8080/api/orders \
 - [Call Activities](../../bpmn/elements/call-activity.md)
 - [Parallel Gateways](../../bpmn/gateways/parallel-gateway.md)
 - [Boundary Events](../../bpmn/events/boundary-event.md)
-- [Multi-Instance](../../bpmn/advanced/multi-instance.md)
+- [Multi-Instance](../../bpmn/reference/multi-instance.md)

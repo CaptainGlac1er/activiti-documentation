@@ -380,7 +380,7 @@ public class NotificationListener implements ActivitiEventListener {
 
 ## Related Documentation
 
-- [Execution Listeners](../bpmn/advanced/execution-listeners.md) — Element-level listeners
-- [Task Listeners](../bpmn/advanced/task-listeners.md) — Task-specific listeners
+- [Execution Listeners](../bpmn/reference/execution-listeners.md) — Element-level listeners
+- [Task Listeners](../bpmn/reference/task-listeners.md) — Task-specific listeners
 - [Database Event Logging](./database-event-logging.md) — Persistent DB audit trail
 - [Configuration](../configuration.md) — Engine event configuration

@@ -596,7 +596,7 @@ Add custom metadata:
 
 ### Process Extensions (*.extension.json)
 Define variables, mappings, and constants separately from BPMN:
-- [Process Extensions Guide](./advanced/process-extensions.md) - Complete documentation
+- [Process Extensions Guide](./reference/process-extensions.md) - Complete documentation
 - Separation of concerns for better maintainability
 - Variable mapping for activities
 - Constants and configuration values
@@ -607,7 +607,7 @@ Define variables, mappings, and constants separately from BPMN:
 - Explore [Service Tasks](./elements/service-task.md) for automation
 - Learn about [Gateways](./gateways/) for process branching
 - Understand [Events](./events/) for triggers and exceptions
-- Master [Process Extensions](./advanced/process-extensions.md) for variable management
+- Master [Process Extensions](./reference/process-extensions.md) for variable management
 
 ## Tools and Integration
 

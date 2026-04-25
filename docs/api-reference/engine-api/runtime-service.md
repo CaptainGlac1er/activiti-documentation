@@ -1199,4 +1199,4 @@ String businessKey = instance.getBusinessKey();
 - [Repository Service](./repository-service.md)
 - [Task Service](./task-service.md)
 - [History Service](./history-service.md)
-- [Best Practices](../../best-practices/overview.md)
+- [Best Practices](../../best-practices/guide.md)

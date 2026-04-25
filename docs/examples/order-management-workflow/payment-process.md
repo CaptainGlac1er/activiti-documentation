@@ -680,6 +680,6 @@ flowchart TD
 ---
 
 **Related Documentation:**
-- [Multi-Instance](../../bpmn/advanced/multi-instance.md)
-- [Async Configuration](../../bpmn/advanced/async-execution.md)
+- [Multi-Instance](../../bpmn/reference/multi-instance.md)
+- [Async Configuration](../../bpmn/reference/async-execution.md)
 - [Boundary Events](../../bpmn/events/boundary-event.md)

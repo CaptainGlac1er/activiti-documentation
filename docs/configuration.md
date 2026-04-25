@@ -1372,4 +1372,4 @@ log.info("Engine configured: history={}, async={}, query-limit={}",
 
 - [Engine Architecture](./architecture/overview.md)
 - [BPMN Execution](./index.md)
-- [Best Practices](./best-practices/overview.md)
+- [Best Practices](./best-practices/guide.md)

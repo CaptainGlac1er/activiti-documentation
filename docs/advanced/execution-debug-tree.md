@@ -176,6 +176,6 @@ for (ExecutionTreeNode node : tree) {
 
 ## Related Documentation
 
-- [Multi-Instance](../bpmn/advanced/multi-instance.md) — Multi-instance activities
-- [Variables and Variable Scope](../bpmn/advanced/variables.md) — Execution-scoped variables
-- [DelegateExecution API](../bpmn/advanced/delegate-execution-api.md) — Execution management
+- [Multi-Instance](../bpmn/reference/multi-instance.md) — Multi-instance activities
+- [Variables and Variable Scope](../bpmn/reference/variables.md) — Execution-scoped variables
+- [DelegateExecution API](../bpmn/reference/delegate-execution-api.md) — Execution management

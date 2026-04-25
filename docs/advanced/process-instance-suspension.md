@@ -204,4 +204,4 @@ The process definition is deployed but remains suspended until `futureDate`, at 
 ## Related Documentation
 
 - [Advanced Deployment Builder](../advanced/deployment-builder.md) — Deployment with activation dates
-- [Async Execution](../bpmn/advanced/async-execution.md) — Job executor configuration
+- [Async Execution](../bpmn/reference/async-execution.md) — Job executor configuration

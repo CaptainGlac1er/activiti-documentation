@@ -1,6 +1,6 @@
 ---
-sidebar_label: Best Practices
-slug: /best-practices
+sidebar_label: Best Practices Guide
+slug: /best-practices/guide
 title: "Best Practices Guide"
 description: "Comprehensive guide for building robust, scalable, and maintainable Activiti applications in production environments."
 ---

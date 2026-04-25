@@ -578,8 +578,8 @@ taskService.complete(taskId);
 - [Task Service API](../../api-reference/engine-api/task-service.md)
 - [Service Task](./service-task.md)
 - [Manual Task](./manual-task.md)
-- [Multi-Instance](../advanced/multi-instance.md)
-- [Execution Listeners](../advanced/execution-listeners.md)
+- [Multi-Instance](../reference/multi-instance.md)
+- [Execution Listeners](../reference/execution-listeners.md)
 
 ---
 

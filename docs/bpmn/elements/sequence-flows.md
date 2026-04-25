@@ -557,8 +557,8 @@ A default flow specifies the sequence flow to take when no condition expressions
 - [Inclusive Gateway](../gateways/inclusive-gateway.md) - OR gateway with multiple paths
 - [Complex Gateway](../gateways/complex-gateway.md) - Advanced condition routing
 - [Gateways Overview](../gateways/index.md) - All gateway types
-- [Variables](../advanced/variables.md) - Variable scope and access
-- [Error Handling](../advanced/error-handling.md) - Error management and exception mapping
+- [Variables](../reference/variables.md) - Variable scope and access
+- [Error Handling](../reference/error-handling.md) - Error management and exception mapping
 
 ---
 

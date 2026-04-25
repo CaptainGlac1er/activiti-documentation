@@ -1,6 +1,6 @@
 ---
 sidebar_label: JavaDelegate
-slug: /bpmn/advanced/java-delegate
+slug: /bpmn/reference/java-delegate
 title: "JavaDelegate"
 description: "Complete guide to JavaDelegate in Activiti - implementing custom business logic in service tasks with the JavaDelegate interface."
 ---

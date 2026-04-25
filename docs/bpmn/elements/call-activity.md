@@ -273,8 +273,8 @@ Object output = runtimeService.getVariable(executionId, "outputData");
 ## Related Documentation
 
 - [SubProcesses](../subprocesses/regular-subprocess.md)
-- [Multi-Instance](../advanced/multi-instance.md)
-- [Variable Scope](../advanced/variables.md)
+- [Multi-Instance](../reference/multi-instance.md)
+- [Variable Scope](../reference/variables.md)
 
 ---
 

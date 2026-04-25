@@ -2,34 +2,43 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 /**
  * Sidebar configuration for Activiti Documentation
+ * - Organized around user journey: learn -> configure -> reference -> go deeper
  * - Maximum 3 levels of nesting
- * - Logical grouping by topic
- * - Clear separation of concepts, guides, and API reference
  * - Collapsible categories with sensible defaults
  */
 const sidebars: SidebarsConfig = {
   activitiDocsSidebar: [
     {
       type: 'doc',
-      id: 'quickstart',
-      label: 'Quick Start',
+      id: 'index',
+      label: 'Documentation',
       className: 'hero-quickstart',
     },
     {
-      type: 'doc',
-      id: 'architecture/overview',
-      label: 'Architecture',
+      type: 'category',
+      collapsible: true,
+      collapsed: false,
+      label: 'Getting Started',
+      link: {type: 'doc', id: 'getting-started/overview'},
+      items: [
+        'quickstart',
+        {
+          type: 'doc',
+          id: 'architecture/overview',
+          label: 'Architecture Overview',
+        },
+      ],
     },
     {
       type: 'doc',
       id: 'configuration',
-      label: 'Configuration',
+      label: 'Engine Configuration',
     },
     {
       type: 'category',
       collapsible: true,
       collapsed: true,
-      label: 'BPMN Elements',
+      label: 'BPMN Reference',
       link: {type: 'doc', id: 'bpmn/index'},
       items: [
         {
@@ -52,9 +61,8 @@ const sidebars: SidebarsConfig = {
         {
           type: 'category',
           label: 'Events',
-          link: {type: 'generated-index', title: 'Events Overview'},
+          link: {type: 'doc', id: 'bpmn/events/index'},
           items: [
-            'bpmn/events/index',
             'bpmn/events/start-event',
             'bpmn/events/intermediate-events',
             'bpmn/events/end-event',
@@ -66,9 +74,8 @@ const sidebars: SidebarsConfig = {
         {
           type: 'category',
           label: 'Gateways',
-          link: {type: 'generated-index', title: 'Gateways Overview'},
+          link: {type: 'doc', id: 'bpmn/gateways/index'},
           items: [
-            'bpmn/gateways/index',
             'bpmn/gateways/exclusive-gateway',
             'bpmn/gateways/parallel-gateway',
             'bpmn/gateways/inclusive-gateway',
@@ -79,9 +86,8 @@ const sidebars: SidebarsConfig = {
         {
           type: 'category',
           label: 'Subprocesses',
-          link: {type: 'generated-index', title: 'Subprocesses Overview'},
+          link: {type: 'doc', id: 'bpmn/subprocesses/index'},
           items: [
-            'bpmn/subprocesses/index',
             'bpmn/subprocesses/regular-subprocess',
             'bpmn/subprocesses/event-subprocess',
             'bpmn/subprocesses/adhoc-subprocess',
@@ -98,24 +104,23 @@ const sidebars: SidebarsConfig = {
           label: 'Advanced BPMN',
           link: {type: 'generated-index', title: 'Advanced BPMN Overview'},
           items: [
-            'bpmn/advanced/async-execution',
-            'bpmn/advanced/multi-instance',
-            'bpmn/advanced/task-listeners',
-            'bpmn/advanced/execution-listeners',
-            'bpmn/advanced/java-delegate',
-            'bpmn/advanced/delegate-execution-api',
-            'bpmn/advanced/delegate-task-api',
-            'bpmn/advanced/variables',
-            'bpmn/advanced/error-handling',
-            'bpmn/advanced/process-extensions',
+            'bpmn/reference/async-execution',
+            'bpmn/reference/multi-instance',
+            'bpmn/reference/task-listeners',
+            'bpmn/reference/execution-listeners',
+            'bpmn/reference/java-delegate',
+            'bpmn/reference/delegate-execution-api',
+            'bpmn/reference/delegate-task-api',
+            'bpmn/reference/variables',
+            'bpmn/reference/error-handling',
+            'bpmn/reference/process-extensions',
           ],
         },
         {
           type: 'category',
           label: 'Integration',
-          link: {type: 'generated-index', title: 'Integration Overview'},
+          link: {type: 'doc', id: 'bpmn/integration/index'},
           items: [
-            'bpmn/integration/index',
             'bpmn/integration/connectors',
             'bpmn/integration/jpa-process-variables',
           ],
@@ -126,7 +131,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       collapsible: true,
       collapsed: true,
-      label: 'Advanced Features',
+      label: 'Advanced Topics',
       link: {type: 'doc', id: 'advanced/index'},
       items: [
         {
@@ -223,14 +228,15 @@ const sidebars: SidebarsConfig = {
       ],
     },
     {
-      type: 'doc',
-      id: 'implementation-patterns',
-      label: 'Implementation Patterns',
-    },
-    {
-      type: 'doc',
-      id: 'best-practices/overview',
-      label: 'Best Practices',
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'Best Practices & Patterns',
+      link: {type: 'doc', id: 'best-practices/index'},
+      items: [
+        'best-practices/guide',
+        'implementation-patterns',
+      ],
     },
     {
       type: 'doc',
@@ -242,14 +248,13 @@ const sidebars: SidebarsConfig = {
       collapsible: true,
       collapsed: true,
       label: 'Examples',
-      link: {type: 'generated-index', title: 'Complete Working Examples'},
+      link: {type: 'doc', id: 'examples/overview'},
       items: [
         {
           type: 'category',
           label: 'Order Management Workflow',
-          link: {type: 'generated-index', title: 'Order Management Workflow'},
+          link: {type: 'doc', id: 'examples/order-management-workflow/summary'},
           items: [
-            'examples/order-management-workflow/summary',
             'examples/order-management-workflow/main-process',
             'examples/order-management-workflow/payment-process',
             'examples/order-management-workflow/inventory-process',

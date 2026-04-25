@@ -788,7 +788,7 @@ public void testCompensationFlow() {
 - [Boundary Events](./boundary-event.md) - Event attachment
 - [Intermediate Events](./intermediate-events.md) - Throw events
 - [End Events](./end-event.md) - Compensation end events
-- [Error Handling](../advanced/error-handling.md) - Alternative rollback
+- [Error Handling](../reference/error-handling.md) - Alternative rollback
 
 ---
 

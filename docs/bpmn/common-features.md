@@ -262,7 +262,7 @@ public class MyDelegate implements JavaDelegate {
 |---------|-----------|--------------|-------------|---------|-------|------------|
 | Multi-Instance | | | | ❌ | ❌ | |
 | Execution Listeners | | | | | | |
-| Task Listeners | (see [Task Listeners](./advanced/task-listeners.md)) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Task Listeners | (see [Task Listeners](./reference/task-listeners.md)) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Async Execution | | | | ❌ | | |
 | Boundary Events | | | | ❌ | ❌ | |
 | Skip Expression | | | | ❌ | ❌ | |
@@ -323,7 +323,7 @@ public class MyDelegate implements JavaDelegate {
 2. **Async for Long Operations:** Prevent blocking
 3. **Boundary Events for Errors:** Handle exceptions locally
 4. **Multi-Instance for Collections:** Process lists efficiently
-5. **Task Listeners for User Tasks:** See [Task Listeners](./advanced/task-listeners.md)
+5. **Task Listeners for User Tasks:** See [Task Listeners](./reference/task-listeners.md)
 6. **Skip Expressions for Options:** Implement conditional logic
 7. **Field Injection for Dependencies:** Use DI properly
 8. **Extension Elements for Metadata:** Store custom info
@@ -334,10 +334,10 @@ public class MyDelegate implements JavaDelegate {
 - [User Task](./elements/user-task.md)
 - [Service Task](./elements/service-task.md)
 - [Events](./events/index.md)
-- [Async Execution](./advanced/async-execution.md)
-- [Multi-Instance](./advanced/multi-instance.md)
-- [Task Listeners](./advanced/task-listeners.md)
-- [Variables](./advanced/variables.md)
+- [Async Execution](./reference/async-execution.md)
+- [Multi-Instance](./reference/multi-instance.md)
+- [Task Listeners](./reference/task-listeners.md)
+- [Variables](./reference/variables.md)
 
 ---
 

@@ -47,18 +47,7 @@ const config: Config = {
           showLastUpdateAuthor: true,
           showLastUpdateTime: true,
         },
-        blog: {
-          showReadingTime: true,
-          feedOptions: {
-            type: ['rss', 'atom'],
-            xslt: true,
-          },
-          editUrl:
-            'https://github.com/Activiti/ActivitiDocumentation/edit/main/blog/',
-          onInlineTags: 'warn',
-          onInlineAuthors: 'warn',
-          onUntruncatedBlogPosts: 'warn',
-        },
+
         theme: {
           customCss: './src/css/custom.scss',
         },
@@ -116,7 +105,6 @@ const config: Config = {
       require.resolve("@cmfcmf/docusaurus-search-local"),
       {
         indexDocs: true,
-        indexBlog: true,
         indexPages: true,
         language: "en"
       },

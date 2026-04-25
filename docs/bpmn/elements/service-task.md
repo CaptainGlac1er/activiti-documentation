@@ -1286,7 +1286,7 @@ public class PaymentServiceTest {
 - [User Task](./user-task.md)
 - [Script Task](./script-task.md)
 - [Business Rule Task](./business-rule-task.md)
-- [Async Execution](../advanced/async-execution.md)
+- [Async Execution](../reference/async-execution.md)
 - [Connectors](../integration/connectors.md)
 - [DMN in Business Rule Tasks](./business-rule-task.md#pattern-3-dmn-integration-via-service-task-alternative)
 

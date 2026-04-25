@@ -1,6 +1,6 @@
 ---
 sidebar_position: 0
-slug: /documentation-index
+slug: /
 title: "Activiti API Documentation"
 description: "Comprehensive documentation for Activiti API 8.7.2-SNAPSHOT. Learn to build robust workflow automation solutions."
 ---
@@ -30,7 +30,8 @@ Begin here if you're unfamiliar with workflow automation or Activiti:
 | Guide | Description | Time Required |
 |-------|-------------|---------------|
 | [Quick Start Guide](./quickstart.md) | Install Activiti and deploy your first workflow | 15 minutes |
-| [Configuration](./configuration.md) | Understand application setup and dependencies | 10 minutes |
+| [Engine Configuration](./configuration.md) | Understand application setup and dependencies | 10 minutes |
+| [Architecture Overview](./architecture/overview.md) | System components and data flow | 15 minutes |
 
 ### Experienced Developers
 
@@ -39,6 +40,7 @@ Accelerate your onboarding with these resources:
 | Guide | Description | Focus Areas |
 |-------|-------------|-------------|
 | [API Reference](./api-reference/overview.md) | Complete interface and method documentation | Runtime APIs, Payload builders, Event handlers |
+| [Best Practices & Patterns](./best-practices/guide.md) | Production-ready patterns and guidelines | Architecture, Performance, Security |
 | [Implementation Patterns](./implementation-patterns.md) | Architectural guidance for production systems | Microservices, Security, Integration |
 
 ---
@@ -52,8 +54,9 @@ All developers should review these foundational documents:
 | Document | Purpose | Priority |
 |----------|---------|----------|
 | [Quick Start](./quickstart.md) | Rapid onboarding and first workflow | Required |
+| [BPMN Reference](./bpmn/index.md) | Comprehensive BPMN element guide | Required |
 | [API Reference](./api-reference/overview.md) | Comprehensive API documentation | Required |
-| [Best Practices](./best-practices/overview.md) | Production-ready patterns and guidelines | Recommended |
+| [Best Practices](./best-practices/guide.md) | Production-ready patterns and guidelines | Recommended |
 
 ### Advanced Topics
 
@@ -61,9 +64,8 @@ Deep-dive resources for complex scenarios:
 
 | Document | Audience | Topics Covered |
 |----------|----------|----------------|
-| [Implementation Patterns](./implementation-patterns.md) | Senior Developers | System design, Integration patterns, Scalability |
+| [Advanced Topics](./advanced/index.md) | Senior Developers | Engine events, Process lifecycle, Deployment, Authorization |
 | [Troubleshooting Guide](./troubleshooting/overview.md) | Developers, Operations | Debugging, Performance optimization, Common issues |
-| [Architecture Overview](./architecture/overview.md) | Technical Leads | System components, Data flow, Deployment models |
 
 ---
 
@@ -93,7 +95,7 @@ Structured learning paths to guide your journey with Activiti:
 
 **Week 4: Production Readiness**
 - Days 1-2: Security fundamentals and authentication
-- Days 3-4: [Best Practices](./best-practices/overview.md) implementation
+- Days 3-4: [Best Practices](./best-practices/guide.md) implementation
 - Days 5-6: Build and test a complete application
 - Day 7: Deployment strategies and monitoring
 
@@ -148,8 +150,8 @@ Structured learning paths to guide your journey with Activiti:
 | **Process Management** | [Process Runtime API](./api-reference/overview.md#process-runtime-api) |
 | **Task Management** | [Task Runtime API](./api-reference/overview.md#task-runtime-api) |
 | **Event Handling** | [Event Patterns](./implementation-patterns.md#event-handling) |
-| **Security** | [Security Best Practices](./best-practices/overview.md#security-best-practices) |
-| **Performance** | [Performance Optimization](./best-practices/overview.md#performance-optimization) |
+| **Security** | [Security Best Practices](./best-practices/guide.md#security-best-practices) |
+| **Performance** | [Performance Optimization](./best-practices/guide.md#performance-optimization) |
 | **Integration** | [Integration Patterns](./implementation-patterns.md) |
 
 ### Navigate by Goal
@@ -157,14 +159,15 @@ Structured learning paths to guide your journey with Activiti:
 | Goal | Recommended Resource |
 |------|---------------------|
 | Get started quickly | [Quick Start Guide](./quickstart.md) |
+| Understand BPMN elements | [BPMN Reference](./bpmn/index.md) |
 | Look up an API method | [API Reference](./api-reference/overview.md) |
 | Resolve an issue | [Troubleshooting Guide](./troubleshooting/overview.md) |
-| Improve code quality | [Best Practices](./best-practices/overview.md) |
-| Design system architecture | [Implementation Patterns](./implementation-patterns.md) |
+| Improve code quality | [Best Practices](./best-practices/guide.md) |
+| Go deeper | [Advanced Topics](./advanced/index.md) |
 
 - **Beginner:** Start with the [Quick Start Guide](./quickstart.md)
-- **Intermediate:** Study the [API Reference](./api-reference/overview.md) and [Best Practices](./best-practices/overview.md)
-- **Advanced:** Explore [Implementation Patterns](./implementation-patterns.md) and [Architecture Overview](./architecture/overview.md)
+- **Intermediate:** Study the [BPMN Reference](./bpmn/index.md) and [API Reference](./api-reference/overview.md)
+- **Advanced:** Explore [Advanced Topics](./advanced/index.md) and [Implementation Patterns](./implementation-patterns.md)
 
 ---
 
@@ -244,21 +247,27 @@ To help us assist you faster, please prepare:
 
 | Document | Description | Status |
 |----------|-------------|--------|
+| [Getting Started](./getting-started/overview.md) | Entry point and prerequisites | Complete |
 | [Quick Start](./quickstart.md) | Rapid onboarding guide | Complete |
+| [BPMN Reference](./bpmn/index.md) | Comprehensive BPMN element guide | Complete |
+| [Engine Configuration](./configuration.md) | Configuration guide | Complete |
+| [Advanced Topics](./advanced/index.md) | Engine events, lifecycle, deployment | Complete |
 | [API Reference](./api-reference/overview.md) | Comprehensive API documentation | Complete |
-| [Best Practices](./best-practices/overview.md) | Production patterns and guidelines | Complete |
+| [Best Practices](./best-practices/guide.md) | Production patterns and guidelines | Complete |
 | [Implementation Patterns](./implementation-patterns.md) | Architectural guidance | Complete |
+| [Examples](./examples/overview.md) | Complete working examples | Complete |
 | [Troubleshooting](./troubleshooting/overview.md) | Issue resolution guide | Complete |
-| [Architecture Overview](./architecture/overview.md) | System architecture | Complete |
 
 ---
 
 ## Quick Links
 
-- **Start Here:** [Quick Start Guide](./quickstart.md)
+- **Start Here:** [Getting Started](./getting-started/overview.md)
+- **BPMN Elements:** [BPMN Reference](./bpmn/index.md)
 - **API Reference:** [Complete API Documentation](./api-reference/overview.md)
-- **Architecture:** [Implementation Patterns](./implementation-patterns.md)
-- **Best Practices:** [Production Guidelines](./best-practices/overview.md)
+- **Advanced Topics:** [Advanced Features](./advanced/index.md)
+- **Best Practices:** [Production Guidelines](./best-practices/guide.md)
+- **Examples:** [Working Examples](./examples/overview.md)
 - **Troubleshooting:** [Issue Resolution](./troubleshooting/overview.md)
 
 ---

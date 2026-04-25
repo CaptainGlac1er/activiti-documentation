@@ -1089,7 +1089,7 @@ ProcessEngine engine = configuration.buildProcessEngine();
 - [Management Service](./management-service.md) - Engine administration
 - [Runtime Service](./runtime-service.md) - Process execution
 - [Engine Configuration](../../configuration.md) - Setup and configuration
-- [Best Practices](../../best-practices/overview.md) - Performance tips
+- [Best Practices](../../best-practices/guide.md) - Performance tips
 
 ---
 

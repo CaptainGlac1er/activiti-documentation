@@ -674,4 +674,4 @@ try {
 - [Parent Documentation](README.md)
 - [Runtime Service](runtime-service.md)
 - [Task Service](task-service.md)
-- [Best Practices](../../best-practices/overview.md)
+- [Best Practices](../../best-practices/guide.md)

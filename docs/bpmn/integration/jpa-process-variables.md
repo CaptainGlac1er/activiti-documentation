@@ -351,7 +351,7 @@ Activiti does not support entities with `@EmbeddedId` or `@IdClass`.
 
 ## Related Documentation
 
-- [Variables and Variable Scope](../advanced/variables.md) — Process variables overview
+- [Variables and Variable Scope](../reference/variables.md) — Process variables overview
 - [Service Task](../elements/service-task.md) — Java delegates and expressions
 - [Exclusive Gateway](../gateways/exclusive-gateway.md) — Conditions in gateways
 - [Configuration](../../configuration.md) — Engine configuration options
