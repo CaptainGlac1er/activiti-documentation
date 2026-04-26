@@ -272,51 +272,321 @@ end
                   activiti:resultVariable="validatedOrder"/>
 ```
 
-### Pattern 3: DMN Integration via Service Task (Alternative)
+### Pattern 3: DMN Decision Integration via Service Task (Recommended)
 
-Since Activiti doesn't have native DMN support in Business Rule Tasks, use Service Tasks with DMN engines.
+Activiti does **not include a native DMN engine**. For DMN (Decision Model and Notation) decisions, the recommended approach is a `ServiceTask` with `activiti:type="dmn"` paired with an external DMN engine connected via the Connector API.
 
-#### Using jDMN or Drools DMN
+#### DMN Service Task Subtype
+
+DMN tasks in Activiti are implemented as `ServiceTask` elements with `type` set to `ServiceTask.DMN_TASK` (constant value `"dmn"`).
+
+```xml
+<serviceTask id="creditDecision"
+             name="Evaluate Credit Decision"
+             activiti:type="dmn">
+  <extensionElements>
+    <activiti:field name="decisionTableReferenceKey"
+                    stringValue="creditScoringTable_v1"/>
+  </extensionElements>
+</serviceTask>
+```
+
+A valid DMN Service Task must:
+1. Have `activiti:type="dmn"` on the `<serviceTask>` element
+2. Contain a field extension named `decisionTableReferenceKey`
+3. Have a non-null, non-empty value for `decisionTableReferenceKey`
+
+```xml
+<!-- VALID -->
+<serviceTask id="dmnTask" activiti:type="dmn">
+  <extensionElements>
+    <activiti:field name="decisionTableReferenceKey" stringValue="myDecisionTable"/>
+  </extensionElements>
+</serviceTask>
+
+<!-- INVALID: missing decisionTableReferenceKey -->
+<serviceTask id="dmnTask" activiti:type="dmn"/>
+
+<!-- INVALID: empty decisionTableReferenceKey -->
+<serviceTask id="dmnTask" activiti:type="dmn">
+  <extensionElements>
+    <activiti:field name="decisionTableReferenceKey" stringValue=""/>
+  </extensionElements>
+</serviceTask>
+```
+
+**Validation:** The `ExternalInvocationTaskValidator` enforces the above rules. Missing or empty `decisionTableReferenceKey` produces error `DMN_TASK_NO_KEY`: _"No decision table reference key is defined on the dmn activity"_.
+
+#### Why Service Task Instead of Business Rule Task for DMN?
+
+| Criterion | Business Rule Task | DMN Service Task + Connector |
+|-----------|-------------------|------------------------------|
+| **Interface** | `BusinessRuleTaskDelegate` (reflection-based) | `Connector` (Spring `@Component`) |
+| **Spring DI** | No — `Class.forName()` instantiation | Yes — full `@Autowired` support |
+| **Modeler Support** | Business Rule Task stencil | Decision Task stencil |
+| **Runtime Switching** | No | Yes — `DynamicBpmnService` |
+| **Variable Mapping** | Manual in delegate | Via extension JSON or `IntegrationContext` |
+| **DMN Semantics** | Rule-centric | Decision-table-centric |
+
+**Recommendation:** Use **Service Task with Connector** for DMN integration. Use **Business Rule Task** when you want BPMN rule semantics with simple rule logic.
+
+#### Connector-Based DMN Integration
+
+The Connector API is the recommended approach for DMN — it provides full Spring integration, type safety, and engine agnosticism.
+
+##### Drools DMN Connector
+
+```xml
+<dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-decision-model</artifactId>
+    <version>8.53.0.Final</version>
+</dependency>
+```
 
 ```java
-import org.activiti.api.process.runtime.connector.Connector;
-import org.activiti.api.process.model.IntegrationContext;
-import org.springframework.stereotype.Component;
+@Component("droolsDmnConnector")
+public class DroolsDmnConnector implements Connector {
 
-@Component("dmnDecisionConnector")
-public class DmnDecisionConnector implements Connector {
-    
     @Autowired
-    private DmnEngine dmnEngine; // Your DMN engine implementation
-    
+    private KieContainer kieContainer;
+
     @Override
     public IntegrationContext apply(IntegrationContext context) {
-        // Get input variables
-        Object input = context.getInBoundVariables().get("inputData");
+        String decisionKey = context.getInBoundVariable("decisionTableReferenceKey");
 
-        // Evaluate DMN decision
-        Object result = dmnEngine.evaluateDecision("creditDecision", input);
+        KieSession ksession = kieContainer.newKieSession();
+        DMNRuntime dmnRuntime = ksession.getKieRuntime(DMNRuntime.class);
 
-        // Return output
-        context.addOutBoundVariable("decisionResult", result);
+        DecisionResult result = dmnRuntime.evaluateDecisionTable(
+            decisionKey, context.getInBoundVariables());
+
+        ksession.dispose();
+
+        context.addOutBoundVariable("decisionResult", result.getResult());
         return context;
     }
 }
 ```
 
-**BPMN Configuration (using Service Task):**
+**Note:** The `decisionTableReferenceKey` value is **not** automatically injected from the service task's `<activiti:field>` extension into the connector's `IntegrationContext`. For a connector to receive `decisionTableReferenceKey`, it must be provided via **extension JSON variable mappings** (as shown in the "Extension JSON Variable Mapping for DMN" section below) or explicitly set as a process variable before reaching the service task. The `activiti:field` extension is used for validation and modeler JSON conversion only — it is not available at runtime to the connector.
 
-```xml
-<serviceTask id="dmnDecision" 
-             name="Credit Decision"
-             implementation="dmnDecisionConnector"/>
+##### REST-Based Decision Service Connector
+
+For microservice architectures where DMN decisions are served by a dedicated decision service:
+
+```java
+@Component("httpDmnConnector")
+public class HttpDmnConnector implements Connector {
+
+    @Autowired
+    private WebClient webClient;
+
+    @Value("${dmn.service.url:http://decision-service:8080/api/v1/evaluate}")
+    private String dmnServiceUrl;
+
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        String decisionKey = context.getInBoundVariable("decisionTableReferenceKey");
+
+        DecisionRequest request = new DecisionRequest(decisionKey, context.getInBoundVariables());
+
+        DecisionResponse response = webClient.post()
+            .uri(dmnServiceUrl)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(DecisionResponse.class)
+            .block();
+
+        context.addOutBoundVariable("decisionResult", response.getResult());
+        context.addOutBoundVariable("decisionAuditId", response.getAuditId());
+        return context;
+    }
+}
 ```
 
-**Why Service Task instead of Business Rule Task?**
-- More flexible integration pattern
-- Works with modern Connector API
-- Better Spring integration
-- Recommended for DMN in Activiti 8
+##### jDMN Connector
+
+```java
+@Component("jdmnConnector")
+public class JdmnConnector implements Connector {
+
+    private final DMNEngine dmnEngine;
+
+    public JdmnConnector() {
+        this.dmnEngine = DMNEngineFactory.create();
+    }
+
+    @Override
+    public IntegrationContext apply(IntegrationContext context) {
+        String decisionKey = context.getInBoundVariable("decisionTableReferenceKey");
+
+        DMNModel model = dmnEngine.parse(
+            getClass().getClassLoader().getResourceAsStream("decisions/" + decisionKey + ".dmn"));
+
+        DMNResult result = dmnEngine.evaluate(model, context.getInBoundVariables());
+
+        context.addOutBoundVariable("decisionResult", result.getSingleDecisionResult(decisionKey));
+        return context;
+    }
+}
+```
+
+#### Extension JSON Variable Mapping for DMN
+
+```json
+{
+  "id": "creditApprovalProcess",
+  "extensions": {
+    "Process_creditApprovalProcess": {
+      "mappings": {
+        "creditDecision": {
+          "inputs": {
+            "decisionTableReferenceKey": {
+              "type": "VALUE",
+              "value": "creditScoringTable_v2"
+            },
+            "annualIncome": {
+              "type": "VARIABLE",
+              "value": "applicantIncome"
+            },
+            "creditHistory": {
+              "type": "VARIABLE",
+              "value": "applicantCreditHistory"
+            }
+          },
+          "outputs": {
+            "decisionResult": {
+              "type": "VARIABLE",
+              "value": "creditDecisionResult"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+#### Modeler Decision Task Stencil
+
+The Activiti Modeler provides a **Decision Task** stencil (`STENCIL_TASK_DECISION = "DecisionTask"`) that creates a Service Task with `type="dmn"` and a decision table reference property.
+
+The `DecisionTaskJsonConverter` handles bidirectional conversion:
+- **JSON to BPMN:** Creates `ServiceTask` with `type="dmn"` and `decisionTableReferenceKey` field extension
+- **BPMN to JSON:** Detects `type="dmn"`, extracts `decisionTableReferenceKey`, reconstructs the decision table reference node with `id`, `name`, and `key`
+
+#### DynamicBpmnService: Runtime Decision Table Switching
+
+The `DynamicBpmnService` allows changing the decision table reference key for a DMN task **without redeploying the process**.
+
+```java
+public interface DynamicBpmnService {
+    ObjectNode getProcessDefinitionInfo(String processDefinitionId);
+    void saveProcessDefinitionInfo(String processDefinitionId, ObjectNode infoNode);
+    ObjectNode changeDmnTaskDecisionTableKey(String id, String decisionTableKey);
+    void changeDmnTaskDecisionTableKey(String id, String decisionTableKey, ObjectNode infoNode);
+}
+```
+
+**Example — Switching decision table versions at runtime:**
+
+```java
+@Service
+public class DecisionTableManager {
+
+    @Autowired
+    private DynamicBpmnService dynamicBpmnService;
+
+    public void switchDecisionTableVersion(String processDefinitionId,
+                                            String taskElementId,
+                                            String newVersionKey) {
+        ObjectNode infoNode = dynamicBpmnService
+            .getProcessDefinitionInfo(processDefinitionId);
+
+        dynamicBpmnService.changeDmnTaskDecisionTableKey(
+            taskElementId, newVersionKey, infoNode);
+
+        dynamicBpmnService.saveProcessDefinitionInfo(
+            processDefinitionId, infoNode);
+    }
+}
+```
+
+**Use cases:**
+- **A/B Testing:** Route different process instances to different decision table versions
+- **Decision Table Updates:** Deploy new decision logic without redeploying BPMN
+- **Environment-Specific Configurations:** Switch between staging and production decision tables
+- **Rollback:** Quickly revert to a previous decision table version
+
+The override is stored in the `ACT_PROCDEF_INFO` table as JSON:
+
+```json
+{
+  "bpmn": {
+    "creditDecision": {
+      "dmnTaskDecisionTableKey": "creditScoringTable_v3"
+    }
+  }
+}
+```
+
+#### Connector-Based Loan Decision Example
+
+The following example uses a connector (`implementation="droolsDmnConnector"`) rather than the native `activiti:type="dmn"` Service Task pattern. This approach gives you full control over the connector implementation, async behavior, and error handling.
+
+**Note:** Because this service task uses `implementation="droolsDmnConnector"` instead of `activiti:type="dmn"`, the `decisionTableReferenceKey` must be provided to the connector via extension JSON mappings or by setting it as a process variable — the `activiti:field` extension approach does not apply to connector-based tasks.
+
+```xml
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:activiti="http://activiti.org/bpmn"
+             targetNamespace="Examples">
+
+  <process id="loanApplicationProcess" name="Loan Application">
+
+    <startEvent id="start"/>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="loanDecision"/>
+
+    <serviceTask id="loanDecision"
+                 name="Loan Eligibility Decision"
+                 implementation="droolsDmnConnector"
+                 activiti:async="true">
+      <extensionElements>
+        <activiti:failedJobRetryTimeCycle>R3/PT1M</activiti:failedJobRetryTimeCycle>
+      </extensionElements>
+    </serviceTask>
+
+    <boundaryEvent id="dmnError" attachedToRef="loanDecision" cancelActivity="true">
+      <errorEventDefinition errorRef="DmnEvaluationError"/>
+    </boundaryEvent>
+
+    <sequenceFlow id="f2" sourceRef="loanDecision" targetRef="decisionGateway"/>
+    <sequenceFlow id="f3" sourceRef="dmnError" targetRef="manualReview"/>
+
+    <exclusiveGateway id="decisionGateway" name="Loan Decision"/>
+    <sequenceFlow id="f4" sourceRef="decisionGateway" targetRef="approveLoan">
+      <conditionExpression>${loanDecisionResult == 'APPROVED'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f5" sourceRef="decisionGateway" targetRef="rejectLoan">
+      <conditionExpression>${loanDecisionResult == 'REJECTED'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f6" sourceRef="decisionGateway" targetRef="manualReview">
+      <conditionExpression>${loanDecisionResult == 'MANUAL_REVIEW'}</conditionExpression>
+    </sequenceFlow>
+
+    <userTask id="approveLoan" name="Approve and Disburse"/>
+    <userTask id="rejectLoan" name="Reject Application"/>
+    <userTask id="manualReview" name="Manual Review Required"/>
+
+    <sequenceFlow id="f7" sourceRef="approveLoan" targetRef="end"/>
+    <sequenceFlow id="f8" sourceRef="rejectLoan" targetRef="end"/>
+    <sequenceFlow id="f9" sourceRef="manualReview" targetRef="end"/>
+    <endEvent id="end"/>
+
+  </process>
+</definitions>
+```
 
 ### Pattern 4: Simple Custom Rules (No External Engine)
 
@@ -578,45 +848,49 @@ Add boundary events for rule execution failures:
 
 1. **Always Specify `activiti:class`**: No default behavior exists without it
 2. **Implement `BusinessRuleTaskDelegate`**: Required interface for custom rules
-3. **Use Service Tasks for DMN**: More flexible than Business Rule Tasks
-4. **Thread Safety**: Ensure implementations are thread-safe for async execution
-5. **Error Handling**: Add boundary events for rule execution failures
-6. **Result Variables**: Always store outputs for audit and downstream use
-7. **External Engines**: Integrate Drools/DMN in your custom implementation
-8. **Testing**: Unit test rule logic separately from process flow
-9. **Logging**: Add execution listeners for monitoring
-10. **Versioning**: Track rule changes separately from process changes
+3. **Thread Safety**: Ensure implementations are thread-safe for async execution
+4. **Error Handling**: Add boundary events for rule execution failures
+5. **Result Variables**: Always store outputs for audit and downstream use
+6. **External Engines**: Integrate Drools/DMN in your custom implementation
+7. **Testing**: Unit test rule logic separately from process flow
+8. **Logging**: Add execution listeners for monitoring
+9. **Versioning**: Track rule changes separately from process changes
+10. **DMN Decisions**: Use Service Task + Connector for DMN (see Pattern 3 above)
 
 ## Common Pitfalls
 
 - **Missing `activiti:class`**: Throws `NullPointerException` if input variables or rules are configured — no default behavior exists
-- **Assuming Native DMN Support**: Does not exist - use Service Tasks instead
+- **Assuming Native DMN Execution**: Activiti does not evaluate DMN tables — you must integrate an external engine via Connector
+- **Missing `decisionTableReferenceKey`**: DMN Service Tasks fail validation with `DMN_TASK_NO_KEY` if the field extension is absent or empty
 - **Not Implementing Delegate Interface**: Must implement `BusinessRuleTaskDelegate`
 - **Thread Safety Issues**: Async execution requires thread-safe implementations
 - **Complex Logic in BPMN**: Keep rules in external engines, not BPMN
-- **No Error Handling**: Rule execution failures can break processes
+- **No Error Boundary Events**: DMN engine failures propagate as unhandled exceptions and terminate the process instance
 
-## Comparison: Business Rule Task vs Service Task
+## Comparison: Approaches to Rules and Decisions
 
-| Feature | Business Rule Task | Service Task |
-|---------|-------------------|--------------|
-| **Interface** | `BusinessRuleTaskDelegate` | `Connector` or `JavaDelegate` |
-| **BPMN Standard** | Yes (semantic meaning) | Yes (generic) |
-| **Native Rules Engine** | No | No |
-| **Drools Integration** | Custom implementation | Custom implementation |
-| **DMN Integration** | Not recommended | Recommended |
-| **Spring Integration** | Via custom class | Via `@Component` |
-| **Use Case** | Business rules semantics | General automation |
-| **Complexity** | Higher (delegate interface) | Lower (simple interface) |
+| Feature | Business Rule Task | DMN Service Task + Connector | Plain Service Task |
+|---------|-------------------|------------------------------|-------------------|
+| **Interface** | `BusinessRuleTaskDelegate` | `Connector` | `Connector` or `JavaDelegate` |
+| **BPMN Semantics** | Rule execution | Decision evaluation | Generic automation |
+| **Native Engine** | No | No | No |
+| **Spring DI** | No (`Class.forName()`) | Yes (`@Autowired`) | Yes (`@Autowired`) |
+| **Drools Integration** | Custom delegate | Connector bean | Connector bean |
+| **DMN Support** | Not recommended | Recommended (Decision Task stencil) | Possible |
+| **Runtime Switching** | No | `DynamicBpmnService` | Via variable injection |
+| **Use Case** | Rule-centric BPMN semantics | Decision-table workflows | General integrations |
+| **Complexity** | Higher (delegate interface) | Medium (Connector + DMN engine) | Lower (simple interface) |
 
 **Recommendation:**
-- Use **Business Rule Task** when you want BPMN semantics for rules
-- Use **Service Task** for DMN or simpler integration patterns
+- Use **Business Rule Task** when BPMN rule semantics are important and logic is straightforward
+- Use **DMN Service Task + Connector** for decision table workflows with external DMN engines
+- Use **Plain Service Task + Connector** for general integrations without rule/decision semantics
 
 ## Related Documentation
 
 - [Service Task](./service-task.md) - Alternative for rules integration
-- [Connectors](../integration/connectors.md) - Modern integration pattern
+- [Connectors](../integration/connectors.md) - Modern integration pattern for DMN engines
+- [Dynamic BPMN](../reference/dynamic-bpmn.md) - Runtime process modification including decision table switching
 - [BPMN Elements](../index.md) - Complete element reference
 
 ---

@@ -114,6 +114,7 @@ const sidebars: SidebarsConfig = {
             'bpmn/reference/variables',
             'bpmn/reference/error-handling',
             'bpmn/reference/process-extensions',
+            'bpmn/reference/business-calendars',
           ],
         },
         {
@@ -122,6 +123,7 @@ const sidebars: SidebarsConfig = {
           link: {type: 'doc', id: 'bpmn/integration/index'},
           items: [
             'bpmn/integration/connectors',
+            'bpmn/integration/spring-integration',
             'bpmn/integration/jpa-process-variables',
           ],
         },
@@ -168,11 +170,23 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Authorization & Identity',
+          label: 'Authorization & Security',
           link: {type: 'generated-index', title: 'Authorization Overview'},
           items: [
             'advanced/process-definition-authorization',
             'advanced/process-identity-links',
+            'advanced/security-policies',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Operations & Administration',
+          link: {type: 'generated-index', title: 'Operations Overview'},
+          items: [
+            'advanced/database-schema',
+            'advanced/management-service',
+            'advanced/job-lifecycle',
+            'advanced/multi-tenancy',
           ],
         },
         {
@@ -181,6 +195,7 @@ const sidebars: SidebarsConfig = {
           link: {type: 'generated-index', title: 'Extensibility Overview'},
           items: [
             'advanced/custom-parse-handlers',
+            'advanced/testing-infrastructure',
           ],
         },
       ],
