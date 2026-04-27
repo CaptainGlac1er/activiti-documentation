@@ -330,8 +330,8 @@ mvn test -pl activiti-core/activiti-spring-conformance-tests/activiti-spring-con
 
 ## Related Documentation
 
-- [Process Runtime API](../activiti-api/process-runtime.md)
-- [Task Runtime API](../activiti-api/task-runtime.md)
+- [Process Runtime API](../activiti-api/process-runtime.mdx)
+- [Task Runtime API](../activiti-api/task-runtime.mdx)
 
 ---
 

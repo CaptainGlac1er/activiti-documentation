@@ -230,5 +230,5 @@ if (!upgradeService.hasProjectManifest()) {
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Project Model](./project-model.md)
+- [Project Model](./project-model.mdx)
 - [Spring Application](./spring-application.md)

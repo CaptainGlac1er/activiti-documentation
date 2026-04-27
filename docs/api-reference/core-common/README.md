@@ -12,26 +12,23 @@ Core common modules provide shared utilities, connectors, and Spring integration
 ## Modules
 
 ### Utilities
-- [Common Util](./common-util.md) - Shared utilities
-- [Core Test](./core-test.md) - Testing support
-- [Expression Language](./expression-language.md) - EL support
-- [JUEL Jakarta](./juel-jakarta.md) - Jakarta EL implementation
-
-### Connectors
-- [Connector Model](./connector-model.md) - Connector framework
-- [Spring Connector](./spring-connector.md) - Spring integration
+- [Common Util](./common-util.mdx) - Shared utilities
+- [Core Test](./core-test.mdx) - Testing support
+- [JUEL Jakarta](./juel-jakarta.mdx) - Jakarta EL implementation
+- [Connector Model](./connector-model.mdx) - Connector framework
+- [Spring Connector](./spring-connector.mdx) - Spring integration
 
 ### Project Management
-- [Project Model](./project-model.md) - Project structure
+- [Project Model](./project-model.mdx) - Project structure
 - [Spring Project](./spring-project.md) - Spring project support
 
 ### Spring Integration
 - [Spring Application](./spring-application.md) - Application context
 - [Spring Cache Manager](./spring-cache-manager.md) - Caching support
-- [Spring Identity](./spring-identity.md) - Identity management
+- [Spring Identity](./spring-identity.mdx) - Identity management
 - [Spring Resource Finder](./spring-resource-finder.md) - Resource loading
-- [Spring Security](./spring-security.md) - Security integration
-- [Spring Security Policies](./spring-security-policies.md) - Policy management
+- [Spring Security](./spring-security.mdx) - Security integration
+- [Spring Security Policies](./spring-security-policies.mdx) - Policy management
 
 ## Use Cases
 

@@ -518,5 +518,5 @@ Each BPMN element in the generated SVG is wrapped in a `<g>` tag whose `id` attr
 
 ## See Also
 
-- [BPMN Model](./bpmn-model.md)
-- [BPMN Layout (GraphicInfo)](./bpmn-layout.md)
+- [BPMN Model](./bpmn-model.mdx)
+- [BPMN Layout (GraphicInfo)](./bpmn-layout.mdx)

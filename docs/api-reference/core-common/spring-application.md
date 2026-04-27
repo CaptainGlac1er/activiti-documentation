@@ -139,4 +139,4 @@ Interface for discovering application entries within zip files. Provides a filte
 ## See Also
 
 - [Parent Module Documentation](../overview.md)
-- [Project Model](./project-model.md)
+- [Project Model](./project-model.mdx)

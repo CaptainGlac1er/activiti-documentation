@@ -399,4 +399,4 @@ Two caches are used:
 
 - [Parent Module Documentation](../overview.md)
 - [Engine Documentation](./README.md)
-- [Spring Integration](./spring-integration.md)
+- [Spring Integration](./spring-integration.mdx)

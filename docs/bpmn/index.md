@@ -618,7 +618,7 @@ Define variables, mappings, and constants separately from BPMN:
 ## Related Resources
 
 - [BPMN 2.0 Specification](https://www.omg.org/spec/BPMN/2.0/)
-- [Activiti BPMN Model API](../api-reference/engine-api/bpmn-model.md)
+- [Activiti BPMN Model API](../api-reference/engine-api/bpmn-model.mdx)
 - [Process Validation](../api-reference/engine-api/process-validation.md)
 
 ---

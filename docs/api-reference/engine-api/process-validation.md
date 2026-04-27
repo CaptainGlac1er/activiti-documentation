@@ -659,7 +659,7 @@ defaultSet.removeValidator(ScriptTaskValidator.class);
 
 ## See Also
 
-- [BPMN Model API](./bpmn-model.md)
+- [BPMN Model API](./bpmn-model.mdx)
 - [Engine API Overview](./README.md)
 - [Custom Validators](../../advanced/custom-validators.md) — Practical guide to writing and registering custom validators
 - [Engine Configuration](../../configuration.md) — `setProcessValidator()` for plugging in custom validation

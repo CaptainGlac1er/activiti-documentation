@@ -859,6 +859,6 @@ Body (JSON):
 ---
 
 **Related Documentation:**
-- [Process Runtime API](../../api-reference/activiti-api/process-runtime.md)
-- [Task Runtime API](../../api-reference/activiti-api/task-runtime.md)
-- [Message Event]( ../../api-reference/activiti-api/process-model.md#messageeventpayload)
+- [Process Runtime API](../../api-reference/activiti-api/process-runtime.mdx)
+- [Task Runtime API](../../api-reference/activiti-api/task-runtime.mdx)
+- [Message Event]( ../../api-reference/activiti-api/process-model.mdx#messageeventpayload)

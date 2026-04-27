@@ -415,6 +415,6 @@ BpmnModel model = converter.convertToBpmnModel(jsonNode, formKeyMap, decisionTab
 
 ## See Also
 
-- [BPMN Model](./bpmn-model.md)
-- [BPMN XML Converter](./bpmn-converter.md)
+- [BPMN Model](./bpmn-model.mdx)
+- [BPMN XML Converter](./bpmn-converter.mdx)
 - [Model API](../../advanced/model-api.md) — Model staging, editing, and deployment workflow
