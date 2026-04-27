@@ -5,12 +5,28 @@ export type ChainResult = {
   remainingChildren: ReactNode[];
 };
 
-function isDirElement(el: ReactElement): boolean {
-  return el.props?.children != null;
+interface DirProps {
+  name: string;
+  children: ReactNode;
+}
+
+interface DirElement extends ReactElement {
+  props: DirProps;
+}
+
+function isDirElement(node: ReactNode): node is DirElement {
+  if (typeof node !== 'object' || node === null || !('$$typeof' in node)) return false;
+  const el = node as ReactElement;
+  return (
+    typeof el.props === 'object' &&
+    el.props !== null &&
+    'name' in el.props &&
+    'children' in el.props
+  );
 }
 
 export function collectChain(name: string, children: ReactNode): ChainResult {
-  const arr = Children.toArray(children) as ReactElement[];
+  const arr = Children.toArray(children);
 
   if (arr.length !== 1 || !isDirElement(arr[0])) {
     return { names: [name], remainingChildren: arr };
