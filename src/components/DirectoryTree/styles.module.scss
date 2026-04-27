@@ -1,0 +1,162 @@
+.directoryTree {
+  background: var(--ifm-code-background);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  border: 1px solid var(--ifm-table-border-color);
+}
+
+[data-theme='dark'] .directoryTree {
+  background: rgba(var(--activiti-primary-rgb), 0.05);
+}
+
+.treeRoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.rootName {
+  font-weight: 600;
+  color: var(--ifm-heading-color);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--ifm-link-hover-color);
+  }
+}
+
+.treeContent {
+  padding-left: 8px;
+}
+
+.chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 0.65rem;
+  color: var(--ifm-menu-color);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.folderIcon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.folderOpen {
+  filter: saturate(1.3);
+}
+
+.moduleIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--activiti-primary);
+  flex-shrink: 0;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: default;
+
+  &:hover {
+    background: var(--ifm-menu-link-sublist-bg);
+  }
+}
+
+.treeDir > .itemRow {
+  cursor: pointer;
+}
+
+.indent {
+  width: calc(var(--depth, 0) * 24px);
+  flex-shrink: 0;
+}
+
+.itemIcon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.itemName {
+  color: var(--ifm-font-color-base);
+  white-space: nowrap;
+}
+
+.dirName {
+  font-weight: 500;
+  color: var(--ifm-heading-color);
+}
+
+.treeChildren {
+  overflow: hidden;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: rgba(var(--activiti-primary-rgb), 0.15);
+  color: var(--activiti-primary);
+}
+
+.badgeDefault {
+  background: rgba(var(--ifm-font-color-base), 0.1);
+  color: var(--ifm-menu-color);
+}
+
+.badgeX {
+  background: rgba(255, 111, 73, 0.15);
+  color: #ff6f49;
+}
+
+.badgeY {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
+.badgeM {
+  background: rgba(68, 132, 255, 0.15);
+  color: #4484ff;
+}
+
+.badgeTs {
+  background: rgba(49, 120, 198, 0.15);
+  color: #3178c6;
+}
+
+.badgeC {
+  background: rgba(130, 170, 255, 0.15);
+  color: #82aaff;
+}
+
+.badgeP {
+  background: rgba(230, 150, 70, 0.15);
+  color: #e69646;
+}
+
+.badgeS {
+  background: rgba(150, 150, 150, 0.15);
+  color: #999;
+}

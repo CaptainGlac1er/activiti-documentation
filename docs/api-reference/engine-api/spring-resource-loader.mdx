@@ -1,0 +1,213 @@
+---
+sidebar_label: Spring Resource Loader
+slug: /activiti-core/spring-resource-loader
+description: Generic deployment resource loader with Spring Cache support for loading typed resources from Activiti deployments.
+---
+
+# Activiti Spring Resource Loader Module - Technical Documentation
+
+**Module:** `activiti-core/activiti-spring-resource-loader`
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Module Structure](#module-structure)
+- [DeploymentResourceLoader](#deploymentresourceloader)
+- [ResourceReader Interface](#resourceread-interface)
+- [Caching](#caching)
+- [Spring Integration](#spring-integration)
+- [Usage Example](#usage-example)
+- [API Reference](#api-reference)
+
+---
+
+## Overview
+
+The **activiti-spring-resource-loader** module provides a single generic class, `DeploymentResourceLoader<T>`, for loading typed resources from Activiti deployments. It retrieves resources from a deployment via `RepositoryService`, filters them by name using a `Predicate`, deserializes each through a `ResourceReader<T>`, and caches the results with Spring Cache.
+
+### Key Features
+
+- **Generic Type Support**: Load any type `T` from deployment resources
+- **Name Filtering**: Select resources by name via `Predicate<String>`
+- **Spring Cache**: Built-in `@Cacheable` on the load method, keyed by deployment ID
+- **Stream-Based Reading**: Resources are read as `InputStream`, closed automatically
+
+### Dependencies
+
+The module depends on:
+
+- `activiti-spring-resource-finder` — provides the `ResourceReader<T>` interface
+- `activiti-engine` — provides `RepositoryService`
+- `activiti-spring`
+- `spring-boot-autoconfigure` (optional)
+
+---
+
+## Module Structure
+
+<DirectoryTree rootName="activiti-spring-resource-loader" expandAll dotWalk>
+  <DirectoryTree.Dir name="src">
+    <DirectoryTree.Dir name="main">
+      <DirectoryTree.Dir name="java">
+        <DirectoryTree.Dir name="org">
+          <DirectoryTree.Dir name="activiti">
+            <DirectoryTree.Dir name="spring">
+              <DirectoryTree.Dir name="resources">
+                <DirectoryTree.File name="DeploymentResourceLoader.java" />
+              </DirectoryTree.Dir>
+            </DirectoryTree.Dir>
+          </DirectoryTree.Dir>
+        </DirectoryTree.Dir>
+      </DirectoryTree.Dir>
+    </DirectoryTree.Dir>
+  </DirectoryTree.Dir>
+</DirectoryTree>
+
+The module contains a single public class. The `ResourceReader<T>` interface it uses lives in the `activiti-spring-resource-finder` module.
+
+---
+
+## DeploymentResourceLoader
+
+**Package:** `org.activiti.spring.resources`
+**Source:** `activiti-core/activiti-spring-resource-loader/src/main/java/org/activiti/spring/resources/DeploymentResourceLoader.java`
+
+```java
+@CacheConfig(cacheNames = {DEPLOYMENT_RESOURCES_CACHE_NAME})
+public class DeploymentResourceLoader<T> {
+
+    public final static String DEPLOYMENT_RESOURCES_CACHE_NAME = "deploymentResourcesById";
+
+    private RepositoryService repositoryService;
+
+    @Cacheable(key = "#deploymentId")
+    public List<T> loadResourcesForDeployment(String deploymentId,
+                                               ResourceReader<T> resourceReader) { ... }
+
+    public void setRepositoryService(RepositoryService repositoryService) { ... }
+}
+```
+
+### How It Works
+
+1. Calls `repositoryService.getDeploymentResourceNames(deploymentId)` to get all resource names in the deployment.
+2. Filters names through `resourceReader.getResourceNameSelector()`, a `Predicate<String>`, to select only the resources of interest.
+3. For each selected resource, calls `repositoryService.getResourceAsStream(deploymentId, name)` and passes the stream to `resourceReader.read(inputStream)`.
+4. Collects non-null results into a `List<T>` and returns it.
+5. The `@Cacheable(key = "#deploymentId")` annotation caches the result by deployment ID, so repeated calls for the same deployment return the cached list.
+
+If the deployment has no resources or none match the selector, an empty list is returned. If reading a resource stream throws `IOException`, it is wrapped in `IllegalStateException`.
+
+---
+
+## ResourceReader Interface
+
+**Package:** `org.activiti.spring.resources`
+**Source:** `activiti-core-common/activiti-spring-resource-finder/src/main/java/org/activiti/spring/resources/ResourceReader.java`
+
+The `ResourceReader<T>` interface defines how resources are selected and deserialized:
+
+```java
+public interface ResourceReader<T> {
+
+    Predicate<String> getResourceNameSelector();
+
+    T read(InputStream inputStream) throws IOException;
+}
+```
+
+- **`getResourceNameSelector()`** — returns a `Predicate<String>` that determines which deployment resources should be loaded by name.
+- **`read(InputStream)`** — reads and deserializes a single resource from an `InputStream` into an object of type `T`. The caller closes the stream; implementations should use try-with-resources if they wrap it further.
+
+---
+
+## Caching
+
+The class is annotated with `@CacheConfig(cacheNames = {"deploymentResourcesById"})`. The `loadResourcesForDeployment` method is annotated with `@Cacheable(key = "#deploymentId")`.
+
+This means:
+
+- Results are cached under the Spring cache named `deploymentResourcesById`.
+- The cache key is the `deploymentId` string argument.
+- The `ResourceReader` argument is not part of the cache key. If multiple readers are used for the same deployment, callers should use separate `DeploymentResourceLoader` instances or manage cache invalidation accordingly.
+- `@EnableCaching` must be active on the Spring application context for caching to take effect.
+
+---
+
+## Spring Integration
+
+`DeploymentResourceLoader` is not a Spring `@Component` by default. It is instantiated and wired by calling modules. For example, `ProcessExtensionsAutoConfiguration` in the `activiti-spring-process-extensions` module provides it as a bean:
+
+```java
+@Bean
+@ConditionalOnMissingBean
+public DeploymentResourceLoader<ProcessExtensionModel> deploymentResourceLoader() {
+    return new DeploymentResourceLoader<>();
+}
+
+@Bean
+InitializingBean initRepositoryServiceForDeploymentResourceLoader(
+        RepositoryService repositoryService,
+        DeploymentResourceLoader deploymentResourceLoader) {
+    return () -> deploymentResourceLoader.setRepositoryService(repositoryService);
+}
+```
+
+The `RepositoryService` is injected via the `setRepositoryService` setter, wired through an `InitializingBean` so the service is available after bean initialization.
+
+---
+
+## Usage Example
+
+Loading process extension models from a deployment (as used internally by `ProcessExtensionRepositoryImpl`):
+
+```java
+// Create the loader
+DeploymentResourceLoader<ProcessExtensionModel> loader = new DeploymentResourceLoader<>();
+loader.setRepositoryService(repositoryService);
+
+// Define a reader that selects .json resources and deserializes them
+ResourceReader<ProcessExtensionModel> reader = new ResourceReader<ProcessExtensionModel>() {
+    @Override
+    public Predicate<String> getResourceNameSelector() {
+        return name -> name.endsWith(".json");
+    }
+
+    @Override
+    public ProcessExtensionModel read(InputStream inputStream) throws IOException {
+        return objectMapper.readValue(inputStream, ProcessExtensionModel.class);
+    }
+};
+
+// Load resources — result is cached by deploymentId
+List<ProcessExtensionModel> models = loader.loadResourcesForDeployment("deployment-123", reader);
+```
+
+---
+
+## API Reference
+
+### `DeploymentResourceLoader&lt;T&gt;`
+
+| Member | Signature | Description |
+|--------|-----------|-------------|
+| Field | `DEPLOYMENT_RESOURCES_CACHE_NAME` | Constant `"deploymentResourcesById"`, used in `@CacheConfig` |
+| Method | `List<T> loadResourcesForDeployment(String deploymentId, ResourceReader<T> resourceReader)` | Loads and caches resources from a deployment. Filtered by the reader's name selector. |
+| Method | `void setRepositoryService(RepositoryService repositoryService)` | Setter for the `RepositoryService` dependency. |
+
+### `ResourceReader&lt;T&gt;`
+
+| Member | Signature | Description |
+|--------|-----------|-------------|
+| Method | `Predicate<String> getResourceNameSelector()` | Returns a predicate that selects resource names to load. |
+| Method | `T read(InputStream inputStream) throws IOException` | Reads and deserializes a single resource into type `T`. |
+
+---
+
+## See Also
+
+- [Spring Process Extensions](./spring-process-extensions.md)
+- [Repository Service](./repository-service.md)
+- [Engine Documentation](./README.md)
