@@ -844,6 +844,116 @@ newItems.add("newItem");
 execution.setVariable("items", newItems);
 ```
 
+## Field Injection and Programmatic Access
+
+Beyond the basic `<activiti:field>` syntax shown earlier, field injection has additional capabilities.
+
+### DelegateExpressionFieldInjectionMode
+
+Field injection with `delegateExpression` can cause security concerns (arbitrary setter calls). This behavior is controlled by `DelegateExpressionFieldInjectionMode`, which has three values:
+
+| Mode | Behavior |
+|------|----------|
+| `COMPATIBILITY` | Pre-5.21 behavior: field expressions are allowed and the only way to inject values. `DelegateHelper.getField()` is not usable unless expressions are defined as delegate members. |
+| `MIXED` | Allows injection with `delegateExpression` but won't throw when fields aren't defined on the delegate. Supports mixed usage where some delegates have injection and others don't. |
+| `DISABLED` | **Recommended** — safest mode. Disables field injection when using `delegateExpression`; no field injection will happen. |
+
+```java
+ProcessEngineConfiguration config = ...;
+config.setDelegateExpressionFieldInjectionMode(
+    DelegateExpressionFieldInjectionMode.DISABLED);  // recommended, safest
+// or DelegateExpressionFieldInjectionMode.MIXED
+```
+
+### Field Extension Syntax
+
+Each field can use **attribute syntax** or **child element syntax**:
+
+```xml
+<!-- Attribute syntax -->
+<activiti:field name="url" stringValue="https://api.example.com"/>
+<activiti:field name="timeout" expression="${connectionTimeout}"/>
+
+<!-- Child element syntax -->
+<activiti:field name="url">
+  <activiti:string>https://api.example.com</activiti:string>
+</activiti:field>
+<activiti:field name="timeout">
+  <activiti:expression>${connectionTimeout}</activiti:expression>
+</activiti:field>
+```
+
+Both produce the same result. The child element syntax is useful for multi-line content (e.g., XML payloads).
+
+### Programmatic Access to Fields from Delegates
+
+`DelegateHelper` provides methods to access field extensions at runtime:
+
+```java
+public class MyDelegate implements JavaDelegate {
+    @Override
+    public void execute(DelegateExecution execution) {
+        // Get all field extensions for the current flow element
+        List<FieldExtension> fields = DelegateHelper.getFlowElementFields(execution);
+
+        // Get a specific field
+        FieldExtension urlField = DelegateHelper.getFlowElementField(execution, "url");
+        if (urlField != null) {
+            Expression urlExpression = DelegateHelper.createExpressionForField(urlField);
+            String url = (String) urlExpression.getValue(execution);
+        }
+
+        // When running inside an execution listener:
+        // List<FieldExtension> listenerFields = DelegateHelper.getListenerFields(execution);
+        // FieldExtension field = DelegateHelper.getListenerField(execution, "name");
+    }
+}
+```
+
+| Method | Returns |
+|--------|---------|
+| `DelegateHelper.getFields(execution)` | Fields of flow element or listener (auto-detects context) |
+| `DelegateHelper.getFlowElementFields(execution)` | Fields of the current BPMN element only |
+| `DelegateHelper.getListenerFields(execution)` | Fields of the current listener only |
+| `DelegateHelper.getField(execution, name)` | Single field by name (auto-detects context) |
+| `DelegateHelper.getFlowElementField(execution, name)` | Single field from flow element |
+| `DelegateHelper.getFieldExpression(execution, name)` | Resolved `Expression` for a field |
+| `DelegateHelper.createExpressionForField(field)` | Creates `Expression` from `FieldExtension` |
+
+### Field Injection on Listeners
+
+Field injection works on **any** element that supports listeners — not just service tasks:
+
+```xml
+<userTask id="myTask">
+  <extensionElements>
+    <activiti:executionListener event="start" class="com.example.MyListener">
+      <activiti:field name="environment" stringValue="production"/>
+      <activiti:field name="apiUrl">
+        <activiti:expression>${config.apiUrl}</activiti:expression>
+      </activiti:field>
+    </activiti:executionListener>
+
+    <activiti:taskListener event="create" class="com.example.MyTaskListener">
+      <activiti:field name="notificationChannel" stringValue="#alerts"/>
+    </activiti:taskListener>
+  </extensionElements>
+</userTask>
+```
+
+Access listener fields at runtime:
+
+```java
+public class MyListener implements ExecutionListener {
+    @Override
+    public void notify(DelegateExecution execution) {
+        FieldExtension envField = DelegateHelper.getListenerField(execution, "environment");
+        Expression envExpr = DelegateHelper.createExpressionForField(envField);
+        String env = (String) envExpr.getValue(execution);
+    }
+}
+```
+
 ## Related Documentation
 
 - [Service Task](../elements/service-task.md) - Service task configuration

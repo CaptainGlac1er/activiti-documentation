@@ -1002,7 +1002,7 @@ runtimeService.startProcessInstanceByKey("variableTimer", variables);
 
 4. **Bound repeating timers** — Use `activiti:endDate` or `Rn` syntax to prevent timers from firing indefinitely, especially in production environments.
 
-5. **Test DST transitions** — Verify timer behavior during spring-forward and fall-back dates using the `ClockReader` for time manipulation in tests.
+5. **Test timers with clock manipulation** — See [Clock Manipulation for Testing](#clock-manipulation-for-testing) below.
 
 6. **Keep CRON expressions readable** — Use named days (`MON-FRI`) and months (`JAN-DEC`) rather than numeric values for maintainability.
 
@@ -1070,6 +1070,132 @@ User tasks use the `dueDate` calendar by default, **not** `cycle`. The `dueDate`
 ### 6. Month index confusion
 
 In CRON expressions, months are 1-12 (or JAN-DEC), but the internal `monthMap` uses 0-based indexing for parsing. End users should always use 1-based values.
+
+## Clock Manipulation for Testing
+
+The engine uses a `Clock`/`ClockReader` system that allows setting a fixed time. This is essential for **deterministic timer testing** — you can advance time programmatically instead of waiting for real timers to fire.
+
+### How It Works
+
+`Clock` extends `ClockReader` with mutation methods:
+
+```java
+// Read-only interface used throughout the engine
+public interface ClockReader {
+    Date getCurrentTime();
+    Calendar getCurrentCalendar();
+    Calendar getCurrentCalendar(TimeZone timeZone);
+    TimeZone getCurrentTimeZone();
+}
+
+// Mutable interface for testing
+public interface Clock extends ClockReader {
+    void setCurrentTime(Date currentTime);
+    void setCurrentCalendar(Calendar currentTime);
+    void reset();
+}
+```
+
+The default implementation is `DefaultClockImpl`. When `setCurrentTime()` is called with a non-null value, all subsequent time reads return the fixed time instead of the system clock. `reset()` returns to system time.
+
+### Setting the Clock
+
+```java
+import org.activiti.engine.runtime.Clock;
+
+Clock clock = processEngineConfiguration.getClock();
+```
+
+### Example: Testing a Timer Event
+
+```java
+@Before
+public void setUp() {
+    // Set a fixed time
+    Clock clock = processEngineConfiguration.getClock();
+    clock.setCurrentTime(new Date());
+}
+
+@Test
+public void testTimerFires() {
+    // Start process with a 1-hour timer
+    runtimeService.startProcessInstanceByKey("timerProcess");
+
+    // Advance the clock by 2 hours
+    Clock clock = processEngineConfiguration.getClock();
+    Calendar cal = clock.getCurrentCalendar();
+    cal.add(Calendar.HOUR_OF_DAY, 2);
+    clock.setCurrentCalendar(cal);
+
+    // Execute the due timer job individually
+    String jobId = managementService.createTimerJobQuery().singleResult().getId();
+    managementService.executeJob(jobId);
+
+    // Assert the process moved past the timer
+    assertThat(runtimeService.createExecutionQuery().activityId("afterTimer").count())
+        .isEqualTo(1);
+}
+
+@After
+public void tearDown() {
+    // Always reset — the clock is shared across all engine instances
+    Clock clock = processEngineConfiguration.getClock();
+    clock.reset();
+}
+```
+
+### Thread Safety Warning
+
+`DefaultClockImpl.CURRENT_TIME` is a `volatile static Calendar`. This means:
+
+- **All engine instances share the same clock** — setting the clock affects every `ProcessEngine` in the JVM
+- **Tests must reset the clock** — always call `clock.reset()` in `@After` or `@AfterEach`
+- **Parallel test execution** — clock manipulation is not safe with parallel tests unless each test resets after itself
+
+### What the Clock Affects
+
+| Feature | Affected by Clock |
+|---------|------------------|
+| Timer start events | Yes |
+| Intermediate timer catch events | Yes |
+| Boundary timer events | Yes |
+| `timeDuration` calculations | Yes |
+| `timeDate` comparisons | Yes |
+| `timeCycle` / CRON evaluation | Yes (via `CycleCalendar`) |
+| User task `dueDate` | Yes (via `DueDateCalendar`) |
+| Business calendar durations | Yes |
+
+### Common Pattern for Timer Tests
+
+```java
+@Test
+public void testCycleTimer() {
+    Clock clock = processEngineConfiguration.getClock();
+
+    // Fix time
+    clock.setCurrentTime(new Date());
+
+    // Deploy and start process
+    runtimeService.startProcessInstanceByKey("repeatingTimer");
+
+    // Advance time past the cycle
+    Calendar advanced = clock.getCurrentCalendar();
+    advanced.add(Calendar.DAY_OF_MONTH, 7);
+    clock.setCurrentCalendar(advanced);
+
+    // Find and execute due timer jobs individually
+    // (ManagementService has no bulk executeTimerJobs method)
+    List<TimerJob> jobs = managementService.createTimerJobQuery().list();
+    for (TimerJob job : jobs) {
+        managementService.executeJob(job.getId());
+    }
+
+    // Verify behavior
+
+    // Critical: reset for next test
+    clock.reset();
+}
+```
 
 ## Related Documentation
 

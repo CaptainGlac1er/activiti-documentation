@@ -1230,6 +1230,56 @@ import static org.activiti.test.matchers.ProcessVariableMatchers.*;
 |----------|---------|--------|
 | `activiti.assertions.await.enabled` | `false` | Wraps operations in Awaitility polling |
 
+## Testing Timers with Clock Manipulation
+
+Timer-based workflows are difficult to test because real timers require waiting. The engine's `Clock` system lets you **set a fixed time** and advance it programmatically.
+
+```java
+import org.activiti.engine.runtime.Clock;
+
+@BeforeEach
+void setUp(ProcessEngineConfiguration config) {
+    // Obtain the Clock from the engine configuration
+    Clock clock = config.getClock();
+    // Fix time so timers are deterministic
+    clock.setCurrentTime(new Date());
+}
+
+@Test
+void testTimerFires(ProcessEngine engine) {
+    RuntimeService runtime = engine.getRuntimeService();
+    ManagementService mgmt = engine.getManagementService();
+    ProcessEngineConfiguration config = engine.getProcessEngineConfiguration();
+
+    // Start process with a 1-hour timer
+    runtime.startProcessInstanceByKey("timerProcess");
+
+    // Advance clock by 2 hours
+    Clock clock = config.getClock();
+    Calendar cal = clock.getCurrentCalendar();
+    cal.add(Calendar.HOUR_OF_DAY, 2);
+    clock.setCurrentCalendar(cal);
+
+    // Find and execute the due timer job individually
+    // ManagementService.executeJob(jobId) executes a single job by ID
+    String jobId = mgmt.createTimerJobQuery().singleResult().getId();
+    mgmt.executeJob(jobId);
+
+    // Assert the timer fired and process moved forward
+    assertThat(runtime.createExecutionQuery()
+        .activityId("afterTimer").count()).isEqualTo(1);
+
+    // Critical: reset the clock
+    clock.reset();
+}
+```
+
+**Important:** `DefaultClockImpl.CURRENT_TIME` is a `volatile static Calendar`. Setting the clock affects every `ProcessEngine` in the JVM. Always call `clock.reset()` after each test, especially with parallel test execution.
+
+`ManagementService` does not have a bulk timer execution method like `executeTimerJobs()` — use `executeJob(String jobId)` on individual jobs, or let the async executor acquire and execute them automatically.
+
+For more detail on calendars, timer expressions, and clock integration, see [Business Calendars](../bpmn/reference/business-calendars.md#clock-manipulation-for-testing).
+
 ---
 
-**Source:** `org.activiti.test` package, `ActivitiAssertionsAutoConfiguration`, `AssertionsAPIAutoConfiguration`, `org.activiti.engine.test.profiler`, `org.activiti.engine.test.mock`
+**Source:** `org.activiti.test` package, `ActivitiAssertionsAutoConfiguration`, `AssertionsAPIAutoConfiguration`, `org.activiti.engine.test.profiler`, `org.activiti.engine.test.mock`, `org.activiti.engine.runtime.Clock`, `org.activiti.engine.impl.util.DefaultClockImpl`

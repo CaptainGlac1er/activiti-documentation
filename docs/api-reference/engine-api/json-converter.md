@@ -382,7 +382,39 @@ ObjectNode editorJson = converter.convertToJson(bpmnModel, formKeyMap, decisionT
 
 The resulting `BpmnModel` can be passed to `BpmnXMLConverter` to generate BPMN 2.0 XML for deployment.
 
+### Custom Element Converter Registration
+
+The converter uses two static maps populated at class load time:
+
+- `convertersToJsonMap` — maps `Class<? extends BaseElement>` to JSON converters (BpmnModel → editor JSON)
+- `convertersToBpmnMap` — maps stencil ID strings to BPMN converters (editor JSON → BpmnModel)
+
+For custom BPMN elements, you can add converters to these maps. This requires modifying the static registration — typically done by creating a subclass of `BpmnJsonConverter` or using reflection:
+
+```java
+// Add custom converter for a proprietary element
+// convertersToJsonMap.put(MyCustomElement.class, new MyCustomElementJsonConverter());
+// convertersToBpmnMap.put("MyCustomElement", new MyCustomElementJsonConverter());
+```
+
+This is an advanced customization for teams building proprietary modeler integrations.
+
+### ModelInfo and Form/DMN Resolution
+
+`ModelInfo` is a simple POJO with `id`, `name`, and `key` fields — it does not hold any maps itself. The conversion methods accept `formKeyMap` and `decisionTableKeyMap` as separate parameters. These maps are constructed by looking up referenced model IDs in the model registry, extracting the form key or decision table key from each `ModelInfo`, and passing the resulting maps to the converter:
+
+```java
+Map<String, String> formKeyMap = new HashMap<>();
+formKeyMap.put("model-123", "my-form-key");
+
+Map<String, String> decisionTableKeyMap = new HashMap<>();
+decisionTableKeyMap.put("model-456", "my-decision-table-key");
+
+BpmnModel model = converter.convertToBpmnModel(jsonNode, formKeyMap, decisionTableKeyMap);
+```
+
 ## See Also
 
 - [BPMN Model](./bpmn-model.md)
 - [BPMN XML Converter](./bpmn-converter.md)
+- [Model API](../../advanced/model-api.md) — Model staging, editing, and deployment workflow

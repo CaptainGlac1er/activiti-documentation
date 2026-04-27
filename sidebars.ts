@@ -54,6 +54,7 @@ const sidebars: SidebarsConfig = {
             'bpmn/elements/business-rule-task',
             'bpmn/elements/call-activity',
             'bpmn/elements/manual-task',
+            'bpmn/elements/shell-task',
             'bpmn/elements/sequence-flows',
             'bpmn/elements/data-objects',
           ],
@@ -145,6 +146,7 @@ const sidebars: SidebarsConfig = {
             'advanced/database-event-logging',
             'advanced/historic-variable-updates',
             'advanced/execution-debug-tree',
+            'advanced/event-subscription-querying',
           ],
         },
         {
@@ -187,6 +189,9 @@ const sidebars: SidebarsConfig = {
             'advanced/management-service',
             'advanced/job-lifecycle',
             'advanced/multi-tenancy',
+            'advanced/native-queries',
+            'advanced/optimistic-locking',
+            'advanced/history-cleanup',
           ],
         },
         {
@@ -196,6 +201,7 @@ const sidebars: SidebarsConfig = {
           items: [
             'advanced/custom-parse-handlers',
             'advanced/testing-infrastructure',
+            'advanced/custom-validators',
           ],
         },
       ],

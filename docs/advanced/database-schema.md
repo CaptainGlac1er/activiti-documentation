@@ -918,8 +918,56 @@ WHERE E.ACT_ID_ = 'waitForApproval'
 | `ACT_GE_PROPERTY` | GE | Engine lifetime | Engine properties |
 | `ACT_GE_BYTEARRAY` | GE | Until deployment deleted | Binary resources |
 
+## ByteArrayEntity — Shared Blob Storage Architecture
+
+`ACT_GE_BYTEARRAY` is the engine's **shared binary storage**. Many features store large data as `ByteArrayEntity` rows and reference them by ID from other tables. Understanding this architecture is important for storage management and cleanup.
+
+### What's Stored
+
+| Feature | Reference Column | Stored Content |
+|---------|-----------------|----------------|
+| Deployment resources | `ACT_RE_DEPLOYMENT` → query by `deploymentId` | BPMN XML, `.extension.json`, form files |
+| Process variables | `ACT_RU_VARIABLE.BYTEARRAY_ID_` | Binary and serializable variables |
+| Model editor source | `ACT_RE_MODEL.EDITOR_SOURCE_VALUE_ID_` | BPMN XML from modeler |
+| Model editor extras | `ACT_RE_MODEL.EDITOR_SOURCE_EXTRA_VALUE_ID_` | Stencil set and metadata |
+| Attachment content | Stored in `ByteArrayEntity` by `CreateAttachmentCmd` | File content from `createAttachment(..., InputStream)` |
+| Process extension info | `ACT_PROCDEF_INFO.INFO_JSON_ID_` | Extension JSON payload |
+| Job exceptions | `ACT_RU_TIMER_JOB.BYTEARRAY_ID_`, dead letter, suspended | Stack traces of failed jobs |
+| History variables | `ACT_HI_VARINST.BYTEARRAY_ID_` | Historic binary variable values |
+| Comment/Attachment history | `ACT_HI_COMMENT`, `ACT_HI_ATTACHMENT` | Large messages and files |
+
+### Entity Fields
+
+| Field | Description |
+|-------|-------------|
+| `getName()` | Logical name of the resource |
+| `getBytes()` | The binary data |
+| `getDeploymentId()` | Associated deployment (null for variables, attachments, etc.) |
+
+### Lifecycle and Cascade Deletion
+
+- **Deployment resources**: Deleted when the deployment is deleted (`repositoryService.deleteDeployment(..., cascade=true)`)
+- **Variables**: When a variable is updated, the old `ByteArrayEntity` is deleted. When a process completes, runtime variable byte arrays are cleaned up.
+- **Attachments**: Deleted explicitly via `taskService.deleteAttachment()`. The content `ByteArrayEntity` is cascaded.
+- **Model sources**: Deleted when the model is deleted.
+
+### Lazy Loading: ByteArrayRef
+
+The engine uses `ByteArrayRef` for transparent lazy loading. When a variable or resource references a byte array, the actual bytes are loaded on first access. This avoids loading all binary data into memory during queries.
+
+### Storage Growth Considerations
+
+Binary variables and attachment content are common causes of unbounded database growth. Strategies:
+
+- Use transient variables for large intermediate data (not persisted)
+- Store large files externally (S3, filesystem) and reference by URL in process variables
+- Implement periodic cleanup of old attachments and binary history variables
+- Monitor `ACT_GE_BYTEARRAY` size regularly using the management service
+
 ## Related Documentation
 
 - [Engine Events](./engine-event-system.md) — Engine event system vs. database event logging
 - [Database Event Logging](./database-event-logging.md) — Configuring and querying ACT_EVT_LOG
 - [Configuration](../configuration.md) — Setting history level and database schema update mode
+- [History Cleanup and Data Retention](./history-cleanup.md) — Managing history table growth
+- [Variables](../bpmn/reference/variables.md) — Variable types and storage

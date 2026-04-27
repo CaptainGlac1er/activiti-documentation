@@ -460,9 +460,13 @@ List<Comment> processComments = taskService.getProcessInstanceComments(processIn
 ### Attachments
 
 ```java
-// Create attachment
-Attachment attachment = taskService.createAttachment("url", taskId, processInstanceId,
-    "Document", "contract.pdf", inputStream);
+// Create attachment with InputStream (content stored in ACT_GE_BYTEARRAY)
+Attachment attachment = taskService.createAttachment("file", taskId, processInstanceId,
+    "contract.pdf", "Service Contract", inputStream);
+
+// Create attachment with URL (external reference, no DB storage)
+Attachment urlAttachment = taskService.createAttachment("url", taskId, processInstanceId,
+    "External Doc", "Requirements", "https://docs.example.com/requirements");
 
 // Get attachment metadata
 Attachment att = taskService.getAttachment("attachment-1");
@@ -470,9 +474,103 @@ Attachment att = taskService.getAttachment("attachment-1");
 // Get attachment content stream
 InputStream content = taskService.getAttachmentContent("attachment-1");
 
+// List task attachments
+List<Attachment> taskAttachments = taskService.getTaskAttachments(taskId);
+
+// List process instance attachments
+List<Attachment> processAttachments = taskService.getProcessInstanceAttachments(processInstanceId);
+
+// Update attachment metadata
+Attachment updated = taskService.getAttachment("attachment-1");
+updated.setName("Updated Name");
+updated.setDescription("Updated Description");
+taskService.saveAttachment(updated);
+
 // Delete attachment
 taskService.deleteAttachment("attachment-1");
 ```
+
+**Storage model:** InputStream attachments store content as a `ByteArrayEntity` in `ACT_GE_BYTEARRAY`. The `Attachment.contentId` references the byte array row. URL attachments store no content in the database — `contentId` is null and the `url` field holds the external reference.
+
+### Comments
+
+```java
+// Add comment to task
+taskService.addComment(taskId, processInstanceId, "Review completed successfully");
+
+// Add comment with type (for filtering)
+taskService.addComment(taskId, processInstanceId, "feedback", "Needs more information");
+taskService.addComment(taskId, processInstanceId, "audit", "Escalated to manager");
+
+// Get comments by task
+List<Comment> taskComments = taskService.getTaskComments(taskId);
+
+// Get comments by type
+List<Comment> feedbackComments = taskService.getTaskComments(taskId, "feedback");
+
+// Get all comments of a type (across all tasks)
+List<Comment> allAuditComments = taskService.getCommentsByType("audit");
+
+// Get comments by process instance
+List<Comment> processComments = taskService.getProcessInstanceComments(processInstanceId);
+
+// Get single comment
+Comment comment = taskService.getComment("comment-1");
+
+// Delete a single comment
+taskService.deleteComment("comment-1");
+
+// Delete all comments for a task
+taskService.deleteComments(taskId, processInstanceId);
+```
+
+**Comment interface fields:**
+
+| Field | Description |
+|-------|-------------|
+| `getId()` | Comment ID |
+| `getUserId()` | User who created the comment |
+| `getTaskId()` | Task ID |
+| `getProcessInstanceId()` | Process instance ID |
+| `getFullMessage()` | Comment text |
+| `getType()` | Comment type (custom, for filtering) |
+| `getTime()` | Timestamp |
+
+Comments are stored in `ACT_HI_COMMENT` and persist after process completion. There is no `getAttachmentsByType()` — type filtering is available for comments only.
+
+### Task Events
+
+Runtime events (distinct from comments) capture structured task activity:
+
+```java
+// Get events for a task
+List<Event> events = taskService.getTaskEvents(taskId);
+
+// Get a specific event
+Event event = taskService.getEvent("event-1");
+```
+
+Events are created by task listeners and the engine itself. Each event has an `action` (e.g., `ACTION_ADD_COMMENT`, `ACTION_ADD_ATTACHMENT`) rather than a type. Use `getTaskEvents()` to inspect programmatic task activity.
+
+### Subtasks
+
+Tasks can have a parent-child hierarchy:
+
+```java
+// Create a standalone parent task
+Task parent = taskService.newTask("parent-1");
+taskService.saveTask(parent);
+
+// Create a child task
+Task child = taskService.newTask("child-1");
+child.setParentTaskId("parent-1");
+taskService.saveTask(child);
+
+// Query subtasks
+List<Task> subTasks = taskService.getSubTasks("parent-1");
+```
+
+Subtasks are standalone tasks linked to a parent. Completing a subtask does not affect the parent. Subtasks are useful for breaking down complex work items.
 
 ---
 

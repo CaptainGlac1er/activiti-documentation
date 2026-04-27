@@ -639,9 +639,27 @@ ProcessValidatorFactory.createDefaultProcessValidator()
                     +-- Returns flat List<ValidationError>
 ```
 
+## Custom Validator Development
+
+To write custom validators that enforce organization-specific BPMN rules, see [Custom Validators](../../advanced/custom-validators.md). Key steps:
+
+1. Implement `Validator` or extend `ValidatorImpl`
+2. Use `addError()` / `addWarning()` with element context
+3. Register in a `ValidatorSet` (default or custom)
+4. Configure via `ProcessEngineConfiguration.setProcessValidator()`
+
+You can also **disable built-in validators**:
+
+```java
+ValidatorSet defaultSet = validator.getValidatorSets().get(0);
+defaultSet.removeValidator(ScriptTaskValidator.class);
+```
+
 ---
 
 ## See Also
 
 - [BPMN Model API](./bpmn-model.md)
 - [Engine API Overview](./README.md)
+- [Custom Validators](../../advanced/custom-validators.md) — Practical guide to writing and registering custom validators
+- [Engine Configuration](../../configuration.md) — `setProcessValidator()` for plugging in custom validation

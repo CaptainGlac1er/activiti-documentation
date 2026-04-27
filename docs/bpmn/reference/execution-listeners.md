@@ -203,6 +203,111 @@ log.info "Task started, activity: ${execution.currentActivityId}"
 </activiti:executionListener>
 ```
 
+## Transaction-Dependent Listeners
+
+When a listener is configured with `onTransaction`, the engine checks whether the delegate class implements `TransactionDependentExecutionListener`. If it does, the listener receives a **completely different `notify()` signature** — raw data snapshots instead of a `DelegateExecution` object.
+
+### The Different Method Contract
+
+```java
+// Regular ExecutionListener
+public interface ExecutionListener {
+    void notify(DelegateExecution execution);
+}
+
+// TransactionDependentExecutionListener
+public interface TransactionDependentExecutionListener {
+    void notify(String processInstanceId,
+                String executionId,
+                FlowElement flowElement,
+                Map<String, Object> executionVariables,
+                Map<String, Object> customPropertiesMap);
+}
+```
+
+**Key differences:**
+
+| Aspect | `ExecutionListener` | `TransactionDependentExecutionListener` |
+|--------|---------------------|----------------------------------------|
+| Receives | Live `DelegateExecution` | Data snapshots (String, FlowElement, Maps) |
+| Can modify variables | Yes — `execution.setVariable()` | No — maps are copies |
+| Can throw `BpmnError` | Yes — interrupts flow | No — thrown errors are ignored |
+| Timing options | `start`, `end`, `take` | `before-commit`, `committed`, `rolled-back` |
+| Transaction context | Inside the transaction | After commit or after rollback |
+
+The engine dispatches based on the delegate's implemented interface. If your class implements both `ExecutionListener` **and** `TransactionDependentExecutionListener`, the engine determines which to call based on the `onTransaction` attribute:
+
+- **No `onTransaction`** → `ExecutionListener.notify(DelegateExecution)`
+- **`onTransaction="before-commit"`** → `TransactionDependentExecutionListener.notify(...)` before the transaction commits
+- **`onTransaction="committed"`** → `TransactionDependentExecutionListener.notify(...)` after the transaction commits
+- **`onTransaction="rolled-back"`** → `TransactionDependentExecutionListener.notify(...)` after the transaction rolls back
+
+### Implementation Example
+
+```java
+public class PostCommitAuditListener implements TransactionDependentExecutionListener {
+
+    @Override
+    public void notify(String processInstanceId,
+                       String executionId,
+                       FlowElement flowElement,
+                       Map<String, Object> executionVariables,
+                       Map<String, Object> customPropertiesMap) {
+
+        // Safe to call external systems — data is committed
+        auditService.logActivity(
+            processInstanceId,
+            flowElement.getId(),
+            executionVariables
+        );
+
+        // Cannot modify variables — executionVariables is a snapshot
+        // Cannot throw to interrupt the process
+    }
+}
+```
+
+### Custom Properties Resolver
+
+Transaction-dependent listeners can receive custom properties via `CustomPropertiesResolver`:
+
+```xml
+<activiti:executionListener
+    event="end"
+    class="com.example.PostCommitListener"
+    onTransaction="committed"
+    customPropertiesResolverClass="com.example.MyResolver"/>
+```
+
+```java
+public class MyResolver implements CustomPropertiesResolver {
+    @Override
+    public Map<String, Object> getCustomPropertiesMap(DelegateExecution execution) {
+        Map<String, Object> props = new HashMap<>();
+        props.put("environment", "production");
+        props.put("region", "us-east-1");
+        // Can use execution to resolve properties based on process state
+        if ("highPriority".equals(execution.getVariable("priority"))) {
+            props.put("notificationChannel", "slack-urgent");
+        }
+        return props;
+    }
+}
+```
+
+The method `getCustomPropertiesMap(DelegateExecution)` receives the live `DelegateExecution` so the resolver can inspect process state. The resolved map is passed as the `customPropertiesMap` parameter to the listener's `notify()` method.
+
+### Use Cases
+
+- **Post-commit event publishing** — Send messages to Kafka/RabbitMQ only after data is committed
+- **External system updates** — Call REST APIs with committed process state
+- **Rollback recovery** — Clean up side effects when a transaction fails
+- **Audit logging** — Record finalized state changes after commit
+
+### Common Pitfall
+
+Do **not** implement `TransactionDependentExecutionListener` when you need to modify process variables or influence flow. The maps passed to `notify()` are snapshots — changes are discarded. Use regular `ExecutionListener` with `event="end"` instead.
+
 ## Placement Options
 
 ### 1. Process Level

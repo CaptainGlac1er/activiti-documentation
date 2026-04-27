@@ -1120,7 +1120,123 @@ Use expressions for environment-specific values:
 }
 ```
 
----
+## Assignment Definitions
+
+Process extensions support declarative task assignment configuration through `assignments` in the extension JSON. Each assignment is a flat `AssignmentDefinition` with fields: `id`, `assignment`, `type`, and `mode`.
+
+### Assignment Structure
+
+```json
+{
+  "extensions": {
+    "myProcess": {
+      "assignments": {
+        "reviewTask-assignee": {
+          "id": "reviewTask-assignee",
+          "assignment": "ASSIGNEE",
+          "type": "EXPRESSION",
+          "mode": "SEQUENTIAL"
+        },
+        "reviewTask-candidates": {
+          "id": "reviewTask-candidates",
+          "assignment": "CANDIDATES",
+          "type": "IDENTITY",
+          "mode": "SEQUENTIAL"
+        }
+      }
+    }
+  }
+}
+```
+
+### Assignment Fields
+
+| Field | Type | Values |
+|-------|------|--------|
+| `id` | String | Unique identifier for this assignment |
+| `assignment` | `AssignmentEnum` | `ASSIGNEE` or `CANDIDATES` |
+| `type` | `AssignmentType` | `STATIC`, `IDENTITY`, or `EXPRESSION` |
+| `mode` | `AssignmentMode` | `SEQUENTIAL` (first non-null wins) or `MANUAL` |
+
+## Task Templates
+
+Extensions support `templates` for reusable task assignment patterns. `TemplatesDefinition` has a `default` template (a `TaskTemplateDefinition`) and a `tasks` map keyed by task ID.
+
+### Template Structure
+
+```json
+{
+  "extensions": {
+    "myProcess": {
+      "templates": {
+        "default": {
+          "assignee": {
+            "type": "VARIABLE",
+            "value": "requestManager"
+          },
+          "candidate": {
+            "type": "VARIABLE",
+            "value": "backupGroup"
+          }
+        },
+        "tasks": {
+          "escalationTask": {
+            "assignee": {
+              "type": "FILE",
+              "value": "classpath:assignees/escalation.txt"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### TemplateDefinition Fields
+
+Each `assignee` or `candidate` entry in a `TaskTemplateDefinition` is a `TemplateDefinition` with:
+
+| Field | Description |
+|-------|-------------|
+| `type` | `VARIABLE` (resolve from process variable name) or `FILE` (read from file/classpath) |
+| `value` | The variable name or file path |
+| `from` | Source identifier |
+| `subject` | Subject identifier |
+
+The `default` template applies to all tasks without a specific override. Task-level entries under `tasks` override the default for named activities.
+
+## Variable Parsing and Validation Services
+
+Process extensions auto-configure two Spring beans that handle variable data:
+
+- **`VariableParsingService`** — Parses variable values into typed objects based on the extension's `type` field
+- **`VariableValidationService`** — Validates required variables and type constraints at process start time
+
+The registered variable types in `ProcessExtensionsAutoConfiguration.variableTypeMap()` are: `boolean`, `string`, `integer`, `bigdecimal`, `json`, `file`, `folder`, `content`, `date`, `datetime`, `array`.
+
+## ProcessExtensionRepository
+
+`ProcessExtensionRepository` is the interface for loading extension data. To use custom extension sources (database, remote API), implement the interface and register it as a Spring bean:
+
+```java
+@Component
+public class CustomExtensionRepository implements ProcessExtensionRepository {
+    @Override
+    public Optional<Extension> getExtensionsForId(@NonNull String processDefinitionId) {
+        // Load and return Extension for the given process definition ID
+        return Optional.empty();
+    }
+}
+```
+
+`CacheableProcessExtensionRepository` wraps any repository with caching. `CachingProcessExtensionService` is `@Deprecated` — use `ProcessExtensionService` directly.
+
+## Examples Repository
+
+For more complete examples, see:
+- `Activiti/activiti-core/activiti-api-impl/activiti-api-process-runtime-impl/src/test/resources/processes/`
+- `Activiti/activiti-core/activiti-api-impl/activiti-api-process-runtime-impl/src/test/resources/task-variable-mapping-extensions.json`
 
 ## Related Documentation
 
@@ -1129,14 +1245,6 @@ Use expressions for environment-specific values:
 - [User Tasks](../elements/user-task.md) - Task variable mapping
 - [Multi-Instance](./multi-instance.md) - Multi-instance variable handling
 - [Process Validation](../../api-reference/engine-api/process-validation.md) - Validating extensions
-
----
-
-## Examples Repository
-
-For more complete examples, see:
-- `Activiti/activiti-core/activiti-api-impl/activiti-api-process-runtime-impl/src/test/resources/processes/`
-- `Activiti/activiti-core/activiti-api-impl/activiti-api-process-runtime-impl/src/test/resources/task-variable-mapping-extensions.json`
 
 ---
 

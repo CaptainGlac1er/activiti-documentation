@@ -212,19 +212,82 @@ Control whether remaining activities are cancelled when the subprocess completes
 
 ## Runtime API
 
-Ad-hoc subprocess execution is managed by the engine automatically. There are no dedicated RuntimeService methods for controlling ad-hoc subprocesses. To check the state of a process execution:
+`RuntimeService` provides **three dedicated methods** for programmatic control of ad-hoc subprocesses. These are essential when activities need to be activated by code rather than by user interaction (e.g., in headless workflows, batch processing, or automated decision-making scenarios).
+
+### Query Available Activities
 
 ```java
-// Check current activity
-Execution execution = runtimeService.createExecutionQuery()
-    .processInstanceId(processInstanceId)
-    .singleResult();
+// Returns the list of FlowNodes that are eligible to execute
+List<FlowNode> availableActivities =
+    runtimeService.getEnabledActivitiesFromAdhocSubProcess(executionId);
 
-// Complete a user task normally
-taskService.complete(taskId);
+for (FlowNode node : availableActivities) {
+    System.out.println("Available: " + node.getId() + " - " + node.getName());
+}
 ```
 
-Completion of the ad-hoc subprocess is driven by the `<completionCondition>` expression evaluating to true.
+In **Sequential** ordering mode, `getEnabledActivitiesFromAdhocSubProcess` returns an **empty list** if any child execution is currently active — it does not filter by completed dependencies. In **Parallel** mode (the default), all activities whose BPMN element has **zero incoming sequence flows** within the ad-hoc subprocess are returned.
+
+### Activate a Specific Activity
+
+```java
+// Programmatically start an activity within the ad-hoc subprocess
+Execution newExecution =
+    runtimeService.executeActivityInAdhocSubProcess(executionId, "reviewTask");
+
+// The returned Execution is the child execution for the newly activated activity
+String newExecutionId = newExecution.getId();
+```
+
+This is the primary way to drive ad-hoc subprocesses without user interaction. The activity must be present inside the ad-hoc subprocess and must have no incoming sequence flows within the subprocess (i.e., it is a root activity of the ad-hoc subprocess).
+
+### Force Completion
+
+```java
+// Complete the ad-hoc subprocess regardless of the completionCondition
+runtimeService.completeAdhocSubProcess(executionId);
+```
+
+Bypasses `<completionCondition>` entirely. Any remaining activities are cancelled according to the `cancelRemainingInstances` attribute.
+
+### Complete Example: Automated Decision
+
+```java
+// Find the ad-hoc subprocess execution
+Execution adhocExec = runtimeService.createExecutionQuery()
+    .processInstanceId(processInstanceId)
+    .activityId("adHocTasks")
+    .singleResult();
+
+String executionId = adhocExec.getId();
+
+// Check what activities are available
+List<FlowNode> available = runtimeService.getEnabledActivitiesFromAdhocSubProcess(executionId);
+
+// Activate activities based on business rules
+for (FlowNode node : available) {
+    if (shouldExecute(node.getId())) {
+        runtimeService.executeActivityInAdhocSubProcess(executionId, node.getId());
+    }
+}
+
+// Force completion when all needed work is done
+runtimeService.completeAdhocSubProcess(executionId);
+```
+
+### Sequential Ordering Constraints
+
+When `ordering="Sequential"` is set on the ad-hoc subprocess, `executeActivityInAdhocSubProcess` will only succeed if previously activated activities have completed. Attempting to activate an activity while others are still running throws an exception.
+
+```java
+// Sequential mode: activityB will NOT be in getEnabledActivitiesFromAdhocSubProcess
+// until activityA completes
+Execution execA = runtimeService.executeActivityInAdhocSubProcess(executionId, "activityA");
+// ... wait for activityA to complete ...
+Execution execB = runtimeService.executeActivityInAdhocSubProcess(executionId, "activityB"); // now succeeds
+```
+
+Completion of the ad-hoc subprocess can also be driven by the `<completionCondition>` expression evaluating to true through normal task completion.
 
 ## Best Practices
 

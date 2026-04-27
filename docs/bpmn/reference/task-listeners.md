@@ -126,6 +126,78 @@ Execute a method call directly:
 - Method must be accessible
 - Useful for simple operations
 
+## Transaction-Dependent Task Listeners
+
+When configured with `onTransaction`, the engine dispatches to `TransactionDependentTaskListener` instead of the regular `TaskListener`. This interface has a **different `notify()` signature**:
+
+```java
+// Regular TaskListener
+public interface TaskListener {
+    void notify(DelegateTask task);
+}
+
+// TransactionDependentTaskListener
+public interface TransactionDependentTaskListener {
+    void notify(String processInstanceId,
+                String executionId,
+                Task task,
+                Map<String, Object> executionVariables,
+                Map<String, Object> customPropertiesMap);
+}
+```
+
+**Key differences:**
+
+| Aspect | `TaskListener` | `TransactionDependentTaskListener` |
+|--------|---------------|-----------------------------------|
+| Receives | Live `DelegateTask` | Data snapshots |
+| Can modify task | Yes — `task.setAssignee()` | No — task is read-only |
+| Can modify variables | Yes — `task.setVariable()` | No — map is a copy |
+| Timing options | `create`, `assignment`, `complete`, `delete` | `before-commit`, `committed`, `rolled-back` |
+| Transaction context | Inside the transaction | After commit or after rollback |
+
+### Implementation Example
+
+```java
+public class TaskCompletedNotifier implements TransactionDependentTaskListener {
+
+    @Override
+    public void notify(String processInstanceId,
+                       String executionId,
+                       Task task,
+                       Map<String, Object> executionVariables,
+                       Map<String, Object> customPropertiesMap) {
+
+        // Safe to send notifications — task state is committed
+        notificationService.sendTaskCompleted(
+            task.getName(),
+            task.getAssignee(),
+            processInstanceId
+        );
+
+        // Cannot modify the task or variables
+    }
+}
+```
+
+### BPMN Configuration
+
+```xml
+<userTask id="approvalTask" name="Manager Approval">
+  <extensionElements>
+    <activiti:taskListener
+        event="complete"
+        class="com.example.TaskCompletedNotifier"
+        onTransaction="committed"/>
+  </extensionElements>
+</userTask>
+```
+
+**Use cases:**
+- Send email/SMS notifications only after task state is persisted
+- Publish domain events after transaction commit
+- Perform cleanup on rollback
+
 ## Implementation
 
 ### Basic TaskListener

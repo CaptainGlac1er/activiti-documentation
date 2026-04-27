@@ -255,8 +255,96 @@ Handlers registered in the same phase execute in the order they were added to th
 - Use **custom default** to add to or replace behavior alongside built-in handlers
 - Use **post-parse** to inspect and modify the final model after all built-in processing is complete
 
+## Implementing Custom ActivityBehavior
+
+Parse handlers are one way to customize behavior. Another approach is to implement `ActivityBehavior` directly — the fundamental interface that every BPMN element executes through at runtime.
+
+### The Class Hierarchy
+
+```
+ActivityBehavior (interface)
+├── void execute(DelegateExecution execution)
+│
+└── FlowNodeActivityBehavior (abstract)
+    ├── void execute(DelegateExecution) — plans to take outgoing sequence flows
+    └── void leave(DelegateExecution) — triggers the flow
+    │
+    └── AbstractBpmnActivityBehavior (abstract)
+        ├── MultiInstanceActivityBehavior multiInstanceActivityBehavior
+        ├── void leave(DelegateExecution) — handles compensation boundary events + multi-instance
+        ├── boolean hasLoopCharacteristics()
+        ├── boolean hasMultiInstanceCharacteristics()
+        └── void executeCompensateBoundaryEvents(...)
+```
+
+| Class | When to Use |
+|-------|-------------|
+| `ActivityBehavior` | Complete control over execution (rare) |
+| `FlowNodeActivityBehavior` | Element that transitions to outgoing sequence flows |
+| `AbstractBpmnActivityBehavior` | Activities that may have boundary events or multi-instance |
+
+### The `leave()` Method
+
+`AbstractBpmnActivityBehavior.leave()` is the recommended way to complete an activity. It handles:
+
+1. **Compensation boundary events** — checks for non-interrupting compensate boundary events and schedules them
+2. **Multi-instance completion** — delegates to `multiInstanceActivityBehavior.leave()` if the activity has loop characteristics
+3. **Normal flow continuation** — calls `super.leave()` (which plans `TakeOutgoingSequenceFlowsOperation` on the agenda)
+
+```java
+public class CustomActivityBehavior extends AbstractBpmnActivityBehavior {
+    @Override
+    public void execute(DelegateExecution execution) {
+        // Your custom logic here
+        String result = myService.doWork(execution);
+        execution.setVariable("result", result);
+
+        // Complete the activity — handles compensation and multi-instance automatically
+        leave(execution);
+    }
+}
+```
+
+If you need to **bypass** compensation or multi-instance handling, call `super.leave(execution)` instead (from `FlowNodeActivityBehavior`), or manually plan operations on the agenda.
+
+### Wiring a Custom ActivityBehavior
+
+In a parse handler:
+
+```java
+public class CustomElementHandler extends AbstractBpmnParseHandler<CustomElement> {
+
+    @Override
+    protected Class<? extends BaseElement> getHandledType() {
+        return CustomElement.class;
+    }
+
+    @Override
+    protected void executeParse(BpmnParse bpmnParse, CustomElement element) {
+        element.setBehavior(new CustomActivityBehavior());
+    }
+}
+```
+
+Or override the `ActivityBehaviorFactory`:
+
+```java
+ProcessEngineConfiguration config = ...;
+config.setActivityBehaviorFactory(new CustomActivityBehaviorFactory());
+```
+
+### When to Call `leave()` vs Handle Manually
+
+| Pattern | Code |
+|---------|------|
+| Activity completes normally | `leave(execution)` |
+| Activity waits for external event | Set up `IntermediateCatchMessageEventActivityBehavior` or similar |
+| Activity creates a sub-execution | `execution.startFlowScope()` or use `Context.getCommandContext().getExecutionEntityManager().createChildExecution()` |
+| Activity destroys its scope | Call `Context.getAgenda().planDestroyScopeOperation()` |
+| Activity completes and triggers specific flow | Use `DelegateHelper.leaveDelegate(execution, sequenceFlowId)` |
+
 ## Related Documentation
 
-- [Process Validation](../../api-reference/engine-api/process-validation.md) — Custom validation rules
-- [Configuration](../../configuration.md) — Engine configuration
+- [Process Validation](../api-reference/engine-api/process-validation.md) — Custom validation rules
+- [Configuration](../configuration.md) — Engine configuration
 - [Engine Event System](./engine-event-system.md) — Runtime events
