@@ -131,8 +131,8 @@ Activiti provides these predefined identity link types via `IdentityLinkType`:
 - `assignee` - Direct task assignee
 - `candidate` - Users/groups who can claim the task
 - `owner` - Task owner (for delegation)
-- `starter` - User who started the process (runtime convention, not defined in UserTask model)
-- `participant` - General participant (runtime convention, not defined in UserTask model)
+- `starter` - User who started the process (`IdentityLinkType.STARTER`)
+- `participant` - General participant (`IdentityLinkType.PARTICIPANT`)
 
 **Runtime API for Identity Links:**
 ```java

@@ -315,9 +315,7 @@ Inject dependencies into delegates:
 ### 5. **Skip Expression**
 Conditionally skip activities:
 ```xml
-<userTask id="task1" name="Optional Review">
-  <activiti:skipExpression>${skipReview}</activiti:skipExpression>
-</userTask>
+<userTask id="task1" name="Optional Review" activiti:skipExpression="${skipReview}"/>
 ```
 
 ### 6. **Async Execution**

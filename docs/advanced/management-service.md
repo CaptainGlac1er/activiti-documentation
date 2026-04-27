@@ -472,7 +472,7 @@ String tableName = page.getTableName();
 
 ## Event Log Querying
 
-The database event log (`ACT_EV_LOG`) records every engine operation. This requires `setEnableDatabaseEventLogging(true)` in the engine configuration.
+The database event log (`ACT_EVT_LOG`) records every engine operation. This requires `setEnableDatabaseEventLogging(true)` in the engine configuration.
 
 ```java
 // Latest 100 entries

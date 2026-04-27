@@ -75,8 +75,8 @@ Asynchronous execution allows activities to run in the **background** using Acti
              activiti:async="true">
   
   <extensionElements>
-    <!-- Retry 5 times immediately -->
-    <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
+    <!-- Retry 5 times with no delay between retries -->
+    <activiti:failedJobRetryTimeCycle>R5/PT0S</activiti:failedJobRetryTimeCycle>
   </extensionElements>
   
 </serviceTask>
@@ -98,7 +98,7 @@ Asynchronous execution allows activities to run in the **background** using Acti
 ```
 
 **Retry Cycle Syntax:**
-- `R/5` - Retry 5 times immediately
+- `R5/PT0S` - Retry 5 times with no delay between retries
 - `R3/PT1M` - Retry 3 times with 1 minute interval
 - `R3/PT1M;R2/PT5M` - Retry 3 times (1min), then 2 times (5min)
 - `R5/PT10S;R3/PT1M;R2/PT5M` - Progressive backoff strategy
@@ -212,11 +212,12 @@ spring:
       max-pool-size: 10           # Maximum threads (default: 10)
       queue-size: 100             # Job queue size (default: 100)
       number-of-retries: 3        # Default retry count (default: 3)
-      retry-wait-time-in-millis: 5000  # Wait between retries (default: 500)
+      retry-wait-time-in-millis: 5000  # Initial wait after first job failure (default: 500)
       
       # Job acquisition settings
       max-async-jobs-due-per-acquisition: 10  # Jobs per query (default: 1)
       default-async-job-acquire-wait-time-in-millis: 10000  # Wait between queries (default: 10000)
+      default-queue-size-full-wait-time: 0  # Wait when queue is full (default: 0)
       
       # Lock settings
       async-job-lock-time-in-millis: 300000  # Job lock time (default: 300000 = 5min)
@@ -240,7 +241,7 @@ spring:
 - `max-pool-size` - Maximum thread pool size (default: 10)
 - `queue-size` - Job queue capacity (default: 100)
 - `number-of-retries` - Default retry count for failed jobs (default: 3)
-- `retry-wait-time-in-millis` - Wait time between retries (default: 500ms)
+- `retry-wait-time-in-millis` - Initial wait time after first job failure, sets `asyncFailedJobWaitTime`. Subsequent retries use the retry cycle defined in `failedJobRetryTimeCycle` (default: 500ms)
 - `max-async-jobs-due-per-acquisition` - Jobs fetched per query (default: 1)
 - `default-async-job-acquire-wait-time` - Wait time between acquisitions (ms) (default: 10000)
 
@@ -278,8 +279,8 @@ public ProcessEngineConfiguration processEngineConfiguration() {
     config.setAsyncExecutorNumberOfRetries(3);
     
     // Advanced: Default queue size full wait time
-    // Time to wait when queue is full before adding new thread
-    config.setAsyncExecutorDefaultQueueSizeFullWaitTime(1000);
+    // Time to wait when queue is full before adding new thread (default: 0)
+    config.setAsyncExecutorDefaultQueueSizeFullWaitTime(0);
     
     // Advanced: Reset expired jobs configuration
     // Interval for checking and resetting expired jobs (0 = disabled)
@@ -302,7 +303,7 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 | `setAsyncExecutorAsyncJobLockTimeInMillis(int)` | Job lock duration (ms) | 300000 |
 | `setAsyncExecutorTimerLockTimeInMillis(int)` | Timer lock duration (ms) | 300000 |
 | `setAsyncExecutorNumberOfRetries(int)` | Default retry count | 3 |
-| `setAsyncExecutorDefaultQueueSizeFullWaitTime(int)` | Wait when queue full (ms) | 1000 |
+| `setAsyncExecutorDefaultQueueSizeFullWaitTime(int)` | Wait when queue full (ms) | 0 |
 | `setAsyncExecutorResetExpiredJobsInterval(int)` | Expired job check interval (ms) | 0 (disabled) |
 | `setAsyncExecutorResetExpiredJobsPageSize(int)` | Jobs per expired check | 3 |
 | `setAsyncExecutorMaxTimerJobsPerAcquisition(int)` | Timer jobs fetched per query | 1 |
@@ -438,7 +439,6 @@ Activiti stores job information in database tables:
 
 - `ACT_RU_JOB` - Active async jobs
 - `ACT_RU_TIMER_JOB` - Timer jobs
-- `ACT_HI_JOB_LOG` - Historical job execution log
 
 ### Query Job History
 

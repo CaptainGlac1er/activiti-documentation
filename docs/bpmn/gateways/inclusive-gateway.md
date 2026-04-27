@@ -175,18 +175,14 @@ Process through multiple channels simultaneously:
   </sequenceFlow>
   
   <serviceTask id="processWeb" name="Process Web Request" activiti:class="com.example.WebProcessor"/>
-  </serviceTask>
   
   <serviceTask id="processMobile" name="Process Mobile Request" activiti:class="com.example.MobileProcessor"/>
-  </serviceTask>
   
   <serviceTask id="processAPI" name="Process API Request" activiti:class="com.example.APIProcessor"/>
-  </serviceTask>
   
   <inclusiveGateway id="joinGateway" name="Join Channels"/>
   
   <serviceTask id="aggregateResults" name="Aggregate Results" activiti:class="com.example.ResultAggregator"/>
-  </serviceTask>
   
   <endEvent id="end"/>
   
@@ -211,7 +207,6 @@ Process through multiple channels simultaneously:
   <userTask id="receiveOrder" name="Receive Order" activiti:assignee="${orderClerk}"/>
   
   <serviceTask id="checkInventory" name="Check Inventory" activiti:class="com.example.InventoryChecker"/>
-  </serviceTask>
   
   <inclusiveGateway id="fulfillmentGateway" name="Select Fulfillment Options"/>
   
@@ -231,18 +226,14 @@ Process through multiple channels simultaneously:
   </sequenceFlow>
   
   <serviceTask id="shipFromWarehouse" name="Ship from Warehouse" activiti:class="com.example.WarehouseShipper"/>
-  </serviceTask>
   
   <serviceTask id="shipFromStore" name="Ship from Store" activiti:class="com.example.StoreShipper"/>
-  </serviceTask>
   
   <serviceTask id="createBackorder" name="Create Backorder" activiti:class="com.example.BackorderService"/>
-  </serviceTask>
   
   <inclusiveGateway id="joinGateway" name="Join Fulfillment"/>
   
   <serviceTask id="notifyCustomer" name="Notify Customer" activiti:class="com.example.NotificationService"/>
-  </serviceTask>
   
   <endEvent id="end"/>
   
@@ -273,7 +264,6 @@ Process through multiple channels simultaneously:
   <userTask id="submitRequest" name="Submit Request" activiti:assignee="${requester}"/>
   
   <serviceTask id="evaluateRequest" name="Evaluate Request" activiti:class="com.example.RequestEvaluator"/>
-  </serviceTask>
   
   <inclusiveGateway id="approvalGateway" name="Select Approvers"/>
   
@@ -308,7 +298,6 @@ Process through multiple channels simultaneously:
   <inclusiveGateway id="joinGateway" name="Join Approvals"/>
   
   <serviceTask id="processApprovedRequest" name="Process Approved Request" activiti:class="com.example.RequestProcessor"/>
-  </serviceTask>
   
   <endEvent id="end"/>
   

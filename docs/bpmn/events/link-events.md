@@ -654,7 +654,7 @@ for (Execution execution : executions) {
 </intermediateCatchEvent>
 ```
 
-**Error:** `ActivitiException: no link catch event found for link name 'MyLink'`
+**Error:** `ActivitiException: No link catch event found for link name: MyLink`
 
 ### 2. Using Links Across Processes
 

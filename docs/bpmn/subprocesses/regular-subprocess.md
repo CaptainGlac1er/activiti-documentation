@@ -275,8 +275,8 @@ List<Execution> subprocessExecutions = runtimeService.createExecutionQuery()
     .activityId("subProcessId")
     .list();
 
-// Get activities within subprocess
-List<Activity> subprocessActivities = runtimeService.getActivities(subprocessExecutions.get(0).getId());
+// Get active activity IDs within subprocess
+List<String> activeActivityIds = runtimeService.getActiveActivityIds(subprocessExecutions.get(0).getId());
 ```
 
 ### Managing SubProcess Variables

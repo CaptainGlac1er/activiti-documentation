@@ -7,7 +7,7 @@ description: "Persistent, database-stored audit trail of all engine operations f
 
 # Database Event Logging
 
-Database event logging provides a persistent, sequential record of every operation performed by the engine. Unlike the in-memory event dispatcher (which notifies listeners), database event logging writes structured entries to the `ACT_EV_LOG` table that survive application restarts.
+Database event logging provides a persistent, sequential record of every operation performed by the engine. Unlike the in-memory event dispatcher (which notifies listeners), database event logging writes structured entries to the `ACT_EVT_LOG` table that survive application restarts.
 
 ## Enabling Database Event Logging
 
@@ -129,7 +129,7 @@ if (start != null && end != null) {
 ```mermaid
 graph TD
     subgraph DB["Database"]
-        subgraph EventLog["Event Log (ACT_EV_LOG)"]
+        subgraph EventLog["Event Log (ACT_EVT_LOG)"]
             EL1["Sequential, tamper-evident"]
             EL2["Survives restart"]
             EL3["High performance cost"]
@@ -154,7 +154,7 @@ graph TD
 1. **Enable selectively** — Use in production only for compliance requirements or debugging specific issues
 2. **Clean up periodically** — The log table grows without bound; implement retention policies
 3. **Combine with engine events** — Use the event system for real-time processing and the DB log for persistence
-4. **Monitor table size** — Check `ACT_EV_LOG` growth, especially with high-volume processes
+4. **Monitor table size** — Check `ACT_EVT_LOG` growth, especially with high-volume processes
 
 ```mermaid
 graph LR

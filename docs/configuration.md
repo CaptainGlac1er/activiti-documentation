@@ -1114,9 +1114,10 @@ spring:
     database-schema-update: false
     history-level: AUDIT
     async-executor-activate: true
-    async-executor-core-pool-size: 10
-    async-executor-max-pool-size: 20
-    async-executor-queue-size: 1000
+    async-executor:
+      core-pool-size: 10
+      max-pool-size: 20
+      queue-size: 1000
     process-definition-cache-limit: 1000
 ```
 

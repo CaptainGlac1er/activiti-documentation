@@ -89,7 +89,8 @@ Activiti provides `CommandExecutorContext.setShellExecutorContextFactory()` as a
 
 ```java
 // Example: Registering a custom shell command executor factory
-CommandExecutorContext.setShellExecutorContextFactory(context -> {
+CommandExecutorContext.setShellExecutorContextFactory(executorContext -> {
+    ShellExecutorContext context = (ShellExecutorContext) executorContext;
     // context.getArgList().get(0) is the command
     // Validate against whitelist, then return a custom CommandExecutor
     return new ShellCommandExecutor(context);

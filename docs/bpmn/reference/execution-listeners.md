@@ -148,7 +148,7 @@ Call Spring bean method:
   <extensionElements>
     <activiti:executionListener 
       event="start" 
-      delegateExpression="#{auditService.recordActivityStart(execution)}"
+      delegateExpression="${auditService.recordActivityStart(execution)}"
       onTransaction="rolled-back"
       customPropertiesResolverDelegateExpression="${resolverDelegate}"/>
   </extensionElements>
@@ -467,11 +467,11 @@ Listen to event execution:
     <extensionElements>
       <activiti:executionListener 
         event="start" 
-        delegateExpression="#{metricsService.recordTaskStart('validateOrder')}"/>
+        delegateExpression="${metricsService.recordTaskStart('validateOrder')}"/>
       
       <activiti:executionListener 
         event="end" 
-        delegateExpression="#{metricsService.recordTaskEnd('validateOrder')}"/>
+        delegateExpression="${metricsService.recordTaskEnd('validateOrder')}"/>
     </extensionElements>
   </serviceTask>
   
@@ -567,7 +567,7 @@ log.info "Task completed in ${duration}ms, activity: ${execution.currentActivity
       <!-- Inject configuration fields -->
       <activiti:field name="environment" stringValue="production"/>
       <activiti:field name="logLevel" stringValue="DEBUG"/>
-      <activiti:field name="timeout" stringExpression="${systemConfig.timeout}"/>
+      <activiti:field name="timeout" expression="${systemConfig.timeout}"/>
       
       <!-- Inject bean reference -->
       <activiti:field name="auditService">
@@ -715,10 +715,8 @@ public void notify(DelegateExecution execution) {
     // Get business key
     String businessKey = execution.getProcessInstanceBusinessKey();
     
-    // Set business key (only at process level)
-    if (execution.getRootProcessInstance() != null) {
-        // Can update business key
-    }
+    // Get the root process instance ID
+    String rootProcessInstanceId = execution.getRootProcessInstanceId();
 }
 ```
 

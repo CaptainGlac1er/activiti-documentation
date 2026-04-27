@@ -216,21 +216,22 @@ Map Java exceptions to BPMN errors:
 
 ```xml
 <serviceTask id="paymentTask" 
-             name="Process Payment" 
-             activiti:class="com.example.PaymentService">
+              name="Process Payment" 
+              activiti:class="com.example.PaymentService">
   
-  <boundaryEvent id="catchPaymentException" 
-                 attachedToRef="paymentTask">
-    
+  <extensionElements>
     <activiti:mapException errorCode="PAY001" 
                           includeChildExceptions="true">
       com.example.PaymentException
     </activiti:mapException>
-    
-    <errorEventDefinition errorRef="PaymentError"/>
-  </boundaryEvent>
+  </extensionElements>
   
 </serviceTask>
+
+<boundaryEvent id="catchPaymentException" 
+                attachedToRef="paymentTask">
+  <errorEventDefinition errorRef="PaymentError"/>
+</boundaryEvent>
 ```
 
 **Attributes:**
@@ -240,17 +241,24 @@ Map Java exceptions to BPMN errors:
 ### 2. Multiple Exception Mappings
 
 ```xml
+<serviceTask id="databaseTask" 
+              name="Database Task" 
+              activiti:class="com.example.DatabaseService">
+  
+  <extensionElements>
+    <activiti:mapException errorCode="DB001">
+      java.sql.SQLException
+    </activiti:mapException>
+    
+    <activiti:mapException errorCode="DB002">
+      javax.persistence.PersistenceException
+    </activiti:mapException>
+  </extensionElements>
+  
+</serviceTask>
+
 <boundaryEvent id="catchMultipleExceptions" 
-               attachedToRef="databaseTask">
-  
-  <activiti:mapException errorCode="DB001">
-    java.sql.SQLException
-  </activiti:mapException>
-  
-  <activiti:mapException errorCode="DB002">
-    javax.persistence.PersistenceException
-  </activiti:mapException>
-  
+                attachedToRef="databaseTask">
   <errorEventDefinition errorRef="DatabaseError"/>
 </boundaryEvent>
 ```
@@ -258,10 +266,18 @@ Map Java exceptions to BPMN errors:
 ### 3. Exception Hierarchy Mapping
 
 ```xml
-<activiti:mapException errorCode="PAY001" 
-                      includeChildExceptions="true">
-  com.example.PaymentException
-</activiti:mapException>
+<serviceTask id="paymentTask" 
+              name="Process Payment" 
+              activiti:class="com.example.PaymentService">
+  
+  <extensionElements>
+    <activiti:mapException errorCode="PAY001" 
+                           includeChildExceptions="true">
+      com.example.PaymentException
+    </activiti:mapException>
+  </extensionElements>
+  
+</serviceTask>
 ```
 
 **Catches:**
@@ -273,18 +289,22 @@ Map Java exceptions to BPMN errors:
 
 ```xml
 <serviceTask id="fileOperation" 
-             name="File Operation" 
-             activiti:class="com.example.FileService">
+              name="File Operation" 
+              activiti:class="com.example.FileService">
   
-  <boundaryEvent id="catchFileException">
+  <extensionElements>
     <activiti:mapException errorCode="FILE001" 
                           includeChildExceptions="true">
       java.io.IOException
     </activiti:mapException>
-    <errorEventDefinition errorRef="FileError"/>
-  </boundaryEvent>
+  </extensionElements>
   
 </serviceTask>
+
+<boundaryEvent id="catchFileException" 
+                attachedToRef="fileOperation">
+  <errorEventDefinition errorRef="FileError"/>
+</boundaryEvent>
 ```
 
 ## Error Propagation
@@ -378,44 +398,55 @@ Errors bubble up through subprocess hierarchy:
   <userTask id="enterPayment" name="Enter Payment Details"/>
   
   <serviceTask id="validatePayment" 
-               name="Validate Payment" 
-               activiti:class="com.example.PaymentValidator">
+                name="Validate Payment" 
+                activiti:class="com.example.PaymentValidator">
     
-    <!-- Catch validation exceptions -->
-    <boundaryEvent id="catchValidationException">
+    <extensionElements>
+      <!-- Map validation exceptions to BPMN error -->
       <activiti:mapException errorCode="VAL001">
         com.example.ValidationException
       </activiti:mapException>
-      <errorEventDefinition errorRef="ValidationError"/>
-    </boundaryEvent>
+    </extensionElements>
     
   </serviceTask>
+  
+  <!-- Catch validation exceptions on boundary event -->
+  <boundaryEvent id="catchValidationException" 
+                  attachedToRef="validatePayment">
+    <errorEventDefinition errorRef="ValidationError"/>
+  </boundaryEvent>
   
   <exclusiveGateway id="validationCheck"/>
   
   <serviceTask id="processPayment" 
-               name="Process Payment" 
-               activiti:class="com.example.PaymentProcessor"
-               activiti:async="true">
+                name="Process Payment" 
+                activiti:class="com.example.PaymentProcessor"
+                activiti:async="true">
     
-    <!-- Catch payment exceptions -->
-    <boundaryEvent id="catchPaymentException">
+    <extensionElements>
+      <!-- Map payment exceptions to BPMN error -->
       <activiti:mapException errorCode="PAY001" 
-                            includeChildExceptions="true">
+                             includeChildExceptions="true">
         com.example.PaymentException
       </activiti:mapException>
-      <errorEventDefinition errorRef="PaymentError"/>
-    </boundaryEvent>
-    
-    <!-- Catch timeout -->
-    <boundaryEvent id="catchTimeout" 
-                   cancelActivity="false">
-      <timerEventDefinition>
-        <timeDuration>PT5M</timeDuration>
-      </timerEventDefinition>
-    </boundaryEvent>
+    </extensionElements>
     
   </serviceTask>
+  
+  <!-- Catch payment exceptions on boundary event -->
+  <boundaryEvent id="catchPaymentException" 
+                  attachedToRef="processPayment">
+    <errorEventDefinition errorRef="PaymentError"/>
+  </boundaryEvent>
+    
+  <!-- Catch timeout -->
+  <boundaryEvent id="catchTimeout" 
+                  attachedToRef="processPayment"
+                  cancelActivity="false">
+    <timerEventDefinition>
+      <timeDuration>PT5M</timeDuration>
+    </timerEventDefinition>
+  </boundaryEvent>
   
   <!-- Error handling paths -->
   <userTask id="handleValidationError" 
@@ -465,17 +496,21 @@ Errors bubble up through subprocess hierarchy:
     <startEvent id="subPaymentStart"/>
     
     <serviceTask id="chargeCard" 
-                 name="Charge Card" 
-                 activiti:class="com.example.CardCharger">
+                  name="Charge Card" 
+                  activiti:class="com.example.CardCharger">
       
-      <boundaryEvent id="catchCardException">
+      <extensionElements>
         <activiti:mapException errorCode="PAY001">
           com.example.CardException
         </activiti:mapException>
-        <errorEventDefinition errorRef="PaymentError"/>
-      </boundaryEvent>
+      </extensionElements>
       
     </serviceTask>
+    
+    <boundaryEvent id="catchCardException" 
+                    attachedToRef="chargeCard">
+      <errorEventDefinition errorRef="PaymentError"/>
+    </boundaryEvent>
     
     <endEvent id="subPaymentSuccess"/>
     
@@ -501,15 +536,14 @@ Errors bubble up through subprocess hierarchy:
     <startEvent id="subInventoryStart"/>
     
     <serviceTask id="checkStock" 
-                 name="Check Stock" 
-                 activiti:class="com.example.InventoryChecker">
+                  name="Check Stock" 
+                  activiti:class="com.example.InventoryChecker">
       
-      <boundaryEvent id="catchInventoryException">
+      <extensionElements>
         <activiti:mapException errorCode="INV001">
           com.example.InventoryException
         </activiti:mapException>
-        <errorEventDefinition errorRef="InventoryError"/>
-      </boundaryEvent>
+      </extensionElements>
       
     </serviceTask>
     

@@ -48,8 +48,8 @@ flowchart TD
         subgraph JobTables["Job Tables"]
             ACT_RU_JOB["ACT_RU_JOB<br>(Executable Jobs)"]
             ACT_RU_TIMER_JOB["ACT_RU_TIMER_JOB<br>(Timer Jobs)"]
-            ACT_RU_SUSPENDED["ACT_RU_SUSPENDED_JOB"]
-            ACT_GE_JOB_DEF["ACT_GE_JOB_DEFINITION<br>(Dead Letter)"]
+            ACT_RU_SUSPENDED["ACT_RU_SUSPENDED_JOB<br>(Suspended Jobs)"]
+            ACT_RU_DEADLETTER["ACT_RU_DEADLETTER_JOB<br>(Dead Letter)"]
         end
     end
     
@@ -234,7 +234,7 @@ public void executeJob(Job job) {
             setJobRetryTime(job.getId(), retryTime);
             
         } else {
-            // Move to dead letter table (ACT_GE_JOB_DEFINITION)
+            // Move to dead letter table (ACT_RU_DEADLETTER_JOB)
             moveToDeadLetter(job.getId(), e);
         }
     }
@@ -256,13 +256,16 @@ flowchart TD
     Reschedule --> Wait["Wait retry-wait-time-in-millis"]
     Wait --> Retry["Re-acquire and retry"]
     
-    Decision -->|No| DeadLetter["Move to dead letter<br>(ACT_GE_JOB_DEFINITION)"]
+    Decision -->|No| DeadLetter["Move to dead letter<br>(ACT_RU_DEADLETTER_JOB)"]
 ```
 
-**Exponential Backoff:**
+**Fixed Retry Interval:**
+The engine uses a fixed retry interval configured via `retry-wait-time-in-millis`. There is no exponential backoff. Each retry is scheduled at the same fixed interval from the time of failure.
+
+For example, with `retry-wait-time-in-millis: 500`:
 - 1st failure: retry after 500ms
-- 2nd failure: retry after 1000ms
-- 3rd failure: retry after 2000ms
+- 2nd failure: retry after 500ms
+- 3rd failure: retry after 500ms
 - etc.
 
 ## Job Management

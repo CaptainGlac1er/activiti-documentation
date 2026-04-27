@@ -135,8 +135,8 @@ List<Task> approvalTasks = taskService.createTaskQuery()
 List<Task> tasks = taskService.createTaskQuery()
     .taskAssignee("john.doe")
     .taskNameLike("%Approval%")
-    .taskPriorityGreaterThanOrEqual(5)
-    .taskDueDateBefore(LocalDate.now())
+    .taskMinPriority(5)
+    .taskDueBefore(new Date())
     .orderByTaskDueDate()
     .asc()
     .list();
@@ -255,7 +255,7 @@ Task task = taskService.getTask(taskId);
 task.setName("Updated Task Name");
 task.setDescription("Updated description");
 task.setPriority(10);
-task.setDueDate(LocalDate.now().plusDays(14));
+task.setDueDate(new Date(System.currentTimeMillis() + 14L * 24 * 60 * 60 * 1000));
 taskService.saveTask(task);
 
 // Update assignee
@@ -664,16 +664,12 @@ TaskQuery createTaskQuery();
 .processInstanceBusinessKey(String key)
 .executionId(String id)
 .taskPriority(int priority)
-.taskPriorityGreaterThanOrEqual(int priority)
-.taskPriorityLessThanOrEqual(int priority)
+.taskMinPriority(Integer minPriority)
+.taskMaxPriority(Integer maxPriority)
 .taskDueDate(Date dueDate)
-.taskDueDateBefore(Date before)
-.taskDueDateAfter(Date after)
-.taskDueDateNull()
-.taskFollowUpDate(Date followUpDate)
-.taskFollowUpDateBefore(Date before)
-.taskFollowUpDateAfter(Date after)
-.taskFollowUpDateNull()
+.taskDueBefore(Date before)
+.taskDueAfter(Date after)
+.withoutTaskDueDate()
 .taskCreatedBefore(Date before)
 .taskCreatedAfter(Date after)
 .tenantIdIn(Collection<String> tenantIds)
@@ -725,17 +721,17 @@ public class TaskDashboardService {
         // Overdue tasks
         dashboard.setOverdueTasks(taskService.createTaskQuery()
             .taskAssignee(userId)
-            .taskDueDateBefore(new Date())
+            .taskDueBefore(new Date())
             .list());
-        
+
         // Task counts
         dashboard.setAssignedCount(taskService.createTaskQuery()
             .taskAssignee(userId)
             .count());
-        
+
         dashboard.setOverdueCount(taskService.createTaskQuery()
             .taskAssignee(userId)
-            .taskDueDateBefore(new Date())
+            .taskDueBefore(new Date())
             .count());
         
         return dashboard;
@@ -846,7 +842,7 @@ task.setName("task1");
 
 ```java
 // GOOD
-task.setDueDate(LocalDate.now().plusDays(7));
+task.setDueDate(new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000));
 
 // BAD
 // No due date set

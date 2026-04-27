@@ -51,7 +51,7 @@ activiti-bpmn-model/
 │   ├── FlowElement.java            # Flow elements
 │   ├── Activity.java               # Activities
 │   ├── Gateway.java                # Gateways
-│   ├── BPMNEvent.java              # Events
+│   ├── Event.java                  # Events
 │   ├── DataObject.java             # Data objects
 │   └── ...
 └── src/test/java/
@@ -194,7 +194,7 @@ activiti-bpmn-model/
 
 **Design Pattern:** Base Class with aggregation of flows
 
-**Subclasses:** Activity, Gateway, BPMNEvent, SequenceFlow
+**Subclasses:** Activity, Gateway, Event, SequenceFlow
 
 ---
 
@@ -414,7 +414,7 @@ activiti-bpmn-model/
 
 ---
 
-### BPMNEvent
+### Event
 
 **Purpose:** Abstract base for all BPMN events.
 
@@ -563,7 +563,7 @@ BaseElement
 │   │   │   ├── ParallelGateway
 │   │   │   ├── InclusiveGateway
 │   │   │   └── EventBasedGateway
-│   │   └── BPMNEvent
+│   │   └── Event
 │   │       ├── StartEvent
 │   │       ├── EndEvent
 │   │       ├── IntermediateEvent
@@ -626,7 +626,7 @@ BaseElement
 
 ```
 BaseElement
-├── BaseModelElement
+├── FlowElement
 │   ├── FlowNode
 │   │   ├── Activity
 │   │   │   ├── Task
@@ -648,7 +648,7 @@ BaseElement
 │   │   │   ├── InclusiveGateway
 │   │   │   ├── EventBasedGateway
 │   │   │   └── ComplexGateway
-│   │   └── BPMNEvent
+│   │   └── Event
 │   │       ├── StartEvent
 │   │       ├── EndEvent
 │   │       ├── IntermediateEvent
@@ -657,15 +657,23 @@ BaseElement
 │   │       └── BoundaryEvent
 │   └── SequenceFlow
 ├── DataObject
-│   ├── DataInput
-│   ├── DataOutput
-│   ├── DataStoreReference
-│   └── DataInputAssociation
-└── Artifact
-    ├── Annotation
-    ├── Association
-    └── Group
+├── DataStore
+├── DataStoreReference
+├── ItemDefinition
+├── DataAssociation
+├── InputSet
+├── OutputSet
+├── InputOutputSpecification
+├── IOParameter
+├── Property
+├── DataInput
+├── DataOutput
+├── Association
+├── TextAnnotation
+└── Group
 ```
+
+> **Note:** `DataObject` extends `FlowElement` directly (not `FlowNode`). It has no subclasses — `DataInput`, `DataOutput`, `DataStoreReference`, etc. are separate types that also extend from `BaseElement` or `FlowElement` independently. `Event` (not `Event`) is the abstract base for all event types.
 
 ### BpmnModel Class
 
@@ -824,17 +832,43 @@ public class Task extends Activity {
 ```java
 public class UserTask extends Task {
     
-    protected String assignedTo;
-    protected List<String> potentialStarter = new ArrayList<>();
+    protected String assignee;
+    protected String owner;
+    protected String priority;
     protected String formKey;
-    protected List<FormField> formFields = new ArrayList<>();
+    protected String dueDate;
+    protected String businessCalendarName;
+    protected String category;
+    protected String extensionId;
+    protected List<String> candidateUsers = new ArrayList<>();
+    protected List<String> candidateGroups = new ArrayList<>();
+    protected List<FormProperty> formProperties = new ArrayList<>();
+    protected List<ActivitiListener> taskListeners = new ArrayList<>();
+    protected String skipExpression;
+    protected List<CustomProperty> customProperties = new ArrayList<>();
     
-    public void addFormField(FormField field) {
-        formFields.add(field);
+    public String getAssignee() {
+        return assignee;
     }
     
-    public List<FormField> getFormFields() {
-        return formFields;
+    public void setAssignee(String assignee) {
+        this.assignee = assignee;
+    }
+    
+    public String getFormKey() {
+        return formKey;
+    }
+    
+    public void setFormKey(String formKey) {
+        this.formKey = formKey;
+    }
+    
+    public List<String> getCandidateUsers() {
+        return candidateUsers;
+    }
+    
+    public List<FormProperty> getFormProperties() {
+        return formProperties;
     }
 }
 ```
@@ -842,24 +876,39 @@ public class UserTask extends Task {
 ### ServiceTask
 
 ```java
-public class ServiceTask extends Task {
+public class ServiceTask extends TaskWithFieldExtensions {
     
-    protected String operationRef;
+    public static final String DMN_TASK = "dmn";
+    public static final String MAIL_TASK = "mail";
+    
     protected String implementation;
-    protected String config;
-    protected boolean isAsync = false;
-    protected String asyncExpiryTime;
-    protected String asyncPriority;
+    protected String implementationType;
+    protected String resultVariableName;
+    protected String type;
+    protected String operationRef;
+    protected String extensionId;
+    protected List<CustomProperty> customProperties = new ArrayList<>();
+    protected String skipExpression;
     
-    public boolean isAsync() {
-        return isAsync;
+    public String getImplementation() {
+        return implementation;
     }
     
-    public void setAsync(boolean async) {
-        isAsync = async;
+    public void setImplementation(String implementation) {
+        this.implementation = implementation;
+    }
+    
+    public String getOperationRef() {
+        return operationRef;
+    }
+    
+    public void setOperationRef(String operationRef) {
+        this.operationRef = operationRef;
     }
 }
 ```
+
+> **Note:** The `asynchronous` flag is defined on `FlowNode`, not `ServiceTask`. Use `setAsynchronous(boolean)` on any `FlowNode` subclass to enable async execution.
 
 ---
 
@@ -868,7 +917,7 @@ public class ServiceTask extends Task {
 ### StartEvent
 
 ```java
-public class StartEvent extends BPMNEvent {
+public class StartEvent extends Event {
     
     protected List<EventDefinition> eventDefinitions = new ArrayList<>();
     protected boolean isInterrupting = true;
@@ -895,7 +944,7 @@ public class StartEvent extends BPMNEvent {
 ### EndEvent
 
 ```java
-public class EndEvent extends BPMNEvent {
+public class EndEvent extends Event {
     
     protected List<EventDefinition> eventDefinitions = new ArrayList<>();
     
@@ -913,7 +962,7 @@ public class EndEvent extends BPMNEvent {
 ### IntermediateEvent
 
 ```java
-public abstract class IntermediateEvent extends BPMNEvent {
+public abstract class IntermediateEvent extends Event {
     
     protected List<EventDefinition> eventDefinitions = new ArrayList<>();
     
@@ -934,7 +983,7 @@ public class IntermediateThrowEvent extends IntermediateEvent {
 ### BoundaryEvent
 
 ```java
-public class BoundaryEvent extends BPMNEvent {
+public class BoundaryEvent extends Event {
     
     protected Activity attachedToActivity;
     protected boolean isInterrupting = true;
@@ -1095,162 +1144,58 @@ public abstract class DataAssociation {
 
 ## Model Traversal
 
-### Visitor Pattern
+The `BpmnModel` does not include a built-in visitor pattern or traverser utility.
+To traverse the model, iterate directly over `BpmnModel.getProcesses()` and then over `Process.getFlowElements()`.
+Each `FlowElement` can be checked with `instanceof` to identify tasks, gateways, events, and sequence flows.
 
 ```java
-public interface BpmnModelVisitor {
-    void visit(Process process);
-    void visit(FlowNode flowNode);
-    void visit(Activity activity);
-    void visit(Gateway gateway);
-    void visit(BPMNEvent event);
-    void visit(SequenceFlow sequenceFlow);
-    void visit(DataObject dataObject);
-}
-
-public class BpmnModelTraverser {
-    
-    public static void traverse(BpmnModel model, BpmnModelVisitor visitor) {
-        for (Process process : model.getProcesses()) {
-            visitor.visit(process);
-            traverseFlowElements(process.getFlowElements(), visitor);
+for (Process process : model.getProcesses()) {
+    for (FlowElement element : process.getFlowElements()) {
+        if (element instanceof UserTask) {
+            UserTask userTask = (UserTask) element;
+            // Process user task
+        } else if (element instanceof ServiceTask) {
+            ServiceTask serviceTask = (ServiceTask) element;
+            // Process service task
+        } else if (element instanceof SequenceFlow) {
+            SequenceFlow flow = (SequenceFlow) element;
+            // Process sequence flow
         }
-    }
-    
-    private static void traverseFlowElements(
-            List<FlowElement> elements, 
-            BpmnModelVisitor visitor) {
-        
-        for (FlowElement element : elements) {
-            if (element instanceof FlowNode) {
-                visitor.visit((FlowNode) element);
-                // Traverse children
-            } else if (element instanceof SequenceFlow) {
-                visitor.visit((SequenceFlow) element);
-            } else if (element instanceof DataObject) {
-                visitor.visit((DataObject) element);
-            }
+        // Check for nested sub-processes
+        if (element instanceof SubProcess) {
+            SubProcess subProcess = (SubProcess) element;
+            // Recurse into sub-process flow elements
         }
     }
 }
 ```
 
-### Search Utilities
-
-```java
-public class ModelSearchUtil {
-    
-    public static List<UserTask> findUserTasks(BpmnModel model) {
-        return findElements(model, UserTask.class);
-    }
-    
-    public static List<ServiceTask> findServiceTasks(BpmnModel model) {
-        return findElements(model, ServiceTask.class);
-    }
-    
-    public static Activity findActivityById(BpmnModel model, String id) {
-        BaseElement element = model.getElementById(id);
-        if (element instanceof Activity) {
-            return (Activity) element;
-        }
-        return null;
-    }
-    
-    private static <T extends BaseElement> List<T> findElements(
-            BpmnModel model, 
-            Class<T> type) {
-        
-        List<T> results = new ArrayList<>();
-        
-        for (Process process : model.getProcesses()) {
-            findElementsInProcess(process, type, results);
-        }
-        
-        return results;
-    }
-    
-    private static <T extends BaseElement> void findElementsInProcess(
-            Process process, 
-            Class<T> type, 
-            List<T> results) {
-        
-        for (FlowElement element : process.getFlowElements()) {
-            if (type.isInstance(element)) {
-                results.add(type.cast(element));
-            }
-            if (element instanceof Activity) {
-                // Check sub-processes
-                Activity activity = (Activity) element;
-                if (activity.getSubProcesses() != null) {
-                    for (SubProcess subProcess : activity.getSubProcesses()) {
-                        findElementsInProcess(subProcess, type, results);
-                    }
-                }
-            }
-        }
-    }
-}
-```
+For lookups by ID, use `BpmnModel.getElementById(String id)` which returns the matching `BaseElement` across all processes.
 
 ---
 
 ## Validation
 
-### Model Validator
+BPMN model validation is provided by `org.activiti.validation.validator.impl.BpmnModelValidator`
+in the `activiti-process-validation` module. It validates process definitions, checks for duplicate IDs,
+verifies constraints, and returns a list of `ValidationError` objects.
+
+Validation is invoked automatically by the engine at deployment time. It can also be called programmatically:
 
 ```java
-public class BpmnModelValidator {
-    
-    public static ValidationResult validate(BpmnModel model) {
-        ValidationResult result = new ValidationResult();
-        
-        // Check for duplicate IDs
-        checkDuplicateIds(model, result);
-        
-        // Check for orphaned elements
-        checkOrphanedElements(model, result);
-        
-        // Check for valid connections
-        checkConnections(model, result);
-        
-        // Check for required properties
-        checkRequiredProperties(model, result);
-        
-        return result;
-    }
-    
-    private static void checkDuplicateIds(
-            BpmnModel model, 
-            ValidationResult result) {
-        
-        Set<String> ids = new HashSet<>();
-        
-        for (Process process : model.getProcesses()) {
-            checkDuplicateIdsInProcess(process, ids, result);
-        }
-    }
-    
-    private static void checkRequiredProperties(
-            BpmnModel model, 
-            ValidationResult result) {
-        
-        for (Process process : model.getProcesses()) {
-            if (process.getId() == null) {
-                result.addError("Process must have an ID");
-            }
-            
-            for (FlowElement element : process.getFlowElements()) {
-                if (element instanceof Activity) {
-                    Activity activity = (Activity) element;
-                    if (activity.getId() == null) {
-                        result.addError("Activity must have an ID");
-                    }
-                }
-            }
-        }
+BpmnModelValidator validator = new BpmnModelValidator();
+List<ValidationError> errors = new ArrayList<>();
+validator.validate(bpmnModel, errors);
+
+if (!errors.isEmpty()) {
+    for (ValidationError error : errors) {
+        System.err.println(error.getDescription());
     }
 }
 ```
+
+The validator uses `Problems` and `Constraints` constants to identify specific validation issues.
+Custom validators can be registered by extending `ProcessLevelValidator` or `ActivitiLevelValidator`.
 
 ---
 
@@ -1258,56 +1203,31 @@ public class BpmnModelValidator {
 
 ### XML Serialization
 
+The BPMN model is serialized to and from XML by `BpmnXMLConverter` in the `activiti-bpmn-converter` module:
+
 ```java
-public class BpmnModelSerializer {
-    
-    public static String toXml(BpmnModel model) {
-        StringWriter writer = new StringWriter();
-        serialize(model, writer);
-        return writer.toString();
-    }
-    
-    private static void serialize(BpmnModel model, Writer writer) {
-        try {
-            writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-            writer.write("<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\">\n");
-            
-            for (Process process : model.getProcesses()) {
-                serializeProcess(process, writer, 2);
-            }
-            
-            writer.write("</definitions>");
-        } catch (IOException e) {
-            throw new SerializationException("Failed to serialize model", e);
-        }
-    }
-}
+// Convert BpmnModel to XML string
+BpmnXMLConverter converter = new BpmnXMLConverter();
+String xmlString = converter.convertToXML(bpmnModel);
+
+// Parse BPMN XML into BpmnModel
+InputStream inputStream = ...;
+BpmnModel model = converter.convertToBpmnModel(inputStream, false, false);
 ```
 
 ### JSON Serialization
 
+The model classes are annotated with Jackson `@JsonIgnore` where appropriate. The `BpmnModel`
+and its elements can be serialized to JSON using standard Jackson `ObjectMapper`:
+
 ```java
-public class BpmnModelJsonSerializer {
-    
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    
-    public String toJson(BpmnModel model) {
-        try {
-            return objectMapper.writeValueAsString(model);
-        } catch (JsonProcessingException e) {
-            throw new SerializationException("Failed to serialize to JSON", e);
-        }
-    }
-    
-    public BpmnModel fromJson(String json) {
-        try {
-            return objectMapper.readValue(json, BpmnModel.class);
-        } catch (JsonProcessingException e) {
-            throw new DeserializationException("Failed to deserialize from JSON", e);
-        }
-    }
-}
+ObjectMapper mapper = new ObjectMapper();
+String json = mapper.writeValueAsString(bpmnModel);
+BpmnModel parsed = mapper.readValue(json, BpmnModel.class);
 ```
+
+> **Note:** The JSON serialization does not round-trip perfectly — layout and graphical information
+> may be lost. Use XML conversion for persistence.
 
 ---
 
@@ -1383,7 +1303,7 @@ public class ModelAnalyzer {
                     taskCount++;
                 } else if (element instanceof Gateway) {
                     gatewayCount++;
-                } else if (element instanceof BPMNEvent) {
+                } else if (element instanceof Event) {
                     eventCount++;
                 }
             }
@@ -1412,31 +1332,24 @@ userTask.setId("task1");
 
 ### 2. Validate Early
 
+The engine validates BPMN models automatically at deployment. For programmatic validation:
+
 ```java
-ValidationResult result = BpmnModelValidator.validate(model);
-if (!result.isValid()) {
-    throw new ModelValidationException(result.getErrors());
+BpmnModelValidator validator = new BpmnModelValidator();
+List<ValidationError> errors = new ArrayList<>();
+validator.validate(model, errors);
+if (!errors.isEmpty()) {
+    // Handle validation errors
 }
 ```
 
-### 3. Use Builders for Complex Models
+### 3. Use getElementById for Lookups
 
-```java
-BpmnModel model = BpmnModelBuilder.create()
-    .process("orderProcess")
-    .startEvent("start")
-    .userTask("approve")
-        .assignee("${manager}")
-    .endEvent("end")
-    .build();
-```
+`BpmnModel.getElementById(String id)` provides fast lookups across all processes and nested sub-processes.
 
-### 4. Document Custom Properties
+### 4. Model Classes Are Not Thread-Safe
 
-```java
-userTask.setProperty("custom:department", "sales");
-userTask.setProperty("custom:priority", "high");
-```
+Reading the model is safe, but modifications should not be done concurrently.
 
 ---
 
@@ -1446,17 +1359,18 @@ userTask.setProperty("custom:priority", "high");
 
 - `BpmnModel` - Root model container
 - `Process` - BPMN process definition
-- `FlowElement` - Base for flow elements
+- `BaseElement` - Abstract base for all elements
+- `FlowElement` - Base for elements in process flow
+- `FlowNode` - Base for nodes with incoming/outgoing flows
 - `Activity` - Task and sub-process base
 - `Gateway` - Decision points
-- `BPMNEvent` - Event base class
+- `Event` - Event base class
 - `SequenceFlow` - Flow connections
 
 ### Key Interfaces
 
-- `BpmnModelVisitor` - Model traversal
-- `BpmnModelSerializer` - Serialization
-- `BpmnModelValidator` - Validation
+- `BpmnModelValidator` - Validates model against BPMN and Activiti constraints (in `activiti-process-validation`)
+- `BpmnXMLConverter` - Converts between `BpmnModel` and BPMN 2.0 XML
 
 ---
 

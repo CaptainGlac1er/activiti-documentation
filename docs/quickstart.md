@@ -36,7 +36,7 @@ Add the following dependencies to your project's `pom.xml`:
     <dependency>
         <groupId>org.activiti</groupId>
         <artifactId>activiti-spring-boot-starter</artifactId>
-        <version>8.7.2-SNAPSHOT</version>
+        <version>8.7.1</version>
     </dependency>
 </dependencies>
 ```
@@ -47,7 +47,7 @@ Add to your `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'org.activiti:activiti-spring-boot-starter:8.7.2-SNAPSHOT'
+    implementation 'org.activiti:activiti-spring-boot-starter:8.7.1'
 }
 ```
 
@@ -57,7 +57,7 @@ Follow these steps to create, deploy, and execute your first Activiti workflow.
 
 ### Step 1: Define a BPMN Process
 
-Create a file named `simple-process.bpmn` in `src/main/resources/bpmn/`:
+Create a file named `simple-process.bpmn` in `src/main/resources/processes/`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -91,12 +91,12 @@ public class ProcessDeploymentService {
     
     /**
      * Deploys BPMN processes from the classpath.
-     * Processes should be located in src/main/resources/bpmn/
+     * Processes should be located in src/main/resources/processes/
      */
     @PostConstruct
     public void deployProcesses() {
         // Activiti automatically deploys BPMN files from classpath
-        // when configured with spring.activiti.check-process-definitions=true
+        // check-process-definitions defaults to true, so no explicit config needed
         
         // Verify deployment
         Page<ProcessDefinition> definitions = processRuntime.processDefinitions(Pageable.of(0, 10));
@@ -442,7 +442,7 @@ spring.h2.console.path=/h2-console
 spring.activiti.history-level=full
 spring.activiti.database-schema-update=true
 spring.activiti.async-executor-activate=true
-spring.activiti.check-process-definitions=true
+# spring.activiti.check-process-definitions=true  # defaults to true, optional
 
 # Logging Configuration
 logging.level.org.activiti=INFO
@@ -521,7 +521,7 @@ class WorkflowServiceTest {
         // Arrange
         ProcessInstance mockInstance = Mockito.mock(ProcessInstance.class);
         when(mockInstance.getId()).thenReturn("test-instance-id");
-        when(mockInstance.getStatus()).thenReturn(ProcessInstanceStatus.ACTIVE);
+        when(mockInstance.getStatus()).thenReturn(ProcessInstanceStatus.RUNNING);
         when(processRuntime.start(any(StartProcessPayload.class))).thenReturn(mockInstance);
         
         // Act
@@ -530,7 +530,7 @@ class WorkflowServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("test-instance-id", result.getId());
-        assertEquals(ProcessInstanceStatus.ACTIVE, result.getStatus());
+        assertEquals(ProcessInstanceStatus.RUNNING, result.getStatus());
         verify(processRuntime).start(any(StartProcessPayload.class));
     }
     
@@ -579,7 +579,7 @@ class WorkflowIntegrationTest {
         
         // Assert - Process started
         assertNotNull(instance.getId());
-        assertEquals(ProcessInstanceStatus.ACTIVE, instance.getStatus());
+        assertEquals(ProcessInstanceStatus.RUNNING, instance.getStatus());
         
         // Act - Get and complete task
         Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 10));
@@ -660,7 +660,7 @@ class WorkflowControllerTest {
         // Arrange
         ProcessInstance mockInstance = Mockito.mock(ProcessInstance.class);
         when(mockInstance.getId()).thenReturn("test-id");
-        when(mockInstance.getStatus()).thenReturn(ProcessInstanceStatus.ACTIVE);
+        when(mockInstance.getStatus()).thenReturn(ProcessInstanceStatus.RUNNING);
         when(processRuntime.start(any())).thenReturn(mockInstance);
         
         StartProcessRequest request = new StartProcessRequest();

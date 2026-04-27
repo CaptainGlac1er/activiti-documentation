@@ -47,7 +47,7 @@ The **activiti-api-impl** module provides the concrete implementation of the Act
 - **Converter Pattern**: Dedicated `ModelConverter` implementations for each model type
 - **Builder Pattern**: `ProcessPayloadBuilder` and `TaskPayloadBuilder` for fluent payload construction
 - **Event-Driven Architecture**: Spring `ApplicationEventPublisher` for process and task events
-- **Security-First**: `@PreAuthorize("hasRole('ACTIVITI_USER')")` on all runtime implementations
+- **Security-First**: `ProcessRuntimeImpl` and `TaskRuntimeImpl` use `@PreAuthorize("hasRole('ACTIVITI_USER')")`; `ProcessAdminRuntimeImpl` and `TaskAdminRuntimeImpl` use `@PreAuthorize("hasAnyRole('ACTIVITI_ADMIN','APPLICATION_MANAGER')")`
 
 ---
 

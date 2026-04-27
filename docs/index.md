@@ -2,7 +2,7 @@
 sidebar_position: 0
 slug: /
 title: "Activiti API Documentation"
-description: "Comprehensive documentation for Activiti API 8.7.2-SNAPSHOT. Learn to build robust workflow automation solutions."
+description: "Comprehensive documentation for Activiti API 8.7.1. Learn to build robust workflow automation solutions."
 ---
 
 # Activiti API Documentation
@@ -276,5 +276,5 @@ To help us assist you faster, please prepare:
 
 ---
 
-*Documentation Version: 8.7.2-SNAPSHOT*  
+*Documentation Version: 8.7.1*  
 *Last Updated: 2026*

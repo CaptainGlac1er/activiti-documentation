@@ -46,7 +46,7 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 </scriptTask>
 ```
 
-> **Note:** `activiti:scriptFormat="java"`, `activiti:scriptFormat="juel"`, and `activiti:scriptFormat="beanshell"` are **not supported** by default. Java code should use Service Tasks with `activiti:class` instead. JUEL is used for expression language (`${...}`) but is not a script engine. BeanShell requires additional setup and is not included by default.
+> **Note:** `activiti:scriptFormat="java"` and `activiti:scriptFormat="beanshell"` are **not supported** by default. Java code should use Service Tasks with `activiti:class` instead. BeanShell requires additional setup and is not included by default.
 
 ## Configuration Options
 
@@ -55,10 +55,10 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 Define the scripting language:
 
 ```xml
-<scriptTask scriptFormat="javascript"/>
+<scriptTask scriptFormat="groovy"/>
 ```
 
-**Default:** `javascript`
+**Default:** `juel`
 
 ### Script Type
 
@@ -270,7 +270,7 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 </scriptTask>
 ```
 
-> **Note:** `activiti:scriptFormat="java"`, `activiti:scriptFormat="juel"`, and `activiti:scriptFormat="beanshell"` are **not supported** by default. Java code should use Service Tasks with `activiti:class` instead. JUEL is used for expression language (`${...}`) but is not a script engine. BeanShell requires additional setup and is not included by default.
+> **Note:** `activiti:scriptFormat="java"` and `activiti:scriptFormat="beanshell"` are **not supported** by default. Java code should use Service Tasks with `activiti:class` instead. BeanShell requires additional setup and is not included by default.
 
 ## Runtime API Usage
 

@@ -457,7 +457,7 @@ Compensate and terminate in one step:
   </sequenceFlow>
   
   <!-- Failure - use intermediate throw compensation events -->
-  <sequenceFlow id="invalid" sourceRef="shipmentValidation" targetRef="compensatePaymentEvent">
+  <sequenceFlow id="invalid" sourceRef="finalValidation" targetRef="compensatePaymentEvent">
     <conditionExpression>${!success}</conditionExpression>
   </sequenceFlow>
   
@@ -470,9 +470,15 @@ Compensate and terminate in one step:
     <compensateEventDefinition activityRef="reserveInventory"/>
   </intermediateThrowEvent>
   
+  <serviceTask id="confirmSaga" name="Confirm Saga" 
+               activiti:class="com.example.SagaConfirmer"/>
+
+  <endEvent id="successEnd"/>
+  <endEvent id="failureEnd"/>
+
   <sequenceFlow id="flow5" sourceRef="compensatePaymentEvent" targetRef="compensateReserveEvent"/>
   <sequenceFlow id="flow6" sourceRef="compensateReserveEvent" targetRef="failureEnd"/>
-  <sequenceFlow id="flow7" sourceRef="confirmOrder" targetRef="successEnd"/>
+  <sequenceFlow id="flow7" sourceRef="confirmSaga" targetRef="successEnd"/>
   
 </process>
 ```
@@ -697,7 +703,7 @@ public void testCompensationFlow() {
 <serviceTask id="cancelOrder" name="Cancel Order"/>
 ```
 
-**Error:** `ActivitiException: no compensation flow found for activity 'placeOrder'`
+**Error:** `ActivitiException: Compensation activity could not be found (or it is missing 'isForCompensation="true"'`
 
 ### 2. Trying to Compensate Incomplete Activities
 

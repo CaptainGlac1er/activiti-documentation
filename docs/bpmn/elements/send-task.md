@@ -16,10 +16,10 @@ A Send Task (`sendTask`) represents a one-way message sent from the process to a
            name="Notify Customer"
            type="mail">
   <extensionElements>
-    <activiti:field name="to" stringExpression="${customer.email}"/>
+    <activiti:field name="to" expression="${customer.email}"/>
     <activiti:field name="subject" stringValue="Order Shipped"/>
     <activiti:field name="html" stringValue="true"/>
-    <activiti:field name="text" stringExpression="${notificationBody}"/>
+    <activiti:field name="text" expression="${notificationBody}"/>
   </extensionElements>
 </sendTask>
 ```
@@ -45,9 +45,9 @@ The `type` attribute or `implementation` attribute determines the behavior:
 ```xml
 <sendTask id="sendEmail" type="mail">
   <extensionElements>
-    <activiti:field name="to" stringExpression="${recipientEmail}"/>
+    <activiti:field name="to" expression="${recipientEmail}"/>
     <activiti:field name="subject" stringValue="Payment Reminder"/>
-    <activiti:field name="text" stringExpression="${emailBody}"/>
+    <activiti:field name="text" expression="${emailBody}"/>
     <activiti:field name="html" stringValue="true"/>
   </extensionElements>
 </sendTask>
@@ -133,9 +133,9 @@ A Send Task can be configured as asynchronous to decouple message sending from p
 ```xml
 <sendTask id="asyncEmail" name="Send Async Notification" type="mail" activiti:async="true">
   <extensionElements>
-    <activiti:field name="to" stringExpression="${recipientEmail}"/>
+    <activiti:field name="to" expression="${recipientEmail}"/>
     <activiti:field name="subject" stringValue="Async Notification"/>
-    <activiti:field name="text" stringExpression="${notificationBody}"/>
+    <activiti:field name="text" expression="${notificationBody}"/>
   </extensionElements>
 </sendTask>
 ```

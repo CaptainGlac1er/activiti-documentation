@@ -65,7 +65,7 @@ For validators that need to check across all processes in a model, extend `Proce
 public class NoTerminateEndEventValidator extends ProcessLevelValidator {
 
     @Override
-    protected void executeValidate(BpmnModel model,
+    protected void executeValidation(BpmnModel model,
                                    Process process,
                                    List<ValidationError> errors) {
         for (FlowElement element : process.getFlowElements()) {
@@ -221,7 +221,7 @@ defaultSet.removeValidator(ScriptTaskValidator.class);
 public class GatewayDefaultFlowValidator extends ProcessLevelValidator {
 
     @Override
-    protected void executeValidate(BpmnModel model,
+    protected void executeValidation(BpmnModel model,
                                    Process process,
                                    List<ValidationError> errors) {
         for (FlowElement element : process.getFlowElements()) {

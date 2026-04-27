@@ -329,7 +329,7 @@ The engine uses the following core tables:
 
 | Engine Version | BPMN Version | Java Version | Spring Boot |
 |----------------|--------------|--------------|-------------|
-| 8.7.2+ | 2.0 | 17+ | 3.2+ |
+| 8.7.1+ | 2.0 | 17+ | 3.2+ |
 | 8.0-8.7 | 2.0 | 11+ | 2.7+ |
 | 7.x | 2.0 | 8+ | 2.x |
 

@@ -277,7 +277,7 @@ public void execute(DelegateExecution execution) {
 
 Map data to and from each instance.
 
-**Important:** The `inputDataItem` and `outputDataItem` elements are parsed from the `name` attribute only — they do **not** support nested `<assignment>`/`<from>`/`<to>` children. Use simple attribute syntax.
+**Important:** The `inputDataItem` and `outputDataItem` elements are parsed from the `name` attribute only — they do **not** support nested `<assignment>`/`<from>`/`<to>` children. Both are child elements of `<multiInstanceLoopCharacteristics>`, not attributes.
 
 ### Input Data Items
 
@@ -300,15 +300,15 @@ The `inputDataItem` name attribute maps to the `elementVariable`. It specifies w
 The `outputDataItem` name attribute specifies the variable name used to collect results from each instance. Results are aggregated into a collection:
 
 ```xml
-<multiInstanceLoopCharacteristics 
-  isSequential="false"
-  activiti:collection="${reviewers}"
-  activiti:elementVariable="reviewer"
-  activiti:outputDataItem="reviewResult">
+  <multiInstanceLoopCharacteristics 
+    isSequential="false"
+    activiti:collection="${reviewers}"
+    activiti:elementVariable="reviewer">
   
-  <!-- Each instance should set 'reviewResult' variable -->
+    <!-- Collect results into 'reviewResult' variable from each instance -->
+    <outputDataItem name="reviewResult"/>
   
-</multiInstanceLoopCharacteristics>
+  </multiInstanceLoopCharacteristics>
 ```
 
 ### Complete Input/Output Example
@@ -335,8 +335,8 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${approvers}"
-  activiti:elementVariable="approver"
-  activiti:outputDataItem="approvalResult">
+  activiti:elementVariable="approver">
+  <outputDataItem name="approvalResult"/>
 </multiInstanceLoopCharacteristics>
 ```
 
@@ -371,8 +371,8 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${recipients}"
-    activiti:elementVariable="recipient"
-    activiti:outputDataItem="deliveryStatus">
+    activiti:elementVariable="recipient">
+    <outputDataItem name="deliveryStatus"/>
     
     <!-- Complete when all sent -->
     <completionCondition>${nrOfCompletedInstances == nrOfInstances}</completionCondition>
@@ -391,8 +391,8 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${batchItems}"
-    activiti:elementVariable="item"
-    activiti:outputDataItem="processResult">
+    activiti:elementVariable="item">
+    <outputDataItem name="processResult"/>
     
     <!-- Complete when 95% processed successfully -->
     <completionCondition>${successCount / nrOfInstances >= 0.95}</completionCondition>
@@ -447,8 +447,8 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${voters}"
-    activiti:elementVariable="voter"
-    activiti:outputDataItem="voteResult">
+    activiti:elementVariable="voter">
+    <outputDataItem name="voteResult"/>
     
     <!-- Complete when majority votes OR all voted -->
     <completionCondition>
@@ -569,8 +569,8 @@ Listeners must be inside `extensionElements`:
 <multiInstanceLoopCharacteristics
   isSequential="false"
   activiti:collection="${items}"
-  activiti:elementVariable="item"
-  activiti:outputDataItem="result">
+  activiti:elementVariable="item">
+  <outputDataItem name="result"/>
 </multiInstanceLoopCharacteristics>
 
 <!-- BAD: Relying on global variables without clear mapping -->

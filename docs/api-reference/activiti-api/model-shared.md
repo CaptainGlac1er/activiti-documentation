@@ -45,7 +45,7 @@ public interface Payload extends Serializable {
 **Purpose**: Base interface for all request payloads. Every operation request implements this interface.
 
 **Key Points**:
-- Generates unique ID via UUID
+- Declares `getId()` — UUID generation is an implementation detail (not guaranteed by the interface)
 - Serializable for distributed systems
 - Used as the contract for all API operations
 
@@ -72,6 +72,9 @@ public abstract class Result<T> implements Serializable {
     private Payload payload;
     private T entity;
     
+    public Result() {
+    }
+
     public Result(Payload payload, T entity) {
         this.payload = payload;
         this.entity = entity;

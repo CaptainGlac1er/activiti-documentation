@@ -818,7 +818,8 @@ server:
 
 activiti:
   async-executor-activate: true
-  job-executor-threads: 10
+  async-executor:
+    core-pool-size: 10
 ```
 
 **Pros:**
@@ -867,7 +868,8 @@ spring:
 
 activiti:
   async-executor-activate: true
-  job-executor-threads: 20
+  async-executor:
+    core-pool-size: 20
   history-level: full
 ```
 

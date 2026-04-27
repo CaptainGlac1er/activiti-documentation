@@ -74,7 +74,7 @@ This is the standard approach for Business Rule Tasks.
 ```java
 import org.activiti.engine.delegate.BusinessRuleTaskDelegate;
 import org.activiti.engine.delegate.DelegateExecution;
-import org.activiti.engine.impl.delegate.Expression;
+import org.activiti.engine.delegate.Expression;
 
 import java.util.List;
 
@@ -696,7 +696,7 @@ public class SimpleBusinessRuleTask implements BusinessRuleTaskDelegate {
 ```java
 import org.activiti.engine.delegate.BusinessRuleTaskDelegate;
 import org.activiti.engine.delegate.DelegateExecution;
-import org.activiti.engine.impl.delegate.Expression;
+import org.activiti.engine.delegate.Expression;
 
 import java.util.Date;
 

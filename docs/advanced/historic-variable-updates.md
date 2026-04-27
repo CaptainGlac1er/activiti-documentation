@@ -31,21 +31,21 @@ As a `HistoricDetail`, it also provides:
 
 ## Querying Variable Updates
 
-There is no dedicated `createHistoricVariableUpdateQuery()` method. Instead, use `createHistoricDetailQuery()` and filter for `HistoricVariableUpdate` instances:
+There is no dedicated `createHistoricVariableUpdateQuery()` method. Instead, use `createHistoricDetailQuery()` with the `variableUpdates()` filter to retrieve only `HistoricVariableUpdate` instances:
 
 ```java
-// All historic details for a process instance, filtered to variable updates
+// Only variable updates for a process instance
 List<HistoricVariableUpdate> updates = historyService
     .createHistoricDetailQuery()
     .processInstanceId("processInstanceId")
+    .variableUpdates()
     .list()
     .stream()
-    .filter(detail -> detail instanceof HistoricVariableUpdate)
     .map(detail -> (HistoricVariableUpdate) detail)
     .collect(Collectors.toList());
 ```
 
-**Note:** `HistoricDetailQuery` does not have a `variableName()` filter, so you must query all details and filter client-side.
+**Note:** The `variableUpdates()` method filters at the database level for `HistoricVariableUpdate` type details. There is no `variableName()` filter on `HistoricDetailQuery`, so to narrow by variable name you must still filter client-side. You can, however, use `orderByVariableName()` for sorting results.
 
 ## Reconstructing Variable History
 

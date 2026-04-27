@@ -64,15 +64,17 @@ A Data Store Reference links a process activity to an external data store:
 Data objects are **read-only at runtime** — they mirror process variables and are populated automatically from BPMN-valued data objects.
 
 ```java
-// Get a specific data object by name
-DataObject dataObject = runtimeService.getDataObject(
-    processInstanceId, "orderData");
+// Get all data objects visible from an execution scope
+Map<String, DataObject> allDataObjects = runtimeService.getDataObjects(executionId);
 
-// Get all data objects
-Map<String, DataObject> allDataObjects = runtimeService.getDataObjects(processInstanceId);
+// Get data objects with localization support
+Map<String, DataObject> localizedObjects = runtimeService.getDataObjects(executionId, "en", true);
 
-// Get local data objects (scoped to execution)
-DataObject localObj = runtimeService.getDataObjectLocal(executionId, "tempData");
+// Get data objects by specific names
+Map<String, DataObject> namedObjects = runtimeService.getDataObjects(executionId, List.of("orderData", "shipmentData"));
+
+// Get local data objects (scoped to execution, no parent scope)
+Map<String, DataObject> localObjects = runtimeService.getDataObjectsLocal(executionId);
 ```
 
 To set or delete data, use standard process variables:

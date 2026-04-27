@@ -109,15 +109,13 @@ Events represent **something that happens** during the execution of a process. T
 ### Link Event Definition
 
 ```xml
-<linkEventDefinition>
-  <outgoing>link1</outgoing>
-</linkEventDefinition>
+<linkEventDefinition name="link1"/>
 ```
 
 ### Compensate Event Definition
 
 ```xml
-<compensateEventDefinition activityRef="reservePayment" name="Compensate Reservation"/>
+<compensateEventDefinition activityRef="reservePayment"/>
 ```
 
 ### Terminate Event Definition
@@ -139,14 +137,9 @@ Events represent **something that happens** during the execution of a process. T
   <messageEventDefinition messageRef="orderReceived"/>
 </startEvent>
 
-<!-- Timer start event -->
-<startEvent id="timerStart" name="Scheduled Execution">
-  <timerEventDefinition>
-    <timeCycle>RRULE:FREQ=DAILY;HOUR=9</timeCycle>
-  </timerEventDefinition>
-</startEvent>
+<!-- Timer start events are NOT supported in Activiti -->
 
-<!-- Timer and signal start events are only supported within event sub-processes -->
+<!-- Timer and signal start events are NOT supported. Use message or error start events within event sub-processes -->
 
 <!-- Multiple start events (any can trigger) -->
 <startEvent id="altStart1">
@@ -208,9 +201,7 @@ Events represent **something that happens** during the execution of a process. T
 
 <!-- Link throw -->
 <intermediateThrowEvent id="jumpToSection" name="Jump">
-  <linkEventDefinition>
-    <outgoing>section2</outgoing>
-  </linkEventDefinition>
+  <linkEventDefinition name="section2"/>
 </intermediateThrowEvent>
 
 <!-- Compensate throw -->
@@ -289,11 +280,10 @@ Events represent **something that happens** during the execution of a process. T
 
 <!-- Interrupting event sub-process -->
 <eventSubProcess id="escalationSubProcess" isInterrupting="true">
-  <startEvent id="escalationTimer">
-    <timerEventDefinition>
-      <timeDuration>PT72H</timeDuration>
-    </timerEventDefinition>
+  <startEvent id="escalationMessage">
+    <messageEventDefinition messageRef="escalationMsg"/>
   </startEvent>
+  <message id="escalationMsg" name="Escalation Message"/>
   <userTask id="escalationTask" name="Handle Escalation"/>
   <endEvent id="escalationEnd"/>
 </eventSubProcess>

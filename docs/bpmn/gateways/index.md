@@ -101,7 +101,7 @@ All gateways (except parallel) support conditions on outgoing sequence flows:
 Specify a default path when no conditions match:
 
 ```xml
-<exclusiveGateway id="gateway1" defaultFlow="flow1"/>
+<exclusiveGateway id="gateway1" default="flow1"/>
 ```
 
 Or on the gateway element:

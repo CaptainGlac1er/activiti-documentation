@@ -652,8 +652,9 @@ List<HistoricVariableInstance> history = historyService
     .list();
 
 // Get variable updates
-List<HistoricVariableUpdate> updates = historyService
-    .createHistoricVariableUpdateQuery()
+List<HistoricDetail> updates = historyService
+    .createHistoricDetailQuery()
+    .variableUpdatesOnly()
     .processInstanceId(processId)
     .list();
 ```

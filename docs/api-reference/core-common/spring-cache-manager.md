@@ -25,7 +25,7 @@ The **activiti-spring-cache-manager** module provides Spring cache management in
 ### Key Classes
 
 - `ActivitiSpringCacheManagerProperties` - Cache configuration properties (`@ConfigurationProperties("activiti.spring.cache-manager")`)
-- `ActivitiSpringCaffeineCacheConfigurer` - Functional interface for custom Caffeine cache building
+- `ActivitiSpringCaffeineCacheConfigurer` - Interface extending `Predicate<String>` and `Function<Caffeine,Object,Object>, Cache<Object, Object>>` for custom Caffeine cache building
 - `ActivitiSpringCacheManagerAutoConfiguration` - Auto-configuration
 - `ActivitiSpringCacheManagerEnvironmentPostProcessor` - Sets `spring.cache.type` from provider
 

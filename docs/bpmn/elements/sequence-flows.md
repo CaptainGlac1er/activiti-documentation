@@ -77,6 +77,7 @@ Conditionally skip a sequence flow (i.e., the flow is not taken):
 - When `skipExpression` evaluates to `true`, this sequence flow is skipped
 - Useful for dynamic flow routing based on process variables
 - The engine evaluates the expression when considering this flow as a candidate path
+- **Important:** Skip expressions require the process variable `_ACTIVITI_SKIP_EXPRESSION_ENABLED` to be set to `true`, otherwise they are silently ignored. This is checked by `SkipExpressionUtil.checkSkipExpressionVariable()` — if the variable is `null` or `false`, the skip expression is not evaluated.
 
 ## Condition Expressions
 

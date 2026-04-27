@@ -455,7 +455,7 @@ spring.activiti.async-executor.core-pool-size=10
 public void executeJobs() {
     RepositoryService repositoryService = ...;
     repositoryService.getProcessEngineConfiguration()
-        .getJobExecutor()
+        .getAsyncExecutor()
         .executeJobs(1);
 }
 ```
@@ -723,7 +723,7 @@ public void updateProcesses(List<String> processIds) {
 ### Information to Provide
 
 ```
-- Activiti Version: 8.7.2-SNAPSHOT
+- Activiti Version: 8.7.1
 - Java Version: 17.0.1
 - Database: PostgreSQL 14
 - Spring Boot Version: 3.1.0

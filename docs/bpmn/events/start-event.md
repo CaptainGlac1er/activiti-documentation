@@ -23,7 +23,7 @@ Start Events **initiate process instances** and define how a process can be star
 ### Standard BPMN Features
 - **None** - Manual start (supported)
 - **Message** - Event-driven start (supported within event sub-processes)
-- **Timer** - Scheduled start (**only within event sub-processes**, not as main process start)
+- **Timer** - Scheduled start (**NOT supported** — `TimerEventDefinitionParseHandler` only handles `IntermediateCatchEvent` and `BoundaryEvent`)
 - **Signal** - Broadcast start (**only within event sub-processes**, not as main process start)
 - **Conditional** - Condition-based start (**NOT supported** — no `ConditionalEventDefinition` class exists)
 
@@ -78,9 +78,7 @@ ProcessInstance process = runtimeService
 
 ### 3. Timer Start Event
 
-**NOT supported as a main process start event.** Timer start events are only supported within event sub-processes.
-
-The `StartEventParseHandler` does not assign any behavior to timer start events on main processes. If you define a timer start event outside of an event sub-process, the process will be treated as having a none start event.
+**NOT supported.** Timer start events are not supported anywhere in Activiti — neither as main process start events nor within event sub-processes. The `TimerEventDefinitionParseHandler` only processes `IntermediateCatchEvent` and `BoundaryEvent` — it never handles `StartEvent`.
 
 ### 4. Signal Start Event
 
@@ -136,7 +134,7 @@ Within event sub-processes, only message and error start event definitions are h
 </startEvent>
 ```
 
-**Note:** Timer, signal, and conditional start events are only supported within event sub-processes. Use a none start event or message start event for main process initiation.
+**Note:** Timer and conditional start events are NOT supported anywhere. Signal start events are NOT supported. Use a none start event or message start event for main process initiation.
 
 ### Example 2: Message Start with Correlation
 
@@ -163,31 +161,31 @@ ProcessInstance process = runtimeService
         ));
 ```
 
-### Example 3: Scheduled Process via Event Sub-Process
+### Example 3: Message Start in Event Sub-Process
 
-**Note:** Timer start events are not supported as main process starts. Use an event sub-process instead:
+**Note:** Timer start events are NOT supported in Activiti. Use message or error start events for event sub-processes.
 
 ```xml
 <!-- Main process with none start -->
 <startEvent id="mainStart"/>
 
-<!-- Event sub-process for scheduled triggering -->
-<eventSubProcess id="scheduledSubProcess">
-  <startEvent id="timerStart">
-    <timerEventDefinition>
-      <timeCycle>RRULE:FREQ=DAILY;HOUR=23;MINUTE=0</timeCycle>
-    </timerEventDefinition>
+<!-- Event sub-process triggered by message -->
+<eventSubProcess id="messageSubProcess">
+  <startEvent id="messageStart">
+    <messageEventDefinition messageRef="triggerMessage"/>
   </startEvent>
 
-  <serviceTask id="generateReport" 
-               name="Generate Report" 
-               activiti:class="com.example.ReportGenerator"
+  <message id="triggerMessage" name="Trigger Message"/>
+
+  <serviceTask id="handleMessage" 
+               name="Handle Message" 
+               activiti:class="com.example.MessageHandler"
                activiti:async="true"/>
 
-  <endEvent id="reportEnd"/>
+  <endEvent id="messageEnd"/>
   
-  <sequenceFlow id="subFlow1" sourceRef="timerStart" targetRef="generateReport"/>
-  <sequenceFlow id="subFlow2" sourceRef="generateReport" targetRef="reportEnd"/>
+  <sequenceFlow id="subFlow1" sourceRef="messageStart" targetRef="handleMessage"/>
+  <sequenceFlow id="subFlow2" sourceRef="handleMessage" targetRef="messageEnd"/>
 </eventSubProcess>
 ```
 

@@ -54,7 +54,7 @@ Activiti 8 supports **two primary ways** to implement service tasks, plus legacy
 
 ### 1. Spring Bean Reference (RECOMMENDED for Activiti 8)
 
-Use the standard BPMN `implementation` attribute to reference a Spring bean by its **plain bean name**:
+Use the standard BPMN `implementation` attribute to reference a Spring bean:
 
 ```xml
 <serviceTask id="tagImageTask" 
@@ -62,11 +62,9 @@ Use the standard BPMN `implementation` attribute to reference a Spring bean by i
              implementation="tagImageConnector"/>
 ```
 
-The engine will look up a Spring bean named `tagImageConnector` from the ApplicationContext.
+**How it actually works:** The core engine's `ServiceTaskParseHandler` routes plain `implementation` values to `DefaultActivityBehaviorFactory.createDefaultServiceTaskBehavior()`, which wraps the behavior as the expression `${defaultServiceTaskBehavior}`. The Spring bean `defaultServiceTaskBehavior` (provided by `ConnectorsAutoConfiguration`) receives the `ServiceTask` at runtime and reads `serviceTask.getImplementation()` to determine which connector bean to invoke. The value in `implementation` is **not** directly looked up as a bean name by the core engine — it's passed through the `defaultServiceTaskBehavior` routing layer, which resolves it to a `Connector` bean from the ApplicationContext.
 
 #### For Connector Implementations (Activiti 7/8 API Layer):
-
-**Important:** The `Connector` interface and `IntegrationContext` are from the Activiti 7/8 API layer (`activiti-api` module), NOT the core engine. The core engine's `ServiceTaskParseHandler` does NOT handle connectors — it handles service tasks via `activiti:class`, `activiti:delegateExpression`, `activiti:expression`, `activiti:type` (mail, mule, camel, shell), and `operationRef` (webservice).
 
 ```java
 import org.activiti.api.process.runtime.connector.Connector;
@@ -147,7 +145,7 @@ public class PaymentService implements JavaDelegate {
              activiti:delegateExpression="${paymentService}"/>
 ```
 
-**Important:** `implementation="beanName"` only resolves `Connector` beans. For `JavaDelegate`, you must use `activiti:delegateExpression="${beanName}"` instead.
+**Important:** `implementation="beanName"` is routed through `defaultServiceTaskBehavior` which resolves the bean name to a `Connector`. For `JavaDelegate`, you must use `activiti:delegateExpression="${beanName}"` instead.
 
 **Benefits:**
 - ✅ Full Spring dependency injection (`@Autowired`)
@@ -156,7 +154,7 @@ public class PaymentService implements JavaDelegate {
 
 **Connector Bean with Dot in Name:**
 
-The `implementation` attribute value is used as a Spring bean name. If your bean name contains a dot, it's simply part of the bean name — there is no special parsing of the dot notation:
+The `implementation` attribute value is passed to the `defaultServiceTaskBehavior` router, which looks up the Spring bean name. If your bean name contains a dot, it's simply part of the bean name — there is no special parsing of the dot notation:
 
 ```xml
 <serviceTask id="getMovieTask" 
@@ -164,7 +162,7 @@ The `implementation` attribute value is used as a Spring bean name. If your bean
              implementation="Movies.getMovieDesc"/>
 ```
 
-This looks up a Spring bean named `Movies.getMovieDesc`. The dot is just part of the bean name.
+The `defaultServiceTaskBehavior` router resolves `Movies.getMovieDesc` as a Spring bean name. The dot is just part of the bean name.
 
 **Connector Bean Definition:**
 
@@ -315,7 +313,7 @@ public class LegacyBeanService implements JavaDelegate {
 | Feature | `implementation="beanName"` | Legacy `activiti:class` | Legacy `activiti:delegateExpression` | Legacy `activiti:expression` |
 |---------|----------------------------|------------------------|-------------------------------------|-----------------------------|
 | **Bean Type** | `Connector` | `JavaDelegate` | `JavaDelegate` | N/A (EL expression) |
-| **Spring Bean** | Required (`@Component`) | Not required | Required (`@Component`) | Required (`@Component`) |
+| **Spring Bean** | Required (`@Component`, routed via `defaultServiceTaskBehavior`) | Not required | Required (`@Component`) | Required (`@Component`) |
 | **Dependency Injection** | ✅ `@Autowired` | ❌ No (field injection only) | ✅ `@Autowired` | ✅ `@Autowired` |
 | **Interface** | `Connector` | `JavaDelegate` | `JavaDelegate` | N/A |
 | **Execution API** | `apply(context)` | `execute(execution)` | `execute(execution)` | EL evaluation |

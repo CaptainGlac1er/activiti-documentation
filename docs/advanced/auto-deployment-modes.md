@@ -13,7 +13,7 @@ When using the Activiti Spring Boot starter, BPMN resources discovered on the cl
 
 ```yaml
 # application.yml
-activiti:
+spring.activiti:
   deployment-mode: "default"
 ```
 
@@ -165,7 +165,7 @@ Then set `deploymentMode` to `"custom"` on the configuration.
 Resources are discovered via `ResourceFinder` configured in Spring Boot properties:
 
 ```yaml
-activiti:
+spring.activiti:
   resource-finder-descriptors:
     - paths:
         - 'classpath*:processes/*.bpmn'
