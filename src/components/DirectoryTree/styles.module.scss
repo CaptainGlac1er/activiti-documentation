@@ -160,3 +160,19 @@
   background: rgba(150, 150, 150, 0.15);
   color: #999;
 }
+
+.showMoreRow {
+  cursor: pointer;
+  color: var(--ifm-link-color);
+
+  &:hover {
+    color: var(--ifm-link-hover-color);
+    background: var(--ifm-menu-link-sublist-bg);
+  }
+}
+
+.showMoreText {
+  font-style: italic;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}

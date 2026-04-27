@@ -12,7 +12,7 @@ The `activiti-api-process-model` module defines all domain models, events, and p
 
 ## Module Structure
 
-<DirectoryTree rootName="activiti-api-process-model" expandAll dotWalk>
+<DirectoryTree rootName="activiti-api-process-model" expandAll dotWalk showFirst={5}>
   <DirectoryTree.Dir name="src">
     <DirectoryTree.Dir name="main">
       <DirectoryTree.Dir name="java">
@@ -30,7 +30,29 @@ The `activiti-api-process-model` module defines all domain models, events, and p
                     <DirectoryTree.File name="IntegrationEvent.java" />
                     <DirectoryTree.File name="SequenceFlowEvent.java" />
                     <DirectoryTree.File name="ApplicationEvent.java" />
-                    <DirectoryTree.File icon="…" name="Specific Event Implementations" />
+                    <DirectoryTree.File name="BPMNActivityStartedEvent.java" />
+                    <DirectoryTree.File name="BPMNActivityCompletedEvent.java" />
+                    <DirectoryTree.File name="BPMNActivityCancelledEvent.java" />
+                    <DirectoryTree.File name="BPMNSequenceFlowTakenEvent.java" />
+                    <DirectoryTree.File name="BPMNMessageWaitingEvent.java" />
+                    <DirectoryTree.File name="BPMNMessageReceivedEvent.java" />
+                    <DirectoryTree.File name="BPMNMessageSentEvent.java" />
+                    <DirectoryTree.File name="BPMNSignalReceivedEvent.java" />
+                    <DirectoryTree.File name="BPMNErrorReceivedEvent.java" />
+                    <DirectoryTree.File name="BPMNTimerScheduledEvent.java" />
+                    <DirectoryTree.File name="BPMNTimerFiredEvent.java" />
+                    <DirectoryTree.File name="BPMNTimerExecutedEvent.java" />
+                    <DirectoryTree.File name="BPMNTimerFailedEvent.java" />
+                    <DirectoryTree.File name="BPMNTimerCancelledEvent.java" />
+                    <DirectoryTree.File name="BPMNTimerRetriesDecrementedEvent.java" />
+                    <DirectoryTree.File name="MessageSubscriptionEvent.java" />
+                    <DirectoryTree.File name="MessageSubscriptionCancelledEvent.java" />
+                    <DirectoryTree.File name="MessageDefinitionEvent.java" />
+                    <DirectoryTree.File name="ProcessDeployedEvent.java" />
+                    <DirectoryTree.File name="ProcessDefinitionEvent.java" />
+                    <DirectoryTree.File name="ApplicationDeployedEvent.java" />
+                    <DirectoryTree.File name="StartMessageDeployedEvent.java" />
+                    <DirectoryTree.File name="ExtendedProcessRuntimeEvent.java" />
                   </DirectoryTree.Dir>
                   <DirectoryTree.Dir name="results">
                     <DirectoryTree.File name="ProcessInstanceResult.java" />
@@ -39,25 +61,70 @@ The `activiti-api-process-model` module defines all domain models, events, and p
                     <DirectoryTree.File name="ProcessPayloadBuilder.java" />
                     <DirectoryTree.File name="StartProcessPayloadBuilder.java" />
                     <DirectoryTree.File name="MessagePayloadBuilder.java" />
-                    <DirectoryTree.File icon="…" name="Other Builders" />
+                    <DirectoryTree.File name="CreateProcessPayloadBuilder.java" />
+                    <DirectoryTree.File name="DeleteProcessPayloadBuilder.java" />
+                    <DirectoryTree.File name="SuspendProcessPayloadBuilder.java" />
+                    <DirectoryTree.File name="ResumeProcessPayloadBuilder.java" />
+                    <DirectoryTree.File name="UpdateProcessPayloadBuilder.java" />
+                    <DirectoryTree.File name="GetVariablesPayloadBuilder.java" />
+                    <DirectoryTree.File name="SetVariablesPayloadBuilder.java" />
+                    <DirectoryTree.File name="RemoveVariablesPayloadBuilder.java" />
+                    <DirectoryTree.File name="SignalPayloadBuilder.java" />
+                    <DirectoryTree.File name="GetProcessDefinitionsPayloadBuilder.java" />
+                    <DirectoryTree.File name="GetProcessInstancesPayloadBuilder.java" />
+                    <DirectoryTree.File name="StartMessagePayloadBuilder.java" />
+                    <DirectoryTree.File name="MessageEventPayloadBuilder.java" />
+                    <DirectoryTree.File name="ReceiveMessagePayloadBuilder.java" />
                   </DirectoryTree.Dir>
                   <DirectoryTree.Dir name="payloads">
                     <DirectoryTree.File name="StartProcessPayload.java" />
                     <DirectoryTree.File name="CreateProcessInstancePayload.java" />
                     <DirectoryTree.File name="DeleteProcessPayload.java" />
-                    <DirectoryTree.File icon="…" name="Other Payloads" />
+                    <DirectoryTree.File name="SuspendProcessPayload.java" />
+                    <DirectoryTree.File name="ResumeProcessPayload.java" />
+                    <DirectoryTree.File name="UpdateProcessPayload.java" />
+                    <DirectoryTree.File name="GetVariablesPayload.java" />
+                    <DirectoryTree.File name="SetProcessVariablesPayload.java" />
+                    <DirectoryTree.File name="RemoveProcessVariablesPayload.java" />
+                    <DirectoryTree.File name="GetProcessInstancesPayload.java" />
+                    <DirectoryTree.File name="GetProcessDefinitionsPayload.java" />
+                    <DirectoryTree.File name="TimerPayload.java" />
+                    <DirectoryTree.File name="ReceiveMessagePayload.java" />
                   </DirectoryTree.Dir>
                   <DirectoryTree.File name="ProcessInstance.java" />
                   <DirectoryTree.File name="ProcessDefinition.java" />
                   <DirectoryTree.File name="BPMNActivity.java" />
                   <DirectoryTree.File name="BPMNElement.java" />
-                  <DirectoryTree.File icon="…" name="Other Models" />
+                  <DirectoryTree.File name="BPMNError.java" />
+                  <DirectoryTree.File name="BPMNMessage.java" />
+                  <DirectoryTree.File name="BPMNSignal.java" />
+                  <DirectoryTree.File name="BPMNTimer.java" />
+                  <DirectoryTree.File name="BPMNSequenceFlow.java" />
+                  <DirectoryTree.File name="IntegrationContext.java" />
+                  <DirectoryTree.File name="Deployment.java" />
+                  <DirectoryTree.File name="MessageSubscription.java" />
+                  <DirectoryTree.File name="ProcessCandidateStarter.java" />
+                  <DirectoryTree.File name="ProcessCandidateStarterGroup.java" />
+                  <DirectoryTree.File name="ProcessCandidateStarterUser.java" />
+                  <DirectoryTree.File name="ProcessDefinitionMeta.java" />
+                  <DirectoryTree.File name="ProcessInstanceMeta.java" />
+                  <DirectoryTree.File name="StartMessageDeploymentDefinition.java" />
+                  <DirectoryTree.File name="StartMessageSubscription.java" />
+                  <DirectoryTree.File name="VariableDefinition.java" />
                 </DirectoryTree.Dir>
                 <DirectoryTree.Dir name="runtime">
                   <DirectoryTree.Dir name="events">
                     <DirectoryTree.File name="ProcessCreatedEvent.java" />
                     <DirectoryTree.File name="ProcessStartedEvent.java" />
-                    <DirectoryTree.File icon="…" name="Other Runtime Events" />
+                    <DirectoryTree.File name="ProcessCompletedEvent.java" />
+                    <DirectoryTree.File name="ProcessCancelledEvent.java" />
+                    <DirectoryTree.File name="ProcessSuspendedEvent.java" />
+                    <DirectoryTree.File name="ProcessResumedEvent.java" />
+                    <DirectoryTree.File name="ProcessUpdatedEvent.java" />
+                    <DirectoryTree.File name="ProcessCandidateStarterUserAddedEvent.java" />
+                    <DirectoryTree.File name="ProcessCandidateStarterUserRemovedEvent.java" />
+                    <DirectoryTree.File name="ProcessCandidateStarterGroupAddedEvent.java" />
+                    <DirectoryTree.File name="ProcessCandidateStarterGroupRemovedEvent.java" />
                   </DirectoryTree.Dir>
                 </DirectoryTree.Dir>
               </DirectoryTree.Dir>
