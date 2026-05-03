@@ -337,6 +337,10 @@ config.setClock(new Clock() {
     @Override
     public java.util.Calendar getCurrentCalendar() { return java.util.Calendar.getInstance(); }
     @Override
+    public java.util.Calendar getCurrentCalendar(java.util.TimeZone timeZone) { return java.util.Calendar.getInstance(timeZone); }
+    @Override
+    public java.util.TimeZone getCurrentTimeZone() { return java.util.TimeZone.getDefault(); }
+    @Override
     public void setCurrentCalendar(java.util.Calendar calendar) {}
     @Override
     public void reset() {}
@@ -1192,6 +1196,10 @@ public class TestActivitiConfig {
             public void setCurrentTime(Date time) {}
             @Override
             public java.util.Calendar getCurrentCalendar() { return java.util.Calendar.getInstance(); }
+            @Override
+            public java.util.Calendar getCurrentCalendar(java.util.TimeZone timeZone) { return java.util.Calendar.getInstance(timeZone); }
+            @Override
+            public java.util.TimeZone getCurrentTimeZone() { return java.util.TimeZone.getDefault(); }
             @Override
             public void setCurrentCalendar(java.util.Calendar calendar) {}
             @Override
