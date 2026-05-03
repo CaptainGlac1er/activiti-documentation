@@ -1162,7 +1162,7 @@ List<Job> jobs = managementService.createJobQuery()
     .list();
 
 // Retry failed job
-managementService.retryJob(jobId);
+managementService.moveDeadLetterJobToExecutableJob(jobId, 3);
 
 // Delete job
 managementService.deleteJob(jobId);
@@ -1286,7 +1286,7 @@ public class PaymentServiceTest {
 - [Business Rule Task](./business-rule-task.md)
 - [Async Execution](../reference/async-execution.md)
 - [Connectors](../integration/connectors.md)
-- [DMN in Business Rule Tasks](./business-rule-task.md#pattern-3-dmn-integration-via-service-task-alternative)
+- [DMN in Business Rule Tasks](./business-rule-task.md#pattern-3-dmn-decision-integration-via-service-task-recommended)
 
 ---
 

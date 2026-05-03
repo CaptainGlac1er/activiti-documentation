@@ -3,11 +3,9 @@ description: Creates and edits Activiti documentation pages with BPMN examples
 mode: subagent
 temperature: 0.3
 permission:
-  edit: ask
-  bash:
-    "*": deny
-  task:
-    "*": allow
+  edit: allow
+  bash: allow
+  task: allow
 ---
 
 # Docs Writer Agent

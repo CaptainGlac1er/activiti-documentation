@@ -288,10 +288,9 @@ public class ProcessInstanceDelegate implements JavaDelegate {
             .createProcessInstanceQuery()
             .processInstanceId(processInstanceId)
             .singleResult();
-        String startDate = processInstance.getStartDate().toString();
+        String startDate = processInstance.getStartTime().toString();
         
         // Get process engine services
-        ProcessEngineConfiguration config = execution.getEngineServices();
         RuntimeService runtimeService = config.getRuntimeService();
         TaskService taskService = config.getTaskService();
         RepositoryService repositoryService = config.getRepositoryService();
