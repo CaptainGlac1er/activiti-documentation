@@ -1,6 +1,6 @@
 ---
 sidebar_label: Variables
-slug: /bpmn/variables
+slug: /bpmn/reference/variables
 title: "Variables and Variable Scope"
 description: "Complete guide to process variables, task variables, and variable scope management in Activiti workflows."
 ---

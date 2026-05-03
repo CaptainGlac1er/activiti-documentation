@@ -1,6 +1,7 @@
 ---
 sidebar_label: Common Features
 slug: /bpmn/common-features
+title: "Common BPMN Features"
 description: Features available across all BPMN elements in Activiti
 ---
 
@@ -223,7 +224,7 @@ Add **custom metadata** to any BPMN element.
              activiti:class="com.example.MyDelegate">
   
   <!-- Spring bean injection using expression -->
-  <activiti:field name="service" expression="#{myService}"/>
+  <activiti:field name="service" expression="${myService}"/>
   
   <!-- String value -->
   <activiti:field name="config" stringValue="configuration value"/>
@@ -254,7 +255,7 @@ public class MyDelegate implements JavaDelegate {
 }
 ```
 
-**Note:** Field injection only supports `stringValue` and `expression` attributes. For Spring bean injection, use `expression="#{beanName}"`.
+**Note:** Field injection only supports `stringValue` and `expression` attributes. For Spring bean injection, use `expression="${beanName}"`.
 
 ## Feature Availability Matrix
 

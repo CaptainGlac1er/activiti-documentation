@@ -1,6 +1,7 @@
 ---
 sidebar_label: Repository Service
 slug: /api-reference/engine-api/repository-service
+title: "Repository Service"
 description: Complete guide to the Repository Service for managing process definitions and deployments.
 ---
 

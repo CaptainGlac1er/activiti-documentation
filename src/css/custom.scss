@@ -250,12 +250,54 @@
 }
 
 /* ============================================
-   GLOBAL STYLES
-   ============================================ */
+    GLOBAL STYLES
+    ============================================ */
 
 /* Smooth theme transitions */
 * {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ============================================
+    MERMAID DIAGRAMS — Responsive
+    ============================================ */
+
+/* docusaurus-mermaid-container is the wrapper div for every diagram */
+.docusaurus-mermaid-container {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+/* On small screens allow scroll rather than squishing the SVG */
+@media (max-width: 996px) {
+  .docusaurus-mermaid-container {
+    justify-content: flex-start;
+    padding: 0.5rem 0.25rem;
+    border: 1px solid var(--ifm-table-border-color);
+    border-radius: var(--ifm-global-radius);
+  }
+
+  .docusaurus-mermaid-container > svg {
+    max-width: none;
+    width: 100%;
+    min-width: 500px;
+    height: auto;
+  }
+}
+
+@media (max-width: 576px) {
+  .docusaurus-mermaid-container > svg {
+    min-width: 360px;
+  }
+}
+
+/* Dark theme: ensure mermaid SVGs use readable colors */
+[data-theme='dark'] .docusaurus-mermaid-container > svg {
+  filter: invert(0.85) hue-rotate(180deg);
 }
 
 /* Hero sections */

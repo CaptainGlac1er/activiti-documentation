@@ -1,6 +1,7 @@
 ---
 sidebar_label: Management Service
 slug: /api-reference/engine-api/management-service
+title: "Management Service"
 description: Reference documentation for the Activiti ManagementService - engine administration and maintenance operations.
 ---
 

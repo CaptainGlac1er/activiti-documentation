@@ -1,6 +1,6 @@
 ---
 sidebar_label: Process Validation
-slug: /activiti-core/process-validation
+slug: /api-reference/engine-api/process-validation
 description: Validator-set architecture for BPMN process definition validation with element-specific validators and localized error messages.
 ---
 

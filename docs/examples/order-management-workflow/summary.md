@@ -1,6 +1,6 @@
 ---
 sidebar_label: Overview
-slug: /examples/order-management/overview
+slug: /examples/order-management-workflow/summary
 title: "Order Management Workflow - Overview"
 description: "Complete e-commerce order processing example with 4 BPMN processes demonstrating Activiti patterns."
 ---

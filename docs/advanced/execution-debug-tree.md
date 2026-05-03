@@ -176,6 +176,7 @@ for (ExecutionTreeNode node : tree) {
 
 ## Related Documentation
 
+- [Token Lifecycle](./token-lifecycle.md) — How tokens (executions) flow through processes, including gateway behavior and cleanup
 - [Multi-Instance](../bpmn/reference/multi-instance.md) — Multi-instance activities
 - [Variables and Variable Scope](../bpmn/reference/variables.md) — Execution-scoped variables
 - [DelegateExecution API](../bpmn/reference/delegate-execution-api.md) — Execution management

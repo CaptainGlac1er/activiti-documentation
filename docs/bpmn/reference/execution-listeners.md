@@ -569,10 +569,8 @@ log.info "Task completed in ${duration}ms, activity: ${execution.currentActivity
       <activiti:field name="logLevel" stringValue="DEBUG"/>
       <activiti:field name="timeout" expression="${systemConfig.timeout}"/>
       
-      <!-- Inject bean reference -->
-      <activiti:field name="auditService">
-        <activiti:bean>com.example.AuditService</activiti:bean>
-      </activiti:field>
+      <!-- Inject bean reference via expression -->
+      <activiti:field name="auditService" expression="${auditService}"/>
     </activiti:executionListener>
   </extensionElements>
   

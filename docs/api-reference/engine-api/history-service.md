@@ -1,6 +1,7 @@
 ---
 sidebar_label: History Service
 slug: /api-reference/engine-api/history-service
+title: "History Service"
 description: Reference documentation for the Activiti HistoryService - historical data and process instance auditing.
 ---
 

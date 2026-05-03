@@ -1,6 +1,7 @@
 ---
 sidebar_label: Connectors
 slug: /bpmn/integration/connectors
+title: "Connectors"
 description: Complete guide to connectors in Activiti for external system integration
 ---
 

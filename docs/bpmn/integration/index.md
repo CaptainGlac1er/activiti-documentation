@@ -1,6 +1,7 @@
 ---
 sidebar_label: Integration
 slug: /bpmn/integration
+title: "Integration Patterns"
 description: Integration patterns and external system connectivity in Activiti
 ---
 

@@ -220,23 +220,23 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <!-- Fetch data from multiple sources in parallel -->
 <parallelGateway id="dataFetchSplit" name="Fetch Data"/>
 
-<serviceTask id="fetchFromDB" 
-             name="Fetch from Database" 
-             activiti:delegateExpression="${dataService.fetchFromDb()}"
-             activiti:resultVariable="dbData"
-             activiti:async="true"/>
+<serviceTask id="fetchFromDB"
+              name="Fetch from Database"
+              activiti:delegateExpression="${dataService.fetchFromDb()}"
+              activiti:resultVariableName="dbData"
+              activiti:async="true"/>
 
-<serviceTask id="fetchFromAPI" 
-             name="Fetch from External API" 
-             activiti:delegateExpression="${dataService.fetchFromApi()}"
-             activiti:resultVariable="apiData"
-             activiti:async="true"/>
+<serviceTask id="fetchFromAPI"
+              name="Fetch from External API"
+              activiti:delegateExpression="${dataService.fetchFromApi()}"
+              activiti:resultVariableName="apiData"
+              activiti:async="true"/>
 
-<serviceTask id="fetchFromCache" 
-             name="Fetch from Cache" 
-             activiti:delegateExpression="${dataService.fetchFromCache()}"
-             activiti:resultVariable="cacheData"
-             activiti:async="true"/>
+<serviceTask id="fetchFromCache"
+              name="Fetch from Cache"
+              activiti:delegateExpression="${dataService.fetchFromCache()}"
+              activiti:resultVariableName="cacheData"
+              activiti:async="true"/>
 
 <!-- Wait for all data sources -->
 <parallelGateway id="dataFetchJoin" name="All Data Fetched"/>

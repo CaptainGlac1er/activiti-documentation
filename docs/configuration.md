@@ -7,7 +7,7 @@ description: Complete guide to configuring the Activiti Process Engine for diffe
 
 # Engine Configuration
 
-> **API Paradigm Notice:** This document covers the **Engine API** configuration (`ProcessEngineConfiguration`, `ProcessEngine`, `RepositoryService`, etc.). The Engine API is the lower-level API that sits beneath the Activiti API. Most Activiti 8 applications should use the **Activiti API** (`ProcessRuntime`, `TaskRuntime`) instead, which is configured via Spring Boot auto-configuration properties (see [Quick Start - Configuration](./quickstart.md#applicationproperties-configuration) for the recommended approach).
+> **API Paradigm Notice:** This document covers the **Engine API** configuration (`ProcessEngineConfiguration`, `ProcessEngine`, `RepositoryService`, etc.). The Engine API is the lower-level API that sits beneath the Activiti API. Most Activiti 8 applications should use the **Activiti API** (`ProcessRuntime`, `TaskRuntime`) instead, which is configured via Spring Boot auto-configuration properties (see [Quick Start - Configuration](./quickstart.md#application-configuration) for the recommended approach).
 >
 > The Engine API is primarily used when you need fine-grained control over engine internals, custom engine behavior, or are migrating from Activiti 5/6.
 
@@ -76,8 +76,7 @@ ProcessEngineConfiguration config = ProcessEngineConfiguration
     .createStandaloneProcessEngineConfiguration();
 
 // Spring integration
-ProcessEngineConfiguration config = ProcessEngineConfiguration
-    .createSpringProcessEngineConfiguration();
+ProcessEngineConfiguration config = new SpringProcessEngineConfiguration();
 
 // Custom configuration
 ProcessEngineConfiguration config = new ProcessEngineConfigurationImpl();
@@ -89,8 +88,8 @@ ProcessEngineConfiguration config = new ProcessEngineConfigurationImpl();
 public class ProcessEngineConfiguration {
     
     // Engine identification
-    private String processEngineName = "Activiti";
-    private int idBlockSize = 50000;
+    private String processEngineName = "default";
+    private int idBlockSize = 2500;
     
     // Database
     private String jdbcUrl;
@@ -102,7 +101,7 @@ public class ProcessEngineConfiguration {
     
     // Schema management
     private String databaseSchemaUpdate = DB_SCHEMA_UPDATE_FALSE;
-    private String databaseTablePrefix = "ACT_";
+    private String databaseTablePrefix = "";
     private String databaseSchema;
     private String databaseCatalog;
     
@@ -111,20 +110,20 @@ public class ProcessEngineConfiguration {
     private boolean isDbHistoryUsed = true;
     
     // Job executor
-    private boolean asyncExecutorActivate = true;
+    private boolean asyncExecutorActivate = false;
     private AsyncExecutor asyncExecutor;
-    private int lockTimeAsyncJobWaitTime = 3000;
-    private int defaultFailedJobWaitTime = 60000;
-    private int asyncFailedJobWaitTime = 60000;
+    private int lockTimeAsyncJobWaitTime = 60;
+    private int defaultFailedJobWaitTime = 10;
+    private int asyncFailedJobWaitTime = 10;
     
     // Performance
-    private int processDefinitionCacheLimit = 1000;
-    private int knowledgeBaseCacheLimit = 100;
+    private int processDefinitionCacheLimit = -1;
+    private int knowledgeBaseCacheLimit = -1;
     private boolean bulkInsertEnabled = true;
     
     // Serialization
-    private boolean serializePOJOsInVariablesToJson = true;
-    private boolean serializableVariableTypeTrackDeserializedObjects = false;
+    private boolean serializePOJOsInVariablesToJson = false;
+    private boolean serializableVariableTypeTrackDeserializedObjects = true;
 }
 ```
 
@@ -277,10 +276,10 @@ config.setAsyncExecutorActivate(true);
 // Set custom async executor implementation
 config.setAsyncExecutor(new CustomAsyncExecutor());
 
-// Job wait times (in milliseconds)
-config.setLockTimeAsyncJobWaitTime(3000);      // Wait time for acquiring job lock
-config.setDefaultFailedJobWaitTime(60000);     // Wait before retrying failed jobs
-config.setAsyncFailedJobWaitTime(60000);       // Wait for async job failures
+// Job wait times (in seconds)
+config.setLockTimeAsyncJobWaitTime(60);      // Wait time for acquiring job lock
+config.setDefaultFailedJobWaitTime(10);     // Wait before retrying failed jobs
+config.setAsyncFailedJobWaitTime(10);       // Wait for async job failures
 ```
 
 **Why use these:**
@@ -329,7 +328,19 @@ config.setAsyncExecutorSecondsToWaitOnShutdown(60L);
 
 ```java
 // Set custom clock for testing
-config.setClock(new FixedClock(Date.from(Instant.parse("2024-01-01T00:00:00Z"))));
+config.setClock(new Clock() {
+    private final Date fixedTime = Date.from(Instant.parse("2024-01-01T00:00:00Z"));
+    @Override
+    public Date getCurrentTime() { return fixedTime; }
+    @Override
+    public void setCurrentTime(Date time) {}
+    @Override
+    public java.util.Calendar getCurrentCalendar() { return java.util.Calendar.getInstance(); }
+    @Override
+    public void setCurrentCalendar(java.util.Calendar calendar) {}
+    @Override
+    public void reset() {}
+});
 
 // Reset clock to system time
 config.resetClock();
@@ -486,16 +497,16 @@ config.setRollbackDeployment(true);
 
 ```java
 // Limit execution queries to prevent memory issues
-config.setExecutionQueryLimit(1000);
+config.setExecutionQueryLimit(20000);
 
 // Limit task queries
-config.setTaskQueryLimit(1000);
+config.setTaskQueryLimit(20000);
 
 // Limit historic task queries
-config.setHistoricTaskQueryLimit(1000);
+config.setHistoricTaskQueryLimit(20000);
 
 // Limit historic process instance queries
-config.setHistoricProcessInstancesQueryLimit(1000);
+config.setHistoricProcessInstancesQueryLimit(20000);
 ```
 
 **Why use these:**
@@ -1051,12 +1062,8 @@ public class ProdProcessEngineConfiguration {
     @Value("${spring.activiti.async-executor-activate:true}")
     private boolean asyncExecutorActivate;
 
-    @Value("${spring.activiti.query-limit:1000}")
-    private int queryLimit;
-    
     public ProcessEngine createEngine() {
-        ProcessEngineConfiguration config = 
-            ProcessEngineConfiguration.createSpringProcessEngineConfiguration();
+        ProcessEngineConfiguration config = new SpringProcessEngineConfiguration();
         
         // External database with connection pool
         config.setDataSource(dataSource);
@@ -1074,10 +1081,10 @@ public class ProdProcessEngineConfiguration {
         config.setAsyncExecutorThreadPoolQueueSize(1000);
         
         // Query limits for security
-        config.setExecutionQueryLimit(queryLimit);
-        config.setTaskQueryLimit(queryLimit);
-        config.setHistoricTaskQueryLimit(queryLimit);
-        config.setHistoricProcessInstancesQueryLimit(queryLimit);
+        config.setExecutionQueryLimit(20000);
+        config.setTaskQueryLimit(20000);
+        config.setHistoricTaskQueryLimit(20000);
+        config.setHistoricProcessInstancesQueryLimit(20000);
         
         // Performance optimizations
         config.setBulkInsertEnabled(true);
@@ -1130,8 +1137,7 @@ public class ActivitiConfiguration {
             DataSource dataSource,
             ActivitiProperties properties) {
 
-        ProcessEngineConfiguration config =
-            ProcessEngineConfiguration.createSpringProcessEngineConfiguration();
+        ProcessEngineConfiguration config = new SpringProcessEngineConfiguration();
 
         // Database
         config.setDataSource(dataSource);
@@ -1178,8 +1184,19 @@ public class TestActivitiConfig {
         config.setAsyncExecutorActivate(false);
         
         // Fixed clock for deterministic tests
-        config.setClock(new FixedClock(Date.from(
-            Instant.parse("2024-01-01T00:00:00Z"))));
+        config.setClock(new Clock() {
+            private final Date fixedTime = Date.from(Instant.parse("2024-01-01T00:00:00Z"));
+            @Override
+            public Date getCurrentTime() { return fixedTime; }
+            @Override
+            public void setCurrentTime(Date time) {}
+            @Override
+            public java.util.Calendar getCurrentCalendar() { return java.util.Calendar.getInstance(); }
+            @Override
+            public void setCurrentCalendar(java.util.Calendar calendar) {}
+            @Override
+            public void reset() {}
+        });
         
         // Disable events for performance
         config.setEnableEventDispatcher(false);

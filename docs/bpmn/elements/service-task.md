@@ -38,7 +38,7 @@ Service Tasks represent **automated work** performed by the system, such as call
 ### Activiti Customizations
 - **Class Implementation** - Direct Java class execution
 - **Delegate Expression** - Spring bean integration
-- **Expression** - EL/SpEL expression execution
+- **Expression** - EL expression execution
 - **Field Injection** - Dependency injection
 - **Operation Reference** - Connector support
 - **DMN Integration** - Decision engine
@@ -1095,7 +1095,7 @@ For reference, here's how these examples would look using legacy syntax:
              activiti:class="com.example.PaymentProcessor"
              activiti:async="true">
   <extensionElements>
-    <activiti:field name="paymentGateway" expression="#{stripePaymentGateway}"/>
+    <activiti:field name="paymentGateway" expression="${stripePaymentGateway}"/>
     <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>

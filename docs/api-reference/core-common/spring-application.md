@@ -1,6 +1,7 @@
 ---
 sidebar_label: Spring Application
 slug: /api-reference/core-common/spring-application
+title: "Spring Application"
 description: Spring application context integration for Activiti process engine bootstrapping.
 ---
 

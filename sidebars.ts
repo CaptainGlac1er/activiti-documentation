@@ -146,6 +146,7 @@ const sidebars: SidebarsConfig = {
             'advanced/database-event-logging',
             'advanced/historic-variable-updates',
             'advanced/execution-debug-tree',
+            'advanced/token-lifecycle',
             'advanced/event-subscription-querying',
           ],
         },

@@ -12,9 +12,10 @@ A Send Task (`sendTask`) represents a one-way message sent from the process to a
 ## BPMN Element
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <sendTask id="notifyCustomer"
-           name="Notify Customer"
-           type="mail">
+            name="Notify Customer"
+            activiti:type="mail">
   <extensionElements>
     <activiti:field name="to" expression="${customer.email}"/>
     <activiti:field name="subject" stringValue="Order Shipped"/>
@@ -33,9 +34,9 @@ The `type` attribute or `implementation` attribute determines the behavior:
 
 | Type | Attribute | Behavior |
 |------|-----------|----------|
-| `mail` | `type="mail"` | Sends email via configured mail server |
-| `mule` | `type="mule"` | Routes through Mule ESB |
-| `camel` | `type="camel"` | Routes through Apache Camel |
+| `mail` | `activiti:type="mail"` | Sends email via configured mail server |
+| `mule` | `activiti:type="mule"` | Routes through Mule ESB |
+| `camel` | `activiti:type="camel"` | Routes through Apache Camel |
 | Web service | `implementation="##WebService"` + `operationRef` | SOAP message call |
 
 **Note:** Send Task does **not** support `activiti:class` or `activiti:expression` like Service Task does. For custom outbound operations, use a Service Task instead.
@@ -43,7 +44,8 @@ The `type` attribute or `implementation` attribute determines the behavior:
 ### Mail Send Task
 
 ```xml
-<sendTask id="sendEmail" type="mail">
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<sendTask id="sendEmail" activiti:type="mail">
   <extensionElements>
     <activiti:field name="to" expression="${recipientEmail}"/>
     <activiti:field name="subject" stringValue="Payment Reminder"/>
@@ -131,7 +133,8 @@ public class SendTaskEventListener implements ActivitiEventListener {
 A Send Task can be configured as asynchronous to decouple message sending from process execution:
 
 ```xml
-<sendTask id="asyncEmail" name="Send Async Notification" type="mail" activiti:async="true">
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<sendTask id="asyncEmail" name="Send Async Notification" activiti:type="mail" activiti:async="true">
   <extensionElements>
     <activiti:field name="to" expression="${recipientEmail}"/>
     <activiti:field name="subject" stringValue="Async Notification"/>

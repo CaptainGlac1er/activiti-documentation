@@ -1,5 +1,6 @@
 ---
 sidebar_position: 0
+sidebar_label: Documentation
 slug: /
 title: "Activiti API Documentation"
 description: "Comprehensive documentation for Activiti API 8.7.1. Learn to build robust workflow automation solutions."

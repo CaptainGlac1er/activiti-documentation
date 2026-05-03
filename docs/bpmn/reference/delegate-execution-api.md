@@ -254,7 +254,7 @@ public class MultiInstanceDelegate implements JavaDelegate {
 
         if (isMultiInstance) {
             // The collection variable name is defined in the BPMN model
-            // (e.g., <activiti:collectionElements="orderCollection"/>)
+            // (e.g., <activiti:collection="orderCollection"/>)
             // You must know the variable name from your process definition.
             List<Object> collection = (List<Object>) execution.getVariable("orderCollection");
 

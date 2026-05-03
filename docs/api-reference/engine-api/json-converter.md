@@ -1,6 +1,6 @@
 ---
 sidebar_label: JSON Converter
-slug: /activiti-core/json-converter
+slug: /api-reference/engine-api/json-converter
 description: Converts between the Activiti BPMN modeler editor JSON format and the BpmnModel object model.
 ---
 

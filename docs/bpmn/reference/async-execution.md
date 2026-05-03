@@ -147,10 +147,10 @@ flowchart TD
 <scriptTask id="asyncScript" 
             name="Async Script" 
             activiti:async="true"
-            activiti:scriptFormat="javascript">
-  <script>
+            scriptFormat="javascript">
+  <script><![CDATA[
     // Long-running script
-  </script>
+  ]]></script>
 </scriptTask>
 ```
 
@@ -167,9 +167,10 @@ flowchart TD
 
 ```xml
 <businessRuleTask id="asyncRules" 
-                  name="Async Rules" 
-                  activiti:async="true"
-                  activiti:implementation="dmn:complex-decision.dmn"/>
+                   name="Async Rules" 
+                   activiti:async="true"
+                   activiti:class="com.example.AsyncRuleEngine"
+                   activiti:resultVariable="ruleResult"/>
 ```
 
 ### Manual Task

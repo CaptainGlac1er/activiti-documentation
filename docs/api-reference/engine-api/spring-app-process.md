@@ -1,6 +1,7 @@
 ---
 sidebar_label: Spring App Process
 slug: /api-reference/engine-api/spring-app-process
+title: "Spring App Process"
 description: Process entry discovery and deployment for the Activiti application framework.
 ---
 

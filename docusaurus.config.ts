@@ -96,7 +96,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.vsDark,
-      additionalLanguages: ['java', 'markup', 'bash', 'yaml', 'json'],
+      additionalLanguages: ['java', 'markup', 'bash', 'yaml', 'json', 'groovy'],
     },
   } satisfies Preset.ThemeConfig,
   plugins: [

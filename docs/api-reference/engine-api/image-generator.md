@@ -1,6 +1,6 @@
 ---
 sidebar_label: Image Generator
-slug: /activiti-core/image-generator
+slug: /api-reference/engine-api/image-generator
 description: Generate SVG process diagrams from BPMN models with activity and flow highlighting.
 ---
 

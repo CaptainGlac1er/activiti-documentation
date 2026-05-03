@@ -1,6 +1,7 @@
 ---
 sidebar_label: Spring Process Extensions
 slug: /api-reference/engine-api/spring-process-extensions
+title: "Spring Process Extensions"
 description: Process extension model, service, and auto-configuration from activiti-spring-process-extensions.
 ---
 

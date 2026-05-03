@@ -61,8 +61,8 @@ Directly assign the task to a specific user:
 
 **Expression Support:**
 - Fixed value: `activiti:assignee="john.doe"`
-- EL Expression: `activiti:assignee="${user.id}"`
-- SpEL Expression: `activiti:assignee="#{currentUser.username}"`
+- Expression: `activiti:assignee="${user.id}"`
+- Bean Reference: `activiti:assignee="${currentUser.username}"`
 
 **Runtime Behavior:**
 - Task is immediately assigned
@@ -199,8 +199,8 @@ Set task deadline:
 <!-- EL Expression -->
 <userTask activiti:dueDate="${dueDateCalculator.calculate()}"/>
 
-<!-- SpEL Expression -->
-<userTask activiti:dueDate="#{#calendar.addDays(new Date(), 7)}"/>
+<!-- EL Expression -->
+<userTask activiti:dueDate="${calendar.addDays(new Date(), 7)}"/>
 ```
 
 ### 8. Priority
@@ -386,7 +386,7 @@ Define form fields:
 <userTask id="dataEntry" name="Enter Information" activiti:formKey="dataEntryForm">
   <extensionElements>
     <activiti:formProperty name="firstName" type="string" required="true"/>
-    <activiti:formProperty name="age" type="int" required="false" activiti:default="0"/>
+    <activiti:formProperty name="age" type="int" required="false" default="0"/>
     <activiti:formProperty name="email" type="string" required="true"/>
     <activiti:formProperty name="department" type="string">
       <activiti:value>Engineering</activiti:value>
@@ -395,7 +395,7 @@ Define form fields:
     </activiti:formProperty>
     <activiti:formProperty name="joinDate" type="date"/>
     <activiti:formProperty name="salary" type="double"/>
-    <activiti:formProperty name="active" type="bool" activiti:default="true"/>
+    <activiti:formProperty name="active" type="bool" default="true"/>
   </extensionElements>
 </userTask>
 ```
@@ -556,7 +556,7 @@ taskService.complete(taskId);
 
 ## Best Practices
 
-1. **Use Expressions:** Leverage EL/SpEL for dynamic assignments
+1. **Use Expressions:** Leverage EL for dynamic assignments
 2. **Set Due Dates:** Always define deadlines for time-sensitive tasks
 3. **Add Listeners:** Use task listeners for notifications and auditing
 4. **Form Integration:** Define form properties for consistent UI
