@@ -347,7 +347,7 @@ public class CustomScriptEngine implements javax.script.ScriptEngine {
 
 - [Service Task](./service-task.md)
 - [User Task](./user-task.md)
-- [Expression Language](../../api-reference/core-common/expression-language.md)
+- [Expression Language](../../api-reference/core-common/expression-language)
 
 ---
 

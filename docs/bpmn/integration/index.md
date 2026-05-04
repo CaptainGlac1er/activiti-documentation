@@ -94,7 +94,7 @@ processInstance = runtimeService.createProcessInstanceQuery()
 - Direct engine access
 - Microservices friendly
 
-**Learn more:** [Runtime API](../../api-reference/engine-api/runtime-service.md)
+**Learn more:** [Runtime API](/docs/api-reference/engine-api/runtime-service)
 
 ## Choosing the Right Approach
 
@@ -156,7 +156,7 @@ Process → External System → ... → Callback → Process
 - [Service Task](../elements/service-task.md) - Java-based integrations
 - [Intermediate Events](../events/intermediate-events.md#1-message-intermediate-events) - Message events
 - [Timer Events](../events/intermediate-events.md#2-timer-intermediate-events) - Time-based triggers
-- [REST API](../../api-reference/engine-api/index.md) - Engine APIs
+- [REST API](/docs/api-reference/engine-api) - Engine APIs
 
 ---
 

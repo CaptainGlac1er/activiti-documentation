@@ -14,9 +14,7 @@ The `ManagementService` provides administrative and maintenance operations for t
 - [Job Management](#job-management)
 - [Engine Metrics](#engine-metrics)
 - [Database Operations](#database-operations)
-- [Performance Monitoring](#performance-monitoring)
 - [API Reference](#api-reference)
-- [Usage Examples](#usage-examples)
 - [Best Practices](#best-practices)
 
 ## Overview

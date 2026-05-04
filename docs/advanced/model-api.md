@@ -199,4 +199,4 @@ repositoryService.createDeployment()
 ## Related Documentation
 
 - [Advanced Deployment Builder](./deployment-builder.md) — Deployment options
-- [BPMN Model](../../api-reference/engine-api/bpmn-model.mdx) — Programmatic BPMN manipulation
+- [BPMN Model](../api-reference/engine-api/bpmn-model) — Programmatic BPMN manipulation

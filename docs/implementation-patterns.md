@@ -20,7 +20,7 @@ This guide provides proven implementation patterns with architectural diagrams, 
 - [Event Handling Patterns](#event-handling-patterns)
 - [Security Patterns](#security-patterns)
 - [Deployment Patterns](#deployment-patterns)
-- [Decision Frameworks](#decision-frameworks)
+- [Decision Frameworks](#decision-framework)
 
 ---
 

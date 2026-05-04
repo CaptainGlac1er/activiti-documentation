@@ -143,7 +143,7 @@ function QuickLinks() {
           📚 Documentation Quick Links
         </Heading>
         <div className={styles.linksGrid}>
-          <Link className={styles.linkCard} to="/docs/introduction">
+          <Link className={styles.linkCard} to="/docs/getting-started/overview">
             <div className={styles.linkIcon}>📘</div>
             <h3>Introduction</h3>
             <p>Architecture overview and core concepts</p>
@@ -168,7 +168,7 @@ function QuickLinks() {
             <h3>Implementation Patterns</h3>
             <p>Architecture and integration strategies</p>
           </Link>
-          <Link className={styles.linkCard} to="/docs/troubleshooting">
+          <Link className={styles.linkCard} to="/docs/troubleshooting/overview">
             <div className={styles.linkIcon}>🔧</div>
             <h3>Troubleshooting</h3>
             <p>Solve common issues and problems</p>

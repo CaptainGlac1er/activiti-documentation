@@ -115,7 +115,7 @@ Properties define **process-level variables** with their types, default values, 
 | `folder` | `Map` | Folder reference | `{}` |
 | `content` | `Map` | Content reference | `{}` |
 
-**Source:** These types are registered in [`ProcessExtensionsAutoConfiguration.variableTypeMap()`](Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/conf/ProcessExtensionsAutoConfiguration.java#L93-L108):
+**Source:** These types are registered in [`ProcessExtensionsAutoConfiguration.variableTypeMap()`](https://github.com/Activiti/Activiti/blob/main/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/conf/ProcessExtensionsAutoConfiguration.java#L93-L108):
 
 ```java
 @Bean

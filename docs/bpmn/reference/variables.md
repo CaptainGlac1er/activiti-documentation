@@ -661,7 +661,7 @@ List<HistoricDetail> updates = historyService
 
 ## Related Documentation
 
-- [Expression Language](../../api-reference/core-common/expression-language.md) - Using variables in expressions
+- [Expression Language](../../api-reference/core-common/expression-language) - Using variables in expressions
 - [Service Task](../elements/service-task.md) - Variable usage in delegates
 - [User Task](../elements/user-task.md) - Task variables and forms
 - [Common Features](../common-features.md) - Multi-instance variables

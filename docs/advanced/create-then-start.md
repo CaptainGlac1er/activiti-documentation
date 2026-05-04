@@ -167,5 +167,5 @@ graph TD
 
 ## Related Documentation
 
-- [Runtime Service API](../../api-reference/engine-api/runtime-service.md) — Full runtime operations
+- [Runtime Service API](../api-reference/engine-api/runtime-service) — Full runtime operations
 - [Process Instance Suspension](./process-instance-suspension.md) — Pausing instances

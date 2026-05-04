@@ -73,6 +73,6 @@ public ProcessInstance startProcess() {
 ---
 
 **Related:**
-- [Core Common APIs](../core-common/)
+- [Core Common APIs](../core-common/overview)
 - [Engine API](../engine-api/)
 - [Architecture Overview](../../architecture/overview.md)

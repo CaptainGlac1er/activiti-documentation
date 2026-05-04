@@ -603,8 +603,8 @@ Define variables, mappings, and constants separately from BPMN:
 
 - Start with [User Tasks](./elements/user-task.md) for human interactions
 - Explore [Service Tasks](./elements/service-task.md) for automation
-- Learn about [Gateways](./gateways/) for process branching
-- Understand [Events](./events/) for triggers and exceptions
+- Learn about [Gateways](./gateways/index) for process branching
+- Understand [Events](./events/index) for triggers and exceptions
 - Master [Process Extensions](./reference/process-extensions.md) for variable management
 
 ## Tools and Integration

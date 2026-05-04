@@ -176,4 +176,4 @@ graph LR
 
 - [Engine Event System](./engine-event-system.md) — In-memory event listeners
 - [Historic Variable Updates](./historic-variable-updates.md) — Variable change tracking
-- [Management Service API](../../api-reference/engine-api/management-service.md) — Management operations
+- [Management Service API](../api-reference/engine-api/management-service) — Management operations

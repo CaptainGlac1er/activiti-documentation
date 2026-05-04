@@ -232,7 +232,7 @@ List<HistoricSequenceFlowInstance> flows = historyService
 - [Parallel Gateway](./parallel-gateway.md)
 - [Inclusive Gateway](./inclusive-gateway.md)
 - [Sequence Flows](../elements/sequence-flows.md)
-- [Expression Language](../../api-reference/core-common/expression-language.md)
+- [Expression Language](../../api-reference/core-common/expression-language)
 
 ---
 

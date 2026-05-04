@@ -947,7 +947,7 @@ public class EventAwareListener implements TaskListener {
 ## Related Documentation
 
 - [User Task](../elements/user-task.md) - User task configuration
-- [Execution Listeners](../common-features.md#execution-listeners) - Activity-level listeners
+- [Execution Listeners](../common-features.md) - Activity-level listeners
 - [Common Features](../common-features.md) - Other BPMN extensions
 - [Variables](./variables.md) - Task variables
 

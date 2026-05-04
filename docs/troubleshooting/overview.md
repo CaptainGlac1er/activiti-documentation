@@ -20,8 +20,6 @@ This guide provides systematic approaches to diagnose and resolve common issues 
 - [Performance Problems](#performance-problems)
 - [Configuration Issues](#configuration-issues)
 - [Runtime Errors](#runtime-errors)
-- [Database Issues](#database-issues)
-- [Integration Problems](#integration-problems)
 - [Security Issues](#security-issues)
 - [Diagnostic Checklist](#diagnostic-checklist)
 

@@ -66,7 +66,7 @@ Deep-dive resources for complex scenarios:
 | Document | Audience | Topics Covered |
 |----------|----------|----------------|
 | [Advanced Topics](./advanced/index.md) | Senior Developers | Engine events, Process lifecycle, Deployment, Authorization |
-| [Troubleshooting Guide](./troubleshooting/overview.md) | Developers, Operations | Debugging, Performance optimization, Common issues |
+| [Troubleshooting Guide](./troubleshooting/overview) | Developers, Operations | Debugging, Performance optimization, Common issues |
 
 ---
 
@@ -150,7 +150,7 @@ Structured learning paths to guide your journey with Activiti:
 |-------|---------------|
 | **Process Management** | [Process Runtime API](./api-reference/overview.md#process-runtime-api) |
 | **Task Management** | [Task Runtime API](./api-reference/overview.md#task-runtime-api) |
-| **Event Handling** | [Event Patterns](./implementation-patterns.md#event-handling) |
+| **Event Handling** | [Event Patterns](./implementation-patterns.md#event-handling-patterns) |
 | **Security** | [Security Best Practices](./best-practices/guide.md#security-best-practices) |
 | **Performance** | [Performance Optimization](./best-practices/guide.md#performance-optimization) |
 | **Integration** | [Integration Patterns](./implementation-patterns.md) |
@@ -162,7 +162,7 @@ Structured learning paths to guide your journey with Activiti:
 | Get started quickly | [Quick Start Guide](./quickstart.md) |
 | Understand BPMN elements | [BPMN Reference](./bpmn/index.md) |
 | Look up an API method | [API Reference](./api-reference/overview.md) |
-| Resolve an issue | [Troubleshooting Guide](./troubleshooting/overview.md) |
+| Resolve an issue | [Troubleshooting Guide](./troubleshooting/overview) |
 | Improve code quality | [Best Practices](./best-practices/guide.md) |
 | Go deeper | [Advanced Topics](./advanced/index.md) |
 
@@ -223,7 +223,7 @@ We're continuously looking to enhance:
 
 ### Self-Service Resources
 
-1. **[Troubleshooting Guide](./troubleshooting/overview.md)** - Common issues and solutions
+1. **[Troubleshooting Guide](./troubleshooting/overview)** - Common issues and solutions
 2. **[Quick Start Examples](./quickstart.md)** - Working code samples
 3. **Search this documentation** - Use your browser's search (Ctrl+F / Cmd+F)
 
@@ -257,7 +257,7 @@ To help us assist you faster, please prepare:
 | [Best Practices](./best-practices/guide.md) | Production patterns and guidelines | Complete |
 | [Implementation Patterns](./implementation-patterns.md) | Architectural guidance | Complete |
 | [Examples](./examples/overview.md) | Complete working examples | Complete |
-| [Troubleshooting](./troubleshooting/overview.md) | Issue resolution guide | Complete |
+| [Troubleshooting](./troubleshooting/overview) | Issue resolution guide | Complete |
 
 ---
 
@@ -269,7 +269,7 @@ To help us assist you faster, please prepare:
 - **Advanced Topics:** [Advanced Features](./advanced/index.md)
 - **Best Practices:** [Production Guidelines](./best-practices/guide.md)
 - **Examples:** [Working Examples](./examples/overview.md)
-- **Troubleshooting:** [Issue Resolution](./troubleshooting/overview.md)
+- **Troubleshooting:** [Issue Resolution](./troubleshooting/overview)
 
 ---
 

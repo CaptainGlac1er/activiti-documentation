@@ -890,7 +890,7 @@ Add boundary events for rule execution failures:
 
 - [Service Task](./service-task.md) - Alternative for rules integration
 - [Connectors](../integration/connectors.md) - Modern integration pattern for DMN engines
-- [Dynamic BPMN](../reference/dynamic-bpmn.md) - Runtime process modification including decision table switching
+- [Dynamic BPMN](../../api-reference/engine-api/dynamic-bpmn-service) - Runtime process modification including decision table switching
 - [BPMN Elements](../index.md) - Complete element reference
 
 ---
