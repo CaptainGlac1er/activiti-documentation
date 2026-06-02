@@ -1,6 +1,6 @@
 ---
 sidebar_label: REST API
-slug: /examples/order-management/rest-api
+slug: /examples/order-management-workflow/rest-api
 title: "Order Management - REST API"
 description: "RESTful API endpoints for initiating and monitoring order management workflows with complete request/response examples."
 ---

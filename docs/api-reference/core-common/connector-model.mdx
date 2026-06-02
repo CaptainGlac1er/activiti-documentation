@@ -1,6 +1,7 @@
 ---
 sidebar_label: Connector Model
 slug: /api-reference/core-common/connector-model
+title: "Connector Model"
 description: Connector model definitions for integration with external systems and services.
 ---
 
@@ -485,32 +486,31 @@ public class VariableValidator {
 
 ## Usage Examples
 
-### Email Connector in BPMN
+### Email Connector Variable Mapping
 
-```xml
-<!-- BPMN Process with Email Connector -->
-<process id="orderProcess">
-    <startEvent id="start"/>
-    
-    <sequenceFlow sourceRef="start" targetRef="sendNotification"/>
-    
-    <!-- Service Task with Email Connector -->
-    <serviceTask id="sendNotification" 
-                  name="Send Order Notification"
-                  activiti:connectorId="email-connector"
-                  activiti:action="sendEmail">
-        <extensionElements>
-            <activiti:in source="order.customerEmail" target="to"/>
-            <activiti:in expression="${'Order #' + orderId}" target="subject"/>
-            <activiti:in source="orderDetails" target="body"/>
-            <activiti:in expression="${true}" target="isHtml"/>
-            <activiti:out source="messageId" target="emailMessageId"/>
-        </extensionElements>
-    </serviceTask>
-    
-    <sequenceFlow sourceRef="sendNotification" targetRef="end"/>
-    <endEvent id="end"/>
-</process>
+> **Note:** Variable mapping for connectors is configured via **process extension JSON** (`*-extension.json`), not through `<activiti:in>` or `<activiti:out>` XML elements. The engine does not parse these elements.
+
+**example-extension.json:**
+```json
+{
+  "extensions": {
+    "Process_orderProcess": {
+      "mappings": {
+        "sendNotification": {
+          "inputs": {
+            "to": { "type": "VARIABLE", "value": "order.customerEmail" },
+            "subject": { "type": "EXPRESSION", "value": "${'Order #' + orderId}" },
+            "body": { "type": "VARIABLE", "value": "orderDetails" },
+            "isHtml": { "type": "VALUE", "value": true }
+          },
+          "outputs": {
+            "emailMessageId": { "type": "VARIABLE", "value": "messageId" }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
 ### REST API Connector

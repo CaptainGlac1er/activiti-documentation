@@ -138,10 +138,10 @@ public Map<String, VariableType> variableTypeMap(ObjectMapper objectMapper,
 ```
 
 **Variable Type Implementations:**
-- [`JavaObjectVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/JavaObjectVariableType.java) - For primitive types (string, integer, boolean)
-- [`BigDecimalVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/BigDecimalVariableType.java) - For precise decimal calculations
-- [`JsonObjectVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/JsonObjectVariableType.java) - For complex JSON structures
-- [`DateVariableType`](file:///home/georgecolgrove/IdeaProjects/ActivitiDocumentation/Activiti/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/DateVariableType.java) - For date/time values
+- [`JavaObjectVariableType`](https://github.com/Activiti/Activiti/tree/main/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/JavaObjectVariableType.java) - For primitive types (string, integer, boolean)
+- [`BigDecimalVariableType`](https://github.com/Activiti/Activiti/tree/main/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/BigDecimalVariableType.java) - For precise decimal calculations
+- [`JsonObjectVariableType`](https://github.com/Activiti/Activiti/tree/main/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/JsonObjectVariableType.java) - For complex JSON structures
+- [`DateVariableType`](https://github.com/Activiti/Activiti/tree/main/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/DateVariableType.java) - For date/time values
 
 ### Example: Complete Properties Definition
 
@@ -990,14 +990,7 @@ src/main/resources/processes/
 
 ### Spring Boot Configuration
 
-No special configuration needed - Activiti automatically loads `*-extension.json` files:
-
-```yaml
-# application.yml (optional configuration)
-activiti:
-  batch-operation-enabled: true
-  async-execution-enabled: true
-```
+No special configuration needed - Activiti automatically loads `*-extension.json` files alongside BPMN definitions during deployment.
 
 ### Runtime Behavior
 

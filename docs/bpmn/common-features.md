@@ -30,9 +30,9 @@ Execute activities in the **background** using job executor.
 
 ```xml
 <serviceTask id="asyncTask" 
-             name="Async Task" 
-             activiti:async="true"
-             activiti:class="com.example.AsyncService"/>
+            name="Async Task" 
+            activiti:async="true"
+            activiti:class="com.example.AsyncService"/>
 ```
 
 ### Async After Duration
@@ -41,7 +41,7 @@ Delay async activation:
 
 ```xml
 <serviceTask id="delayedAsync" 
-             activiti:async="true">
+            activiti:async="true">
   
   <!-- Note: Job expiry is configured via Management Service or job executor settings,
        not through BPMN attributes -->
@@ -54,7 +54,7 @@ Set execution priority via Management Service (not through BPMN properties):
 
 ```xml
 <serviceTask id="priorityTask" 
-             activiti:async="true"/>
+            activiti:async="true"/>
 ```
 
 **Runtime Configuration:**
@@ -73,14 +73,11 @@ Configure retry policy using `failedJobRetryTimeCycle`:
 
 ```xml
 <serviceTask id="retryTask"
-             activiti:async="true">
+            activiti:async="true">
   
   <extensionElements>
-    <!-- Retry 5 times -->
+    <!-- Retry 5 times with no delay between retries -->
     <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
-    
-    <!-- Retry with intervals -->
-    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
@@ -220,18 +217,19 @@ Add **custom metadata** to any BPMN element.
 
 ```xml
 <serviceTask id="task1" 
-             name="Task" 
-             activiti:class="com.example.MyDelegate">
+            name="Task" 
+            activiti:class="com.example.MyDelegate">
   
-  <!-- Spring bean injection using expression -->
-  <activiti:field name="service" expression="${myService}"/>
-  
-  <!-- String value -->
-  <activiti:field name="config" stringValue="configuration value"/>
-  
-  <!-- Expression -->
-  <activiti:field name="dynamicValue" expression="${calculateValue()}"/>
-  
+  <extensionElements>
+    <!-- Spring bean injection using expression -->
+    <activiti:field name="service" expression="${myService}"/>
+    
+    <!-- String value -->
+    <activiti:field name="config" stringValue="configuration value"/>
+    
+    <!-- Expression -->
+    <activiti:field name="dynamicValue" expression="${calculateValue()}"/>
+  </extensionElements>
 </serviceTask>
 ```
 
@@ -341,4 +339,3 @@ public class MyDelegate implements JavaDelegate {
 - [Variables](./reference/variables.md)
 
 ---
-

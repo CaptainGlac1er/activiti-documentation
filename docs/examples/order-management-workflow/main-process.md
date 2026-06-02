@@ -1,6 +1,6 @@
 ---
 sidebar_label: Main Process
-slug: /examples/order-management/main-process
+slug: /examples/order-management-workflow/main-process
 title: "Order Management - Main Process"
 description: "Detailed walkthrough of the main orchestration workflow with customer validation, credit checks, and parallel operations."
 ---

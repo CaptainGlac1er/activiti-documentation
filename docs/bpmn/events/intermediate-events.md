@@ -128,7 +128,7 @@ Wait until a specific date:
 **Expression Support:**
 ```xml
 <timeDate>${calculateDueDate()}</timeDate>
-<timeDate>#{#dateCalculator.calculate()}</timeDate>
+<timeDate>${dateCalculator.calculate()}</timeDate>
 ```
 
 #### Cycle Timer

@@ -1,6 +1,7 @@
 ---
 sidebar_label: Spring Boot Starter
 slug: /api-reference/engine-api/spring-boot-starter
+title: "Spring Boot Starter"
 description: Seamless integration of Activiti workflow engine with Spring Boot applications with auto-configuration and production-ready features.
 ---
 
@@ -154,7 +155,7 @@ flowchart TD
         end
 
         subgraph AsyncProps["AsyncExecutorProperties"]
-            P2["@ConfigurationProperties<br>(spring.activiti.async-executor)"]
+            P2["@ConfigurationProperties<br>(activiti.async-executor)"]
         end
 
         subgraph EndpointCfg["EndpointAutoConfiguration"]
@@ -162,8 +163,7 @@ flowchart TD
         end
 
         subgraph SecurityCfg["ActivitiMethodSecurityAutoConfiguration"]
-            S1["@ConditionalOnProperty<br>(spring.activiti.security.enabled)"]
-            S2["@ConditionalOnClass<br>(GlobalMethodSecurityConfiguration)"]
+            S1["@ConditionalOnClass<br>(GlobalMethodSecurityConfiguration)"]
         end
     end
 
@@ -213,7 +213,6 @@ Define a bean of this type to apply custom configuration.
 
 `ActivitiMethodSecurityAutoConfiguration` (`org.activiti.spring.boot.ActivitiMethodSecurityAutoConfiguration`) enables method-level security when:
 
-- `spring.activiti.security.enabled` is `true` (default)
 - `GlobalMethodSecurityConfiguration` is on the classpath
 - No existing `@EnableGlobalMethodSecurity` bean is defined
 
@@ -292,7 +291,7 @@ spring:
     deployment-mode: "default"
 
     # Whether to serialize POJOs in variables to JSON. Default: true
-    serialize-po-jos-in-variables-to-json: true
+    serialize-pojos-in-variables-to-json: true
 
     # Jackson type identifier property name for polymorphic serialization.
     # Default: "@class"
@@ -313,24 +312,17 @@ spring:
     mail-server-default-from:
     mail-server-use-ssl: false
     mail-server-use-tls: false
-
-    # Security
-    security:
-      enabled: true
 ```
 
 ### Process Extensions
 
-Process extension JSON files are discovered based on:
-
-- Prefix: same as `process-definition-location-prefix` (overridable via `spring.activiti.process.extensions.dir`)
-- Suffix: default `"**\-extensions.json"` (overridable via `spring.activiti.process.extensions.suffix`)
+Process extension JSON files are discovered alongside process definitions using `process-definition-location-prefix` and `process-definition-location-suffixes`.
 
 ---
 
 ## Async Executor Properties
 
-`AsyncExecutorProperties` uses the prefix **`spring.activiti.async-executor`**:
+`AsyncExecutorProperties` uses the prefix **`activiti.async-executor`**:
 
 ```yaml
 spring:
@@ -538,7 +530,7 @@ spring:
 # application-prod.yml
 spring:
   activiti:
-    database-schema-update: validate
+    database-schema-update: "false"
     history-level: AUDIT
     async-executor-activate: true
     async-executor:
@@ -634,7 +626,7 @@ spring:
 ```yaml
 spring:
   activiti:
-    database-schema-update: validate
+    database-schema-update: "false"
     check-process-definitions: true
 ```
 
@@ -825,7 +817,7 @@ spring:
 ```yaml
 spring:
   activiti:
-    database-schema-update: validate
+    database-schema-update: "false"
 ```
 
 ---
@@ -840,14 +832,14 @@ spring:
 | `AbstractProcessEngineAutoConfiguration` | `org.activiti.spring.boot` | Provides shared beans: `SpringAsyncExecutor`, `ProcessEngineFactoryBean`, service beans, `TaskExecutor`, integration context. |
 | `AbstractProcessEngineConfiguration` | `org.activiti.spring.boot` | Base class with service bean factory methods: `runtimeServiceBean`, `repositoryServiceBean`, `taskServiceBean`, etc. |
 | `EndpointAutoConfiguration` | `org.activiti.spring.boot` | Registers `ProcessEngineEndpoint` for Spring Boot Actuator. |
-| `ActivitiMethodSecurityAutoConfiguration` | `org.activiti.spring.boot` | Enables method-level security when `spring.activiti.security.enabled=true` and Spring Security is on classpath. |
+| `ActivitiMethodSecurityAutoConfiguration` | `org.activiti.spring.boot` | Enables method-level security when `GlobalMethodSecurityConfiguration` is on classpath. |
 
 ### Properties Classes
 
 | Class | Prefix | Description |
 |-------|--------|-------------|
 | `ActivitiProperties` | `spring.activiti` | Core engine configuration: schema, history, deployment, mail, serialization, caching. |
-| `AsyncExecutorProperties` | `spring.activiti.async-executor` | Async job executor: pool sizes, queue, retries, timeouts, acquisition settings. |
+| `AsyncExecutorProperties` | `async-executor` | Async job executor: pool sizes, queue, retries, timeouts, acquisition settings. |
 
 ### Support Classes
 

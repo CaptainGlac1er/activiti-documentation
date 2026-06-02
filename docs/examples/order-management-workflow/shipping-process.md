@@ -1,6 +1,6 @@
 ---
 sidebar_label: Shipping Process
-slug: /examples/order-management/shipping-process
+slug: /examples/order-management-workflow/shipping-process
 title: "Order Management - Shipping Sub-Process"
 description: "Shipping and delivery process with method-based routing, intermediate message events, and multiple delivery options."
 ---

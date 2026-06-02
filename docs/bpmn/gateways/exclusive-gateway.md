@@ -27,7 +27,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 - **Convergence** - Merge from multiple paths
 
 ### Activiti Customizations
-- **EL/SpEL Expressions** - Advanced condition language
+- **EL Expressions** - Advanced condition language
 - **Default Flow Attribute** - Explicit default specification
 - **Execution Listeners** - Track decision points
 - **History Tracking** - Audit which path was taken
@@ -106,11 +106,9 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 </sequenceFlow>
 ```
 
-### SpEL Expressions
-
 ```xml
 <sequenceFlow id="spelCondition" sourceRef="decision" targetRef="task">
-  <conditionExpression>#{#orderService.isExpedited(order)}</conditionExpression>
+  <conditionExpression>${orderService.isExpedited(order)}</conditionExpression>
 </sequenceFlow>
 ```
 
@@ -214,7 +212,7 @@ List<HistoricSequenceFlowInstance> flows = historyService
 4. **Simple Conditions:** Keep expressions readable
 5. **Document Logic:** Explain complex decision rules
 6. **Test All Paths:** Verify each branch executes correctly
-7. **Use Expressions:** Leverage EL/SpEL for flexibility
+7. **Use Expressions:** Leverage EL for flexibility
 8. **History Level:** Enable history to track decisions
 
 ## Common Pitfalls

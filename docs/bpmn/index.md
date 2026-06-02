@@ -218,7 +218,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 |-----------|-------------|
 | **class** | Java class |
 | **delegateExpression** | Spring bean |
-| **expression** | EL/SpEL |
+| **expression** | EL |
 | **resultVariableName** | Output variable |
 | **field** | Dependency injection |
 | **type** | Connector type |
@@ -306,7 +306,7 @@ Inject dependencies into delegates:
 ```xml
 <serviceTask id="service1" activiti:class="com.example.MyDelegate">
   <extensionElements>
-    <activiti:field name="service" expression="#{beanName}"/>
+    <activiti:field name="service" expression="${beanName}"/>
     <activiti:field name="configValue" stringValue="some value"/>
   </extensionElements>
 </serviceTask>

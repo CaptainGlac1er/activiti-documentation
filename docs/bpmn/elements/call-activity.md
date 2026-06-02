@@ -2,7 +2,7 @@
 sidebar_label: Call Activity
 slug: /bpmn/elements/call-activity
 title: "Call Activity"
-description: "Complete guide to CallActivity elements for reusing global tasks and sub-processes with variable mapping and dynamic selection."
+description: "Complete guide to CallActivity elements for reusing sub-processes with variable mapping and dynamic selection."
 ---
 
 # Call Activity
@@ -14,29 +14,26 @@ Call Activities **reference and execute** sub-processes, enabling process modula
 ## Overview
 
 ```xml
-<callActivity id="call1" name="Call SubProcess" calledElement="subProcessKey">
-  <extensionElements>
-    <activiti:in source="inputVar" target="outputVar"/>
-    <activiti:out source="outputVar" target="inputVar"/>
-  </extensionElements>
-</callActivity>
+<callActivity id="call1" name="Call SubProcess" calledElement="subProcessKey"/>
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Variable mapping, dynamic selection
+**Activiti Extensions:** Dynamic selection, variable inheritance, business key handling
 
-**Important:** The `calledElement` attribute is a **standard BPMN attribute** (not prefixed with `activiti:`). It references the key of a deployed process or global task.
+> **Note:** Variable mapping for call activities is configured via **process extension JSON** (`*-extension.json`), not through `<activiti:in>` or `<activiti:out>` XML elements. See the [Variable Mapping](#variable-mapping) section below and the [Process Extensions guide](../reference/process-extensions.md) for details.
+
+**Important:** The `calledElement` attribute is a **standard BPMN attribute** (not prefixed with `activiti:`). It references the key of a deployed process.
 
 ## Key Features
 
 ### Standard BPMN Features
-- **Called Element** - Reference to global task/sub-process
-- **Input/Output Data** - Variable mapping
+- **Called Element** - Reference to a sub-process
+- **Input/Output Data** - Variable mapping via process extension JSON
 - **Multi-instance** - Parallel executions
 
 ### Activiti Customizations
 - **Called Element Expression** - Dynamic process selection
-- **Variable Mapping** - Input/output parameters via `<activiti:in>` and `<activiti:out>`
+- **Variable Mapping** - Input/output parameters via process extension JSON (`*-extension.json`)
 - **Async Execution** - Background invocation
 - **Inherit Variables** - Pass all parent variables via `activiti:inheritVariables="true"`
 - **Business Key** - Set a specific business key via `activiti:businessKey`
@@ -57,8 +54,8 @@ Call Activities **reference and execute** sub-processes, enabling process modula
 
 ```xml
 <callActivity id="dynamicCall"
-               name="Dynamic SubProcess"
-               calledElement="${determineSubProcess()}"/>
+              name="Dynamic SubProcess"
+              calledElement="${determineSubProcess()}"/>
 ```
 
 ### Business Key Configuration
@@ -68,40 +65,49 @@ Set a specific business key or inherit from the parent process:
 ```xml
 <!-- Set explicit business key (supports expressions) -->
 <callActivity id="callWithBusinessKey"
-               name="Call with Business Key"
-               calledElement="subProcess"
-               activiti:businessKey="${order.id}"/>
+              name="Call with Business Key"
+              calledElement="subProcess"
+              activiti:businessKey="${order.id}"/>
 
 <!-- Inherit business key from parent -->
 <callActivity id="callInheritKey"
-               name="Call Inheriting Key"
-               calledElement="subProcess"
-               activiti:inheritBusinessKey="true"/>
+              name="Call Inheriting Key"
+              calledElement="subProcess"
+              activiti:inheritBusinessKey="true"/>
 ```
 
-### With Variable Mapping (Recommended)
+### Variable Mapping
 
-```xml
-<callActivity id="mappedCall" 
-              name="Mapped SubProcess" 
-              calledElement="subProcess">
-  
-  <extensionElements>
-    <!-- Input mappings: from parent to called process -->
-    <activiti:in source="orderId" target="order.id"/>
-    <activiti:in sourceExpression="${order.customerId}" target="customerId"/>
-    
-    <!-- Output mappings: from called process to parent -->
-    <activiti:out source="result.status" target="orderStatus"/>
-    <activiti:out sourceExpression="${completionTime}" target="order.completedAt"/>
-  </extensionElements>
-</callActivity>
+Variable mapping for call activities is configured via **process extension JSON** (`*-extension.json`), not through XML elements. The `CallActivityXMLConverter` does not parse `<activiti:in>` or `<activiti:out>` elements. [Source: `CallActivityXMLConverter.java` — verified no `<activiti:in>` or `<activiti:out>` element handling exists in the converter.]
+
+**subProcess-extension.json:**
+```json
+{
+  "extensions": {
+    "Process_myProcess": {
+      "mappings": {
+        "mappedCall": {
+          "inputs": {
+            "order.id": { "type": "VARIABLE", "value": "orderId" },
+            "customerId": { "type": "EXPRESSION", "value": "${order.customerId}" }
+          },
+          "outputs": {
+            "orderStatus": { "type": "VARIABLE", "value": "result.status" },
+            "order.completedAt": { "type": "EXPRESSION", "value": "${completionTime}" }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
-**Input/Output Mapping Attributes:**
-- `source` - Variable name in source scope
-- `sourceExpression` - Expression to evaluate in source scope
-- `target` - Variable name in target scope
+**Mapping Types:**
+- `VARIABLE` - Map a process variable by name
+- `EXPRESSION` - Evaluate an expression and assign the result
+- `VALUE` - Pass a literal value
+
+> For full details on the extension JSON format, see the [Process Extensions guide](../reference/process-extensions.md).
 
 ## Advanced Features
 
@@ -158,16 +164,31 @@ Set a specific business key or inherit from the parent process:
 ```xml
 <callActivity id="callOrderFulfillment" 
               name="Fulfill Order" 
-              calledElement="fulfillmentProcess">
-  
-  <extensionElements>
-    <activiti:in source="orderId" target="order.id"/>
-    <activiti:in sourceExpression="${order.items}" target="items"/>
-    <activiti:in source="customer" target="customerData"/>
-    <activiti:out source="fulfillmentStatus" target="status"/>
-    <activiti:out source="trackingNumber" target="tracking"/>
-  </extensionElements>
-</callActivity>
+              calledElement="fulfillmentProcess"/>
+```
+
+Variable mapping is configured via `fulfillmentProcess-extension.json`:
+
+```json
+{
+  "extensions": {
+    "Process_myProcess": {
+      "mappings": {
+        "callOrderFulfillment": {
+          "inputs": {
+            "order.id": { "type": "VARIABLE", "value": "orderId" },
+            "items": { "type": "EXPRESSION", "value": "${order.items}" },
+            "customerData": { "type": "VARIABLE", "value": "customer" }
+          },
+          "outputs": {
+            "status": { "type": "VARIABLE", "value": "fulfillmentStatus" },
+            "tracking": { "type": "VARIABLE", "value": "trackingNumber" }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
 ### Example 3: Dynamic Process Selection
@@ -175,25 +196,36 @@ Set a specific business key or inherit from the parent process:
 ```xml
 <callActivity id="dynamicFulfillment" 
               name="Dynamic Fulfillment" 
-              calledElement="${determineFulfillmentProcess(order.type)}">
-  
-  <extensionElements>
-    <activiti:in source="order" target="inputOrder"/>
-    <activiti:out source="result" target="fulfillmentResult"/>
-  </extensionElements>
-</callActivity>
+              calledElement="${determineFulfillmentProcess(order.type)}"/>
+```
+
+Variable mapping for the dynamic call:
+
+```json
+{
+  "extensions": {
+    "Process_myProcess": {
+      "mappings": {
+        "dynamicFulfillment": {
+          "inputs": {
+            "inputOrder": { "type": "VARIABLE", "value": "order" }
+          },
+          "outputs": {
+            "fulfillmentResult": { "type": "VARIABLE", "value": "result" }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
 ### Example 4: Multi-Instance Call
 
 ```xml
 <callActivity id="batchProcessing" 
-             name="Process Batch" 
-             calledElement="itemProcessingSubProcess">
-  
-  <extensionElements>
-    <activiti:in source="item" target="currentItem"/>
-  </extensionElements>
+              name="Process Batch" 
+              calledElement="itemProcessingSubProcess">
   
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -204,18 +236,31 @@ Set a specific business key or inherit from the parent process:
 </callActivity>
 ```
 
+If variable mapping is needed for each instance, configure it via process extension JSON:
+
+```json
+{
+  "extensions": {
+    "Process_myProcess": {
+      "mappings": {
+        "batchProcessing": {
+          "inputs": {
+            "currentItem": { "type": "VARIABLE", "value": "item" }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ### Example 5: Nested Call Activities
 
 ```xml
 <!-- Top-level process calls sub-process -->
 <callActivity id="callOrderProcess" 
               name="Order Process" 
-              calledElement="orderManagement">
-  
-  <extensionElements>
-    <activiti:in source="order" target="inputOrder"/>
-  </extensionElements>
-</callActivity>
+              calledElement="orderManagement"/>
 
 <!-- Sub-process can call other sub-processes -->
 <!-- Defined in orderManagement process -->
@@ -226,6 +271,24 @@ Set a specific business key or inherit from the parent process:
 <callActivity id="callShipping" 
               name="Shipping" 
               calledElement="shippingProcess"/>
+```
+
+To pass variables in nested calls, use process extension JSON:
+
+```json
+{
+  "extensions": {
+    "Process_myProcess": {
+      "mappings": {
+        "callOrderProcess": {
+          "inputs": {
+            "inputOrder": { "type": "VARIABLE", "value": "order" }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
 ## Runtime API Usage
@@ -277,4 +340,3 @@ Object output = runtimeService.getVariable(executionId, "outputData");
 - [Variable Scope](../reference/variables.md)
 
 ---
-

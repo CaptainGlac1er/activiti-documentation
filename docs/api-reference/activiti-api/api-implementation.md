@@ -1,6 +1,7 @@
 ---
 sidebar_label: API Implementation
 slug: /api-reference/activiti-api/api-implementation
+title: "API Implementation"
 description: Concrete implementation of Activiti API interfaces, bridging high-level API with underlying engine.
 ---
 

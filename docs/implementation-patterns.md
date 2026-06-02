@@ -812,14 +812,13 @@ flowchart TD
 spring:
   profiles:
     active: single-instance
-  
+  activiti:
+    async-executor-activate: true
+    async-executor:
+      core-pool-size: 10
+
 server:
   port: 8080
-
-activiti:
-  async-executor-activate: true
-  async-executor:
-    core-pool-size: 10
 ```
 
 **Pros:**
@@ -866,11 +865,11 @@ spring:
     cluster:
       enabled: true
 
-activiti:
-  async-executor-activate: true
-  async-executor:
-    core-pool-size: 20
-  history-level: full
+  activiti:
+    async-executor-activate: true
+    async-executor:
+      core-pool-size: 20
+    history-level: FULL
 ```
 
 **Pros:**

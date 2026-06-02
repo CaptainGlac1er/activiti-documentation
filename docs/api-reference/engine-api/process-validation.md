@@ -1,6 +1,7 @@
 ---
 sidebar_label: Process Validation
 slug: /api-reference/engine-api/process-validation
+title: "Process Validation"
 description: Validator-set architecture for BPMN process definition validation with element-specific validators and localized error messages.
 ---
 

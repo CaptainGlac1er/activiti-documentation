@@ -1,6 +1,7 @@
 ---
 sidebar_label: Spring Resource Finder
 slug: /api-reference/core-common/spring-resource-finder
+title: "Spring Resource Finder"
 description: Spring-based resource discovery and classpath scanning for Activiti process definitions.
 ---
 

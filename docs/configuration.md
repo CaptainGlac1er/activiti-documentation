@@ -732,11 +732,11 @@ config.setCustomScriptingEngineClasses(Arrays.asList("com.example.MyScriptEngine
 config.setBusinessCalendarManager(new CustomBusinessCalendarManager());
 
 // Configure delegate expression injection
-config.setDelegateExpressionFieldInjectionMode(DelegateExpressionFieldInjectionMode.SETTER);
+config.setDelegateExpressionFieldInjectionMode(DelegateExpressionFieldInjectionMode.COMPATIBILITY);
 ```
 
 **Why use these:**
-- `setExpressionManager`: Customize expression evaluation (EL, SpEL)
+- `setExpressionManager`: Customize expression evaluation (EL)
 - `setScriptingEngines`: Support additional scripting languages
 - `setCustomScriptingEngineClasses`: Register custom script engines
 - `setBusinessCalendarManager`: Implement custom business time calculations
@@ -1060,7 +1060,7 @@ public class ProdProcessEngineConfiguration {
     @Autowired
     private DataSource dataSource;
     
-    @Value("${spring.activiti.history-level:AUDIT}")
+    @Value("${spring.activiti.history-level:FULL}")
     private String historyLevel;
 
     @Value("${spring.activiti.async-executor-activate:true}")
@@ -1294,13 +1294,14 @@ public class ProdConfig {
 
 ```yaml
 # Use environment variables and configuration files
-activiti:
-  jdbc-url: ${DB_URL}
-  jdbc-username: ${DB_USER}
-  jdbc-password: ${DB_PASSWORD}
-  history-level: ${HISTORY_LEVEL:AUDIT}
+spring:
+  activiti:
+    history-level: ${HISTORY_LEVEL:AUDIT}
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
 ```
-
 **Why:** Avoid hardcoding sensitive values and enable environment-specific tuning.
 
 ### 3. Set Query Limits

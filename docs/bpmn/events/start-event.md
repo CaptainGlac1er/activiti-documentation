@@ -15,8 +15,8 @@ Start Events **initiate process instances** and define how a process can be star
 <startEvent id="start1" name="Process Start"/>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Multiple start event types, candidate starters
+**BPMN 2.0 Standard:** Partially Supported  
+**Activiti Extensions:** Form key, initiator variable
 
 ## Key Features
 
@@ -34,7 +34,6 @@ The `StartEventParseHandler` only handles: (1) message start events within event
 - **Form Key** - Startup form
 - **Initiator** - Automatic variable
 - **Multiple Start Events** - Any can trigger
-- **Async Timer** - Background scheduling
 - **Custom Properties** - Metadata
 
 ## Start Event Types
@@ -120,6 +119,32 @@ Within event sub-processes, only message and error start event definitions are h
 - `initiator` - Set to current user when process starts
 - Available in all subsequent tasks
 
+### Form Properties
+
+Form properties define the fields collected at process start time. They are configured via extension JSON, not as child elements of `<startEvent>`.
+
+```xml
+<startEvent id="formStart" name="Start with Form" 
+            activiti:formKey="order-entry-form.html"/>
+```
+
+**order-entry-form-extension.json:**
+```json
+{
+  "extensions": {
+    "Process_orderProcess": {
+      "formProperties": {
+        "formStart": {
+          "properties": [
+            { "name": "teamSize", "type": "int", "required": true }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
 ## Complete Examples
 
 ### Example 1: Multiple Start Events
@@ -134,19 +159,17 @@ Within event sub-processes, only message and error start event definitions are h
 </startEvent>
 ```
 
-**Note:** Timer and conditional start events are NOT supported anywhere. Signal start events are NOT supported. Use a none start event or message start event for main process initiation.
+**Note:** Timer and conditional start events are NOT supported anywhere. Signal start events are NOT supported as main process start events. Use a none start event or message start event for main process initiation.
 
-### Example 2: Message Start with Correlation
+### Example 2: Message Start with Form
 
 ```xml
-<startEvent id="orderStart" name="Order Received">
+<startEvent id="orderStart" name="Order Received" 
+            activiti:formKey="order-entry-form.html">
   <messageEventDefinition messageRef="orderMessage"/>
-  <activiti:formKey="order-entry-form.html"/>
 </startEvent>
 
-<message id="orderMessage" name="Order Message">
-  <itemDefinition id="orderItem" structureRef="Order"/>
-</message>
+<message id="orderMessage" name="Order Message"/>
 ```
 
 **Runtime Correlation:**
@@ -189,24 +212,30 @@ ProcessInstance process = runtimeService
 </eventSubProcess>
 ```
 
-### Example 4: Conditional Start
+### Example 4: Start with Initial Variables
 
-**NOT supported.** There is no `ConditionalEventDefinition` class in the Activiti codebase. Conditional start events will not function.
+Initial variables for a process are set at runtime, not through BPMN XML. Use the API to provide variables when starting the process:
 
-### Example 5: Start Event with Initial Variables
+```java
+// Set initial variables when starting
+Map<String, Object> variables = new HashMap<>();
+variables.put("orderId", "ORD-123");
+variables.put("customerName", "Acme Corp");
+
+ProcessInstance process = runtimeService
+    .startProcessInstanceByKey("orderProcess", variables);
+```
+
+Form properties on start events only define what the form collects — they do not set default values in the BPMN XML. Default values are configured in the form extension JSON or at runtime.
+
+### Example 5: Form-Based Start Event
 
 ```xml
-<startEvent id="initializedStart" name="Initialized Start" 
-            activiti:formKey="initialization-form.html">
-  
-  <activiti:formProperty name="projectName" type="string" required="true"/>
-  <activiti:formProperty name="budget" type="double" required="true"/>
-  <activiti:formProperty name="deadline" type="date" required="true"/>
-  <activiti:formProperty name="teamSize" type="int">
-    <activiti:default>5</activiti:default>
-  </activiti:formProperty>
-</startEvent>
+<startEvent id="taskForm" name="Start Task" 
+            activiti:formKey="task-start-form.html"/>
 ```
+
+The form collects initial data and passes it as process variables. The `activiti:formKey` attribute references the form definition.
 
 ## Runtime API Usage
 
@@ -246,8 +275,8 @@ List<ProcessDefinition> definitions = repositoryService
     .list();
 
 // Check for message start events
-List<Message> messages = repositoryService
-    .createMessageQuery()
+List<MessageEventDefinition> messages = repositoryService
+    .createMessageEventDefinitionQuery()
     .processDefinitionKey("processKey")
     .list();
 ```
@@ -257,20 +286,17 @@ List<Message> messages = repositoryService
 1. **Choose Appropriate Type:** Match start event to use case
 2. **Multiple Starts:** Provide flexibility with multiple start events
 3. **Message Correlation:** Design clear correlation keys
-4. **Timer Performance:** Avoid too many concurrent timers
-5. **Form Integration:** Use forms for data collection
-6. **Documentation:** Describe how process should be started
-7. **Security:** Restrict who can start sensitive processes
-8. **Initiator Tracking:** Leverage automatic initiator variable
+4. **Form Integration:** Use forms for data collection
+5. **Documentation:** Describe how process should be started
+6. **Security:** Restrict who can start sensitive processes
+7. **Initiator Tracking:** Leverage automatic initiator variable
 
 ## Common Pitfalls
 
 - **No Start Event:** Process must have at least one
-- **Conflicting Timers:** Multiple timers causing issues
 - **Message Duplication:** Same message starting multiple instances
-- **Timer Memory:** Too many scheduled timers
 - **Missing Correlation:** Messages without proper correlation
-- **Complex Conditions:** Hard to test conditional starts
+- **Unsupported Types:** Timer, conditional, and multiple event definitions on main process start events are not supported
 
 ## Related Documentation
 
@@ -281,4 +307,3 @@ List<Message> messages = repositoryService
 - [Runtime Service](../../api-reference/engine-api/runtime-service.md)
 
 ---
-

@@ -1,6 +1,6 @@
 ---
 sidebar_label: Payment Process
-slug: /examples/order-management/payment-process
+slug: /examples/order-management-workflow/payment-process
 title: "Order Management - Payment Sub-Process"
 description: "Payment processing with validation, async execution, timeout handling, and multi-instance retry logic."
 ---

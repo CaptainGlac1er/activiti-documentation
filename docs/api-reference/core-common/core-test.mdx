@@ -1,6 +1,7 @@
 ---
 sidebar_label: Core Test
 slug: /api-reference/core-common/core-test
+title: "Core Test"
 description: Testing utilities and assertion support for Activiti process engine integration tests.
 ---
 
@@ -244,7 +245,7 @@ ProcessInstance instance = processOperations
 import static org.activiti.test.matchers.TaskMatchers.*;
 
 Task claimedTask = taskOperations
-    .claim(ClaimTaskPayloadBuilder.claim(taskId)
+    .claim(TaskPayloadBuilder.claim().withTaskId(taskId)
         .withAssignee("john.doe")
         .build())
     .expectFields(
@@ -275,7 +276,7 @@ Task claimedTask = taskOperations
 import static org.activiti.test.matchers.SignalMatchers.*;
 
 processOperations
-    .signal(SignalPayloadBuilder.signal("ORDER_APPROVED")
+    .signal(ProcessPayloadBuilder.signal().withName("ORDER_APPROVED")
         .withProcessDefinitionId(processDefinitionId)
         .build())
     .expectEventsOnProcessInstance(instance,
@@ -332,7 +333,7 @@ ProcessInstance instance = processOperations
 **Example:**
 ```java
 Task completedTask = taskOperations
-    .complete(CompleteTaskPayloadBuilder.complete(taskId)
+    .complete(TaskPayloadBuilder.complete().withTaskId(taskId)
         .withVariable("approved", true)
         .build())
     .expectFields(withAssignee("john.doe"))
@@ -494,13 +495,17 @@ class TaskTest {
             .andReturn();
 
         // Get the task via TaskRuntime
-        Task task = taskRuntime.tasks()
-            .processInstanceId(instance.getId())
-            .singleResult();
+        Page<Task> page = taskRuntime.tasks(
+            Pageable.of(0, 10),
+            TaskPayloadBuilder.tasks()
+                .withProcessInstanceId(instance.getId())
+                .build()
+        );
+        Task task = page.getContent().get(0);
 
         // Claim and assert
         Task claimedTask = taskOperations
-            .claim(ClaimTaskPayloadBuilder.claim(task.getId())
+            .claim(TaskPayloadBuilder.claim().withTaskId(task.getId())
                 .withAssignee("john.doe")
                 .build())
             .expectFields(
@@ -513,7 +518,7 @@ class TaskTest {
 
         // Complete and assert
         Task completedTask = taskOperations
-            .complete(CompleteTaskPayloadBuilder.complete(task.getId())
+            .complete(TaskPayloadBuilder.complete().withTaskId(task.getId())
                 .withVariable("approved", true)
                 .build())
             .expectEvents(
@@ -543,7 +548,7 @@ class SignalTest {
             .andReturn();
 
         processOperations
-            .signal(SignalPayloadBuilder.signal("ORDER_APPROVED")
+            .signal(ProcessPayloadBuilder.signal().withName("ORDER_APPROVED")
                 .withProcessDefinitionId(instance.getProcessDefinitionId())
                 .build())
             .expectEventsOnProcessInstance(instance,
@@ -676,7 +681,7 @@ class TaskMatcherTest {
     @Test
     void testTaskMatchers() {
         taskOperations
-            .claim(ClaimTaskPayloadBuilder.claim(taskId)
+            .claim(TaskPayloadBuilder.claim().withTaskId(taskId)
                 .withAssignee("john.doe")
                 .build())
             .expectFields(
@@ -687,7 +692,7 @@ class TaskMatcherTest {
             );
 
         taskOperations
-            .complete(CompleteTaskPayloadBuilder.complete(taskId)
+            .complete(TaskPayloadBuilder.complete().withTaskId(taskId)
                 .build())
             .expectEvents(
                 task().hasBeenCompleted()
@@ -802,7 +807,7 @@ class SignalMatcherTest {
             .andReturn();
 
         processOperations
-            .signal(SignalPayloadBuilder.signal("ORDER_APPROVED")
+            .signal(ProcessPayloadBuilder.signal().withName("ORDER_APPROVED")
                 .withProcessDefinitionId(instance.getProcessDefinitionId())
                 .build())
             .expectEventsOnProcessInstance(instance,
@@ -881,7 +886,7 @@ ProcessInstance instance = processOperations
     .andReturn();
 
 processOperations
-    .signal(SignalPayloadBuilder.signal("PROCEED")
+    .signal(ProcessPayloadBuilder.signal().withName("PROCEED")
         .withProcessDefinitionId(instance.getProcessDefinitionId())
         .build())
     .expectEventsOnProcessInstance(instance,
@@ -910,7 +915,7 @@ interface TaskOperations {
 private TaskOperations taskOperations;
 
 Task claimedTask = taskOperations
-    .claim(ClaimTaskPayloadBuilder.claim(taskId)
+    .claim(TaskPayloadBuilder.claim().withTaskId(taskId)
         .withAssignee("john.doe")
         .build())
     .expectFields(withAssignee("john.doe"))
@@ -918,7 +923,7 @@ Task claimedTask = taskOperations
     .andReturn();
 
 Task completedTask = taskOperations
-    .complete(CompleteTaskPayloadBuilder.complete(taskId)
+    .complete(TaskPayloadBuilder.complete().withTaskId(taskId)
         .withVariable("approved", true)
         .build())
     .expectEvents(task().hasBeenCompleted())
@@ -937,10 +942,11 @@ Set the property `activiti.assertions.await.enabled=true` in your test configura
 
 ```yaml
 # application-test.yml
-activiti:
-  assertions:
-    await:
-      enabled: true
+spring:
+  activiti:
+    assertions:
+      await:
+        enabled: true
 ```
 
 ### How It Works
@@ -980,7 +986,7 @@ void testAsyncProcessWithAwait() {
 @Test
 void testTaskCompletionWithAwait() {
     taskOperations
-        .complete(CompleteTaskPayloadBuilder.complete(taskId)
+        .complete(TaskPayloadBuilder.complete().withTaskId(taskId)
             .build())
         .expectEvents(
             task().hasBeenCompleted()
@@ -1056,13 +1062,17 @@ class OrderProcessIntegrationTest {
             .andReturn();
 
         // 2. Get the review task
-        Task reviewTask = taskRuntime.tasks()
-            .processInstanceId(instance.getId())
-            .singleResult();
+        Page<Task> page = taskRuntime.tasks(
+            Pageable.of(0, 10),
+            TaskPayloadBuilder.tasks()
+                .withProcessInstanceId(instance.getId())
+                .build()
+        );
+        Task reviewTask = page.getContent().get(0);
 
         // 3. Claim task and assert
         taskOperations
-            .claim(ClaimTaskPayloadBuilder.claim(reviewTask.getId())
+            .claim(TaskPayloadBuilder.claim().withTaskId(reviewTask.getId())
                 .withAssignee("manager")
                 .build())
             .expectFields(withAssignee("manager"))
@@ -1070,7 +1080,7 @@ class OrderProcessIntegrationTest {
 
         // 4. Complete task and assert
         taskOperations
-            .complete(CompleteTaskPayloadBuilder.complete(reviewTask.getId())
+            .complete(TaskPayloadBuilder.complete().withTaskId(reviewTask.getId())
                 .withVariable("approved", true)
                 .build())
             .expectEvents(task().hasBeenCompleted());
@@ -1135,7 +1145,7 @@ class SignalMatchingTest {
             .andReturn();
 
         processOperations
-            .signal(SignalPayloadBuilder.signal("ORDER_APPROVED")
+            .signal(ProcessPayloadBuilder.signal().withName("ORDER_APPROVED")
                 .withProcessDefinitionId(instance.getProcessDefinitionId())
                 .build())
             .expectEventsOnProcessInstance(instance,

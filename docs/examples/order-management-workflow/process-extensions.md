@@ -1,6 +1,6 @@
 ---
 sidebar_label: Process Extensions
-slug: /examples/order-management/process-extensions
+slug: /examples/order-management-workflow/process-extensions
 title: "Order Management - Process Extensions"
 description: "Complete guide to process extension JSON files including properties, mappings, and constants configuration."
 ---

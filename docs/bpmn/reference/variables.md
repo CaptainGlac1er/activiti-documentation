@@ -322,9 +322,11 @@ public class OrderService implements JavaDelegate {
           activiti:formKey="approval-form">
   
   <!-- Form properties map to task variables -->
+  <extensionElements>
   <activiti:formProperty name="approvalComment" type="string"/>
   <activiti:formProperty name="approved" type="bool"/>
   
+  </extensionElements>
 </userTask>
 ```
 

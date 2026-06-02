@@ -1,6 +1,7 @@
 ---
 sidebar_label: Spring Integration
 slug: /bpmn/integration/spring-integration
+title: "Spring Integration"
 description: Bridging Activiti receive tasks with Spring Integration message flows
 ---
 
