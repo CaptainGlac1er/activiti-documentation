@@ -569,7 +569,7 @@ jmap -dump:live,format=b,file=heap.hprof <pid>
 ```yaml
 spring:
   activiti:
-    history-level: activity  # Instead of 'full'
+    history-level: ACTIVITY  # Instead of 'full'
 ```
 
 **Solution 3: Implement Data Archiving**
@@ -698,7 +698,7 @@ public void updateProcesses(List<String> processIds) {
 - [ ] Review connection pool stats
 - [ ] Analyze slow queries
 
-### Security Issues
+## Security Issues
 
 - [ ] Verify user roles
 - [ ] Check task assignments

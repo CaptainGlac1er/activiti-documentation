@@ -93,7 +93,6 @@ All gateways (except parallel) support conditions on outgoing sequence flows:
 
 **Expression Types:**
 - **EL Expressions:** `${variable.method()}`
-- **SpEL Expressions:** `#{#variable.method()}`
 - **Formal Expressions:** `<formalExpression>expression</formalExpression>`
 
 ### Default Flow

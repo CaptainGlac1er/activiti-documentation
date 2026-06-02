@@ -213,7 +213,7 @@ spring:
       max-pool-size: 10           # Maximum threads (default: 10)
       queue-size: 100             # Job queue size (default: 100)
       number-of-retries: 3        # Default retry count (default: 3)
-      retry-wait-time-in-millis: 5000  # Initial wait after first job failure (default: 500)
+      retry-wait-time-in-millis: 500  # Initial wait after first job failure (default: 500)
       
       # Job acquisition settings
       max-async-jobs-due-per-acquisition: 10  # Jobs per query (default: 1)
@@ -234,7 +234,7 @@ spring:
 
 **Basic (`spring.activiti`):**
 - `async-executor-activate` - Enable async executor (default: true)
-- `history-level` - History tracking (NONE, ACTIVITY, FULL)
+- `history-level` - History tracking (NONE, ACTIVITY, AUDIT, FULL)
 - `database-schema-update` - Auto-update DB schema
 
 **Advanced (`spring.activiti.async-executor`):**
@@ -244,7 +244,7 @@ spring:
 - `number-of-retries` - Default retry count for failed jobs (default: 3)
 - `retry-wait-time-in-millis` - Initial wait time after first job failure, sets `asyncFailedJobWaitTime`. Subsequent retries use the retry cycle defined in `failedJobRetryTimeCycle` (default: 500ms)
 - `max-async-jobs-due-per-acquisition` - Jobs fetched per query (default: 1)
-- `default-async-job-acquire-wait-time` - Wait time between acquisitions (ms) (default: 10000)
+- `default-async-job-acquire-wait-time-in-millis` - Wait time between acquisitions (ms) (default: 10000)
 
 ## Programmatic Configuration
 

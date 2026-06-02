@@ -1,6 +1,7 @@
 ---
 sidebar_label: Sequence Flows
 slug: /bpmn/elements/sequence-flows
+title: "Sequence Flows"
 description: Complete guide to Sequence Flows in Activiti - connecting activities with conditions and expressions
 ---
 
@@ -15,7 +16,7 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Condition expressions, SpEL support
+**Activiti Extensions:** Condition expressions
 
 ## Key Features
 
@@ -26,7 +27,7 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 - **Sequence Flow Name** - Documentation label
 
 ### Activiti Extensions
-- **SpEL Expressions** - Spring Expression Language support
+
 - **Delegate Expressions** - Java method evaluation
 - **Variable Access** - Process variable conditions
 - **Complex Conditions** - Multiple criteria evaluation
@@ -133,11 +134,11 @@ Conditionally skip a sequence flow (i.e., the flow is not taken):
 </sequenceFlow>
 ```
 
-### 5. SpEL Expressions
+### 5. Expression Methods
 
 ```xml
 <sequenceFlow id="spElFlow" name="SPeL Condition">
-  <conditionExpression>#{#orderValidator.isExpedited(order)}</conditionExpression>
+  <conditionExpression>${orderValidator.isExpedited(order)}</conditionExpression>
 </sequenceFlow>
 ```
 
@@ -322,7 +323,7 @@ A default flow specifies the sequence flow to take when no condition expressions
 </exclusiveGateway>
 ```
 
-### Example 4: Using SpEL Methods
+### Example 4: Using Expression Methods
 
 ```xml
 <exclusiveGateway id="validationGateway" name="Complex Validation">
@@ -330,13 +331,13 @@ A default flow specifies the sequence flow to take when no condition expressions
   <sequenceFlow id="autoApproveFlow"
                 sourceRef="validationGateway"
                 targetRef="autoApprove">
-    <conditionExpression>#{#validationService.canAutoApprove(order)}</conditionExpression>
+    <conditionExpression>${validationService.canAutoApprove(order)}</conditionExpression>
   </sequenceFlow>
 
   <sequenceFlow id="autoRejectFlow"
                 sourceRef="validationGateway"
                 targetRef="autoReject">
-    <conditionExpression>#{#validationService.shouldAutoReject(order)}</conditionExpression>
+    <conditionExpression>${validationService.shouldAutoReject(order)}</conditionExpression>
   </sequenceFlow>
 
   <sequenceFlow id="manualFlow"
@@ -410,8 +411,8 @@ A default flow specifies the sequence flow to take when no condition expressions
 <!-- Method with parameters -->
 <conditionExpression>${compareAmount(orderAmount, threshold)}</conditionExpression>
 
-<!-- SpEL bean method -->
-<conditionExpression>#{#service.checkCondition(data)}</conditionExpression>
+<!-- EL bean method -->
+<conditionExpression>${service.checkCondition(data)}</conditionExpression>
 ```
 
 ## Best Practices
@@ -549,7 +550,7 @@ A default flow specifies the sequence flow to take when no condition expressions
 <conditionExpression>${(order.amount * (1 + taxRate/100)) - discount > threshold && (customer.vip || order.urgent)}</conditionExpression>
 
 <!-- GOOD: Use intermediate variables or method -->
-<conditionExpression>#{#orderService.shouldExpedite(order)}</conditionExpression>
+<conditionExpression>${orderService.shouldExpedite(order)}</conditionExpression>
 ```
 
 ## Related Documentation

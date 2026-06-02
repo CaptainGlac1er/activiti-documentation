@@ -1,6 +1,7 @@
 ---
 sidebar_label: Expression Language
 slug: /api-reference/core-common/expression-language
+title: "Expression Language"
 description: Expression language support for process variables, conditions, and dynamic evaluations.
 ---
 
@@ -436,7 +437,7 @@ public class ExpressionEvaluator {
         variables.forEach((name, value) -> {
             ValueExpression varExpr = expressionFactory.createValueExpression(
                 context, 
-                "#{'" + value + "'}", 
+                "${'" + value + "'}", 
                 Object.class
             );
             context.setVariable(name, varExpr);
@@ -538,7 +539,7 @@ public class VariableManager {
         // For objects, use bean property access
         ValueExpression expr = expressionFactory.createValueExpression(
             context,
-            "#{obj}",
+            "${obj}",
             Object.class
         );
         context.setVariable(name, expr);
@@ -632,7 +633,7 @@ public class VariableManager {
 - `activiti:expression` can be a **child element** inside `<activiti:field>` for field injection
 - Conditions use standard BPMN `<conditionExpression>` as a child of `sequenceFlow`
 - There is **no** standalone `<activiti:condition>` element
-- Expressions use Jakarta EL syntax: `${...}` or `#{...}`
+- Expressions use Jakarta EL syntax: `${...}`
 
 ### Java Code Examples
 

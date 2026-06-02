@@ -1,6 +1,7 @@
 ---
 sidebar_label: Process Model
 slug: /api-reference/activiti-api/process-model
+title: "Process Model"
 description: Process model definitions for Activiti API including process instances, definitions, and variables.
 ---
 
@@ -695,7 +696,7 @@ public class MessageEventPayload implements Payload {
 
 **Usage Example**:
 ```java
-MessageEventPayload payload = MessagePayloadBuilder.event("paymentReceived")
+MessageEventPayload payload = MessagePayloadBuilder.receive("paymentReceived")
     .withCorrelationKey("ORDER-123")
     .withVariable("amount", 500.00)
     .withVariable("paymentId", "PAY-456")
@@ -724,7 +725,7 @@ public class SignalPayload implements Payload {
 
 **Usage Example**:
 ```java
-SignalPayload payload = SignalPayloadBuilder.signal()
+SignalPayload payload = ProcessPayloadBuilder.signal()
     .withName("approvalSignal")
     .withVariable("approvedBy", "manager")
     .build();

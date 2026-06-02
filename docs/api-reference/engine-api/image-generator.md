@@ -1,6 +1,7 @@
 ---
 sidebar_label: Image Generator
 slug: /api-reference/engine-api/image-generator
+title: "Image Generator"
 description: Generate SVG process diagrams from BPMN models with activity and flow highlighting.
 ---
 

@@ -1,6 +1,7 @@
 ---
 sidebar_label: Common Util
 slug: /api-reference/core-common/common-util
+title: "Common Util"
 description: Common utility classes for date formatting, auto-configuration, and shared helpers.
 ---
 
@@ -76,7 +77,7 @@ flowchart TD
         
         subgraph AutoConfig["ActivitiCoreCommonUtilAutoConfiguration<br>(Spring Boot Auto-Config)"]
             AC1["- Creates DateFormatterProvider bean"]
-            AC2["- Reads spring.activiti.date-format-pattern"]
+            AC2["- Configures date format pattern and zone ID"]
             AC3["- Conditional on missing bean"]
         end
     end
@@ -169,20 +170,9 @@ public Date convertToDate(Object value) {
 - Enable conditional bean creation
 - Integrate with Spring context
 
-**Configuration Properties:**
-- `spring.activiti.date-format-pattern`: Custom date format pattern
-
 **When to Use:** Automatically applied when module is on classpath.
 
 **Design Pattern:** Auto-configuration pattern
-
-**Example:**
-```yaml
-# application.yml
-spring:
-  activiti:
-    date-format-pattern: "yyyy-MM-dd HH:mm:ss"
-```
 
 ---
 
@@ -312,14 +302,14 @@ public class ActivitiCoreCommonUtilAutoConfiguration {
     /**
      * Auto-configure DateFormatterProvider bean.
      * 
-     * @param dateFormatPattern Pattern from spring.activiti.date-format-property
+     * @param dateFormatPattern Pattern for date formatting
      * @return Configured DateFormatterProvider
      */
-    @Bean
-    @ConditionalOnMissingBean
-    public DateFormatterProvider dateFormatterProvider(
-            @Value("${spring.activiti.date-format-pattern:yyyy-MM-dd[['T']HH:mm:ss[.SSS][XXX]]}")
-            String dateFormatPattern) {
+     @Bean
+     @ConditionalOnMissingBean
+     public DateFormatterProvider dateFormatterProvider(
+             @Value("${date-format-pattern:yyyy-MM-dd HH:mm:ss}")
+             String dateFormatPattern) {
         return new DateFormatterProvider(dateFormatPattern);
     }
 }
@@ -682,7 +672,7 @@ public Date toDate(Object value);
 /**
  * Auto-configure DateFormatterProvider bean.
  * 
- * @param dateFormatPattern Pattern from spring.activiti.date-format-pattern
+ * @param dateFormatPattern Pattern for date formatting
  * @return Configured DateFormatterProvider
  */
 @Bean
@@ -694,34 +684,12 @@ public DateFormatterProvider dateFormatterProvider(String dateFormatPattern);
 
 ## Configuration Properties
 
-### Default Pattern
-
-```
-spring.activiti.date-format-pattern=yyyy-MM-dd[['T']HH:mm:ss[.SSS][XXX]]
-```
-
-This pattern supports:
+The `DateFormatterProvider` bean accepts a date format pattern via its constructor parameter. The default pattern `yyyy-MM-dd[['T']HH:mm:ss[.SSS][XXX]]` supports:
 - Full ISO 8601: `2024-01-15T10:30:00.000Z`
 - Date only: `2024-01-15`
 - Date with time: `2024-01-15 10:30:00`
 - With milliseconds: `2024-01-15T10:30:00.123`
 - With timezone: `2024-01-15T10:30:00+05:30`
-
-### Custom Pattern Examples
-
-```yaml
-# US format
-spring.activiti.date-format-pattern: "MM/dd/yyyy HH:mm:ss"
-
-# European format
-spring.activiti.date-format-pattern: "dd/MM/yyyy HH:mm:ss"
-
-# Simple date only
-spring.activiti.date-format-pattern: "yyyy-MM-dd"
-
-# With milliseconds
-spring.activiti.date-format-pattern: "yyyy-MM-dd HH:mm:ss.SSS"
-```
 
 ---
 
@@ -735,11 +703,6 @@ spring.activiti.date-format-pattern: "yyyy-MM-dd HH:mm:ss.SSS"
 1. Check the configured date format pattern
 2. Ensure date string matches pattern
 3. Use flexible pattern with optional components
-
-```yaml
-# Use pattern that accepts both date and datetime
-spring.activiti.date-format-pattern: "yyyy-MM-dd[['T']HH:mm:ss[.SSS][XXX]]"
-```
 
 ### Timezone Mismatch
 

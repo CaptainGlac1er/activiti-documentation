@@ -170,7 +170,7 @@ Suspends a running process instance.
 **Example:**
 ```java
 ProcessInstance suspended = processRuntime.suspend(
-    ProcessPayloadBuilder.suspend(instanceId)
+    ProcessPayloadBuilder.suspend().withProcessInstanceId(instanceId).build()
 );
 ```
 
@@ -181,7 +181,7 @@ Resumes a suspended process instance.
 **Example:**
 ```java
 ProcessInstance resumed = processRuntime.resume(
-    ProcessPayloadBuilder.resume(instanceId)
+    ProcessPayloadBuilder.resume().withProcessInstanceId(instanceId).build()
 );
 ```
 
@@ -234,7 +234,7 @@ Sends a signal event to running processes.
 **Example:**
 ```java
 processRuntime.signal(
-    SignalPayloadBuilder.signal()
+    ProcessPayloadBuilder.signal()
         .withName("approvalSignal")
         .withVariable("approvedBy", "manager")
         .build()

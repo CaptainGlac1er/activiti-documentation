@@ -584,10 +584,7 @@ spring:
       
       # Failure
       number-of-retries: 3                     # Default retry count
-      retry-wait-time-in-millis: 5000          # Wait before retry — WARNING: property name says
-                                               # "millis" but the engine interprets this value as
-                                               # SECONDS (wired to setAsyncFailedJobWaitTime()).
-                                               # 5000 here means ~83 minutes, not 5 seconds.
+      retry-wait-time-in-millis: 500          # Wait before retry in milliseconds (default: 500)
 ```
 
 ### Configuration Guidelines

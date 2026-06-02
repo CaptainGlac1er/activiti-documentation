@@ -44,11 +44,11 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 **Important Attributes:**
 - `event` - The event type (create, assignment, complete, delete, all)
 - `class` - Fully qualified class name implementing TaskListener
-- `expression` - EL/SpEL expression to evaluate
+- `expression` - EL expression to evaluate
 - `delegateExpression` - Spring bean method call
 - `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
 - `customPropertiesResolverClass` - Fully qualified class name of the custom properties resolver
-- `customPropertiesResolverExpression` - EL/SpEL expression to evaluate for the resolver
+- `customPropertiesResolverExpression` - EL expression to evaluate for the resolver
 - `customPropertiesResolverDelegateExpression` - Expression resolving to a Spring bean implementing the resolver
 
 ## Supported Events
@@ -107,7 +107,7 @@ Reference a Spring bean or expression:
 **Requirements:**
 - Expression must resolve to `TaskListener` instance
 - Works with Spring beans
-- Supports SpEL expressions
+- Supports EL expressions
 
 ### Using Expression
 

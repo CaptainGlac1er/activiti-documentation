@@ -1,6 +1,6 @@
 ---
 sidebar_label: Service Delegates
-slug: /examples/order-management/service-delegates
+slug: /examples/order-management-workflow/service-delegates
 title: "Order Management - Service Delegates"
 description: "Complete Java implementation of all 17 service delegates with configuration integration and business logic."
 ---

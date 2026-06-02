@@ -1,6 +1,6 @@
 ---
 sidebar_label: Inventory Process
-slug: /examples/order-management/inventory-process
+slug: /examples/order-management-workflow/inventory-process
 title: "Order Management - Inventory Sub-Process"
 description: "Inventory management with stock checking, parallel warehouse updates, and backorder approval workflow."
 ---

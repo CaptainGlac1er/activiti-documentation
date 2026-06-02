@@ -361,7 +361,7 @@ ProcessInstance suspend(SuspendProcessPayload payload);
 **Example**:
 ```java
 ProcessInstance suspended = processRuntime.suspend(
-    ProcessPayloadBuilder.suspend(instanceId)
+    ProcessPayloadBuilder.suspend().withProcessInstanceId(instanceId).build()
 );
 ```
 
@@ -386,7 +386,7 @@ ProcessInstance resume(ResumeProcessPayload payload);
 **Example**:
 ```java
 ProcessInstance resumed = processRuntime.resume(
-    ProcessPayloadBuilder.resume(instanceId)
+    ProcessPayloadBuilder.resume().withProcessInstanceId(instanceId).build()
 );
 ```
 
@@ -465,7 +465,7 @@ void signal(SignalPayload payload);
 **Example**:
 ```java
 processRuntime.signal(
-    SignalPayloadBuilder.signal()
+    ProcessPayloadBuilder.signal()
         .withName("approvalSignal")
         .withVariable("approvedBy", "manager")
         .withVariable("timestamp", new Date())

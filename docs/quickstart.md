@@ -439,7 +439,7 @@ spring.h2.console.enabled=true
 spring.h2.console.path=/h2-console
 
 # Activiti Configuration
-spring.activiti.history-level=full
+spring.activiti.history-level=FULL
 spring.activiti.database-schema-update=true
 spring.activiti.async-executor-activate=true
 # spring.activiti.check-process-definitions=true  # defaults to true, optional
@@ -473,8 +473,8 @@ spring:
       path: /h2-console
   
   activiti:
-    history-level: full
-    db-schema-update: true
+    history-level: FULL
+    database-schema-update: true
     async-executor-activate: true
 
 logging:
@@ -490,7 +490,7 @@ For production deployments, update the following:
 | Setting | Development | Production |
 |---------|-------------|------------|
 | Database | H2 (in-memory) | PostgreSQL/MySQL |
-| History Level | full | audit (for performance) |
+| History Level | FULL | audit (for performance) |
 | Schema Update | true | false (use migrations) |
 | Logging | DEBUG | INFO/WARN |
 | H2 Console | enabled | disabled |

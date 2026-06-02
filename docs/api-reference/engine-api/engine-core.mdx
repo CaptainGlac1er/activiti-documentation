@@ -1,6 +1,7 @@
 ---
 sidebar_label: Engine Overview
 slug: /api-reference/engine-api/engine-core
+title: "Engine Overview"
 description: Core BPMN 2.0 process engine that powers Activiti's workflow and business process management capabilities.
 ---
 
@@ -133,9 +134,10 @@ spring:
   flyway:
     enabled: false
 
-activiti:
-  database-schema-update: true
-  async-executor-activate: true
+spring:
+  activiti:
+    database-schema-update: true
+    async-executor-activate: true
 ```
 
 ```java

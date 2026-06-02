@@ -1,7 +1,7 @@
 ---
 sidebar_label: Dynamic BPMN Service
 slug: /api-reference/engine-api/dynamic-bpmn-service
-title: "DynamicBpmnService"
+title: "Dynamic BPMN Service"
 description: "Complete guide to DynamicBpmnService in Activiti - modifying BPMN element properties at runtime without redeployment."
 ---
 
@@ -133,7 +133,7 @@ public class ServiceTaskExpressionExample {
         // Change to delegate expression
         ObjectNode result = dynamicBpmnService.changeServiceTaskDelegateExpression(
             serviceTaskId,
-            "#{paymentService.processPayment()}"
+            "${paymentService.processPayment()}"
         );
     }
 }

@@ -1,6 +1,7 @@
 ---
 sidebar_label: Spring Integration
 slug: /api-reference/engine-api/spring-integration
+title: "Spring Integration"
 description: Spring Framework integration for Activiti including transaction management, bean factory integration, and expression language.
 ---
 
@@ -948,10 +949,11 @@ public class ActivitiApplication {
 ```
 
 ```yaml
-activiti:
-  database-schema-update: true
-  history-level: full
-  async-executor-activate: true
+spring:
+  activiti:
+    database-schema-update: true
+    history-level: FULL
+    async-executor-activate: true
 ```
 
 ---
@@ -1208,10 +1210,11 @@ public class WorkflowIntegrationTest {
 ### Configuration Properties
 
 ```yaml
-activiti:
-  database-schema-update: true|false|create-drop
-  history-level: none|activity|audit|full
-  async-executor-activate: true|false
+spring:
+  activiti:
+    database-schema-update: true|false|create-drop
+    history-level: NONE|ACTIVITY|AUDIT|FULL
+    async-executor-activate: true|false
 ```
 
 ### SpringProcessEngineConfiguration Properties

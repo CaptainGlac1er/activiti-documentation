@@ -29,11 +29,11 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 **Important Attributes:**
 - `event` - The event type (start, end, take)
 - `class` - Fully qualified class name implementing ExecutionListener
-- `expression` - EL/SpEL expression to evaluate
+- `expression` - EL expression to evaluate
 - `delegateExpression` - Spring bean method call
 - `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
 - `customPropertiesResolverClass` - Fully qualified class name of the custom properties resolver
-- `customPropertiesResolverExpression` - EL/SpEL expression to evaluate for the resolver
+- `customPropertiesResolverExpression` - EL expression to evaluate for the resolver
 - `customPropertiesResolverDelegateExpression` - Expression resolving to a Spring bean implementing the resolver
 
 ## Key Features
@@ -45,7 +45,7 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 
 ### Implementation Types
 - **Class Delegate** - Java class implementing `ExecutionListener`
-- **Expression** - EL/SpEL expression evaluation
+- **Expression** - EL expression evaluation
 - **Delegate Expression** - Spring bean method call
 - **Script** - JavaScript/Groovy script execution
 
@@ -120,7 +120,7 @@ public class MyExecutionListener implements ExecutionListener {
 
 ### 2. Expression
 
-Evaluate EL/SpEL expression:
+Evaluate EL expression:
 
 ```xml
 <userTask id="myTask" name="My Task">

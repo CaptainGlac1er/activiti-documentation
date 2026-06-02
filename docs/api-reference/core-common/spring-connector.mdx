@@ -1,6 +1,7 @@
 ---
 sidebar_label: Spring Connector
 slug: /api-reference/core-common/spring-connector
+title: "Spring Connector"
 description: Spring integration for Activiti connector execution and bean management.
 ---
 
@@ -447,28 +448,28 @@ public class ConnectorManager {
 
 ### Using in BPMN Process
 
-```xml
-<!-- BPMN Process with Connector -->
-<process id="notificationProcess">
-    <startEvent id="start"/>
-    
-    <sequenceFlow sourceRef="start" targetRef="sendEmail"/>
-    
-    <serviceTask id="sendEmail"
-                 name="Send Notification Email"
-                 activiti:connectorId="email-connector"
-                 activiti:action="sendEmail">
-        <extensionElements>
-            <activiti:in source="recipientEmail" target="to"/>
-            <activiti:in expression="${'Order #' + orderId}" target="subject"/>
-            <activiti:in source="emailBody" target="body"/>
-            <activiti:out source="messageId" target="sentMessageId"/>
-        </extensionElements>
-    </serviceTask>
-    
-    <sequenceFlow sourceRef="sendEmail" targetRef="end"/>
-    <endEvent id="end"/>
-</process>
+> **Note:** Variable mapping for connectors is configured via **process extension JSON** (`*-extension.json`), not through `<activiti:in>` or `<activiti:out>` XML elements. The engine does not parse these elements.
+
+**notificationProcess-extension.json:**
+```json
+{
+  "extensions": {
+    "Process_notificationProcess": {
+      "mappings": {
+        "sendEmail": {
+          "inputs": {
+            "to": { "type": "VARIABLE", "value": "recipientEmail" },
+            "subject": { "type": "EXPRESSION", "value": "${'Order #' + orderId}" },
+            "body": { "type": "VARIABLE", "value": "emailBody" }
+          },
+          "outputs": {
+            "sentMessageId": { "type": "VARIABLE", "value": "messageId" }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
 ### Multiple Connector Locations

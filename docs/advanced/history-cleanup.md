@@ -29,7 +29,7 @@ config.setHistoryLevel(HistoryLevel.FULL);
 
 ```yaml
 spring.activiti:
-  history-level: full
+  history-level: FULL
 ```
 
 **Lower history levels reduce storage growth but limit audit capability.** Choose based on compliance requirements.

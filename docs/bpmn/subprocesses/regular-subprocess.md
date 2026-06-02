@@ -117,9 +117,10 @@ Hook into subprocess lifecycle:
 
 ```xml
 <subProcess id="trackedProcess" name="Tracked Operation">
-  <activiti:executionListener event="start" class="com.example.SubProcessStartListener"/>
-  <activiti:executionListener event="end" class="com.example.SubProcessEndListener"/>
-  
+  <extensionElements>
+    <activiti:executionListener event="start" class="com.example.SubProcessStartListener"/>
+    <activiti:executionListener event="end" class="com.example.SubProcessEndListener"/>
+  </extensionElements>
   <startEvent id="start1"/>
   <userTask id="task1" name="Task"/>
   <endEvent id="end1"/>

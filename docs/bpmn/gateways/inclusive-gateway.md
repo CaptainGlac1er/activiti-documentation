@@ -27,7 +27,7 @@ Inclusive Gateways implement **OR logic** in BPMN processes. Unlike Exclusive Ga
 - **Join Behavior** - Waits for all selected paths to complete
 
 ### Activiti Extensions
-- **SpEL/EL Expressions** - Complex condition evaluation
+- **EL Expressions** - Complex condition evaluation
 - **Default Flow** - Fallback when no conditions match
 - **Async Support** - Can be configured for async execution
 - **Execution Listeners** - Lifecycle hooks
@@ -129,13 +129,9 @@ Add a default flow when no conditions match:
 - If both are false → Execute `defaultTask`
 - If both are true → Execute both tasks in parallel
 
-### 3. Complex Conditions with SpEL
-
-Use Spring Expression Language for complex logic:
-
 ```xml
 <sequenceFlow id="premiumFlow" sourceRef="gateway" targetRef="premiumService">
-  <conditionExpression>#{orderService.isPremium(order)}</conditionExpression>
+  <conditionExpression>${orderService.isPremium(order)}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="urgentFlow" sourceRef="gateway" targetRef="urgentService">

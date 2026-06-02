@@ -102,8 +102,8 @@ public class ProcessExtensionResourceReader implements ResourceReader<ProcessExt
 
 Implements `ResourceFinderDescriptor` for auto-deployment scanning. Configured via Spring properties:
 
-- `spring.activiti.process.extensions.dir` — default `classpath*:**/processes/`
-- `spring.activiti.process.extensions.suffix` — default `**-extensions.json`
+- `spring.activiti.process-definition-location-prefix` — default `classpath*:**/processes/`
+- `spring.activiti.process-definition-location-suffixes` — default `**/*.bpmn20.xml, **/*.bpmn`
 
 ```java
 public class ProcessExtensionResourceFinderDescriptor implements ResourceFinderDescriptor {
@@ -380,8 +380,8 @@ The repository bean is a `CacheableProcessExtensionRepository` wrapping a `Proce
 Separate `@Configuration` that registers `ProcessExtensionResourceFinderDescriptor` for auto-deployment scanning.
 
 Properties:
-- `spring.activiti.process.extensions.dir` — default `classpath*:**/processes/`
-- `spring.activiti.process.extensions.suffix` — default `**-extensions.json`
+- `spring.activiti.process-definition-location-prefix` — default `classpath*:**/processes/`
+- `spring.activiti.process-definition-location-suffixes` — default `**/*.bpmn20.xml, **/*.bpmn`
 
 ---
 

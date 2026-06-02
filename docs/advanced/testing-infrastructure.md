@@ -126,18 +126,18 @@ private TaskOperations taskOperations;
 @Test
 void shouldProcessOrder() {
     ProcessInstance pi = processOperations.start(
-            new StartProcessPayloadBuilder()
+            StartProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .withVariable("orderId", "ORD-123")
                 .build())
-        .expectFields(processInstance().businessKey("ORD-123"))
+        .expectFields(businessKey("ORD-123"))
         .expectEvents(endEvent("orderCompleted").hasBeenCompleted())
-        .expect(processInstance().hasTask("Review Order", Task.TaskStatus.CREATED))
+        .expect(        hasTask("Review Order", Task.TaskStatus.CREATED))
         .andReturn();
 
     // Get the task ID from the task runtime or assertion scope
     taskOperations.complete(
-            new CompleteTaskPayloadBuilder()
+            CompleteTaskPayloadBuilder.complete()
                 .withTaskId(taskId)
                 .build())
         .expectEvents(endEvent("reviewDone").hasBeenCompleted());
@@ -150,7 +150,7 @@ Each assertion chain terminates with `andReturn()`, which gives you the underlyi
 
 ```java
 ProcessInstance pi = processOperations.start(
-        new StartProcessPayloadBuilder()
+        StartProcessPayloadBuilder.start()
             .withProcessDefinitionKey("myProcess")
             .build())
     .expectEvents(endEvent("end").hasBeenCompleted())
@@ -177,10 +177,10 @@ ProcessInstance pi = processOperations.start(
 ```java
 processOperations.start(payload)
     .expectFields(
-        processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING),
-        processInstance().businessKey("BK-001"))
+        status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+        businessKey("BK-001"))
     .expect(
-        processInstance().hasTask("Approve", Task.TaskStatus.CREATED,
+        hasTask("Approve", Task.TaskStatus.CREATED,
             TaskMatchers.withAssignee("manager")));
 ```
 
@@ -271,8 +271,7 @@ processOperations.start(payload)
 import static org.activiti.test.matchers.SignalMatchers.*;
 
 processOperations.signal(
-        new SignalPayloadBuilder()
-            .withName("orderReceived")
+        SignalPayloadBuilder.withName("orderReceived")
             .build())
     .expectEventsOnProcessInstance(processInstance,
         signal("orderReceived").hasBeenReceived());
@@ -337,14 +336,14 @@ class AsyncProcessTest {
     @Test
     void asyncServiceTaskCompletes() {
         processOperations.start(
-                new StartProcessPayloadBuilder()
+                StartProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("asyncProcess")
                     .build())
             // These assertions will poll until the async job completes
             .expectEvents(
                 endEvent("end").hasBeenCompleted())
             .expectFields(
-                processInstance().status(
+                status(
                     ProcessInstance.ProcessInstanceStatus.COMPLETED));
     }
 }
@@ -421,12 +420,12 @@ class OrderProcessTest {
     @Test
     void simpleProcess() {
         processOperations.start(
-                new StartProcessPayloadBuilder()
+                StartProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderProcess")
                     .withVariable("amount", 150)
                     .build())
             .expectFields(
-                processInstance().status(ProcessInstance.ProcessInstanceStatus.COMPLETED))
+                status(ProcessInstance.ProcessInstanceStatus.COMPLETED))
             .expectEvents(
                 endEvent("end").hasBeenCompleted());
     }
@@ -826,14 +825,13 @@ processOperations.start(payload)
 
 ```java
 ProcessInstance pi = processOperations.start(
-        new StartProcessPayloadBuilder()
+        StartProcessPayloadBuilder.start()
             .withProcessDefinitionKey("signalProcess")
             .build())
     .andReturn();
 
 processOperations.signal(
-        new SignalPayloadBuilder()
-            .withName("orderCompleteSignal")
+        SignalPayloadBuilder.withName("orderCompleteSignal")
             .build())
     .expectEventsOnProcessInstance(pi,
         signal("orderCompleteSignal").hasBeenReceived(),
@@ -844,12 +842,12 @@ processOperations.signal(
 
 ```java
 processOperations.start(
-        new StartProcessPayloadBuilder()
+        StartProcessPayloadBuilder.start()
             .withProcessDefinitionKey("miProcess")
             .withVariable("items", Arrays.asList("A", "B", "C"))
             .build())
     .expect(
-        processInstance().hasTask("Review Item", Task.TaskStatus.CREATED));
+        hasTask("Review Item", Task.TaskStatus.CREATED));
 ```
 
 ---
@@ -904,22 +902,22 @@ class OrderProcessIntegrationTest {
         String orderId = UUID.randomUUID().toString();
 
         ProcessInstance pi = processOperations.start(
-                new StartProcessPayloadBuilder()
+                StartProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderProcess")
                     .withVariable("orderId", orderId)
                     .withVariable("amount", 15000)
                     .build())
             .expectFields(
-                processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING))
+                status(ProcessInstance.ProcessInstanceStatus.RUNNING))
             .expectEvents(
                 processVariable("orderId", orderId).hasBeenCreated())
             .expect(
-                processInstance().hasTask("Manager Approval", Task.TaskStatus.CREATED))
+                hasTask("Manager Approval", Task.TaskStatus.CREATED))
             .andReturn();
 
         // Complete the approval task — taskId must be the actual task UUID
         taskOperations.complete(
-                new CompleteTaskPayloadBuilder()
+                CompleteTaskPayloadBuilder.complete()
                     .withTaskId(taskId)
                     .withVariable("approved", true)
                     .build())
@@ -988,13 +986,13 @@ class OrderApprovalTest {
     @Test
     void shouldAutoApproveLowValueOrder() {
         processOperations.start(
-                new StartProcessPayloadBuilder()
+                StartProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderApproval")
                     .withVariable("orderId", "ORD-001")
                     .withVariable("amount", 500)
                     .build())
             .expectFields(
-                processInstance().status(ProcessInstance.ProcessInstanceStatus.COMPLETED))
+                status(ProcessInstance.ProcessInstanceStatus.COMPLETED))
             .expectEvents(
                 startEvent("submitOrder").hasBeenStarted(),
                 exclusiveGateway("amountCheck").hasBeenStarted(),
@@ -1009,27 +1007,27 @@ class OrderApprovalTest {
         eventSource.clearEvents();
 
         ProcessInstance pi = processOperations.start(
-                new StartProcessPayloadBuilder()
+                StartProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderApproval")
                     .withVariable("orderId", "ORD-002")
                     .withVariable("amount", 15000)
                     .build())
             .expectFields(
-                processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING))
+                status(ProcessInstance.ProcessInstanceStatus.RUNNING))
             .expectEvents(
                 sequenceFlow("managerApproval").hasBeenTaken())
             .expect(
-                processInstance().hasTask(
+                hasTask(
                     "Manager Approval", Task.TaskStatus.CREATED,
                     TaskMatchers.withAssignee("manager")))
             .andReturn();
 
         // Get the task UUID from the task runtime query
-        String taskId = taskRuntime.getTasks(pi.getId()).get(0).getId();
+        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).get(0).getId();
 
         // Manager approves
         taskOperations.complete(
-                new CompleteTaskPayloadBuilder()
+                CompleteTaskPayloadBuilder.complete()
                     .withTaskId(taskId)
                     .withVariable("approved", true)
                     .build())
@@ -1047,21 +1045,21 @@ class OrderApprovalTest {
         eventSource.clearEvents();
 
         ProcessInstance pi = processOperations.start(
-                new StartProcessPayloadBuilder()
+                StartProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderApproval")
                     .withVariable("orderId", "ORD-003")
                     .withVariable("amount", 50000)
                     .build())
             .expect(
-                processInstance().hasTask(
+                hasTask(
                     "Manager Approval", Task.TaskStatus.CREATED))
             .andReturn();
 
         // Get the task UUID from the task runtime query
-        String taskId = taskRuntime.getTasks(pi.getId()).get(0).getId();
+        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).get(0).getId();
 
         taskOperations.complete(
-                new CompleteTaskPayloadBuilder()
+                CompleteTaskPayloadBuilder.complete()
                     .withTaskId(taskId)
                     .withVariable("approved", false)
                     .build())
@@ -1172,7 +1170,7 @@ Assert that critical variables are set correctly after process completion:
 **Problem**: `hasBeenCompleted()` fails because the activity type constant doesn't match.
 
 **Solution**: Use the correct factory method for the BPMN element type:
-- User tasks → `ProcessTaskMatchers.taskWithName("name")` or `processInstance().hasTask(...)`
+- User tasks → `ProcessTaskMatchers.taskWithName("name")` or `hasTask(...)`
 - Service tasks → `exclusiveGateway`, `endEvent`, `manualTask`, etc. based on the BPMN type
 - The activity type strings are: `startEvent`, `endEvent`, `userTask`, `serviceTask`, `exclusiveGateway`, `inclusiveGateway`, `parallelGateway`, `intermediateCatchEvent`, `intermediateThrowEvent`, `manualTask`, `throwEvent`, `boundaryEvent`, `subProcess`, `callActivity`, `scriptTask`, `receiveTask`, `sendTask`
 
