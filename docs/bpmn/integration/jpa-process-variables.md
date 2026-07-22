@@ -188,7 +188,12 @@ List<?> retrieved = execution.getVariable("loanRequests", List.class);
 LoanRequest first = (LoanRequest) retrieved.get(0);
 ```
 
-The list type is `jpa-entity-list`. It stores the entity class name and a serialized array of primary key values.
+The list type is `jpa-entity-list`. It stores the entity class name in the `TEXT_` column and a serialized array of primary key values in the `BYTEARRAY_ID_` column (not `TEXT2_`). The serialization uses Java's `ObjectOutputStream` to write a `String[]`.
+
+**Edge cases:**
+- Empty lists are **not storable** — `isAbleToStore()` returns `false` for lists of size 0
+- All entities in the list must be of the **same type** — mixed types are rejected
+- `null` elements within the list are rejected
 
 ## Using JPA Entities in Gateway Conditions
 
@@ -215,7 +220,7 @@ The entity is fetched fresh from the database when the condition is evaluated, e
 | **Storage** | Only class name + primary key are persisted — not the full entity |
 | **Retrieval** | `EntityManager.find()` loads a fresh entity each time |
 | **Stale data** | If the entity is deleted from the database externally, `getVariable` throws `ActivitiException` |
-| **Transactions** | In Spring, the JPA operations share Spring's transaction context |
+| **Transactions** | When `jpaHandleTransaction=false` (Spring): JPA operations share Spring's transaction context. When `jpaHandleTransaction=true` (standalone): Activiti begins/commits/rolls back JPA transactions in sync with the engine via `TransactionListener` callbacks. Flush only occurs when `!handleTransactions || isTransactionActive()` |
 | **Flush timing** | Activiti flushes the EntityManager before storing the variable to ensure the PK is assigned |
 | **Type resolution** | When JPA is configured, entity types are registered before `SerializableType`, preventing blob serialization |
 
@@ -240,6 +245,25 @@ graph TD
         R1 --> R2 --> R3 --> R4
     end
 ```
+
+## Historic JPA Entity Variables
+
+When a process instance completes, variable values are moved to history tables (`ACT_HI_VARINST`). Activiti uses `HistoricJPAEntityVariableType` and `HistoricJPAEntityListVariableType` to handle historical JPA entity variables.
+
+These historic variants **override `isCachable()` to return `true`**, unlike the runtime types which are not cached by default (`forceCacheable = false`). This difference is important:
+
+- **Runtime (`jpa-entity`)**: Not cacheable by default — each `getVariable()` call triggers a fresh `EntityManager.find()`, ensuring the latest database state
+- **Historic (`jpa-entity`)**: Cacheable — the entity snapshot is cached because the entity may no longer exist in the production database when the history is queried
+
+```java
+// Historical query — the entity snapshot may be cached
+List<HistoricVariableInstance> history = historyService
+    .createHistoricVariableInstanceQuery()
+    .variableName("loanRequest")
+    .list();
+```
+
+If you need the most up-to-date entity data during historical queries, the cache ensures the value is still available even if the underlying database record has been deleted.
 
 ## Complete Example
 
@@ -333,7 +357,13 @@ taskService.complete(task.getId(), Map.of("approvedByManager", true));
 
 ### "Entity does not exist" error
 
-If a JPA entity variable is retrieved but the entity no longer exists in the database, Activiti throws an `ActivitiException`. This can happen if the entity was deleted outside the process.
+If a JPA entity variable is retrieved but the entity no longer exists in the database, Activiti throws an `ActivitiException` with the message:
+
+```
+Entity does not exist: <fully.qualified.ClassName> - <primaryKeyValue>
+```
+
+This can happen if the entity was deleted outside the process.
 
 **Solution:** Ensure entities referenced by process variables are not deleted while the process is still active.
 
@@ -341,11 +371,21 @@ If a JPA entity variable is retrieved but the entity no longer exists in the dat
 
 The class must be annotated with `@Entity`. Subclasses of `@Entity` classes are also recognized.
 
+Activiti throws:
+```
+ActivitiIllegalArgumentException: Object is not a JPA Entity: class='<fully.qualified.ClassName>', <value>
+```
+
 **Solution:** Verify the entity annotation is present and the class is included in your persistence unit configuration.
 
 ### Compound primary keys
 
 Activiti does not support entities with `@EmbeddedId` or `@IdClass`.
+
+The scanner throws:
+```
+ActivitiException: Cannot find field or method with annotation @Id on class '<ClassName>', only single-valued primary keys are supported on JPA-entities
+```
 
 **Solution:** Use a single-column primary key.
 

@@ -251,18 +251,38 @@ config.setDataSourceJndiName("java:/comp/env/jdbc/activiti");
 
 ### JPA Integration
 
+Configure JPA to enable storing JPA entities as process variables. Choose one approach:
+
+**Using an existing EntityManagerFactory** (e.g., Spring Boot):
+
 ```java
-// Use JPA EntityManager
 config.setJpaEntityManagerFactory(entityManagerFactory);
-config.setJpaPersistenceUnitName("activiti-pu");
-config.setJpaHandleTransaction(false);  // Let JPA manage transactions
-config.setJpaCloseEntityManager(true);   // Close EM after each command
+config.setJpaHandleTransaction(false);  // Let the container manage transactions
+config.setJpaCloseEntityManager(false); // Let the container manage EM lifecycle
 ```
 
+**Using a persistence unit name** (standalone, no Spring):
+
+```java
+config.setJpaPersistenceUnitName("activiti-pu");
+config.setJpaHandleTransaction(true);   // Activiti manages JPA transactions
+config.setJpaCloseEntityManager(true);  // Close EM after each command
+```
+
+| Property | Standalone value | Spring Boot value | Meaning |
+|----------|-----------------|-------------------|---------|
+| `jpaEntityManagerFactory` | — | Spring's `EntityManagerFactory` | Integrates with existing JPA setup |
+| `jpaPersistenceUnitName` | `"activiti-pu"` | — | Persistence unit from `persistence.xml` |
+| `jpaHandleTransaction` | `true` | `false` | Activiti manages JPA transactions vs. container-managed |
+| `jpaCloseEntityManager` | `true` | `false` | Activiti closes EM after each command vs. container-managed lifecycle |
+
 **Why use these:**
-- `setJpaEntityManagerFactory`: Integrate with existing JPA setup
-- `setJpaHandleTransaction`: Control transaction management boundary
-- `setJpaCloseEntityManager`: Prevent EntityManager leaks in long-running applications
+- `setJpaEntityManagerFactory`: Integrate with existing JPA setup (Spring Boot)
+- `setJpaPersistenceUnitName`: Let Activiti create the EMF from a persistence unit (standalone)
+- `setJpaHandleTransaction`: Control transaction management boundary (`true` = Activiti, `false` = container)
+- `setJpaCloseEntityManager`: Prevent EntityManager leaks (`true` = Activiti closes, `false` = container manages)
+
+See [JPA Process Variables](../bpmn/integration/jpa-process-variables.md) for full configuration and usage examples.
 
 ---
 

@@ -115,6 +115,27 @@ execution.setTransientVariable("myVar", "temporary");
 - Useful for intermediate calculations
 - Better performance for temporary data
 
+### JPA Entity Variables
+
+JPA entities can be stored directly as process variables, storing only the entity's class name and primary key rather than the serialized object. The entity is fetched fresh from the database on each access.
+
+```java
+execution.setVariable("loanRequest", loanRequestEntity);  // JPA entity
+LoanRequest loan = execution.getVariable("loanRequest", LoanRequest.class);
+
+// Lists of entities are also supported
+execution.setVariable("loanRequests", listOfLoanRequests);
+```
+
+**Characteristics:**
+- Only class name + primary key are persisted in `ACT_RU_VARIABLE` (`TEXT_` and `TEXT2_` columns)
+- Entity is loaded via `EntityManager.find()` on each access (not cached)
+- Supports single entities and lists of entities (same type)
+- Requires JPA configuration on the process engine
+- Historic JPA variables are cached (unlike runtime variables)
+
+**Learn more:** [JPA Entity Variables](../integration/jpa-process-variables.md) — Full configuration and usage guide
+
 ## Variable Scope Hierarchy
 
 ```mermaid
@@ -442,7 +463,7 @@ historyService.createHistoricVariableInstanceQuery()
 | Column | Description |
 |--------|-------------|
 | `ID_` | Variable instance ID |
-| `TYPE_` | Variable type (string, long, date, bytes, etc.) |
+| `TYPE_` | Variable type (string, long, date, bytes, jpa-entity, jpa-entity-list, etc.) |
 | `NAME_` | Variable name |
 | `EXECUTION_ID_` | Execution ID (null = process instance level) |
 | `TASK_ID_` | Task ID (if task variable) |
@@ -667,6 +688,7 @@ List<HistoricDetail> updates = historyService
 - [Service Task](../elements/service-task.md) - Variable usage in delegates
 - [User Task](../elements/user-task.md) - Task variables and forms
 - [Common Features](../common-features.md) - Multi-instance variables
+- [JPA Entity Variables](../integration/jpa-process-variables.md) - Using JPA entities as process variables
 
 ---
 
