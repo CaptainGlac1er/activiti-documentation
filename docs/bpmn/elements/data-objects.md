@@ -157,4 +157,5 @@ graph TD
 ## Related Documentation
 
 - [Variables and Variable Scope](../reference/variables.md) — Process variables
+- [JPA Entity Variables](../integration/jpa-process-variables.md) — Storing JPA entities as process variables
 - [Service Task](./service-task.md) — Reading/writing data objects in delegates

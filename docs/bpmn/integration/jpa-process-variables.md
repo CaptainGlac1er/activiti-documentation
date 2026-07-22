@@ -1,7 +1,7 @@
 ---
 sidebar_label: JPA Entity Variables
 slug: /bpmn/integration/jpa-process-variables
-title: "Using Spring JPA Entities as Process Variables"
+title: "Using JPA Entities as Process Variables"
 description: "How to store and retrieve JPA entity references as process variables in Activiti."
 ---
 
@@ -56,6 +56,8 @@ public class ActivitiJpaConfig {
 | `jpaHandleTransaction` | `false` | Let Spring manage transactions |
 | `jpaCloseEntityManager` | `false` | Let Spring manage the EntityManager lifecycle |
 
+> **Note:** When `jpaCloseEntityManager` is `true`, Activiti's `EntityManagerSessionImpl.close()` only attempts to close the EntityManager when it is already closed (`!entityManager.isOpen()`). This means open EMs are not actively closed by Activiti in the current implementation. In Spring, always use `false` to let the container manage the lifecycle.
+
 ### Spring XML
 
 ```xml
@@ -81,6 +83,16 @@ Use `jpaPersistenceUnitName` to reference a persistence unit from `persistence.x
     <property name="jpaCloseEntityManager" value="true"/>
 </bean>
 ```
+
+## Spring EntityManager Factory
+
+When JPA variables are configured in a Spring environment with `jpaEntityManagerFactory` set, Activiti uses `SpringEntityManagerSessionFactory` instead of the standard `EntityManagerSessionFactory`. This Spring-specific factory:
+
+- First tries to obtain a **transactional EntityManager** from Spring's transaction synchronization (via `EntityManagerFactoryUtils.getTransactionalEntityManager()`)
+- If found, wraps it with `handleTransactions=false` and `closeEntityManager=false` (Spring manages both transaction and lifecycle)
+- If no transactional EntityManager is found, falls back to the standard `EntityManagerSessionImpl`
+
+This ensures that JPA variable operations participate in the same Spring-managed transaction as the rest of the process execution.
 
 ## Defining a JPA Entity
 

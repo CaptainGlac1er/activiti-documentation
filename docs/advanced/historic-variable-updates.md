@@ -167,3 +167,4 @@ for (Map.Entry<String, Long> entry : updateCounts.entrySet()) {
 - [History Service API](../api-reference/engine-api/history-service) — Full history operations
 - [Configuration](../configuration#history-configuration) — Setting history levels
 - [Variables](../bpmn/reference/variables.md) — Variable scope and lifecycle
+- [JPA Entity Variables](../bpmn/integration/jpa-process-variables.md) — Storing JPA entities as historical variables
