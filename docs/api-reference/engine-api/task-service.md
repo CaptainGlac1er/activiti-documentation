@@ -251,7 +251,7 @@ taskService.complete(taskId, variables, transientVariables);
 
 ```java
 // Get and update task
-Task task = taskService.getTask(taskId);
+Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
 task.setName("Updated Task Name");
 task.setDescription("Updated description");
 task.setPriority(10);
@@ -391,7 +391,7 @@ List<Task> tasks = taskService.createTaskQuery()
 taskService.delegateTask(taskId, "delegate.user");
 
 // Delegate and track original assignee
-Task task = taskService.getTask(taskId);
+Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
 String originalAssignee = task.getAssignee();
 taskService.delegateTask(taskId, "temp.user");
 
@@ -750,7 +750,7 @@ public class TaskClaimingService {
     
     public void claimTask(String taskId, String userId) {
         // Check if task exists
-        Task task = taskService.getTask(taskId);
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         
         // Check if already claimed
         if (task.getAssignee() != null) {
@@ -794,7 +794,7 @@ public class TaskCompletionService {
         String taskId = request.getTaskId();
         
         // Verify assignee
-        Task task = taskService.getTask(taskId);
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (!task.getAssignee().equals(request.getUserId())) {
             throw new UnauthorizedException(
                 "Only assignee can complete the task");
@@ -874,7 +874,7 @@ taskService.claim(taskId, userId);
 
 ```java
 // GOOD
-Task task = taskService.getTask(taskId);
+Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
 if (!task.getAssignee().equals(userId)) {
     throw new UnauthorizedException("Not assigned to you");
 }

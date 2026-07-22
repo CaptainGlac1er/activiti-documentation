@@ -469,7 +469,7 @@ public ProcessEngineConfiguration processEngineConfiguration(
         new MultiSchemaMultiTenantProcessEngineConfiguration(tenantInfoHolder);
 
     config.setDatabaseType("mysql");
-    config.setDatabaseSchemaUpdate("true");
+    config.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
     config.setAsyncExecutorActivate(true);
     config.setAsyncExecutor(
         new SharedExecutorServiceAsyncExecutor(tenantInfoHolder));

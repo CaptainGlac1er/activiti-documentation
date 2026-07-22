@@ -12,7 +12,6 @@ A Send Task (`sendTask`) represents a one-way message sent from the process to a
 ## BPMN Element
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <sendTask id="notifyCustomer"
             name="Notify Customer"
             activiti:type="mail">
@@ -44,7 +43,6 @@ The `type` attribute or `implementation` attribute determines the behavior:
 ### Mail Send Task
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <sendTask id="sendEmail" activiti:type="mail">
   <extensionElements>
     <activiti:field name="to" expression="${recipientEmail}"/>
@@ -133,7 +131,6 @@ public class SendTaskEventListener implements ActivitiEventListener {
 A Send Task can be configured as asynchronous to decouple message sending from process execution:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <sendTask id="asyncEmail" name="Send Async Notification" activiti:type="mail" activiti:async="true">
   <extensionElements>
     <activiti:field name="to" expression="${recipientEmail}"/>

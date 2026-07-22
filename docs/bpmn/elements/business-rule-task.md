@@ -12,10 +12,16 @@ Business Rule Tasks provide a **BPMN 2.0 standard element** for executing busine
 ## Overview
 
 ```xml
-<businessRuleTask id="ruleTask" 
-                  name="Evaluate Rules"
-                  activiti:class="com.example.CustomRuleEngine"
-                  activiti:resultVariable="decisionResult"/>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+               xmlns:activiti="http://activiti.org/bpmn"
+               targetNamespace="http://www.activiti.org/business">
+  <process id="businessRuleProcess" isExecutable="true">
+    <businessRuleTask id="ruleTask" 
+                      name="Evaluate Rules"
+                      activiti:class="com.example.CustomRuleEngine"
+                      activiti:resultVariable="decisionResult"/>
+  </process>
+</definitions>
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
@@ -61,7 +67,7 @@ public interface BusinessRuleTaskDelegate extends ActivityBehavior {
 
 **Note:** If no `activiti:resultVariable` is specified, the factory defaults to `"org.activiti.engine.rules.OUTPUT"`.
 
-**Note:** `activiti:class` instantiates the class via `Class.forName()` reflection — it does **not** look up a Spring bean. This means `@Autowired` and other Spring annotations will **not** work. For Spring integration, use a Service Task with `implementation="beanName"` instead.
+**Note:** `activiti:class` instantiates the class via `Class.forName()` reflection — it does **not** look up a Spring bean. This means `@Autowired` and other Spring annotations will **not** work. For Spring integration, use `activiti:delegateExpression="${beanName}"` on a service task instead.
 
 ## Implementation Patterns
 

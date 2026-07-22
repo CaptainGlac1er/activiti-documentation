@@ -43,7 +43,6 @@ public interface JavaDelegate {
 
 | Requirement | Details |
 |-------------|---------|
-| **Serializable** | Must implement `Serializable` |
 | **No-arg Constructor** | Required for instantiation |
 | **Single Method** | Implement `execute(DelegateExecution)` |
 | **Void Return** | Method returns void |
@@ -665,7 +664,7 @@ public class OrderValidator implements JavaDelegate {
 **BPMN:**
 ```xml
 <serviceTask id="validateOrder" name="Validate Order" 
-             activiti:class="com.example.OrderValidator"/>
+             activiti:delegateExpression="${orderValidator}"/>
 ```
 
 ### Using @Configuration
@@ -727,7 +726,7 @@ public class DoEverythingDelegate implements JavaDelegate {
 public void execute(DelegateExecution execution) {
     try {
         processBusinessLogic(execution);
-    } catch (ExternalServiceException e) {
+    } catch (ActivitiException e) {
         // Log and set error variable
         execution.setVariable("error", e.getMessage());
         execution.setVariable("canProceed", false);

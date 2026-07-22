@@ -253,6 +253,20 @@ Activiti fully supports the **BPMN 2.0 specification** while adding powerful ext
 
 ## Activiti Extensions
 
+### XML Namespace Requirement
+
+All BPMN XML examples in this documentation use the `activiti:` namespace prefix. The namespace declaration **`xmlns:activiti="http://activiti.org/bpmn"`** must be included in the root `<definitions>` element of any BPMN file that uses Activiti extensions:
+
+```xml
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:activiti="http://activiti.org/bpmn"
+             targetNamespace="http://www.activiti.org/processdef">
+  <!-- BPMN elements with activiti: attributes go here -->
+</definitions>
+```
+
+> **Tip:** Individual code snippets throughout these docs show only the relevant BPMN fragments, not the full `<definitions>` wrapper. The `activiti:` namespace is assumed to be already declared.
+
 Activiti extends BPMN 2.0 with several proprietary features that enhance workflow capabilities:
 
 ### 1. **Custom Properties**

@@ -61,9 +61,8 @@ public class MonolithicWorkflowApp {
 public class ActivitiConfig {
     @Bean
     public ProcessEngineConfiguration processEngineConfiguration() {
-        ProcessEngineConfiguration config = new ProcessEngineConfiguration();
+        ProcessEngineConfigurationImpl config = new ProcessEngineConfigurationImpl();
         config.setDataSource(dataSource());
-        config.setJtaTransactionManager(jtaTransactionManager());
         config.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
         return config;
     }

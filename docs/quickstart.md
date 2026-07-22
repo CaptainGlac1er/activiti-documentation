@@ -345,6 +345,9 @@ public class WorkflowEventListener {
     
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private HistoryService historyService;
     
     /**
      * Handles process start events.
@@ -383,8 +386,11 @@ public class WorkflowEventListener {
     @Async
     public void onProcessCompleted(ProcessCompletedEvent event) {
         ProcessInstance process = event.getEntity();
-        log.info("Process completed: ID={}, Duration={}", 
-                 process.getId(), process.getEndTime());
+        HistoricProcessInstance historicProcess = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceId(process.getId())
+            .singleResult();
+        log.info("Process completed: ID={}, EndTime={}", 
+                 process.getId(), historicProcess.getEndTime());
         
         notificationService.sendNotification(
             "Process Completed",
