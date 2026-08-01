@@ -23,30 +23,7 @@ The module contains three classes:
 
 ## SPI Overview
 
-The parent module `activiti-spring-application` defines two interfaces that form a plugin SPI:
-
-### `ApplicationEntryDiscovery`
-
-```java
-public interface ApplicationEntryDiscovery {
-    Predicate<ZipEntry> filter(ZipEntry entry);
-    String getEntryType();
-}
-```
-
-A discovery implementation provides a filter that selects relevant `ZipEntry` objects from an application archive, and declares an entry type string that categorizes the matched entries.
-
-### `ApplicationEntryDeployer`
-
-```java
-public interface ApplicationEntryDeployer {
-    void deployEntries(ApplicationContent application);
-}
-```
-
-A deployer receives an `ApplicationContent` — which maps entry types to lists of `FileContent` objects — and deploys the entries of the type it handles.
-
-Both interfaces are resolved through Spring's dependency injection: all beans of type `ApplicationEntryDiscovery` are wired into `ApplicationReader`, and all beans of type `ApplicationEntryDeployer` are wired into `ApplicationDeployer`.
+This process-support module provides *process-specific implementations* of the application entry discovery and deployment SPI defined in the core-common `activiti-spring-application` module. The `ApplicationEntryDiscovery` and `ApplicationEntryDeployer` contracts and their wiring through Spring dependency injection are documented on the canonical contract page: [Spring Application](../../core-common/spring-application.md).
 
 ---
 

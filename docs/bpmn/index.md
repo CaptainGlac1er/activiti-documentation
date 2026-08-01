@@ -269,15 +269,19 @@ All BPMN XML examples in this documentation use the `activiti:` namespace prefix
 
 Activiti extends BPMN 2.0 with several proprietary features that enhance workflow capabilities:
 
-### 1. **Custom Properties**
-Add metadata to any BPMN element using `<activiti:property>`:
+### 1. **Field Injection**
+Inject values into delegates using `<activiti:field>`:
 ```xml
-<userTask id="task1" name="Review Document">
+<serviceTask id="service1" activiti:class="com.example.MyDelegate">
   <extensionElements>
-    <activiti:property name="department" value="finance"/>
-    <activiti:property name="priority" value="high"/>
+    <activiti:field name="department">
+      <activiti:string>finance</activiti:string>
+    </activiti:field>
+    <activiti:field name="priority">
+      <activiti:expression>${'high'}</activiti:expression>
+    </activiti:field>
   </extensionElements>
-</userTask>
+</serviceTask>
 ```
 
 ### 2. **Task Listeners**

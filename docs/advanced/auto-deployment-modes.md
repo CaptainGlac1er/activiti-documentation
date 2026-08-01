@@ -13,8 +13,9 @@ When using the Activiti Spring Boot starter, BPMN resources discovered on the cl
 
 ```yaml
 # application.yml
-spring.activiti:
-  deployment-mode: "default"
+spring:
+  activiti:
+    deployment-mode: "default"
 ```
 
 ```java
@@ -162,17 +163,38 @@ Then set `deploymentMode` to `"custom"` on the configuration.
 
 ## Resource Discovery
 
-Resources are discovered via `ResourceFinder` configured in Spring Boot properties:
+Resources are discovered via `ResourceFinder` using Spring Boot properties for location prefix and suffixes:
 
 ```yaml
-spring.activiti:
-  resource-finder-descriptors:
-    - paths:
-        - 'classpath*:processes/*.bpmn'
-        - 'classpath*:processes/*.bpmn20.xml'
+spring:
+  activiti:
+    process-definition-location-prefix: "classpath*:**/processes/"
+    process-definition-location-suffixes:
+      - "*.bpmn"
+      - "*.bpmn20.xml"
+```
+
+For custom resource discovery, define `ResourceFinderDescriptor` beans programmatically:
+
+```java
+@Bean
+public ResourceFinderDescriptor customResourceFinder() {
+    return new ResourceFinderDescriptor() {
+        @Override
+        public Resource[] getResources() {
+            // Return custom resources
+        }
+    };
+}
 ```
 
 The deployment mode then groups these discovered resources into deployments according to the selected strategy.
+
+## Related Documentation
+
+- [Configuration](../configuration.md) — Engine configuration overview
+- [Advanced Deployment Builder](../advanced/deployment-builder.md) — Manual deployment API
+
 
 ## Related Documentation
 

@@ -28,7 +28,8 @@ config.setHistoryLevel(HistoryLevel.FULL);
 ```
 
 ```yaml
-spring.activiti:
+spring:
+  activiti:
   history-level: FULL
 ```
 

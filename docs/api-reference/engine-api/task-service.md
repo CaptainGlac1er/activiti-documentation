@@ -316,7 +316,31 @@ Map<String, Object> localVars = taskService.getVariablesLocal(taskId);
 
 // Get variable names
 List<String> varNames = taskService.getVariableNames(taskId);
+
+### Variable Instances & Data Objects
+
+`VariableInstance` provides access to the variable's metadata (name, value, type, task/execution scope) alongside its value, while `DataObject` exposes managed data objects with name/description localization.
+
+```java
+// Variable instance with metadata + value
+VariableInstance varInstance = taskService.getVariableInstance(taskId, "amount");
+String value = (String) varInstance.getValue();
+String typeName = varInstance.getTypeName();
+
+// All variable instances (including task-local scope)
+Map<String, VariableInstance> instances = taskService.getVariableInstances(taskId);
+
+// Local-only variable instances for a batch of task ids
+List<VariableInstance> locals = taskService.getVariableInstancesLocalByTaskIds(Set.of("task1", "task2"));
+
+// Data object with localized name/description
+DataObject dataObject = taskService.getDataObject(taskId, "customer");
+String localizedName = taskService.getDataObject(taskId, "customer", "de", true).getName();
+
+// All data objects visible from the task scope
+Map<String, DataObject> dataObjects = taskService.getDataObjects(taskId);
 ```
+
 
 ### Variable Scope
 
@@ -620,9 +644,35 @@ void resolveTask(String taskId, Map<String, Object> variables, Map<String, Objec
 
 // Variables
 Object getVariable(String taskId, String variableName);
+Object getVariable(String taskId, String variableName, boolean isLocal);
+Object getVariableLocal(String taskId, String variableName);
+<T> T getVariableLocal(String taskId, String variableName, Class<T> variableClass);
+boolean hasVariable(String taskId, String variableName);
+boolean hasVariableLocal(String taskId, String variableName);
 Map<String, Object> getVariables(String taskId);
+Map<String, Object> getVariables(String taskId, Collection<String> variableNames);
+Map<String, Object> getVariablesLocal(String taskId);
+Map<String, Object> getVariablesLocal(String taskId, Collection<String> variableNames);
 void setVariable(String taskId, String variableName, Object value);
 void setVariables(String taskId, Map<String, ? extends Object> variables);
+
+// Variable Instances
+VariableInstance getVariableInstance(String taskId, String variableName);
+VariableInstance getVariableInstanceLocal(String taskId, String variableName);
+Map<String, VariableInstance> getVariableInstances(String taskId);
+Map<String, VariableInstance> getVariableInstances(String taskId, Collection<String> variableNames);
+Map<String, VariableInstance> getVariableInstancesLocal(String taskId);
+Map<String, VariableInstance> getVariableInstancesLocal(String taskId, Collection<String> variableNames);
+List<VariableInstance> getVariableInstancesLocalByTaskIds(Set<String> taskIds);
+
+// Data Objects
+DataObject getDataObject(String taskId, String dataObjectName);
+DataObject getDataObject(String taskId, String dataObjectName, String locale, boolean withLocalizationFallback);
+Map<String, DataObject> getDataObjects(String taskId);
+Map<String, DataObject> getDataObjects(String taskId, String locale, boolean withLocalizationFallback);
+Map<String, DataObject> getDataObjects(String taskId, Collection<String> dataObjectNames);
+Map<String, DataObject> getDataObjects(String taskId, Collection<String> dataObjectNames, String locale, boolean withLocalizationFallback);
+
 
 // Comments
 Comment addComment(String taskId, String processInstanceId, String message);

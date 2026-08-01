@@ -224,8 +224,6 @@ spring:
     url: jdbc:mysql://localhost:3306/activiti
     username: activiti
     password: activiti
-
-spring:
   activiti:
     database-schema-update: true
     async-executor-activate: true

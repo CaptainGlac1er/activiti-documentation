@@ -160,7 +160,7 @@ flowchart TD
 <callActivity id="asyncCall" 
               name="Async SubProcess" 
               activiti:async="true"
-              activiti:calledElement="subProcess"/>
+              calledElement="subProcess"/>
 ```
 
 ### Business Rule Task

@@ -20,6 +20,7 @@ This guide provides systematic approaches to diagnose and resolve common issues 
 - [Performance Problems](#performance-problems)
 - [Configuration Issues](#configuration-issues)
 - [Runtime Errors](#runtime-errors)
+- [Common Engine Errors](#common-engine-errors)
 - [Security Issues](#security-issues)
 - [Diagnostic Checklist](#diagnostic-checklist)
 
@@ -669,6 +670,97 @@ public void updateProcesses(List<String> processIds) {
     }
 }
 ```
+
+---
+
+## Common Engine Errors
+
+### Error: Async Job Failing / Exhausted Retries
+
+**Symptoms:**
+```
+Job '12345' failed, retries exhausted - moved to dead-letter queue
+```
+
+Async jobs (timers, async continuations, service-task callbacks) retry on failure. By default a job retries **3 times** (`AsyncExecutorProperties.numberOfRetries`), with a configurable wait between attempts. When retries run out the job moves to the **dead-letter table** and stops executing.
+
+**Diagnosis:**
+```java
+ManagementService managementService = processEngine.getManagementService();
+// Fetch the exception stacktrace captured for a failed job
+String stacktrace = managementService.getJobExceptionStacktrace(jobId);
+```
+
+**Solutions:**
+
+**Solution 1: Inspect the root cause** — the stacktrace from `getJobExceptionStacktrace(jobId)` usually reveals whether the failure is a transient error (DB deadlock, network, temporary outage) or a permanent code bug.
+
+**Solution 2: Increase retries / retry wait**
+```yaml
+spring:
+  activiti:
+    async-executor:
+      number-of-retries: 5
+      retry-wait-time-in-millis: 1000
+```
+
+**Solution 3: Reset a dead-lettered job**
+```java
+managementService.setJobRetries(jobId, 3); // make it executable again
+```
+or `managementService.executeJob(jobId)` to run a specific job immediately.
+
+> For a full walkthrough of job states and retry handling, see [Job Lifecycle](../advanced/job-lifecycle.md).
+
+---
+
+### Error: ActivitiOptimisticLockingException
+
+**Symptoms:**
+```
+ActivitiOptimisticLockingException: object with same revision cannot be inserted
+```
+
+The engine uses a revision column for pessimistic-safe concurrent updates. When two threads/instances modify the same entity for different revisions, one update fails with `ActivitiOptimisticLockingException`. The async executor and core commands internally catch and retry these.
+
+**When it happens:**
+- Two concurrent operations updating the same process instance / task / execution
+- Multiple engine nodes in a cluster operating on the same rows
+- A long-running transaction reading stale state
+
+**Solutions:**
+1. **Retry the operation** — it is safe to retry, since the failure is due to a stale revision, not invalid data.
+2. **Check for duplicate listeners / double-completion** — two consumers completing the same task cause version clashes.
+3. **Use a retry interceptor** for non-transactional retries, or ensure consistent operation ordering.
+
+> See [Optimistic Locking](../advanced/optimistic-locking.md) for details, automatic retry interceptors, and cluster tuning.
+
+---
+
+### Error: Starting an Outdated Process Definition
+
+**Symptoms:**
+```
+Starting the latest process definition returns a previous version
+```
+
+Activiti keeps multiple versions of a process definition. New deployments can introduce a newer version, and existing running instances continue on their current version. An "outdated" definition usually surfaces as missing activities or variables introduced in the new model.
+
+**Diagnosis:**
+```java
+List<ProcessDefinition> definitions =
+    repositoryService.createProcessDefinitionQuery()
+        .processDefinitionKey("orderProcess")
+        .orderByProcessDefinitionVersion().desc()
+        .list();
+definitions.forEach(d ->
+    System.out.println("Version " + d.getVersion() + ": " + d.getId()));
+```
+
+**Solutions:**
+1. **Confirm which version is running** — match the instance's `processDefinitionId` (e.g. `order:2: dekameters`) against deployed versions above.
+2. **Redeploy explicitly** if needed, and be aware duplicate filtering (`enableDuplicateFiltering()`) suppresses deploying identical resources.
+3. **For migration**, deploy a new version rather than mutating a live definition; existing instances keep their original definition.
 
 ---
 

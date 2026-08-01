@@ -13,7 +13,7 @@ The **Async Execution** framework is a critical component of the Activiti engine
 
 ```java
 // Async executor configuration
-ProcessEngineConfiguration configuration = ProcessEngineConfiguration
+ProcessEngineConfigurationImpl configuration = ProcessEngineConfigurationImpl
     .createStandaloneProcessEngineConfiguration();
 
 configuration.setAsyncExecutorActivate(true);  // Enable async executor
@@ -115,12 +115,14 @@ spring:
 ### Java Configuration (Standalone)
 
 ```java
+import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
+
 public class AsyncExecutionConfig {
     
     @Bean
-    public ProcessEngineConfiguration processEngineConfiguration() {
-        ProcessEngineConfiguration config = 
-            ProcessEngineConfiguration.createStandaloneProcessEngineConfiguration();
+    public ProcessEngineConfigurationImpl processEngineConfiguration() {
+        ProcessEngineConfigurationImpl config = 
+            ProcessEngineConfigurationImpl.createStandaloneProcessEngineConfiguration();
         
         // Enable async executor
         config.setAsyncExecutorActivate(true);
@@ -551,14 +553,16 @@ public void monitorDeadLetterJobs() {
 
 ### 5. Use Appropriate Retry Counts
 
+Configure retry policy using `failedJobRetryTimeCycle`:
+
 ```xml
 <!-- GOOD: Set retries based on job type -->
 <serviceTask id="externalApiCall" 
              activiti:async="true"
              activiti:class="com.example.ApiCaller">
   <extensionElements>
-    <!-- Transient failures: 3-5 retries -->
-    <activiti:property name="retries" value="5"/>
+    <!-- Transient failures: 5 retries with 1-minute intervals -->
+    <activiti:failedJobRetryTimeCycle>R5/PT1M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 
@@ -566,8 +570,8 @@ public void monitorDeadLetterJobs() {
              activiti:async="true"
              activiti:class="com.example.Validator">
   <extensionElements>
-    <!-- Validation errors won't fix themselves: 0-1 retry -->
-    <activiti:property name="retries" value="1"/>
+    <!-- Validation errors: 1 retry only -->
+    <activiti:failedJobRetryTimeCycle>R1/PT0S</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```

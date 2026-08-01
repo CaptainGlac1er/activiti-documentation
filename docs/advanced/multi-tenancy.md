@@ -429,7 +429,8 @@ In a web application, a servlet filter or interceptor typically sets the tenant 
 The Spring Boot starter (`ActivitiProperties`) supports standard mail server configuration under the `spring.activiti` prefix. However, it does not include dedicated multi-tenancy properties for the `MultiSchemaMultiTenantProcessEngineConfiguration` path.
 
 ```yaml
-spring.activiti:
+spring:
+  activiti:
   mail-server-host: smtp.example.com
   mail-server-port: 587
   mail-server-user-name: notifications@example.com

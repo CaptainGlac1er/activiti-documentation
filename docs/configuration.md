@@ -68,18 +68,18 @@ The Activiti Engine is highly configurable through the `ProcessEngineConfigurati
 
 ```java
 // Standalone in-memory (for testing)
-ProcessEngineConfiguration config = ProcessEngineConfiguration
+ProcessEngineConfigurationImpl config = ProcessEngineConfigurationImpl
     .createStandaloneInMemProcessEngineConfiguration();
 
 // Standalone with JDBC
-ProcessEngineConfiguration config = ProcessEngineConfiguration
+ProcessEngineConfigurationImpl config = ProcessEngineConfigurationImpl
     .createStandaloneProcessEngineConfiguration();
 
 // Spring integration
-ProcessEngineConfiguration config = new SpringProcessEngineConfiguration();
+ProcessEngineConfigurationImpl config = new SpringProcessEngineConfiguration();
 
 // Custom configuration
-ProcessEngineConfiguration config = new ProcessEngineConfigurationImpl();
+ProcessEngineConfigurationImpl config = new ProcessEngineConfigurationImpl();
 ```
 
 ### Key Configuration Properties
@@ -151,7 +151,7 @@ ProcessEngine engine = new ProcessEngineConfigurationImpl()
 ### JDBC Configuration
 
 ```java
-ProcessEngineConfiguration config = new ProcessEngineConfigurationImpl();
+ProcessEngineConfigurationImpl config = new ProcessEngineConfigurationImpl();
 
 // Basic JDBC settings
 config.setJdbcUrl("jdbc:postgresql://localhost:5432/activiti");
@@ -312,7 +312,7 @@ config.setAsyncFailedJobWaitTime(10);       // Wait for async job failures
 
 ### Async Executor Thread Pool Configuration
 
-> **Note:** Thread pool settings are configured via **Spring Boot properties** using `AsyncExecutorProperties`. The `setAsyncExecutor*` methods exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. In Spring Boot, use `spring.activiti.*` properties via `AsyncExecutorProperties` or inject `AsyncExecutorProperties` instead.
+> **Note:** Thread pool settings are configured via **Spring Boot properties** using `AsyncExecutorProperties`. The `setAsyncExecutor*` methods exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. In Spring Boot, use `spring.activiti.async-executor.*` properties via `AsyncExecutorProperties` or inject `AsyncExecutorProperties` instead.
 
 **Spring Boot YAML (`application.yml`):**
 
@@ -320,9 +320,10 @@ config.setAsyncFailedJobWaitTime(10);       // Wait for async job failures
 spring:
   activiti:
     async-executor-activate: true
-    core-pool-size: 10      # spring.activiti.core-pool-size
-    max-pool-size: 20       # spring.activiti.max-pool-size
-    number-of-retries: 3    # spring.activiti.number-of-retries
+    async-executor:
+      core-pool-size: 10      # spring.activiti.async-executor.core-pool-size
+      max-pool-size: 20       # spring.activiti.async-executor.max-pool-size
+      number-of-retries: 3    # spring.activiti.async-executor.number-of-retries
 ```
 
 **Or programmatically via `AsyncExecutorProperties`:**
@@ -407,7 +408,7 @@ config.setHistoryLevel(HistoryLevel.FULL);
 **Why use these:**
 - `HistoryLevel.NONE`: Maximum performance, no history storage (testing, high-volume)
 - `HistoryLevel.ACTIVITY`: Track process flow without task details (monitoring)
-- `HistoryLevel.AUDIT`: Complete audit trail for compliance (production default)
+- `HistoryLevel.AUDIT`: Complete audit trail for compliance (recommended for production, default is NONE)
 - `HistoryLevel.FULL`: Detailed execution history for debugging and analytics
 
 ### History Features
@@ -430,7 +431,7 @@ config.setHistoryManager(new CustomHistoryManager());
 
 ### Cache Configuration
 
-> **Note:** Cache settings (`setProcessDefinitionCacheLimit`, `setKnowledgeBaseCacheLimit`) are configured via **Spring Boot properties** using `ActivitiProperties`. These methods exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. In Spring Boot, use `spring.activiti.process-definition-cache-limit` or inject `ActivitiProperties` instead.
+> **Note:** Cache settings (`setProcessDefinitionCacheLimit`) are configured via **Spring Boot properties** using `ActivitiProperties`. These methods exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. In Spring Boot, use `spring.activiti.process-definition-cache-limit` or inject `ActivitiProperties` instead.
 
 **Spring Boot YAML (`application.yml`):**
 
@@ -442,7 +443,7 @@ spring:
 
 **Or programmatically:**
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 activitiProperties.setProcessDefinitionCacheLimit(1000);
@@ -478,7 +479,7 @@ config.setBatchSizeTasks(1000);
 
 ### Performance Settings
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 // Configure performance settings object
@@ -526,7 +527,7 @@ config.setRollbackDeployment(true);
 
 ### Execution and Task Query Limits
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 // Limit execution queries to prevent memory issues
@@ -1034,7 +1035,7 @@ config.setDefaultCamelContext("camelContext");
 
 ### Development Configuration
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 public class DevProcessEngineConfiguration {
@@ -1071,7 +1072,7 @@ public class DevProcessEngineConfiguration {
 
 ### Production Configuration
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 public class ProdProcessEngineConfiguration {
@@ -1138,8 +1139,6 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-
-spring:
   activiti:
     database-schema-update: false
     history-level: AUDIT
@@ -1151,7 +1150,7 @@ spring:
     process-definition-cache-limit: 1000
 ```
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 @Configuration
@@ -1185,13 +1184,15 @@ public class ActivitiConfiguration {
 ### Testing Configuration
 
 ```java
+import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
+
 @TestConfiguration
 public class TestActivitiConfig {
     
     @Bean
-    public ProcessEngineConfiguration processEngineConfiguration() {
-        ProcessEngineConfiguration config = 
-            ProcessEngineConfiguration.createStandaloneInMemProcessEngineConfiguration();
+    public ProcessEngineConfigurationImpl processEngineConfiguration() {
+        ProcessEngineConfigurationImpl config = 
+            ProcessEngineConfigurationImpl.createStandaloneInMemProcessEngineConfiguration();
         
         config.setJdbcUrl("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1");
         config.setJdbcUsername("sa");
@@ -1237,7 +1238,7 @@ public class TestActivitiConfig {
 
 ### High-Performance Configuration
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 public class HighPerformanceConfiguration {
@@ -1329,7 +1330,7 @@ spring:
 
 ### 3. Set Query Limits
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 config.setExecutionQueryLimit(1000);
@@ -1340,7 +1341,7 @@ config.setTaskQueryLimit(1000);
 
 ### 4. Tune Async Executor for Workload
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 // CPU-bound workloads
@@ -1364,7 +1365,7 @@ config.setDataSource(hikariDataSource);  // Not JDBC URL
 
 ### 6. Enable Bulk Operations
 
-> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) and `processDefinitionCacheLimit` are also available as Spring Boot properties (`spring.activiti.*`).
+> **Note:** Methods like `setAsyncExecutor*`, `setBulkInsertEnabled`, `setExecutionQueryLimit`, `setProcessDefinitionCacheLimit`, etc. exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. Use `ProcessEngineConfigurationImpl` as your variable type to access them. In Spring Boot, thread pool settings (`corePoolSize`, `maxPoolSize`, `numberOfRetries`) are available as `spring.activiti.async-executor.*` properties, and `processDefinitionCacheLimit` is available as `spring.activiti.process-definition-cache-limit`.
 
 ```java
 config.setBulkInsertEnabled(true);

@@ -155,7 +155,7 @@ flowchart TD
         end
 
         subgraph AsyncProps["AsyncExecutorProperties"]
-            P2["@ConfigurationProperties<br>(activiti.async-executor)"]
+            P2["@ConfigurationProperties<br>(spring.activiti.async-executor)"]
         end
 
         subgraph EndpointCfg["EndpointAutoConfiguration"]
@@ -322,7 +322,7 @@ Process extension JSON files are discovered alongside process definitions using 
 
 ## Async Executor Properties
 
-`AsyncExecutorProperties` uses the prefix **`activiti.async-executor`**:
+`AsyncExecutorProperties` uses the prefix **`spring.activiti.async-executor`**:
 
 ```yaml
 spring:

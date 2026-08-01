@@ -514,10 +514,6 @@ public class SyncEventListener implements ProcessEventListener<ProcessCompletedE
         log.info("Event processed synchronously");
     }
     
-    @Override
-    public ProcessEvents getEventType() {
-        return ProcessEvents.PROCESS_COMPLETED;
-    }
 }
 ```
 
@@ -579,11 +575,6 @@ public class AsyncEventListener implements ProcessEventListener<ProcessCompleted
                 // Handle error - retry, dead letter queue, etc.
             }
         });
-    }
-    
-    @Override
-    public ProcessEvents getEventType() {
-        return ProcessEvents.PROCESS_COMPLETED;
     }
 }
 ```

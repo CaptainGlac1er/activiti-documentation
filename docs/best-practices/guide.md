@@ -383,7 +383,7 @@ spring:
 ```sql
 -- Example indexes for performance
 CREATE INDEX idx_task_assignee ON ACT_RU_TASK(ASSIGNEE_);
-CREATE INDEX idx_task_process_instance ON ACT_RU_TASK(PROC_INST_ID_;
+CREATE INDEX idx_task_process_instance ON ACT_RU_TASK(PROC_INST_ID_);
 CREATE INDEX idx_process_instance_status ON ACT_RU_EXECUTION(PROC_INST_ID_, SUSPENDED_);
 ```
 
@@ -407,7 +407,7 @@ public class TaskService {
     private SecurityManager securityManager;
     
     public void deleteTask(String taskId) {
-        if (securityManager.hasRole("admin")) {
+        if (securityManager.getAuthenticatedUserRoles().contains("admin")) {
             // Admin can delete any task
             taskAdminRuntime.delete(
                 TaskPayloadBuilder.delete()
@@ -489,10 +489,10 @@ public class SecurityAuditListener {
     }
     
     @EventListener
-    public void onProcessDeleted(ProcessCancelledEvent event) {
+    public void onProcessCancelled(ProcessCancelledEvent event) {
         ProcessInstance process = event.getEntity();
         auditLogService.log(
-            "PROCESS_DELETED",
+            "PROCESS_CANCELLED",
             process.getId(),
             process.getBusinessKey(),
             event.getCause(),
@@ -771,7 +771,7 @@ class ProcessIntegrationTest {
         
         // Verify completion
         ProcessInstance completed = processRuntime.processInstance(instance.getId());
-        assertEquals(ProcessInstanceStatus.COMPLETED, completed.getStatus());
+        assertEquals(ProcessInstance.ProcessInstanceStatus.COMPLETED, completed.getStatus());
     }
 }
 ```

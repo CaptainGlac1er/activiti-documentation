@@ -9,6 +9,8 @@ description: "Comprehensive guide to the Activiti engine event system for monito
 
 The engine event system provides a global, decoupled mechanism for monitoring all activity in the Activiti engine. Unlike execution listeners (which are defined per-BPMN element), engine events are dispatched globally for 35+ event types and can be registered programmatically without modifying process definitions.
 
+> **Note:** This page documents the **legacy engine event system** based on `ActivitiEvent`/`ActivitiEventListener`. For the recommended, typed, modern API events (`ProcessStartedEvent`, `TaskAssignedEvent`, `VariableEvent`, BPMN events) emitted by `ProcessRuntime`/`TaskRuntime`, see [Activiti API Runtime Events](../api-reference/activiti-api/runtime-events.md).
+
 ## How It Works
 
 When an event occurs, the engine dispatches an `ActivitiEvent` to all registered `ActivitiEventListener` instances. Listeners can be registered for all events or filtered to specific types.
@@ -384,3 +386,4 @@ public class NotificationListener implements ActivitiEventListener {
 - [Task Listeners](../bpmn/reference/task-listeners.md) — Task-specific listeners
 - [Database Event Logging](./database-event-logging.md) — Persistent DB audit trail
 - [Configuration](../configuration.md) — Engine event configuration
+- [Activiti API Runtime Events](../api-reference/activiti-api/runtime-events.md) — the recommended typed event API (`ProcessRuntime`/`TaskRuntime`)

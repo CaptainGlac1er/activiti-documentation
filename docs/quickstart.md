@@ -325,9 +325,9 @@ public class TaskCompletionRequest {
 @Data
 public class TaskCompleteResponse {
     private String taskId;
-    private TaskStatus status;
+    private Task.TaskStatus status;
     
-    public TaskCompleteResponse(String taskId, TaskStatus status) {
+    public TaskCompleteResponse(String taskId, Task.TaskStatus status) {
         this.taskId = taskId;
         this.status = status;
     }
@@ -347,7 +347,7 @@ public class WorkflowEventListener {
     private NotificationService notificationService;
 
     @Autowired
-    private HistoryService historyService;
+    private ProcessRuntime processRuntime;
     
     /**
      * Handles process start events.
@@ -386,11 +386,9 @@ public class WorkflowEventListener {
     @Async
     public void onProcessCompleted(ProcessCompletedEvent event) {
         ProcessInstance process = event.getEntity();
-        HistoricProcessInstance historicProcess = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceId(process.getId())
-            .singleResult();
-        log.info("Process completed: ID={}, EndTime={}", 
-                 process.getId(), historicProcess.getEndTime());
+        ProcessInstanceMeta meta = processRuntime.processInstanceMeta(process.getId());
+        log.info("Process completed: ID={}, ProcessDefinitionKey={}", 
+                  process.getId(), meta.getProcessDefinitionKey());
         
         notificationService.sendNotification(
             "Process Completed",
@@ -527,7 +525,7 @@ class WorkflowServiceTest {
         // Arrange
         ProcessInstance mockInstance = Mockito.mock(ProcessInstance.class);
         when(mockInstance.getId()).thenReturn("test-instance-id");
-        when(mockInstance.getStatus()).thenReturn(ProcessInstanceStatus.RUNNING);
+        when(mockInstance.getStatus()).thenReturn(ProcessInstance.ProcessInstanceStatus.RUNNING);
         when(processRuntime.start(any(StartProcessPayload.class))).thenReturn(mockInstance);
         
         // Act
@@ -536,7 +534,7 @@ class WorkflowServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("test-instance-id", result.getId());
-        assertEquals(ProcessInstanceStatus.RUNNING, result.getStatus());
+        assertEquals(ProcessInstance.ProcessInstanceStatus.RUNNING, result.getStatus());
         verify(processRuntime).start(any(StartProcessPayload.class));
     }
     
@@ -585,7 +583,7 @@ class WorkflowIntegrationTest {
         
         // Assert - Process started
         assertNotNull(instance.getId());
-        assertEquals(ProcessInstanceStatus.RUNNING, instance.getStatus());
+        assertEquals(ProcessInstance.ProcessInstanceStatus.RUNNING, instance.getStatus());
         
         // Act - Get and complete task
         Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 10));
@@ -600,7 +598,7 @@ class WorkflowIntegrationTest {
         
         // Assert - Process completed
         ProcessInstance completed = processRuntime.processInstance(instance.getId());
-        assertEquals(ProcessInstanceStatus.COMPLETED, completed.getStatus());
+        assertEquals(ProcessInstance.ProcessInstanceStatus.COMPLETED, completed.getStatus());
     }
     
     @Test
@@ -666,7 +664,7 @@ class WorkflowControllerTest {
         // Arrange
         ProcessInstance mockInstance = Mockito.mock(ProcessInstance.class);
         when(mockInstance.getId()).thenReturn("test-id");
-        when(mockInstance.getStatus()).thenReturn(ProcessInstanceStatus.RUNNING);
+        when(mockInstance.getStatus()).thenReturn(ProcessInstance.ProcessInstanceStatus.RUNNING);
         when(processRuntime.start(any())).thenReturn(mockInstance);
         
         StartProcessRequest request = new StartProcessRequest();

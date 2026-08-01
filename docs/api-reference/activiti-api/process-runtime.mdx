@@ -940,14 +940,14 @@ class ProcessRuntimeIntegrationTest {
         
         // Verify instance created
         assertNotNull(instance.getId());
-        assertEquals(ProcessInstanceStatus.RUNNING, instance.getStatus());
+        assertEquals(ProcessInstance.ProcessInstanceStatus.RUNNING, instance.getStatus());
         
         // Complete process
         // ...
         
         // Verify completion
         ProcessInstance completed = processRuntime.processInstance(instance.getId());
-        assertEquals(ProcessInstanceStatus.COMPLETED, completed.getStatus());
+        assertEquals(ProcessInstance.ProcessInstanceStatus.COMPLETED, completed.getStatus());
     }
 }
 ```
@@ -1009,6 +1009,7 @@ Pageable.of(0, 1000)
 
 - [Process Model Module](./process-model.mdx)
 - [Runtime Shared Module](runtime-shared.mdx)
+- [Runtime Events](./runtime-events.md) — the event system that backs these operations
 - [Main Module Docs](../overview.md)
 
 ---

@@ -293,7 +293,7 @@ public class SomeConformanceTest {
         );
 
         // 3. Assert state
-        assertThat(pi.getStatus()).isEqualTo(ProcessInstanceStatus.RUNNING);
+        assertThat(pi.getStatus()).isEqualTo(ProcessInstance.ProcessInstanceStatus.RUNNING);
 
         // 4. Assert exact event sequence
         assertThat(RuntimeTestConfiguration.collectedEvents)

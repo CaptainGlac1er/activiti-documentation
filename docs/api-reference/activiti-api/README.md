@@ -22,6 +22,7 @@ The Activiti API provides a modern, type-safe interface for process automation, 
 | **Task Model** | Task definition models | [View](./task-model.mdx) |
 | **Task Runtime** | Task management APIs | [View](./task-runtime.mdx) |
 | **API Implementation** | Implementation details | [View](./api-implementation.md) |
+| **Runtime Events** | Process, task, and variable events | [View](./runtime-events.md) |
 
 ## Key Features
 

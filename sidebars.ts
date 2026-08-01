@@ -57,6 +57,8 @@ const sidebars: SidebarsConfig = {
             'bpmn/elements/shell-task',
             'bpmn/elements/sequence-flows',
             'bpmn/elements/data-objects',
+            'bpmn/elements/data-grid',
+            'bpmn/elements/pools-lanes',
           ],
         },
         {

@@ -46,7 +46,9 @@ The `RetryInterceptor` is configured internally by the engine. Its default value
 For **async job retry** specifically (failed jobs that need to be retried after exceptions during execution), Spring Boot provides these properties:
 
 ```yaml
-spring.activiti.async-executor:
+spring:
+  activiti:
+    async-executor:
   number-of-retries: 3            # max retries per failed job
   retry-wait-time-in-millis: 500  # wait time between job retries
 ```
@@ -122,7 +124,9 @@ In clustered environments, optimistic locking is expected behavior:
 The `AsyncExecutorProperties` class provides these relevant properties (prefix `spring.activiti.async-executor`):
 
 ```yaml
-spring.activiti.async-executor:
+spring:
+  activiti:
+    async-executor:
   max-async-jobs-due-per-acquisition: 1  # lower = fewer conflicts (default: 1)
   timer-lock-time-in-millis: 300000       # job lock duration, ms (default: 5 min)
   async-job-lock-time-in-millis: 300000   # async job lock duration, ms (default: 5 min)

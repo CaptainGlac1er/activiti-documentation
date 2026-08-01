@@ -65,7 +65,7 @@ managementService.setJobRetries(jobId, 3);
 // Number of retries for the job
 ```
 
-**Note:** Job priority is configured at runtime through the Management Service, not via `activiti:property` in the BPMN definition. Properties are for custom metadata only.
+**Note:** Job priority is configured at runtime through the Management Service, not via BPMN extensions.
 
 ### Failed Job Retry
 
@@ -87,7 +87,7 @@ Configure retry policy using `failedJobRetryTimeCycle`:
 - `R3/PT1M` - Retry 3 times with 1 minute interval
 - `R3/PT1M;R2/PT5M` - Retry 3 times (1min), then 2 times (5min)
 
-**Note:** This is one of the few properties that affects engine behavior. Most other `activiti:property` elements are for custom metadata only.
+**Note:** Configure retry cycles using the CICE (Cron-like Interval Cycle Expression) format.
 
 ## Boundary Events
 
@@ -154,23 +154,26 @@ Handle **exceptions and interruptions** at activity level.
 
 Add **custom metadata** to any BPMN element.
 
-### Custom Properties
+### Field Injection
+
+Inject values into delegates and listeners using `<activiti:field>`:
 
 ```xml
-<userTask id="task1" name="Task">
+<serviceTask id="task1" name="Task" activiti:class="com.example.MyDelegate">
   
   <extensionElements>
-    <activiti:property name="department" value="finance"/>
-    <activiti:property name="sla" value="PT4H"/>
-    <activiti:property name="version" value="2.0"/>
+    <activiti:field name="department">
+      <activiti:string>finance</activiti:string>
+    </activiti:field>
+    <activiti:field name="sla">
+      <activiti:string>PT4H</activiti:string>
+    </activiti:field>
   </extensionElements>
   
-</userTask>
+</serviceTask>
 ```
 
-**Note:** Most `activiti:property` elements are for **custom metadata only** and don't affect engine behavior. Exceptions include:
-- `failedJobRetryTimeCycle` - Configures job retry policy
-- Other engine-specific properties documented in their respective sections
+**Note:** Field injection provides values to delegates at runtime. Other extension elements like `failedJobRetryTimeCycle` are documented in their respective sections.
 
 ### Custom XML Elements
 
@@ -296,10 +299,6 @@ public class MyDelegate implements JavaDelegate {
     <!-- Execution listeners -->
     <activiti:executionListener event="start" class="com.example.StartListener"/>
     <activiti:executionListener event="end" class="com.example.EndListener"/>
-
-    <!-- Custom properties -->
-    <activiti:property name="department" value="finance"/>
-    <activiti:property name="priority" value="high"/>
 
     <!-- Form properties -->
     <activiti:formProperty name="comment" type="string"/>
