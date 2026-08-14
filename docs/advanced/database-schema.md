@@ -532,7 +532,7 @@ Historic detail records. Captures fine-grained events (form properties, variable
 | `EXECUTION_ID_` | VARCHAR(64) | FK to `ACT_RU_EXECUTION` |
 | `TASK_ID_` | VARCHAR(64) | FK to `ACT_RU_TASK` |
 | `ACT_INST_ID_` | VARCHAR(64) | FK to `ACT_HI_ACTINST` |
-| `VAR_TYPE_` | VARCHAR(255) | Variable type (for VariableUpdate/Create) |
+| `VAR_TYPE_` | VARCHAR(64) | Variable type (for VariableUpdate/Create) |
 | `REV_` | INTEGER | Revision |
 | `BYTEARRAY_ID_` | VARCHAR(64) | FK to `ACT_GE_BYTEARRAY` |
 | `DOUBLE_` | DOUBLE | Numeric value |
@@ -662,7 +662,7 @@ A separate audit table for engine-level events, used for distributed tracing and
 
 ## History Levels and Table Population
 
-The history level controls which `ACT_HI_*` tables receive data. The level is configured via `history` in `ProcessEngineConfiguration` (default: `audit`).
+The history level controls which `ACT_HI_*` tables receive data. The level is configured via `history` in `ProcessEngineConfiguration`. Note that the engine default is `audit`, but the Spring Boot starter (`ActivitiProperties`) defaults `historyLevel` to `NONE` — set `spring.activiti.history-level` explicitly in Boot apps.
 
 | History Level | ACT_HI_PROCINST | ACT_HI_ACTINST | ACT_HI_TASKINST | ACT_HI_VARINST | ACT_HI_IDENTITYLINK | ACT_HI_DETAIL |
 |--------------|:---------------:|:--------------:|:---------------:|:--------------:|:--------------------:|:-------------:|
@@ -680,7 +680,7 @@ processEngineConfiguration.setHistory("audit");
 // Available values: "none", "activity", "audit", "full"
 ```
 
-The default history level is **AUDIT**, which captures process instances, activity instances, task instances, variable instances, identity links, and form properties/variable updates in detail records.
+The engine's default history level is **AUDIT**, which captures process instances, activity instances, task instances, variable instances, identity links, and form properties/variable updates in detail records. (In Spring Boot, set `spring.activiti.history-level: audit` explicitly, as the starter defaults to `NONE`.)
 
 **AUDIT vs. FULL distinction:** The `ACT_HI_DETAIL` table is populated at both levels, but:
 - `AUDIT` records `FormProperty` and `VariableUpdate` detail types

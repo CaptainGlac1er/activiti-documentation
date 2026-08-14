@@ -17,7 +17,7 @@ Activiti supports four history levels that control what data is persisted:
 |-------|-----------|-------|-----------|----------------------------------------|
 | `NONE` | No | No | No | No |
 | `ACTIVITY` | Yes | Yes | No | No |
-| `AUDIT` (default) | Yes | Yes | Yes | Yes |
+| `AUDIT` | Yes | Yes | Yes | Yes |
 | `FULL` | Yes | Yes | Yes (all updates) | Yes (all updates) |
 
 Configuration:
@@ -34,6 +34,8 @@ spring:
 ```
 
 **Lower history levels reduce storage growth but limit audit capability.** Choose based on compliance requirements.
+
+> **Note on the default:** the engine's `ProcessEngineConfiguration` defaults to `audit`. However, the Spring Boot starter (`ActivitiProperties`) defaults `historyLevel` to `NONE` unless you explicitly set `spring.activiti.history-level`. Configure it explicitly in Spring Boot apps.
 
 ## Cleanup API
 

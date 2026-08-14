@@ -216,20 +216,20 @@ public class ProcessValidatorHandler implements BpmnParseHandler {
 ### Post-Parse: Modify All Behaviors
 
 ```java
-public class TimeoutHandler implements BpmnParseHandler {
+public class DefaultDueDateHandler implements BpmnParseHandler {
 
     @Override
     public Collection<Class<? extends BaseElement>> getHandledTypes() {
-        return Arrays.asList(UserTask.class, ServiceTask.class);
+        return Arrays.asList(UserTask.class);
     }
 
     @Override
     public void parse(BpmnParse bpmnParse, BaseElement element) {
-        if (element instanceof Activity) {
-            Activity activity = (Activity) element;
-            // Ensure all activities have a default timeout
-            if (activity.getDefaultTimeout() == null) {
-                activity.setDefaultTimeout("PT30M"); // 30 minutes
+        if (element instanceof UserTask) {
+            UserTask userTask = (UserTask) element;
+            // Ensure all user tasks have a default due date
+            if (userTask.getDueDate() == null) {
+                userTask.setDueDate("PT30M"); // 30 minutes
             }
         }
     }

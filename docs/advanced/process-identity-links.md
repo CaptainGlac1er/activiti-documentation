@@ -25,6 +25,10 @@ runtimeService.addGroupIdentityLink(
 // Convenience methods (implicitly set type to "candidate")
 runtimeService.addParticipantUser(processInstanceId, "userId");
 runtimeService.addParticipantGroup(processInstanceId, "groupId");
+
+// Note: addParticipantUser() / addParticipantGroup() create CANDIDATE-type links,
+// not "participant" links. Use addUserIdentityLink()/addGroupIdentityLink() with
+// an explicit type for participant tracking (see Use Cases below).
 ```
 
 ### Removing Identity Links
@@ -64,10 +68,10 @@ for (IdentityLink link : links) {
 ### Tracking Process Participants
 
 ```java
-// Record who is involved in this process
-runtimeService.addParticipantUser(processInstanceId, "initiator");
-runtimeService.addParticipantUser(processInstanceId, "reviewer");
-runtimeService.addParticipantGroup(processInstanceId, "approval-team");
+// Record who is involved in this process using explicit "participant" links
+runtimeService.addUserIdentityLink(processInstanceId, "initiator", "participant");
+runtimeService.addUserIdentityLink(processInstanceId, "reviewer", "participant");
+runtimeService.addGroupIdentityLink(processInstanceId, "approval-team", "participant");
 
 // Later: query for audit
 List<IdentityLink> participants = runtimeService

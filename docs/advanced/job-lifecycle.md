@@ -167,7 +167,7 @@ When the acquisition returns fewer jobs than `maxTimerJobsPerAcquisition`, the t
 **Key parameters:**
 - `maxAsyncJobsDuePerAcquisition` (default: 1) — jobs fetched per query
 - `defaultAsyncJobAcquireWaitTimeInMillis` (default: 10000) — sleep between queries
-- `defaultQueueSizeFullWaitTimeInMillis` (default: 0) — extra sleep when queue is full
+- `defaultQueueSizeFullWaitTime` (default: 0) — extra sleep when queue is full
 
 When a `RejectedExecutionException` occurs (thread pool queue full), the job is unacquired — its lock is cleared so another executor can pick it up.
 

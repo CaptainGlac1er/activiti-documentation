@@ -2,7 +2,7 @@
 
 ## Repo Overview
 
-Docusaurus 3 documentation site for Activiti workflow/BPM engine. Docs live in `docs/` as `.md` files with YAML frontmatter. The **Activiti source code** is a git submodule at `./Activiti` — always verify technical claims against it.
+Docusaurus 3 documentation site for Activiti workflow/BPM engine. Docs live in `docs/` as `.md` files with YAML frontmatter.
 
 **No build runtime available.** There is no Node.js or Java on this system. You can read source code and verify correctness, but cannot run `npm`, build, or execute Java tests.
 
@@ -20,12 +20,6 @@ Docusaurus 3 documentation site for Activiti workflow/BPM engine. Docs live in `
 - No Flowable-specific content — this is Activiti-only
 - Java code blocks must compile — verify types against the Activiti submodule
 - Keep `activiti:` legacy attributes clearly distinguished from standard BPMN
-
-## Verifying Docs Against Source
-
-The `./Activiti` submodule is the source of truth.
-
-Search broadly in `./Activiti` — don't assume a handler lives where the docs say it does.
 
 ## Specialized Agents & Skills
 

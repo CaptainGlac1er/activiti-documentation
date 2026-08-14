@@ -170,8 +170,8 @@ spring:
   activiti:
     process-definition-location-prefix: "classpath*:**/processes/"
     process-definition-location-suffixes:
-      - "*.bpmn"
-      - "*.bpmn20.xml"
+      - "**.bpmn"
+      - "**.bpmn20.xml"
 ```
 
 For custom resource discovery, define `ResourceFinderDescriptor` beans programmatically:

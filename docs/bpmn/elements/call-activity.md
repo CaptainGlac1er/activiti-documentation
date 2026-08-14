@@ -20,7 +20,7 @@ Call Activities **reference and execute** sub-processes, enabling process modula
 **BPMN 2.0 Standard:** Fully Supported  
 **Activiti Extensions:** Dynamic selection, variable inheritance, business key handling
 
-> **Note:** Variable mapping for call activities is configured via **process extension JSON** (`*-extension.json`), not through `<activiti:in>` or `<activiti:out>` XML elements. See the [Variable Mapping](#variable-mapping) section below and the [Process Extensions guide](../reference/process-extensions.md) for details.
+> **Note:** Variable mapping for call activities can be configured either via `<activiti:in>`/`<activiti:out>` XML elements (parsed by `CallActivityXMLConverter` and applied by `CallActivityBehavior`) or via **process extension JSON** (`*-extensions.json`), which is applied in the Spring/API runtime. See the [Variable Mapping](#variable-mapping) section below and the [Process Extensions guide](../reference/process-extensions.md) for details.
 
 **Important:** The `calledElement` attribute is a **standard BPMN attribute** (not prefixed with `activiti:`). It references the key of a deployed process.
 
@@ -28,12 +28,12 @@ Call Activities **reference and execute** sub-processes, enabling process modula
 
 ### Standard BPMN Features
 - **Called Element** - Reference to a sub-process
-- **Input/Output Data** - Variable mapping via process extension JSON
+- **Input/Output Data** - Variable mapping via `<activiti:in>`/`<activiti:out>` or process extension JSON
 - **Multi-instance** - Parallel executions
 
 ### Activiti Customizations
 - **Called Element Expression** - Dynamic process selection
-- **Variable Mapping** - Input/output parameters via process extension JSON (`*-extension.json`)
+- **Variable Mapping** - Input/output parameters via process extension JSON (`*-extensions.json`)
 - **Async Execution** - Background invocation
 - **Inherit Variables** - Pass all parent variables via `activiti:inheritVariables="true"`
 - **Business Key** - Set a specific business key via `activiti:businessKey`
@@ -78,22 +78,23 @@ Set a specific business key or inherit from the parent process:
 
 ### Variable Mapping
 
-Variable mapping for call activities is configured via **process extension JSON** (`*-extension.json`), not through XML elements. The `CallActivityXMLConverter` does not parse `<activiti:in>` or `<activiti:out>` elements. [Source: `CallActivityXMLConverter.java` — verified no `<activiti:in>` or `<activiti:out>` element handling exists in the converter.]
+Variable mapping for call activities can be configured via `<activiti:in>`/`<activiti:out>` XML elements or via **process extension JSON** (`*-extensions.json`). The `CallActivityXMLConverter` parses `<activiti:in>` and `<activiti:out>` elements through its `InParameterParser` and `OutParameterParser` child parsers, and `CallActivityBehavior` applies them in `copyProcessVariables`/`copyOutParameters`. In the Spring/API runtime, `MappingAwareCallActivityBehavior` additionally applies mappings defined in the process extension JSON file. [Source: `CallActivityXMLConverter.java`, `CallActivityBehavior.java`]
 
-**subProcess-extension.json:**
+**subProcess-extensions.json:**
 ```json
 {
+  "id": "subProcessExtensions",
   "extensions": {
     "Process_myProcess": {
       "mappings": {
         "mappedCall": {
           "inputs": {
             "order.id": { "type": "VARIABLE", "value": "orderId" },
-            "customerId": { "type": "EXPRESSION", "value": "${order.customerId}" }
+            "customerId": { "type": "VALUE", "value": "${order.customerId}" }
           },
           "outputs": {
             "orderStatus": { "type": "VARIABLE", "value": "result.status" },
-            "order.completedAt": { "type": "EXPRESSION", "value": "${completionTime}" }
+            "order.completedAt": { "type": "VALUE", "value": "${completionTime}" }
           }
         }
       }
@@ -104,8 +105,8 @@ Variable mapping for call activities is configured via **process extension JSON*
 
 **Mapping Types:**
 - `VARIABLE` - Map a process variable by name
-- `EXPRESSION` - Evaluate an expression and assign the result
-- `VALUE` - Pass a literal value
+- `VALUE` - Pass a literal value; expressions (e.g. `${order.customerId}`) in the value are resolved at runtime
+- `JSONPATCH` - Apply a JSON Patch to an output variable
 
 > For full details on the extension JSON format, see the [Process Extensions guide](../reference/process-extensions.md).
 
@@ -167,17 +168,18 @@ Variable mapping for call activities is configured via **process extension JSON*
               calledElement="fulfillmentProcess"/>
 ```
 
-Variable mapping is configured via `fulfillmentProcess-extension.json`:
+Variable mapping is configured via `fulfillmentProcess-extensions.json`:
 
 ```json
 {
+  "id": "fulfillmentProcessExtensions",
   "extensions": {
     "Process_myProcess": {
       "mappings": {
         "callOrderFulfillment": {
           "inputs": {
             "order.id": { "type": "VARIABLE", "value": "orderId" },
-            "items": { "type": "EXPRESSION", "value": "${order.items}" },
+            "items": { "type": "VALUE", "value": "${order.items}" },
             "customerData": { "type": "VARIABLE", "value": "customer" }
           },
           "outputs": {
@@ -203,6 +205,7 @@ Variable mapping for the dynamic call:
 
 ```json
 {
+  "id": "dynamicCallExtensions",
   "extensions": {
     "Process_myProcess": {
       "mappings": {
@@ -240,6 +243,7 @@ If variable mapping is needed for each instance, configure it via process extens
 
 ```json
 {
+  "id": "batchProcessingExtensions",
   "extensions": {
     "Process_myProcess": {
       "mappings": {
@@ -277,6 +281,7 @@ To pass variables in nested calls, use process extension JSON:
 
 ```json
 {
+  "id": "nestedCallsExtensions",
   "extensions": {
     "Process_myProcess": {
       "mappings": {

@@ -19,7 +19,7 @@ ProcessValidatorImpl
         ├── UserTaskValidator
         ├── ServiceTaskValidator
         ├── ExclusiveGatewayValidator
-        ├── ... (21 built-in validators)
+        ├── ... (26 built-in validators)
         └── YourCustomValidator
 ```
 
@@ -48,7 +48,7 @@ public class RequiredAssigneeValidator extends ValidatorImpl {
                         addError(errors,
                             "UserTask '" + userTask.getName()
                                 + "' has no assignee or candidates",
-                            userTask, process.getId());
+                            process, userTask);
                     }
                 }
             }
@@ -74,7 +74,7 @@ public class NoTerminateEndEventValidator extends ProcessLevelValidator {
                 if (endEvent.getTerminateEventDefinition() != null) {
                     addError(errors,
                         "Terminate end events are not allowed: " + endEvent.getId(),
-                        endEvent, process.getId());
+                        process, endEvent);
                 }
             }
         }
@@ -87,12 +87,20 @@ public class NoTerminateEndEventValidator extends ProcessLevelValidator {
 `ValidatorImpl` provides overloaded convenience methods:
 
 ```java
-// Add error with element context
-addError(errors, "message", element, processId);
-addError(errors, "message", element, processId, activityId);
+// Add error with process and element context
+// Note the argument order: (errors, message, process, element)
+addError(errors, "message", process, element);
 
 // Add warning (still appears in error list but isWarning=true)
-addWarning(errors, "message", element, processId);
+addWarning(errors, "message", process, element);
+
+// Pass custom parameters for {{param}} placeholder substitution
+Map<String, String> params = new HashMap<>();
+params.put("name", "value");
+addError(errors, "message", process, element, params);
+
+// Associate the error with an activity id directly (no element context)
+addError(errors, "message", process, "activityId");
 
 // These automatically populate:
 // - activityId, activityName, processDefinitionId, processDefinitionName
@@ -184,7 +192,7 @@ for (ValidationError error : errors) {
 Error messages are loaded from `process-validation-messages.json` with `{{paramName}}` placeholder substitution via `ValidationErrorDecorator`. Your custom validator can use this system:
 
 1. Add entries to the messages JSON
-2. Reference them with `addError(errors, "my.error.key", element, processId)` and pass params
+2. Reference them with `addError(errors, "my.error.key", process, element)` and pass params via the `Map<String, String>` overload
 
 Or use the `Problems` interface constants for built-in error codes.
 
@@ -231,7 +239,7 @@ public class GatewayDefaultFlowValidator extends ProcessLevelValidator {
                     addWarning(errors,
                         "ExclusiveGateway '" + gateway.getId()
                             + "' has no default flow",
-                        gateway, process.getId());
+                        process, gateway);
                 }
             }
         }

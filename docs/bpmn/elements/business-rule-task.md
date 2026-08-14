@@ -63,7 +63,7 @@ public interface BusinessRuleTaskDelegate extends ActivityBehavior {
 4. **Execution** your `execute()` method runs the rules logic
 5. **Output** result is stored in the specified process variable
 
-**Critical:** If no `activiti:class` is specified and input variables or rules are configured, the factory may throw a `NullPointerException` — there is **no default behavior** for Business Rule Tasks. Always specify a class when using rule-related attributes.
+**Critical:** There is **no default behavior** for Business Rule Tasks. If no `activiti:class` is specified, the factory leaves the behavior null and subsequently calls its methods unconditionally, so the parse throws a `NullPointerException` regardless of whether input variables or rules are configured. Always specify a class on a `businessRuleTask`.
 
 **Note:** If no `activiti:resultVariable` is specified, the factory defaults to `"org.activiti.engine.rules.OUTPUT"`.
 
@@ -82,6 +82,7 @@ import org.activiti.engine.delegate.BusinessRuleTaskDelegate;
 import org.activiti.engine.delegate.DelegateExecution;
 import org.activiti.engine.delegate.Expression;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CustomBusinessRuleTask implements BusinessRuleTaskDelegate {
@@ -479,9 +480,9 @@ public class JdmnConnector implements Connector {
 
 The Activiti Modeler provides a **Decision Task** stencil (`STENCIL_TASK_DECISION = "DecisionTask"`) that creates a Service Task with `type="dmn"` and a decision table reference property.
 
-The `DecisionTaskJsonConverter` handles bidirectional conversion:
-- **JSON to BPMN:** Creates `ServiceTask` with `type="dmn"` and `decisionTableReferenceKey` field extension
-- **BPMN to JSON:** Detects `type="dmn"`, extracts `decisionTableReferenceKey`, reconstructs the decision table reference node with `id`, `name`, and `key`
+Conversion is handled across two converters:
+- **JSON to BPMN** (`DecisionTaskJsonConverter`): Creates a `ServiceTask` with `type="dmn"` and adds a `decisionTableReferenceKey` field extension.
+- **BPMN to JSON** (`ServiceTaskJsonConverter`): Detects `type="dmn"`, extracts the `decisionTableReferenceKey` field, and reconstructs the decision table reference node with `id`, `name`, and `key`.
 
 #### DynamicBpmnService: Runtime Decision Table Switching
 

@@ -126,13 +126,13 @@ Assign task to groups/roles (comma-separated list):
 
 Advanced assignment with custom types for fine-grained access control:
 
-**Built-in Identity Link Types:**
-Activiti provides these predefined identity link types via `IdentityLinkType`:
+**Built-in Task Identity Link Types:**
+Activiti provides these predefined identity link types for tasks via `IdentityLinkType`:
 - `assignee` - Direct task assignee
 - `candidate` - Users/groups who can claim the task
 - `owner` - Task owner (for delegation)
-- `starter` - User who started the process (`IdentityLinkType.STARTER`)
-- `participant` - General participant (`IdentityLinkType.PARTICIPANT`)
+
+> **Note:** `IdentityLinkType.STARTER` and `IdentityLinkType.PARTICIPANT` are **process-instance** identity link types, not task link types. `STARTER` records the user who started the process instance and `PARTICIPANT` tracks involved users; both are managed automatically by the engine. They are not set via `taskService.addUserIdentityLink(...)`.
 
 **Runtime API for Identity Links:**
 ```java
@@ -148,8 +148,6 @@ taskService.addGroupIdentityLink(taskId, "auditors", "audit");
 taskService.addUserIdentityLink(taskId, "john", IdentityLinkType.ASSIGNEE);
 taskService.addUserIdentityLink(taskId, "alice", IdentityLinkType.CANDIDATE);
 taskService.addUserIdentityLink(taskId, "manager", IdentityLinkType.OWNER);
-taskService.addUserIdentityLink(taskId, "starter", IdentityLinkType.STARTER);
-taskService.addUserIdentityLink(taskId, "participant", IdentityLinkType.PARTICIPANT);
 
 // Query tasks by custom identity link
 List<Task> tasks = taskService.createTaskQuery()
@@ -163,7 +161,22 @@ List<Task> tasks = taskService.createTaskQuery()
 - Specialized roles (viewer, commenter, approver)
 - Custom access levels beyond standard candidate users/groups
 
-**Note:** Custom identity links are added at runtime via the Task Service API. The `<activiti:customResource>` XML element does NOT exist in the BPMN converter — it cannot be configured in BPMN XML.
+**Declaring Custom Identity Links in BPMN XML:**
+Custom identity links can also be declared directly in BPMN XML using the `<activiti:customResource>` extension element, which is parsed by `UserTaskXMLConverter` (`CustomIdentityLinkParser`). Each entry is expressed as `user(...)` or `group(...)` in the `formalExpression`:
+
+```xml
+<userTask id="reviewTask" name="Review">
+  <extensionElements>
+    <activiti:customResource activiti:name="businessAdministrator">
+      <resourceAssignmentExpression>
+        <formalExpression>user(kermit), group(management)</formalExpression>
+      </resourceAssignmentExpression>
+    </activiti:customResource>
+  </extensionElements>
+</userTask>
+```
+
+These links are resolved at runtime in `UserTaskActivityBehavior` and can also be added dynamically via the Task Service API (e.g. `taskService.addUserIdentityLink(taskId, "bob", "viewer")`).
 
 ### 6. Form Key
 
@@ -211,7 +224,7 @@ Set task priority:
 <userTask id="highPriorityTask" name="Critical Issue" activiti:priority="${calculatePriority()}"/>
 ```
 
-**Default:** 50
+**Default:** 0 (`Task.DEFAULT_PRIORITY`)
 
 ### 9. Business Calendar
 
@@ -350,7 +363,7 @@ Execute task for multiple users:
 **Built-in Multi-Instance Variables:**
 - `nrOfInstances` - Total number of instances
 - `nrOfCompletedInstances` - Number of completed instances
-- `loopCounter` - Current iteration counter (sequential only)
+- `loopCounter` - Current iteration counter (set for each instance, in both sequential and parallel multi-instance)
 - `elementVariable` - Current element from collection (if specified)
 
 **Multi-Instance with Input/Output Data:**
@@ -407,12 +420,9 @@ Define form fields:
 - `double` - Decimal number
 - `bool` - Boolean
 - `date` - Date
-- `dateselection` - Date picker
-- `timeselection` - Time picker
-- `datetimeselection` - DateTime picker
-- `user` - User selection
-- `group` - Group selection
 - `enum` - Enumerated values
+
+> **Note:** The `<activiti:formProperty>` feature is a **legacy** mechanism. The BPMN converter parses `formProperty` elements into the process model, but this engine version does not execute them at runtime (there is no form-type registry in the engine). Types such as `dateselection`, `timeselection`, `datetimeselection`, `user`, and `group` are legacy Activiti/Flowable form types that are not present in this codebase. For modern UI integration, prefer a `formKey` and an external form system.
 
 ## Complete Examples
 
@@ -518,7 +528,7 @@ List<Task> groupTasks = taskService.createTaskQuery()
 
 // Get overdue tasks
 List<Task> overdueTasks = taskService.createTaskQuery()
-    .taskDueBefore(ZonedDateTime.now())
+    .taskDueBefore(new Date())
     .list();
 ```
 
@@ -537,8 +547,8 @@ taskService.addCandidateGroup(taskId, "reviewers");
 // Claim task (if you're a candidate)
 taskService.claim(taskId, "john.doe");
 
-// Release task
-taskService.release(taskId);
+// Unclaim (release) the task
+taskService.unclaim(taskId);
 ```
 
 ### Completing Tasks
