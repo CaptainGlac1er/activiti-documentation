@@ -163,6 +163,18 @@ public interface TransactionDependentTaskListener {
 ```java
 public class TaskCompletedNotifier implements TransactionDependentTaskListener {
 
+    // Injected via <activiti:field> — see BPMN configuration below
+    private NotificationService notificationService;
+    private TaskService taskService;
+
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    public void setTaskService(TaskService taskService) {
+        this.taskService = taskService;
+    }
+
     @Override
     public void notify(String processInstanceId,
                        String executionId,
@@ -171,9 +183,16 @@ public class TaskCompletedNotifier implements TransactionDependentTaskListener {
                        Map<String, Object> customPropertiesMap) {
 
         // The Task here is org.activiti.bpmn.model.Task (extends Activity):
-        // it exposes getName() but NOT getAssignee() — read the assignee
-        // from the execution variables map instead.
-        Object assignee = executionVariables.get("assignee");
+        // it exposes getName() but NOT getAssignee(), and the assignee is a
+        // task-entity field (ACT_RU_TASK.ASSIGNEE_) — not a process variable —
+        // so it is absent from executionVariables. Query the runtime task:
+        org.activiti.engine.Task runtimeTask = taskService.createTaskQuery()
+            .processInstanceId(processInstanceId)
+            .taskDefinitionKey(task.getId())
+            .singleResult();
+        // (after a 'complete' + committed callback the task row may already be
+        // deleted, in which case assignee is null)
+        Object assignee = (runtimeTask != null) ? runtimeTask.getAssignee() : null;
 
         // Safe to send notifications — task state is committed
         notificationService.sendTaskCompleted(
@@ -195,7 +214,10 @@ public class TaskCompletedNotifier implements TransactionDependentTaskListener {
     <activiti:taskListener
         event="complete"
         class="com.example.TaskCompletedNotifier"
-        onTransaction="committed"/>
+        onTransaction="committed">
+      <activiti:field name="notificationService" expression="${notificationService}"/>
+      <activiti:field name="taskService" expression="${taskService}"/>
+    </activiti:taskListener>
   </extensionElements>
 </userTask>
 ```

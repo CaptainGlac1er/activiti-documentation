@@ -575,17 +575,27 @@ Comments are stored in `ACT_HI_COMMENT` and persist after process completion. Th
 
 ### Task Events
 
-`getTaskEvents()` is a legacy alias over the comment store — the engine has no dedicated event table and no code path that writes events:
+`getTaskEvents()` is a legacy alias over the comment store — there is no dedicated event table. Event rows live in `ACT_HI_COMMENT` and are distinguished by `TYPE_ = 'event'`:
 
 ```java
-// Returns the task's ACT_HI_COMMENT rows (same table as comments)
+// Returns the task's ACT_HI_COMMENT rows of any type (comment and event)
 List<Event> events = taskService.getTaskEvents(taskId);
 
 // Get a specific event
 Event event = taskService.getEvent("event-1");
 ```
 
-`GetTaskEventsCmd` delegates to the comment data manager (`findEventsByTaskId`), whose SQL (`selectEventsByTaskId`) simply re-queries `ACT_HI_COMMENT` — so `getTaskEvents(taskId)` returns the same rows as `getTaskComments(taskId)` (the events query just omits the `TYPE_ = 'comment'` filter). The `Event.ACTION_*` constants (`ACTION_ADD_COMMENT`, `ACTION_ADD_ATTACHMENT`, ...) are vestigial: nothing in this engine populates them.
+`GetTaskEventsCmd` delegates to the comment data manager (`findEventsByTaskId`), whose SQL (`selectEventsByTaskId`) queries `ACT_HI_COMMENT` by `TASK_ID_` **without** a `TYPE_` filter — so `getTaskEvents(taskId)` returns the task's comment rows *plus* its event rows. In contrast, `getTaskComments(taskId)` (`selectCommentsByTaskId`) filters `TYPE_ = 'comment'` and returns only comment rows.
+
+The engine populates the `Event.ACTION_*` constants on the rows it writes:
+
+- `AddCommentCmd` stamps `action = Event.ACTION_ADD_COMMENT` on every comment it creates.
+- When history is enabled, `DefaultHistoryManager` writes `TYPE_ = 'event'` rows as a side effect of identity-link and attachment operations:
+  - `addUserIdentityLink` / `deleteUserIdentityLink` → `ACTION_ADD_USER_LINK` / `ACTION_DELETE_USER_LINK`
+  - `addGroupIdentityLink` / `deleteGroupIdentityLink` → `ACTION_ADD_GROUP_LINK` / `ACTION_DELETE_GROUP_LINK`
+  - `createAttachment` / `deleteAttachment` → `ACTION_ADD_ATTACHMENT` / `ACTION_DELETE_ATTACHMENT`
+
+Each row carries an `action` (one of the `Event.ACTION_*` constants) rather than a type. To filter by type, use the typed overload: `getTaskComments(taskId, "event")` returns only the event rows for that task.
 
 ### Subtasks
 

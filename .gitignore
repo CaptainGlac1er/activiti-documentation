@@ -21,3 +21,5 @@ yarn-error.log*
 .idea
 *.iml
 .proxyai
+# Python tooling
+__pycache__/

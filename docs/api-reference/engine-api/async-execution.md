@@ -216,7 +216,7 @@ Each acquired job is submitted to the executor thread pool as an `ExecuteAsyncRu
 1. **Exclusive lock (if needed)** — for exclusive jobs, `ExecuteAsyncRunnable` acquires the exclusive lock first (`LockExclusiveJobCmd`); if it cannot, the job lock is released via `unacquire()` so another executor can pick it up.
 2. **Execute** — `ExecuteAsyncRunnable.executeJob()` runs `ExecuteAsyncJobCmd`, which re-fetches the job (it may have been deleted concurrently) and calls `DefaultJobManager.execute(Job)`. That method dispatches on the job type (`Job.JOB_TYPE_MESSAGE` or `Job.JOB_TYPE_TIMER`).
 3. **Handler lookup** — `DefaultJobManager.executeJobHandler(JobEntity)` looks up the `JobHandler` for the job's `jobHandlerType` from the handler registry on the engine configuration (`ProcessEngineConfigurationImpl.getJobHandlers()`, populated by `initJobHandlers()`) and invokes it.
-4. **Job removal** — once the handler has run, the job row is deleted from `ACT_RU_JOB`; repeating timer jobs schedule their next timer before removal.
+4. **Job removal** — once the handler has run, the job row is deleted from `ACT_RU_JOB`; a repeating timer job has its next timer scheduled immediately after the removal, still within the same command context.
 5. **Unlock** — the exclusive lock is released (`UnlockExclusiveJobCmd`) after success.
 
 On failure, `ExecuteAsyncRunnable.handleFailedJob(...)` runs `HandleFailedJobCmd`, which delegates to the `FailedJobCommandFactory` (default: `JobRetryCmd`) in a new transaction — see [Job Lifecycle](../../advanced/job-lifecycle.md#failed-job-handling).

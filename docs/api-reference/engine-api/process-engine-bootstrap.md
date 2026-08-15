@@ -55,8 +55,10 @@ The `setDatabaseSchemaUpdate` accepts string constants:
 | `DB_SCHEMA_UPDATE_FALSE` | `"false"` | No schema validation/creation |
 | `DB_SCHEMA_UPDATE_TRUE` | `"true"` | Create/update tables automatically |
 | `DB_SCHEMA_UPDATE_CREATE_DROP` | `"create-drop"` | Create on startup, drop on close |
+| `DB_SCHEMA_UPDATE_CREATE` | `"create"` | Create on startup, do not drop on close |
+| `DB_SCHEMA_UPDATE_DROP_CREATE` | `"drop-create"` | Drop existing schema (errors ignored), then create |
 
-> **Note:** The `true` and `create-drop` modes create tables using the **default names** regardless of any configured table prefix.
+> **Note:** The `true`, `create-drop`, `create`, and `drop-create` modes create tables using the **default names** regardless of any configured table prefix. `create` and `drop-create` are defined on `ProcessEngineConfigurationImpl`.
 
 ## ProcessEngine Services
 

@@ -14,6 +14,7 @@ Unlike [Execution Listeners](./execution-listeners.md) and [Task Listeners](./ta
 ## Overview
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="Order Process">
   <extensionElements>
     <!-- Receive every engine event that belongs to this process -->
@@ -53,6 +54,7 @@ A listener declared in process A therefore **only receives events that carry pro
 Reference a fully qualified class name. The class is instantiated by the engine via reflection (with a no-arg constructor) when the first event is dispatched, and the instance is cached and reused for that process definition:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="Order Process">
   <extensionElements>
     <activiti:eventListener
@@ -108,6 +110,7 @@ public class OrderLifecycleListener implements ActivitiEventListener {
 Reference a Spring bean (or any bean resolvable by the engine's expression manager):
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="Order Process">
   <extensionElements>
     <activiti:eventListener
@@ -191,6 +194,7 @@ public interface ActivitiEntityEvent extends ActivitiEvent {
 When `entityType` is set, the engine only delivers events that target an entity of that type. This lets one process run several listeners, each responsible for one entity kind:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <extensionElements>
   <activiti:eventListener events="ENTITY_CREATED" delegateExpression="${jobListener}" entityType="job"/>
   <activiti:eventListener events="ENTITY_CREATED" delegateExpression="${taskListener}" entityType="task"/>
@@ -336,7 +340,7 @@ Message delivery is also **process-instance scoped** and requires the triggering
 </definitions>
 ```
 
-The engine resolves the execution from the triggering event's `executionId` and propagates the error from there. If the event carries no execution (or the execution can no longer be found), the operation fails with `No execution context active and event is not related to an execution`. Matching follows the usual BPMN error rules: a handler whose `errorCode` equals the thrown code matches, and a handler **without** an error code accepts any error. A `errorRef` that names a declared `<error>` element is resolved to that element's `errorCode`. If no matching handler exists in the process (or, for called processes, in the parent process), a `BpmnError` is raised — the assignment operation fails and no state change is committed.
+The engine resolves the execution from the triggering event's `executionId` and propagates the error from there. If the event carries no execution (or the execution can no longer be found), the operation fails with `No execution context active and event is not related to an execution. No compensation event can be thrown.`. Matching follows the usual BPMN error rules: a handler whose `errorCode` equals the thrown code matches, and a handler **without** an error code accepts any error. A `errorRef` that names a declared `<error>` element is resolved to that element's `errorCode`. If no matching handler exists in the process (or, for called processes, in the parent process), a `BpmnError` is raised — the assignment operation fails and no state change is committed.
 
 Here the boundary error event is **interrupting** (the default), so assigning `userTask` cancels the task and the process ends. If the process had another task whose assignment would re-trigger the listener, the second throw would fail with a `BpmnError` unless an error handler exists on that path — scope the trigger event type accordingly.
 
@@ -579,7 +583,7 @@ If `isFailOnException()` returns `true` (always the case for throw-event listene
 ### 7. Throw-Event Scope Limits
 
 - `signal` and `message` are process-instance scoped: the triggering event must belong to an ongoing process instance, and delivery only reaches catch events **of that same instance**.
-- `error` requires the triggering event to carry an `executionId` — events without one cannot throw errors (`No execution context active and event is not related to an execution`).
+- `error` requires the triggering event to carry an `executionId` — events without one cannot throw errors (`No execution context active and event is not related to an execution. No compensation event can be thrown.`).
 - No matching catch event for a thrown error raises a `BpmnError`; a `globalSignal` with no subscribers is silently ignored.
 
 ### 8. Process-Definition-Deletion Events Are Not Delivered

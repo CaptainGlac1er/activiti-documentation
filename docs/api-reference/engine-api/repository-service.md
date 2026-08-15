@@ -121,7 +121,7 @@ public Deployment deployFromUrl(URL processUrl) throws IOException {
     }
 }
 
-public Deployment deployFromGit(String gitUrl, String branch) {
+public Deployment deployFromGit(String gitUrl, String branch) throws IOException {
     // Clone repository
     File repo = gitClone(gitUrl, branch);
     
@@ -238,7 +238,7 @@ public class ProcessDefinitionInfo {
 }
 ```
 
-`getAppVersion()` returns the application version stamped on the process definition — set automatically when its deployment was created with a project manifest (see [Advanced Deployment Builder](../../advanced/deployment-builder.md#versioning-app-version--rollback)); the value can also be written explicitly with `setAppVersion(Integer)`. `getEngineVersion()` returns the engine version the definition was deployed on (e.g. `5` or `6`).
+`getAppVersion()` returns the application version stamped on the process definition — set automatically when its deployment was created with a project manifest (see [Advanced Deployment Builder](../../advanced/deployment-builder.md#versioning-app-version--rollback)); the value can also be written explicitly with `setAppVersion(Integer)`. `getEngineVersion()` returns the engine version recorded on the definition at deploy time — this engine never stamps it on new deployments (the value is `null` there); it is only meaningful for rows migrated from a legacy Activiti 5/6 database.
 
 ### Retrieving Process Resources
 

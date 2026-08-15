@@ -232,7 +232,7 @@ Mappings define how variables flow **into and out of** specific activities (task
 
 Mappings move values **between two variable scopes**: the **process scope** (variables of the whole process instance) and the **task scope** (variables of a single task).
 
-- **A task with no `mappings` entry and no `constants` entry sees no process variables at all** — its variable map is empty, and every process variable is invisible to it.
+- **A task with no `mappings` entry and no `constants` entry receives no process variables into its own scope** — its task-local variable map is empty: no process variables are copied into the task scope (they remain resolvable through the execution scope, e.g. from a delegate).
 - **A task with explicit `inputs` sees only the mapped variables plus its own constants.** Process variables that are not listed in `inputs` are not copied into the task scope.
 - **`MAP_ALL_INPUTS` / `MAP_ALL`** copies all process variables (plus the activity's constants) into the task scope.
 - **Outputs work the other way:** `outputs` copies selected task values back into the process scope, and `MAP_ALL_OUTPUTS` / `MAP_ALL` copies all task variables back.
@@ -943,7 +943,7 @@ The same validation pipeline runs on the variable maps of the following operatio
 - **Type check** — the value is validated against the `properties` definition; failures are reported as `Variables fail type validation: <name1>, <name2>`
 - **Date coercion** — values for variables whose declared type is `date`/`datetime` are converted to `Date` via `DateFormatterProvider` (best-effort: a value that cannot be parsed is kept as a string). String values for variables **without** a declared definition are also parsed as dates best-effort.
 
-All problems are collected and thrown together as a single `IllegalStateException` whose message is the individual messages joined with `,`. For `signal` there is no process definition context, so only the name/expression checks and the best-effort date conversion apply — the type checks against `properties` are skipped.
+All problems are collected and thrown together as a single `IllegalStateException` whose message is the individual messages joined with `,`. For `signal`, `receive message`, and `start message` the validator is invoked without a process definition id, so only the name/expression checks and the best-effort date conversion apply — the type checks against `properties` are skipped.
 
 ### Unreadable Extensions File
 

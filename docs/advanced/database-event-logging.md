@@ -57,7 +57,7 @@ For the task, sequence-flow, activity, and variable events, the value stored in 
 
 Process-instance start and end are a special case. `EventLogger.getEventHandler(...)` watches the generic `ENTITY_INITIALIZED` and `ENTITY_DELETED` events and, when the affected entity is the **root execution** of a process instance, routes them to `ProcessInstanceStartedEventHandler` and `ProcessInstanceEndedEventHandler`. Those handlers write the custom type strings `PROCESSINSTANCE_START` and `PROCESSINSTANCE_END`.
 
-> **Note:** `PROCESS_STARTED` and `PROCESS_COMPLETED` are **in-memory engine event types** (see [Engine Event System](./engine-event-system.md)); they are **never** written to `ACT_EVT_LOG`. Job, timer, entity-lifecycle, engine-lifecycle, membership, and history events are likewise not logged by the database event logger.
+> **Note:** `PROCESS_STARTED` and `PROCESS_COMPLETED` are **in-memory engine event types** (see [Engine Event System](./engine-event-system.md)); they are **never** written to `ACT_EVT_LOG`. Job, timer, engine-lifecycle, membership, and history events are likewise not logged, nor are entity-lifecycle events other than the root-execution start/end case above.
 
 The JSON payload stored in the `data` column uses the field names defined by the `Fields` constants in `org.activiti.engine.impl.event.logger.handler.Fields` (e.g. `activityId`, `processInstanceId`, `variables`, `assignee`, `timeStamp`).
 

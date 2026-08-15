@@ -542,7 +542,7 @@ Method signatures:
 
 ### Modeler Integration Notes
 
-- **Standalone libraries.** `activiti-json-converter` and `activiti-bpmn-layout` have no production consumer inside this repository — the Activiti modeler and its REST layer are not part of this codebase. These modules are consumed externally (the only in-repo references are the test suites of `activiti-bpmn-converter`).
+- **Standalone libraries.** `activiti-json-converter` and `activiti-bpmn-layout` have no production consumer inside this repository — the Activiti modeler and its REST layer are not part of this codebase. These modules are consumed externally (no production or test code outside the modules themselves references them in this repository).
 - **Default target namespace.** `convertToBpmnModel` sets the model's target namespace to `http://activiti.org/test` up front, and only overrides it if the canvas `properties` node carries a non-empty `process_namespace` value. If the editor JSON has no `process_namespace` property, the generated `<definitions>` element carries `targetNamespace="http://activiti.org/test"`.
 - **Non-executable marker.** `convertToJson` writes the canvas property `process_executable` with the value `"No"` for non-executable processes, and does the same for non-executable pools (collaborations). Executable processes and pools omit the property entirely.
 
