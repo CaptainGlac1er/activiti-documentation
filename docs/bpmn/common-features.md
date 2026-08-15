@@ -35,37 +35,33 @@ Execute activities in the **background** using job executor.
             activiti:class="com.example.AsyncService"/>
 ```
 
-### Async After Duration
+### Delaying Async Execution
 
-Delay async activation:
+An async job is created with a due date of **now**, and the job executor picks
+it up as soon as possible. There is no BPMN attribute to delay an async job.
 
-```xml
-<serviceTask id="delayedAsync" 
-            activiti:async="true">
-  
-  <!-- Note: Job expiry is configured via Management Service or job executor settings,
-       not through BPMN attributes -->
-</serviceTask>
-```
-
-### Job Priority
-
-Set execution priority via Management Service (not through BPMN properties):
+To introduce a delay before the activity runs, use a timer event:
 
 ```xml
-<serviceTask id="priorityTask" 
-            activiti:async="true"/>
+<intermediateCatchEvent id="wait">
+  <timerEventDefinition>
+    <timeDuration>PT10M</timeDuration>
+  </timerEventDefinition>
+</intermediateCatchEvent>
 ```
 
-**Runtime Configuration:**
+### Job Retries at Runtime
+
+Retries are adjusted at runtime through the Management Service. When a job's
+retries reach zero, it is moved to the dead letter table:
+
 ```java
-// Set job retries via Management Service
+// Increase the number of retries left for a job
 managementService.setJobRetries(jobId, 3);
 
-// Number of retries for the job
+// Move a dead letter job back to the executable table
+managementService.moveDeadLetterJobToExecutableJob(jobId, 3);
 ```
-
-**Note:** Job priority is configured at runtime through the Management Service, not via BPMN extensions.
 
 ### Failed Job Retry
 
@@ -76,18 +72,19 @@ Configure retry policy using `failedJobRetryTimeCycle`:
             activiti:async="true">
   
   <extensionElements>
-    <!-- Retry 5 times with no delay between retries -->
-    <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
+    <!-- Retry 5 times, 5 minutes apart -->
+    <activiti:failedJobRetryTimeCycle>R5/PT5M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
 
-**Retry Cycle Syntax:**
-- `R/5` - Retry 5 times immediately
-- `R3/PT1M` - Retry 3 times with 1 minute interval
-- `R3/PT1M;R2/PT5M` - Retry 3 times (1min), then 2 times (5min)
+**Retry Cycle Syntax:** `R{count}/{duration}`, where duration is an ISO 8601 duration:
 
-**Note:** Configure retry cycles using the CICE (Cron-like Interval Cycle Expression) format.
+- `R5/PT5M` - Retry 5 times, 5 minutes apart
+- `R3/PT1M` - Retry 3 times, 1 minute apart
+- `R1/PT30S` - Retry once, after 30 seconds
+
+**Note:** The retry cycle is only applied to service tasks. On other elements, failed jobs fall back to the engine's default failed job wait time.
 
 ## Boundary Events
 
@@ -104,6 +101,8 @@ Handle **exceptions and interruptions** at activity level.
 
 <error id="MyError" name="My Error" errorCode="ERR001"/>
 ```
+
+**Note:** Error boundary events are always interrupting; `cancelActivity` has no effect on them (it applies to timer, message, signal, and compensation boundary events).
 
 ### Timer Boundary Event
 
@@ -256,7 +255,7 @@ public class MyDelegate implements JavaDelegate {
 }
 ```
 
-**Note:** Field injection only supports `stringValue` and `expression` attributes. For Spring bean injection, use `expression="${beanName}"`.
+**Note:** Field values are provided via the `stringValue` or `expression` attributes, or via `<activiti:string>` / `<activiti:expression>` child elements. In a Spring context, `expression="${beanName}"` resolves to a Spring bean.
 
 ## Feature Availability Matrix
 
@@ -265,7 +264,7 @@ public class MyDelegate implements JavaDelegate {
 | Multi-Instance | | | | ❌ | ❌ | |
 | Execution Listeners | | | | | | |
 | Task Listeners | (see [Task Listeners](./reference/task-listeners.md)) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Async Execution | | | | ❌ | | |
+| Async Execution | | | | | | |
 | Boundary Events | | | | ❌ | ❌ | |
 | Skip Expression | | | | ❌ | ❌ | |
 | Field Injection | ❌ | | ❌ | ❌ | ❌ | ❌ |
@@ -278,7 +277,7 @@ public class MyDelegate implements JavaDelegate {
           name="Complex Review Task"
           activiti:assignee="${reviewer}"
           activiti:candidateGroups="reviewers"
-          activiti:dueDate="${addDays(3)}"
+          activiti:dueDate="${dueDate}"
           activiti:skipExpression="${skipReview}"
           activiti:formKey="review-form.html">
 
@@ -302,7 +301,7 @@ public class MyDelegate implements JavaDelegate {
 
     <!-- Form properties -->
     <activiti:formProperty name="comment" type="string"/>
-    <activiti:formProperty name="approved" type="bool"/>
+    <activiti:formProperty name="approved" type="boolean"/>
   </extensionElements>
 
 </userTask>
