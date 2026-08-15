@@ -13,10 +13,10 @@ Receive Tasks represent activities that **wait for an external message** before 
 
 ```xml
 <!-- Basic receive task -->
-<receiveTask id="waitForMessage" name="Wait for External Message">
-  <messageEventDefinition messageRef="externalMessage"/>
-</receiveTask>
+<receiveTask id="waitForMessage" name="Wait for External Message"/>
 ```
+
+**Note:** A `<messageEventDefinition>` embedded in a receive task is parsed as inert metadata — the engine creates **no message subscription** for it and does not use it for correlation. The task is released exclusively by `RuntimeService.trigger(executionId)` (see the Runtime API below).
 
 **BPMN 2.0 Standard:** Fully Supported  
 **Activiti Extensions:** Async support
@@ -51,16 +51,9 @@ Wait for a message:
 
 <sequenceFlow id="flow1" sourceRef="sendRequest" targetRef="waitForResponse"/>
 
-<receiveTask id="waitForResponse" name="Wait for Response">
-  <messageEventDefinition messageRef="responseMessage"/>
-</receiveTask>
+<receiveTask id="waitForResponse" name="Wait for Response"/>
 
 <sequenceFlow id="flow2" sourceRef="waitForResponse" targetRef="processResponse"/>
-```
-
-**Message Definition:**
-```xml
-<message id="responseMessage" name="Response Message"/>
 ```
 
 ## Runtime API
@@ -92,9 +85,7 @@ runtimeService.trigger(execution.getId(), variables);
 
 ```xml
 <!-- GOOD: Waiting for external system -->
-<receiveTask id="waitForPayment" name="Wait for Payment">
-  <messageEventDefinition messageRef="paymentReceived"/>
-</receiveTask>
+<receiveTask id="waitForPayment" name="Wait for Payment"/>
 
 <!-- BAD: Use service task for outbound -->
 <receiveTask id="callExternalApi" name="Call API">
@@ -106,9 +97,7 @@ runtimeService.trigger(execution.getId(), variables);
 
 ```xml
 <!-- GOOD: With timeout (boundary event as sibling, not child) -->
-<receiveTask id="waitForResponse" name="Wait for Response">
-  <messageEventDefinition messageRef="response"/>
-</receiveTask>
+<receiveTask id="waitForResponse" name="Wait for Response"/>
 
 <boundaryEvent id="timeout" attachedToRef="waitForResponse" cancelActivity="true">
   <timerEventDefinition>
@@ -117,9 +106,7 @@ runtimeService.trigger(execution.getId(), variables);
 </boundaryEvent>
 
 <!-- BAD: No timeout - can wait forever -->
-<receiveTask id="waitForResponse" name="Wait for Response">
-  <messageEventDefinition messageRef="response"/>
-</receiveTask>
+<receiveTask id="waitForResponse" name="Wait for Response"/>
 ```
 
 ### 3. Track Waiting Executions
@@ -203,13 +190,14 @@ List<Execution> waiting = runtimeService.createExecutionQuery()
 **Problem:** Expecting `messageEventReceived()` to work on a receive task
 
 ```xml
-<!-- The messageEventDefinition inside a receiveTask does NOT create a message subscription -->
+<!-- The messageEventDefinition inside a receiveTask is IGNORED by the engine:
+     it does NOT create a message subscription and is NOT used for correlation -->
 <receiveTask id="waitForResponse" name="Wait">
   <messageEventDefinition messageRef="response"/>
 </receiveTask>
 ```
 
-**Solution:** Use `RuntimeService.trigger(executionId)` to advance the receive task, or use an intermediate message catch event if you need actual message correlation.
+**Solution:** The engine releases a receive task exclusively via `RuntimeService.trigger(executionId)`. Use an intermediate message catch event if you need actual message subscription and correlation.
 
 ## Comparison with Alternatives
 

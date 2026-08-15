@@ -135,11 +135,11 @@ Add a default flow when no conditions match:
 </sequenceFlow>
 
 <sequenceFlow id="urgentFlow" sourceRef="gateway" targetRef="urgentService">
-  <conditionExpression>${order.urgent && order.value > 1000}</conditionExpression>
+  <conditionExpression>${order.urgent &amp;&amp; order.value > 1000}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="standardFlow" sourceRef="gateway" targetRef="standardService">
-  <conditionExpression>${!order.urgent || order.value <= 1000}</conditionExpression>
+  <conditionExpression>${!order.urgent || order.value &lt;= 1000}</conditionExpression>
 </sequenceFlow>
 ```
 
@@ -208,17 +208,17 @@ Process through multiple channels simultaneously:
   
   <!-- Ship from warehouse -->
   <sequenceFlow id="warehouseFlow" sourceRef="fulfillmentGateway" targetRef="shipFromWarehouse">
-    <conditionExpression>${inWarehouse && customerAcceptsStandardShipping}</conditionExpression>
+    <conditionExpression>${inWarehouse &amp;&amp; customerAcceptsStandardShipping}</conditionExpression>
   </sequenceFlow>
   
   <!-- Ship from store -->
   <sequenceFlow id="storeFlow" sourceRef="fulfillmentGateway" targetRef="shipFromStore">
-    <conditionExpression>${inStore && customerWantsFastShipping}</conditionExpression>
+    <conditionExpression>${inStore &amp;&amp; customerWantsFastShipping}</conditionExpression>
   </sequenceFlow>
   
   <!-- Backorder items -->
   <sequenceFlow id="backorderFlow" sourceRef="fulfillmentGateway" targetRef="createBackorder">
-    <conditionExpression>${!inWarehouse && !inStore && customerAcceptsBackorder}</conditionExpression>
+    <conditionExpression>${!inWarehouse &amp;&amp; !inStore &amp;&amp; customerAcceptsBackorder}</conditionExpression>
   </sequenceFlow>
   
   <serviceTask id="shipFromWarehouse" name="Ship from Warehouse" activiti:class="com.example.WarehouseShipper"/>

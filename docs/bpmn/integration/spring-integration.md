@@ -244,6 +244,7 @@ An order process pauses at a receive task to wait for an external approval syste
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:activiti="http://activiti.org/bpmn"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              targetNamespace="Examples">
 
   <process id="orderProcess" name="Order Process" isExecutable="true">
@@ -612,6 +613,63 @@ public IntegrationActivityBehavior myBehavior(...) { ... }
 ```xml
 <serviceTask activiti:delegateExpression="${myBehavior}"/>
 ```
+
+## Using the Modern API with Spring Integration Messaging
+
+The engine-level `ActivitiInboundGateway` bridge is not the only way to combine the two. An alternative, simpler pattern is to use the **Modern API** (`ProcessRuntime`) directly from Spring Integration message-handling components: you define a standard Spring Integration channel and `@ServiceActivator`s, and call `processRuntime.start(...)` inside the handler — no engine-event bridge is involved.
+
+The example app `activiti-api-spring-integration-example` demonstrates this pattern: a polling `FileReadingMessageSource` publishes `File` payloads to a `DirectChannel`, and a `@ServiceActivator` on that channel starts a process via `ProcessRuntime`:
+
+```java
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+
+import org.activiti.api.process.model.ProcessInstance;
+import org.activiti.api.process.model.builders.ProcessPayloadBuilder;
+import org.activiti.api.process.runtime.ProcessRuntime;
+import org.springframework.context.annotation.Bean;
+import org.springframework.integration.annotation.InboundChannelAdapter;
+import org.springframework.integration.annotation.Poller;
+import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.integration.channel.DirectChannel;
+import org.springframework.integration.core.MessageSource;
+import org.springframework.integration.file.FileReadingMessageSource;
+import org.springframework.integration.file.filters.SimplePatternFileListFilter;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+
+// Inside a @SpringBootApplication + @EnableIntegration class
+
+@Bean
+public MessageChannel fileChannel() {
+    return new DirectChannel();
+}
+
+@Bean
+@InboundChannelAdapter(value = "fileChannel", poller = @Poller(fixedDelay = "1000"))
+public MessageSource<File> fileReadingMessageSource() {
+    FileReadingMessageSource sourceReader = new FileReadingMessageSource();
+    sourceReader.setDirectory(new File("/tmp/"));
+    sourceReader.setFilter(new SimplePatternFileListFilter("*.txt"));
+    return sourceReader;
+}
+
+@ServiceActivator(inputChannel = "fileChannel")
+public void processFile(Message<File> message, ProcessRuntime processRuntime) throws IOException {
+    File payload = message.getPayload();
+    String content = new String(Files.readAllBytes(payload.toPath()));
+
+    ProcessInstance processInstance = processRuntime.start(ProcessPayloadBuilder
+            .start()
+            .withProcessDefinitionKey("categorizeProcess")
+            .withName("Processing: " + payload.getName())
+            .withVariable("content", content)
+            .build());
+}
+```
+
+**Bridge vs. Modern API:** the `ActivitiInboundGateway` bridge wires engine events into Spring Integration messaging (the process pauses at an activity and the flow runs on its behalf), while the Modern API pattern above calls `ProcessRuntime` directly from the message-handling components (the flow starts the process).
 
 ## Comparison with Other Integration Approaches
 

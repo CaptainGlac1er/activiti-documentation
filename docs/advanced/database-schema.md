@@ -11,6 +11,8 @@ Activiti stores all persistent state in a set of database tables organized by fo
 
 All tables are created automatically when the engine starts with `databaseSchemaUpdate` enabled. The schema version is tracked in `ACT_GE_PROPERTY`.
 
+> **Note:** the engine property `databaseSchemaUpdate` defaults to `"false"`, which only checks the existing schema version at engine build. Accepted values are `"true"`, `"false"`, `"create-drop"`, `"create"`, and `"drop-create"`. The Spring Boot starter overrides this default with `"true"` (`spring.activiti.database-schema-update`).
+
 ## Table Naming Conventions
 
 | Prefix | Category | Purpose |
@@ -147,7 +149,7 @@ Per-process-definition extension information (form keys, modeler metadata, etc.)
 | `INFO_JSON_ID_` | VARCHAR(64) | FK to `ACT_GE_BYTEARRAY` (JSON payload) |
 
 **Indexes:**
-- Unique: `(PROC_DEF_ID_)`
+- `(PROC_DEF_ID_)` — non-unique index; uniqueness of the column is additionally enforced by the unique constraint `ACT_UNIQ_INFO_PROCDEF`
 
 ---
 
@@ -520,19 +522,19 @@ Historic variable instances. Stores the final value of each variable at process 
 
 ### ACT_HI_DETAIL
 
-Historic detail records. Captures fine-grained events (form properties, variable updates, assignments, transitions).
+Historic detail records. This engine writes a single detail type: `VariableUpdate`, recorded when a variable is created or updated (only at `FULL` history level). The legacy `FormProperty`, `VariableCreate`, `Assignment`, and `Transition` types have no insert path in this engine and never appear in new rows.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `ID_` | VARCHAR(64) | Primary key |
-| `TYPE_` | VARCHAR(255) | Detail type: `FormProperty`, `VariableUpdate`, `VariableCreate`, `Assignment`, `Transition` |
+| `TYPE_` | VARCHAR(255) | Detail type. Only `VariableUpdate` rows are ever written by this engine |
 | `TIME_` | TIMESTAMP | Timestamp |
-| `NAME_` | VARCHAR(255) | Name (property name, variable name, etc.) |
+| `NAME_` | VARCHAR(255) | Name (variable name for `VariableUpdate` rows) |
 | `PROC_INST_ID_` | VARCHAR(64) | FK to `ACT_HI_PROCINST` |
 | `EXECUTION_ID_` | VARCHAR(64) | FK to `ACT_RU_EXECUTION` |
 | `TASK_ID_` | VARCHAR(64) | FK to `ACT_RU_TASK` |
 | `ACT_INST_ID_` | VARCHAR(64) | FK to `ACT_HI_ACTINST` |
-| `VAR_TYPE_` | VARCHAR(64) | Variable type (for VariableUpdate/Create) |
+| `VAR_TYPE_` | VARCHAR(255) | Variable type (for `VariableUpdate` rows) |
 | `REV_` | INTEGER | Revision |
 | `BYTEARRAY_ID_` | VARCHAR(64) | FK to `ACT_GE_BYTEARRAY` |
 | `DOUBLE_` | DOUBLE | Numeric value |
@@ -667,9 +669,9 @@ The history level controls which `ACT_HI_*` tables receive data. The level is co
 | History Level | ACT_HI_PROCINST | ACT_HI_ACTINST | ACT_HI_TASKINST | ACT_HI_VARINST | ACT_HI_IDENTITYLINK | ACT_HI_DETAIL |
 |--------------|:---------------:|:--------------:|:---------------:|:--------------:|:--------------------:|:-------------:|
 | `NONE` | No | No | No | No | No | No |
-| `ACTIVITY` | Yes | Yes | No | No | No | No |
-| `AUDIT` | Yes | Yes | Yes | Yes | Yes | Yes (FormProperty, VariableUpdate only) |
-| `FULL` | Yes | Yes | Yes | Yes | Yes | Yes (all types: FormProperty, VariableUpdate, VariableCreate, Assignment, Transition) |
+| `ACTIVITY` | Yes | Yes | No | Yes | No | No |
+| `AUDIT` | Yes | Yes | Yes | Yes | Yes | No |
+| `FULL` | Yes | Yes | Yes | Yes | Yes | Yes (VariableUpdate only) |
 
 Configuration:
 
@@ -680,11 +682,9 @@ processEngineConfiguration.setHistory("audit");
 // Available values: "none", "activity", "audit", "full"
 ```
 
-The engine's default history level is **AUDIT**, which captures process instances, activity instances, task instances, variable instances, identity links, and form properties/variable updates in detail records. (In Spring Boot, set `spring.activiti.history-level: audit` explicitly, as the starter defaults to `NONE`.)
+The engine's default history level is **AUDIT**, which captures process instances, activity instances, task instances, variable instances, and identity links. (In Spring Boot, set `spring.activiti.history-level` explicitly, as the starter defaults to `NONE`.)
 
-**AUDIT vs. FULL distinction:** The `ACT_HI_DETAIL` table is populated at both levels, but:
-- `AUDIT` records `FormProperty` and `VariableUpdate` detail types
-- `FULL` additionally records `VariableCreate`, `Assignment`, and `Transition` detail types
+**AUDIT vs. FULL distinction:** The `ACT_HI_DETAIL` table is populated only at `FULL`. At `AUDIT` and lower, no detail rows are written at all. At `FULL`, the engine writes a `VariableUpdate` detail row whenever a variable is created or updated — `VariableUpdate` is the only detail type this engine ever inserts.
 
 ---
 
@@ -749,7 +749,7 @@ The `TENANT_ID_` column is present on many tables to support multi-tenancy. When
 | `ACT_RE_DEPLOYMENT` | `''` |
 | `ACT_RE_PROCDEF` | `''` |
 | `ACT_RE_MODEL` | `''` |
-| `ACT_RU_EXECUTION` | — |
+| `ACT_RU_EXECUTION` | `''` |
 | `ACT_RU_TASK` | `''` |
 | `ACT_RU_JOB` | `''` |
 | `ACT_RU_TIMER_JOB` | `''` |
@@ -963,6 +963,66 @@ Binary variables and attachment content are common causes of unbounded database 
 - Store large files externally (S3, filesystem) and reference by URL in process variables
 - Implement periodic cleanup of old attachments and binary history variables
 - Monitor `ACT_GE_BYTEARRAY` size regularly using the management service
+
+## Schema Upgrades
+
+When the engine starts with `databaseSchemaUpdate` set to `"true"`, it compares the version stored in `ACT_GE_PROPERTY.schema.version` with the engine's own version and upgrades the existing schema if it is older. The logic lives in `DbSqlSession` (`org.activiti.engine.impl.db`), which runs the upgrade during engine build (`dbSchemaUpdate()`).
+
+### Version Chain
+
+The upgrade walks an ordered list of versions (`ACTIVITI_VERSIONS` in `DbSqlSession`). The version stored in the database is located in that chain — some entries accept aliases (e.g. `5.12` also matches `5.12.1` and `5.12T`) — and the engine then applies every upgrade step from that version up to the current engine version (`ProcessEngine.VERSION`, currently `8.1.0`):
+
+1. Activiti 5.x releases: `5.7` … `5.21.0.0`
+2. `5.99.0.0` — a virtual "last 5.x" version that guarantees all v6 changes are applied
+3. `6.0.0.0`, `6.0.0.1`, `6.0.0.2`, `6.0.0.3`
+4. `7.0.0.0`, `7.1.0.0`, `7.1.0-M6`, `7.11.1`
+5. `7.99.0` — a virtual version covering any 7.x schema
+6. `8.0.0`, `8.1.0` (current)
+
+> **Note:** the chain contains no `6.0.0.4` entry — the walk goes directly from `6.0.0.3` to `7.0.0.0`, even though `6003→6004` scripts exist in the engine resources.
+
+### Upgrade Scripts
+
+For each consecutive step of the chain, the engine executes a SQL script shipped in the engine resources:
+
+```
+org/activiti/db/upgrade/activiti.<database>.upgradestep.<from>.to.<to>.<component>.sql
+```
+
+- `<database>` — one of `db2`, `h2`, `hsql`, `mariadb`, `mssql`, `mysql`, `oracle`, `postgres`
+- `<from>` / `<to>` — version numbers with dots removed (e.g. `7.11.1` → `7111`, `7.1.0-M6` → `710-M6`, `8.0.0` → `800`)
+- `<component>` — `engine` (always upgraded) and `history` (only when history tables are present)
+
+Step scripts are optional: if a script is missing for a step, the engine logs `no schema resource ... for upgrade` and continues with the next step.
+
+### Unknown or Older Versions
+
+If the stored version cannot be found in the chain, `DbSqlSession` falls back based on its prefix:
+
+- versions starting with `5.` are treated as the virtual version `5.99.0.0` (`LAST_V5_VERSION`)
+- versions starting with `7.` are treated as the virtual version `7.99.0` (`LAST_V7_VERSION`)
+- anything else fails with `ActivitiException: Could not update Activiti database schema: unknown version from database: '<version>'`
+
+### Schema History
+
+When an upgrade runs, the engine:
+
+1. sets `ACT_GE_PROPERTY.schema.version` to the engine version
+2. appends ` upgrade(<old version>-><engine version>)` to the value of `ACT_GE_PROPERTY.schema.history` (e.g. `... upgrade(7.11.1->8.1.0)`; for legacy `5.0` schemas a `schema.history` row is seeded with `create(5.0)` first if it does not exist)
+3. returns a feedback string `upgraded Activiti from <old version> to <engine version>` (e.g. `upgraded Activiti from 7.11.1 to 8.1.0`)
+
+### Programmatic API
+
+To run the check/upgrade on an explicit JDBC connection (for example against a different catalog or schema), `ManagementService` exposes:
+
+```java
+String databaseSchemaUpgrade(Connection connection, String catalog, String schema);
+```
+
+```java
+String feedback = managementService.databaseSchemaUpgrade(connection, "MYCATALOG", "MYSCHEMA");
+// "upgraded Activiti from 7.11.1 to 8.1.0", or null when the schema is already up to date
+```
 
 ## Related Documentation
 

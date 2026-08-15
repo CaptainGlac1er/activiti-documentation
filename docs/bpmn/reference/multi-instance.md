@@ -362,7 +362,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
   </extensionElements>
 </userTask>
 ```
-```
 
 ### Example 2: Parallel Notifications
 
@@ -582,13 +581,15 @@ Listeners must be inside `extensionElements`:
 ```xml
 <!-- GOOD: Error handling for async MI -->
 <serviceTask id="miTask" activiti:async="true">
-  <multiInstanceLoopCharacteristics ... />
+  <multiInstanceLoopCharacteristics isSequential="false" activiti:collection="${items}" activiti:elementVariable="item"/>
   <extensionElements>
     <activiti:failedJobRetryTimeCycle>R3/PT1M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 <!-- Boundary event as sibling -->
-<boundaryEvent id="error" attachedToRef="miTask" ... />
+<boundaryEvent id="error" attachedToRef="miTask" cancelActivity="true">
+  <errorEventDefinition errorRef="MIError"/>
+</boundaryEvent>
 ```
 
 ### 5. Monitor Performance

@@ -307,7 +307,7 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 | `setAsyncExecutorTimerLockTimeInMillis(int)` | Timer lock duration (ms) | 300000 |
 | `setAsyncExecutorNumberOfRetries(int)` | Default retry count | 3 |
 | `setAsyncExecutorDefaultQueueSizeFullWaitTime(int)` | Wait when queue full (ms) | 0 |
-| `setAsyncExecutorResetExpiredJobsInterval(int)` | Expired job check interval (ms) | 0 (disabled) |
+| `setAsyncExecutorResetExpiredJobsInterval(int)` | Expired job check interval (ms) | 60000 |
 | `setAsyncExecutorResetExpiredJobsPageSize(int)` | Jobs per expired check | 3 |
 | `setAsyncExecutorMaxTimerJobsPerAcquisition(int)` | Timer jobs fetched per query | 1 |
 | `setAsyncExecutorDefaultTimerJobAcquireWaitTime(int)` | Wait between timer acquisitions (ms) | 10000 |

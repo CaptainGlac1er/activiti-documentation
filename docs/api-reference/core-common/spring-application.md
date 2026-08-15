@@ -28,9 +28,11 @@ The **activiti-spring-application** module provides Spring integration for Activ
 - `ApplicationService` - Loads applications from discovered resources
 - `ApplicationDeployer` - Deploys applications using entry deployers
 - `ApplicationDiscovery` - Discovers applications
+- `ApplicationReader` - Reads a zip archive into an `ApplicationContent`, classifying entries via `ApplicationEntryDiscovery` beans
 - `ApplicationEntry` - Represents an application entry point
 - `ApplicationContent` - Manages application content
 - `ApplicationEntryDeployer` - Interface for deploying application entries
+- `ApplicationAutoConfiguration` - Spring Boot auto-configuration that discovers and deploys application archives at startup
 
 ### Usage Example
 
@@ -53,6 +55,29 @@ ApplicationDeployer
     └── List<ApplicationEntryDeployer> (deployEntries)
             └── ApplicationContent (getFileContents)
                     └── FileContent (getName, getContent)
+```
+
+---
+
+## Configuration
+
+### Application Archive Auto-Deployment
+
+This module registers a Spring Boot auto-configuration — `ApplicationAutoConfiguration` (`org.activiti.application.conf.ApplicationAutoConfiguration`, listed in `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`) — that discovers Activiti application archives and deploys them at application startup.
+
+- **Property:** `spring.activiti.applicationsLocation` (type `String`), default `classpath:/applications/`.
+- **Discovery:** `ApplicationDiscovery.discoverApplications()` resolves the location with a `ResourcePatternResolver` and scans for `**.zip` archives — only when the location exists. A missing location yields an empty list and nothing is deployed.
+- **Loading:** each archive is read by `ApplicationReader`, which walks the zip entries and classifies them into an `ApplicationContent` using the registered `ApplicationEntryDiscovery` beans. `ProcessEntryDiscovery` (from the `activiti-spring-app-process` module) matches non-directory entries whose name contains `processes` (entry type `processes`).
+- **Deployment:** the `deployApplications` bean is an `InitializingBean`, so deployment runs during context startup. `ApplicationDeployer.deploy()` invokes every registered `ApplicationEntryDeployer` for each discovered application. `ProcessEntryDeployer` deploys the `processes` entries via `repositoryService.createDeployment()`:
+  - deployment name `ApplicationAutoDeployment`
+  - `enableDuplicateFiltering()` is enabled — the deployment is compared with previous deployments, so unchanged resources are not re-deployed
+
+Example:
+
+```yaml
+spring:
+  activiti:
+    applicationsLocation: "file:/opt/activiti/applications/"
 ```
 
 ---

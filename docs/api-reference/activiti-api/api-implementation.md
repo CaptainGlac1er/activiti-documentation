@@ -693,10 +693,12 @@ public interface ModelConverter<SourceT, TargetT> {
 | `APITaskConverter` | `engine.task.Task` | `api.Task` |
 | `APIVariableInstanceConverter` | `engine.persistence.entity.VariableInstance` | `api.VariableInstance` |
 | `APIDeploymentConverter` | `engine.repository.Deployment` | `api.Deployment` |
-| `APIProcessCandidateStarterUserConverter` | `engine.repository.ProcessDefinition` | `api.ProcessCandidateStarterUser` |
-| `APIProcessCandidateStarterGroupConverter` | `engine.repository.ProcessDefinition` | `api.ProcessCandidateStarterGroup` |
-| `ToSignalConverter` | `engine.SignalEventSubscription` | `api.BPMNSignal` |
-| `ToActivityConverter` | `engine.ActivitiActivity` | `api.BPMNActivity` |
+| `APITaskCandidateUserConverter` | `engine.task.IdentityLink` | `api.TaskCandidateUser` |
+| `APITaskCandidateGroupConverter` | `engine.task.IdentityLink` | `api.TaskCandidateGroup` |
+| `APIProcessCandidateStarterUserConverter` | `engine.task.IdentityLink` | `api.ProcessCandidateStarterUser` |
+| `APIProcessCandidateStarterGroupConverter` | `engine.task.IdentityLink` | `api.ProcessCandidateStarterGroup` |
+| `ToSignalConverter` | `engine.delegate.event.ActivitiSignalEvent` | `api.BPMNSignal` |
+| `ToActivityConverter` | `engine.delegate.event.ActivitiActivityEvent` | `api.BPMNActivity` |
 
 ### Converter Usage Pattern
 
@@ -842,8 +844,8 @@ public class TaskVariablesPayloadValidator {
     private final VariableNameValidator variableNameValidator;
     private final ExpressionResolver expressionResolver;
 
-    public void handleCreateTaskVariablePayload(CreateTaskVariablePayload payload) {
-        // Validate name and convert value types
+    public CreateTaskVariablePayload handleCreateTaskVariablePayload(CreateTaskVariablePayload payload) {
+        // Validate name, convert value types; returns the (possibly updated) payload
     }
 
     public Map<String, Object> handlePayloadVariables(Map<String, Object> variables) {

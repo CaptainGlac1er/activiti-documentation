@@ -102,11 +102,11 @@ Conditionally skip a sequence flow (i.e., the flow is not taken):
 </sequenceFlow>
 
 <sequenceFlow id="mediumValue" name="Medium Value Order">
-  <conditionExpression>${orderAmount >= 1000 && orderAmount <= 10000}</conditionExpression>
+  <conditionExpression>${orderAmount >= 1000 &amp;&amp; orderAmount &lt;= 10000}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="lowValue" name="Low Value Order">
-  <conditionExpression>${orderAmount < 1000}</conditionExpression>
+  <conditionExpression>${orderAmount &lt; 1000}</conditionExpression>
 </sequenceFlow>
 ```
 
@@ -126,11 +126,11 @@ Conditionally skip a sequence flow (i.e., the flow is not taken):
 
 ```xml
 <sequenceFlow id="priorityFlow" name="Priority Processing">
-  <conditionExpression>${order.priority == 'HIGH' && order.amount > 5000}</conditionExpression>
+  <conditionExpression>${order.priority == 'HIGH' &amp;&amp; order.amount > 5000}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="standardFlow" name="Standard Processing">
-  <conditionExpression>${order.priority == 'STANDARD' || order.amount <= 5000}</conditionExpression>
+  <conditionExpression>${order.priority == 'STANDARD' || order.amount &lt;= 5000}</conditionExpression>
 </sequenceFlow>
 ```
 
@@ -271,13 +271,13 @@ A default flow specifies the sequence flow to take when no condition expressions
   <sequenceFlow id="smallOrder"
                 sourceRef="amountGateway"
                 targetRef="autoApprove">
-    <conditionExpression>${orderAmount < 1000}</conditionExpression>
+    <conditionExpression>${orderAmount &lt; 1000}</conditionExpression>
   </sequenceFlow>
 
   <sequenceFlow id="mediumOrder"
                 sourceRef="amountGateway"
                 targetRef="managerApproval">
-    <conditionExpression>${orderAmount >= 1000 && orderAmount < 10000}</conditionExpression>
+    <conditionExpression>${orderAmount >= 1000 &amp;&amp; orderAmount &lt; 10000}</conditionExpression>
   </sequenceFlow>
 
   <sequenceFlow id="largeOrder"
@@ -301,7 +301,7 @@ A default flow specifies the sequence flow to take when no condition expressions
   <sequenceFlow id="vipFlow"
                 sourceRef="priorityGateway"
                 targetRef="vipProcessing">
-    <conditionExpression>${customer.vip == true && orderAmount > 5000}</conditionExpression>
+    <conditionExpression>${customer.vip == true &amp;&amp; orderAmount > 5000}</conditionExpression>
   </sequenceFlow>
 
   <sequenceFlow id="urgentFlow"
@@ -433,13 +433,13 @@ A default flow specifies the sequence flow to take when no condition expressions
 
 ```xml
 <!-- GOOD: Clear boundaries -->
-<sequenceFlow><conditionExpression>${amount < 1000}</conditionExpression></sequenceFlow>
-<sequenceFlow><conditionExpression>${amount >= 1000 && amount < 10000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount &lt; 1000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount >= 1000 &amp;&amp; amount &lt; 10000}</conditionExpression></sequenceFlow>
 <sequenceFlow><conditionExpression>${amount >= 10000}</conditionExpression></sequenceFlow>
 
 <!-- BAD: Overlapping conditions -->
-<sequenceFlow><conditionExpression>${amount < 1000}</conditionExpression></sequenceFlow>
-<sequenceFlow><conditionExpression>${amount <= 1000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount &lt; 1000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount &lt;= 1000}</conditionExpression></sequenceFlow>
 ```
 
 ### 3. Always Define Default
@@ -474,7 +474,7 @@ A default flow specifies the sequence flow to take when no condition expressions
 <sequenceFlow id="complexFlow" 
               name="VIP High-Value Urgent Order">
   <!-- VIP customer with order > $10k marked urgent -->
-  <conditionExpression>${customer.vip && orderAmount > 10000 && order.urgent}</conditionExpression>
+  <conditionExpression>${customer.vip &amp;&amp; orderAmount > 10000 &amp;&amp; order.urgent}</conditionExpression>
 </sequenceFlow>
 ```
 
@@ -509,12 +509,12 @@ A default flow specifies the sequence flow to take when no condition expressions
 
 ```xml
 <!-- BAD: Overlap at amount == 1000 -->
-<sequenceFlow><conditionExpression>${amount < 1000}</conditionExpression></sequenceFlow>
-<sequenceFlow><conditionExpression>${amount <= 1000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount &lt; 1000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount &lt;= 1000}</conditionExpression></sequenceFlow>
 
 <!-- GOOD: Clear boundaries -->
-<sequenceFlow><conditionExpression>${amount < 1000}</conditionExpression></sequenceFlow>
-<sequenceFlow><conditionExpression>${amount >= 1000 && amount < 5000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount &lt; 1000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount >= 1000 &amp;&amp; amount &lt; 5000}</conditionExpression></sequenceFlow>
 ```
 
 ### 3. Null Variable Access
@@ -526,7 +526,7 @@ A default flow specifies the sequence flow to take when no condition expressions
 <conditionExpression>${order.amount > 1000}</conditionExpression>
 
 <!-- GOOD: Null-safe -->
-<conditionExpression>${order != null && order.amount > 1000}</conditionExpression>
+<conditionExpression>${order != null &amp;&amp; order.amount > 1000}</conditionExpression>
 ```
 
 ### 4. Case Sensitivity
@@ -547,7 +547,7 @@ A default flow specifies the sequence flow to take when no condition expressions
 
 ```xml
 <!-- BAD: Too complex -->
-<conditionExpression>${(order.amount * (1 + taxRate/100)) - discount > threshold && (customer.vip || order.urgent)}</conditionExpression>
+<conditionExpression>${(order.amount * (1 + taxRate/100)) - discount > threshold &amp;&amp; (customer.vip || order.urgent)}</conditionExpression>
 
 <!-- GOOD: Use intermediate variables or method -->
 <conditionExpression>${orderService.shouldExpedite(order)}</conditionExpression>

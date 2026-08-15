@@ -89,8 +89,7 @@ taskService.saveTask(subTask);
 ### Task Creation with Properties
 
 ```java
-Task task = taskService.newTask();
-task.setId("task-789");
+Task task = taskService.newTask("task-789");
 task.setName("Document Approval");
 task.setDescription("Approve or reject document");
 task.setOwner("system");
@@ -281,6 +280,12 @@ taskService.deleteTask(taskId);
 taskService.deleteTask(taskId, true);
 ```
 
+### Suspended Tasks
+
+Tasks inherit the suspension state of their process instance: suspending a process instance suspends **every** task of the instance (`AbstractSetProcessInstanceStateCmd.updateTaskSuspensionState` applies the new state to all tasks found by `findTasksByProcessInstanceId`), and reactivating the instance reactivates them again.
+
+> **Note:** While a task is suspended, every mutating operation implemented via `NeedsActiveTaskCmd` — claim/unclaim, complete, resolve, delegate, set/remove variables, set priority/due date, add/remove identity links — fails with `ActivitiException("Cannot execute operation: task is suspended")`; the check lives in `NeedsActiveTaskCmd.execute`, before any of that logic runs. Tasks remain fully queryable — use `suspended()` / `active()` on the query to filter by state. See [Process Instance and Definition Suspension](../../advanced/process-instance-suspension.md).
+
 ---
 
 ## Task Variables
@@ -314,8 +319,10 @@ Map<String, Object> allVars = taskService.getVariables(taskId);
 // Get local variables only
 Map<String, Object> localVars = taskService.getVariablesLocal(taskId);
 
-// Get variable names
-List<String> varNames = taskService.getVariableNames(taskId);
+// Get variable names (no such TaskService method exists — use VariableScope)
+Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+Set<String> varNames = ((org.activiti.engine.delegate.VariableScope) task).getVariableNames();
+```
 
 ### Variable Instances & Data Objects
 
@@ -568,17 +575,17 @@ Comments are stored in `ACT_HI_COMMENT` and persist after process completion. Th
 
 ### Task Events
 
-Runtime events (distinct from comments) capture structured task activity:
+`getTaskEvents()` is a legacy alias over the comment store — the engine has no dedicated event table and no code path that writes events:
 
 ```java
-// Get events for a task
+// Returns the task's ACT_HI_COMMENT rows (same table as comments)
 List<Event> events = taskService.getTaskEvents(taskId);
 
 // Get a specific event
 Event event = taskService.getEvent("event-1");
 ```
 
-Events are created by task listeners and the engine itself. Each event has an `action` (e.g., `ACTION_ADD_COMMENT`, `ACTION_ADD_ATTACHMENT`) rather than a type. Use `getTaskEvents()` to inspect programmatic task activity.
+`GetTaskEventsCmd` delegates to the comment data manager (`findEventsByTaskId`), whose SQL (`selectEventsByTaskId`) simply re-queries `ACT_HI_COMMENT` — so `getTaskEvents(taskId)` returns the same rows as `getTaskComments(taskId)` (the events query just omits the `TYPE_ = 'comment'` filter). The `Event.ACTION_*` constants (`ACTION_ADD_COMMENT`, `ACTION_ADD_ATTACHMENT`, ...) are vestigial: nothing in this engine populates them.
 
 ### Subtasks
 
@@ -613,6 +620,12 @@ Task newTask(String taskId);
 void saveTask(Task task);
 void deleteTask(String taskId);
 void deleteTask(String taskId, boolean cascade);
+void deleteTask(String taskId, String deleteReason);
+void deleteTask(String taskId, String deleteReason, boolean cancel);
+void deleteTasks(Collection<String> taskIds);
+void deleteTasks(Collection<String> taskIds, boolean cascade);
+void deleteTasks(Collection<String> taskIds, String deleteReason);
+void deleteTasks(Collection<String> taskIds, String deleteReason, boolean cancel);
 
 // Task Queries
 TaskQuery createTaskQuery();
@@ -623,6 +636,14 @@ void claim(String taskId, String userId);
 void unclaim(String taskId);
 void setAssignee(String taskId, String userId);
 void setOwner(String taskId, String userId);
+
+// Identity Links
+List<IdentityLink> getIdentityLinksForTask(String taskId);
+void addUserIdentityLink(String taskId, String userId, String identityLinkType);
+void addUserIdentityLink(String taskId, String userId, String identityLinkType, byte[] details);
+void addGroupIdentityLink(String taskId, String groupId, String identityLinkType);
+void deleteUserIdentityLink(String taskId, String userId, String identityLinkType);
+void deleteGroupIdentityLink(String taskId, String groupId, String identityLinkType);
 
 // Task Completion
 void complete(String taskId);
@@ -659,6 +680,12 @@ Map<String, Object> getVariablesLocal(String taskId);
 Map<String, Object> getVariablesLocal(String taskId, Collection<String> variableNames);
 void setVariable(String taskId, String variableName, Object value);
 void setVariables(String taskId, Map<String, ? extends Object> variables);
+void setVariableLocal(String taskId, String variableName, Object value);
+void setVariablesLocal(String taskId, Map<String, ? extends Object> variables);
+void removeVariable(String taskId, String variableName);
+void removeVariableLocal(String taskId, String variableName);
+void removeVariables(String taskId, Collection<String> variableNames);
+void removeVariablesLocal(String taskId, Collection<String> variableNames);
 
 // Variable Instances
 VariableInstance getVariableInstance(String taskId, String variableName);
@@ -681,10 +708,14 @@ Map<String, DataObject> getDataObjects(String taskId, Collection<String> dataObj
 // Comments
 Comment addComment(String taskId, String processInstanceId, String message);
 Comment addComment(String taskId, String processInstanceId, String type, String message);
+Comment getComment(String commentId);
 List<Comment> getTaskComments(String taskId);
 List<Comment> getTaskComments(String taskId, String type);
 List<Comment> getProcessInstanceComments(String processInstanceId);
 List<Comment> getProcessInstanceComments(String processInstanceId, String type);
+List<Comment> getCommentsByType(String type);
+void deleteComment(String commentId);
+void deleteComments(String taskId, String processInstanceId);
 
 // Attachments
 Attachment createAttachment(String attachmentType, String taskId, String processInstanceId, String attachmentName, String attachmentDescription, InputStream content);
@@ -693,6 +724,11 @@ Attachment getAttachment(String attachmentId);
 InputStream getAttachmentContent(String attachmentId);
 List<Attachment> getTaskAttachments(String taskId);
 List<Attachment> getProcessInstanceAttachments(String processInstanceId);
+void saveAttachment(Attachment attachment);
+void deleteAttachment(String attachmentId);
+
+// Subtasks
+List<Task> getSubTasks(String parentTaskId);
 ```
 
 ### TaskQuery
@@ -703,39 +739,119 @@ TaskQuery createTaskQuery();
 // Filtering
 .taskId(String id)
 .taskName(String name)
+.taskNameIn(List<String> nameList)
+.taskNameInIgnoreCase(List<String> nameList)
 .taskNameLike(String name)
+.taskNameLikeIgnoreCase(String nameLike)
 .taskDescription(String description)
 .taskDescriptionLike(String description)
+.taskDescriptionLikeIgnoreCase(String descriptionLike)
+.taskCategory(String category)
+.taskDefinitionKey(String key)
+.taskDefinitionKeyLike(String keyLike)
+.taskDelegationState(DelegationState delegationState)
 .taskAssignee(String assignee)
 .taskAssigneeLike(String assignee)
+.taskAssigneeLikeIgnoreCase(String assigneeLikeIgnoreCase)
+.taskAssigneeIds(List<String> assigneeListIds)
 .taskUnassigned()
 .taskOwner(String owner)
+.taskOwnerLike(String ownerLike)
+.taskOwnerLikeIgnoreCase(String ownerLikeIgnoreCase)
 .taskCandidateUser(String candidateUser)
+.taskCandidateUser(String candidateUser, List<String> userGroups)
+.taskCandidateOrAssigned(String userIdForCandidateAndAssignee)
+.taskCandidateOrAssigned(String userIdForCandidateAndAssignee, List<String> userGroups)
+.taskInvolvedUser(String involvedUser)
+.taskInvolvedGroupsIn(List<String> involvedGroups)
 .taskCandidateGroup(String candidateGroup)
+.taskCandidateGroupIn(List<String> candidateGroups)
+.taskParentTaskId(String parentTaskId)
+.excludeSubtasks()
+.suspended()
+.active()
 .processInstanceId(String id)
+.processInstanceIdIn(List<String> processInstanceIds)
 .processInstanceBusinessKey(String key)
+.processInstanceBusinessKeyLike(String keyLike)
+.processInstanceBusinessKeyLikeIgnoreCase(String keyLikeIgnoreCase)
 .executionId(String id)
-.taskPriority(int priority)
+.taskPriority(Integer priority)
 .taskMinPriority(Integer minPriority)
 .taskMaxPriority(Integer maxPriority)
 .taskDueDate(Date dueDate)
 .taskDueBefore(Date before)
 .taskDueAfter(Date after)
 .withoutTaskDueDate()
+.taskCreatedOn(Date date)
 .taskCreatedBefore(Date before)
 .taskCreatedAfter(Date after)
 .taskTenantId(String tenantId)
 .taskTenantIdLike(String tenantIdLike)
 .taskWithoutTenantId()
+.processDefinitionKey(String key)
+.processDefinitionKeyLike(String keyLike)
+.processDefinitionKeyLikeIgnoreCase(String keyLikeIgnoreCase)
+.processDefinitionKeyIn(List<String> keys)
+.processDefinitionId(String id)
+.processDefinitionName(String name)
+.processDefinitionNameLike(String nameLike)
+.processCategoryIn(List<String> categories)
+.processCategoryNotIn(List<String> categories)
+.deploymentId(String deploymentId)
+.deploymentIdIn(List<String> deploymentIds)
+
+// Variable value filters
+.taskVariableValueEquals(String name, Object value)
+.taskVariableValueEquals(Object value)
+.taskVariableValueEqualsIgnoreCase(String name, String value)
+.taskVariableValueNotEquals(String name, Object value)
+.taskVariableValueNotEqualsIgnoreCase(String name, String value)
+.taskVariableValueGreaterThan(String name, Object value)
+.taskVariableValueGreaterThanOrEqual(String name, Object value)
+.taskVariableValueLessThan(String name, Object value)
+.taskVariableValueLessThanOrEqual(String name, Object value)
+.taskVariableValueLike(String name, String value)
+.taskVariableValueLikeIgnoreCase(String name, String value)
+.processVariableValueEquals(String name, Object value)
+.processVariableValueEquals(Object value)
+.processVariableValueEqualsIgnoreCase(String name, String value)
+.processVariableValueNotEquals(String name, Object value)
+.processVariableValueNotEqualsIgnoreCase(String name, String value)
+.processVariableValueGreaterThan(String name, Object value)
+.processVariableValueGreaterThanOrEqual(String name, Object value)
+.processVariableValueLessThan(String name, Object value)
+.processVariableValueLessThanOrEqual(String name, Object value)
+.processVariableValueLike(String name, String value)
+.processVariableValueLikeIgnoreCase(String name, String value)
+.includeTaskLocalVariables()
+.includeProcessVariables()
+.limitTaskVariables(Integer taskVariablesLimit)
+
+// Composite (OR) clauses — clauses between or() and endOr() are OR-ed together, then AND-ed with the rest of the query
+.or()
+.endOr()
+
+// Localization
+.locale(String locale)
+.withLocalizationFallback()
 
 // Ordering
 .orderByTaskId()
 .orderByTaskName()
+.orderByTaskDescription()
 .orderByTaskAssignee()
 .orderByTaskOwner()
 .orderByTaskCreateTime()
 .orderByTaskDueDate()
 .orderByTaskPriority()
+.orderByTaskDefinitionKey()
+.orderByProcessInstanceId()
+.orderByExecutionId()
+.orderByProcessDefinitionId()
+.orderByTenantId()
+.orderByDueDateNullsFirst()
+.orderByDueDateNullsLast()
 
 .asc()
 .desc()
@@ -745,6 +861,10 @@ TaskQuery createTaskQuery();
 .count()
 .singleResult()
 ```
+
+**Task definition key semantics:** a task's definition key is the **BPMN `id`** of its user task element — when the engine enters a user task, `UserTaskActivityBehavior.execute` calls `task.setTaskDefinitionKey(userTask.getId())`. So `taskDefinitionKey("approveOrder")` matches every task created from `<userTask id="approveOrder" .../>`, across all process definition versions. That makes it the stable key to query/filter tasks of a given activity — unlike `taskId` (unique per task) or `processDefinitionId` (changes on every deployment).
+
+**Explicit group candidates:** the two-argument overloads `taskCandidateUser(userId, groups)` and `taskCandidateOrAssigned(userId, groups)` also match tasks whose candidate group is one of the explicitly given groups (`I.GROUP_ID_ IN (...)` in the query SQL). When no `UserGroupManager` is configured on the process engine — the `dbIdentityUsed=false` mode referenced in the javadoc — group membership is not resolved from the identity store, so these overloads are how you include group candidates by passing the user's groups explicitly.
 
 ---
 

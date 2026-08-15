@@ -40,7 +40,7 @@ HistoryService historyService = processEngine.getHistoryService();
 - Query historic task instances
 - Query historic activity instances
 - Query historic variable instances
-- Query historic details (variable updates, form properties)
+- Query historic details (variable updates)
 - Access process instance history logs
 - Retrieve historic identity links
 - Delete historic data
@@ -653,7 +653,7 @@ List<HistoricVariableInstance> variables = variableQuery
 
 ## Historic Detail Queries
 
-Historic details include variable updates and form properties:
+Historic details capture variable updates (`VariableUpdate` is the only detail type this engine writes; form property details are not recorded):
 
 ```java
 HistoricDetailQuery detailQuery = historyService.createHistoricDetailQuery();
@@ -678,9 +678,9 @@ List<HistoricDetail> variableUpdates = detailQuery
     .variableUpdates()
     .list();
 
-// Only form properties
-List<HistoricDetail> formProperties = detailQuery
-    .formProperties()
+// Exclude all task-related details (only items with no task-id are selected)
+List<HistoricDetail> nonTaskDetails = detailQuery
+    .excludeTaskDetails()
     .list();
 ```
 
@@ -710,7 +710,7 @@ ProcessInstanceHistoryLog log = logQuery
     .singleResult();
 ```
 
-**Note:** Each `includeXXX()` method executes an additional query.
+**Note:** Each `includeXXX()` method executes an additional query. `includeFormProperties()` is part of the API, but the history manager no longer records form property details, so it adds no data.
 
 ### Access History Log Data
 
@@ -809,7 +809,7 @@ List<HistoricIdentityLink> identityLinks = historyService
 
 ## Native Queries
 
-Execute custom SQL queries against history tables:
+Execute custom SQL queries against history tables. A native query takes a raw SQL statement via `sql(String)` and named parameters via `parameter(String, Object)`, referenced in the SQL as `#{name}`. Results are fetched with `list()`, `listPage(firstResult, maxResults)`, `singleResult()`, or `count()` — there is no varargs `nativeSql(...)` method.
 
 ### Native Historic Process Instance Query
 
@@ -818,7 +818,8 @@ NativeHistoricProcessInstanceQuery nativeQuery = historyService
     .createNativeHistoricProcessInstanceQuery();
 
 List<HistoricProcessInstance> instances = nativeQuery
-    .nativeSql("SELECT * FROM ACT_HI_PROCINST WHERE START_TIME_ > ?", new Date())
+    .sql("SELECT * FROM ACT_HI_PROCINST WHERE START_TIME_ > #{startTime}")
+    .parameter("startTime", new Date())
     .list();
 ```
 
@@ -829,7 +830,8 @@ NativeHistoricTaskInstanceQuery nativeQuery = historyService
     .createNativeHistoricTaskInstanceQuery();
 
 List<HistoricTaskInstance> tasks = nativeQuery
-    .nativeSql("SELECT * FROM ACT_HI_TASKINST WHERE ASSIGNEE_ = ?", "john.doe")
+    .sql("SELECT * FROM ACT_HI_TASKINST WHERE ASSIGNEE_ = #{assignee}")
+    .parameter("assignee", "john.doe")
     .list();
 ```
 
@@ -840,7 +842,8 @@ NativeHistoricActivityInstanceQuery nativeQuery = historyService
     .createNativeHistoricActivityInstanceQuery();
 
 List<HistoricActivityInstance> activities = nativeQuery
-    .nativeSql("SELECT * FROM ACT_HI_ACTINST WHERE ACT_ID_ = ?", "task_1")
+    .sql("SELECT * FROM ACT_HI_ACTINST WHERE ACT_ID_ = #{activityId}")
+    .parameter("activityId", "task_1")
     .list();
 ```
 
@@ -851,7 +854,8 @@ NativeHistoricDetailQuery nativeQuery = historyService
     .createNativeHistoricDetailQuery();
 
 List<HistoricDetail> details = nativeQuery
-    .nativeSql("SELECT * FROM ACT_HI_DETAIL WHERE VAR_NAME_ = ?", "orderAmount")
+    .sql("SELECT * FROM ACT_HI_DETAIL WHERE NAME_ = #{variableName}")
+    .parameter("variableName", "orderAmount")
     .list();
 ```
 
@@ -862,7 +866,8 @@ NativeHistoricVariableInstanceQuery nativeQuery = historyService
     .createNativeHistoricVariableInstanceQuery();
 
 List<HistoricVariableInstance> variables = nativeQuery
-    .nativeSql("SELECT * FROM ACT_HI_VARINST WHERE NAME_ = ?", "status")
+    .sql("SELECT * FROM ACT_HI_VARINST WHERE NAME_ = #{variableName}")
+    .parameter("variableName", "status")
     .list();
 ```
 
@@ -892,7 +897,7 @@ historyService.deleteHistoricProcessInstance("process-instance-id-456");
 - Historic process instance
 - All historic activities
 - All historic tasks
-- All historic details (variable updates, form properties)
+- All historic details (variable updates)
 
 ---
 
@@ -1078,10 +1083,12 @@ ProcessEngine engine = configuration.buildProcessEngine();
 ```
 
 **History Levels:**
-- `NONE` / `"none"` — No history
-- `ACTIVITY` / `"activity"` — Activity instances only
-- `AUDIT` / `"audit"` — Activities and variable history
-- `FULL` / `"full"` — Complete history including variable updates and form properties
+- `NONE` / `"none"` — No history at all
+- `ACTIVITY` / `"activity"` — Historic process instances, activity instances, and variable instances (`ACT_HI_PROCINST`, `ACT_HI_ACTINST`, `ACT_HI_VARINST`)
+- `AUDIT` / `"audit"` — Adds historic task instances and identity links (`ACT_HI_TASKINST`, `ACT_HI_IDENTITYLINK`)
+- `FULL` / `"full"` — Adds historic detail rows: variable updates only (`ACT_HI_DETAIL`). Form property details are no longer recorded by the history manager
+
+> **Note:** In Spring Boot, `spring.activiti.db-history-used` defaults to `false`, so no `ACT_HI_*` tables are created or used at all unless you enable it. See [Spring Boot Starter](./spring-boot-starter.mdx) for the property reference.
 
 ---
 

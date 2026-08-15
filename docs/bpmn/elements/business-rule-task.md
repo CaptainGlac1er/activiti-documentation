@@ -448,7 +448,7 @@ public class JdmnConnector implements Connector {
 {
   "id": "creditApprovalProcess",
   "extensions": {
-    "Process_creditApprovalProcess": {
+    "creditApprovalProcess": {
       "mappings": {
         "creditDecision": {
           "inputs": {

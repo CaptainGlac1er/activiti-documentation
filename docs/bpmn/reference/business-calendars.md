@@ -853,7 +853,8 @@ calendar.add(Calendar.YEAR, duration.getYears() * duration.getSign());
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:process id="slaApproval" name="SLA Approval Process"
     xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-    xmlns:activiti="http://activiti.org/bpmn">
+    xmlns:activiti="http://activiti.org/bpmn"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <bpmn:startEvent id="start"/>
 

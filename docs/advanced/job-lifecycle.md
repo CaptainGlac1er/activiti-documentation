@@ -85,13 +85,16 @@ stateDiagram-v2
 
 ## Job Handlers
 
-Each job has a `jobHandlerType` that determines how it is executed. The engine dispatches jobs to registered handlers via `JobManager.executeJobHandler()`.
+Each job has a `jobHandlerType` that determines how it is executed. Handlers are registered in a map on the process engine configuration — `ProcessEngineConfigurationImpl.getJobHandlers()`, populated during engine initialization by `initJobHandlers()`. At execution time, `DefaultJobManager` looks up the handler for the job's `jobHandlerType` from that map and invokes it, inside its `protected` `executeJobHandler(JobEntity)` method — which is not part of the public `JobManager` interface (that interface exposes `execute(Job)` and the move/copy operations between job tables).
 
 | Handler Type | Class | Use Case |
 |--------------|-------|----------|
 | `async-continuation` | `AsyncContinuationJobHandler` | Resume process after async boundary |
 | `timer-start-event` | `TimerStartEventJobHandler` | Start a new process instance via timer |
 | `trigger-timer` | `TriggerTimerEventJobHandler` | Fire a boundary or intermediate timer |
+| `event` | `ProcessEventJobHandler` | Deliver a message/signal event that was received in an async context |
+| `suspend-processdefinition` | `TimerSuspendProcessDefinitionHandler` | Suspend a process definition at a scheduled suspension date |
+| `activate-processdefinition` | `TimerActivateProcessDefinitionHandler` | Activate a process definition at a scheduled activation date |
 
 ### AsyncContinuationJobHandler
 
@@ -111,6 +114,18 @@ Handles timer start events. Looks up the process definition, verifies it is not 
 ### TriggerTimerEventJobHandler
 
 Fires for boundary timer events and intermediate catch timer events. Plans a `TriggerExecutionOperation` on the agenda and dispatches a `TIMER_FIRED` event.
+
+### ProcessEventJobHandler
+
+Handles the `event` job type — message jobs created by `EventSubscriptionEntityManagerImpl.scheduleEventAsync(...)` when a message or signal event is received with async processing requested (`eventSubscriptionEntityManager.eventReceived(..., processASync=true)`, e.g. via `runtimeService.messageEventReceivedAsync(messageName, executionId)` or `runtimeService.signalEventReceivedAsync(signalName)`). The event subscription's ID is stored in the job's `jobHandlerConfiguration`. On execution, the handler looks up the subscription by that ID and calls `eventSubscriptionEntityManager.eventReceived(subscription, null, false)` — the event itself is then processed synchronously inside the job's transaction.
+
+### TimerSuspendProcessDefinitionHandler / TimerActivateProcessDefinitionHandler
+
+Handle the scheduled suspension/activation of process definitions. When `suspendProcessDefinitionById(id, suspendProcessInstances, suspensionDate)` or `activateProcessDefinitionById(id, activateProcessInstances, activationDate)` is called with a non-null date, `AbstractSetProcessDefinitionStateCmd` does not change the state immediately — it schedules a timer job (`duedate` = the given date, `jobType` = `timer`) with the handler type `suspend-processdefinition` or `activate-processdefinition`. When the timer fires, the handler executes `SuspendProcessDefinitionCmd` / `ActivateProcessDefinitionCmd` for the job's process definition, reading the `includeProcessInstances` flag from the job's JSON configuration.
+
+### Custom Job Handlers
+
+Beyond the six built-in handlers, custom handlers can be registered with `processEngineConfiguration.setCustomJobHandlers(List<JobHandler>)`. During initialization, `initJobHandlers()` adds each custom handler to the same `jobHandlers` map after the built-ins — a custom handler whose type matches a built-in type overrides it. At execution time `DefaultJobManager` looks the handler up by the job's `jobHandlerType` (`jobHandlers.get(jobEntity.getJobHandlerType())`), so a job whose type is not registered in the map cannot be executed.
 
 ## Async Executor Architecture
 
@@ -212,6 +227,8 @@ When a job fails, `JobRetryCmd` determines the next action:
 
 The default number of retries is set by `asyncExecutorNumberOfRetries` (default: 3), configurable at engine level.
 
+> **Two-tier failed-job wait time:** `JobRetryCmd` applies `asyncFailedJobWaitTime` (default: 10 seconds, measured from *now*) only when the job has no `dueDate` or its job type is `message`. Failed jobs that already carry a due date (e.g. failed timer jobs) are rescheduled differently: `defaultFailedJobWaitTime` (default: 10 seconds) is **added to the original due date** — the wait is measured from when the job was originally due, not from when it failed. Both values are expressed in seconds (`JobRetryCmd` adds them with `Calendar.SECOND`) and are set via `ProcessEngineConfiguration.setDefaultFailedJobWaitTime(int)` / `setAsyncFailedJobWaitTime(int)`.
+
 ### FailedJobCommandFactory
 
 `FailedJobCommandFactory` is the extension point for customizing failure handling. The engine calls `getCommand(jobId, exception)` to obtain the command that processes a failed job. The default implementation (`DefaultFailedJobCommandFactory`) returns a `JobRetryCmd`.
@@ -264,7 +281,7 @@ The `activiti:failedJobRetryTimeCycle` extension element (inside `<extensionElem
 
 ### Syntax
 
-The retry cycle uses an ISO 8601 repeat expression (or a cron expression), parsed by `DurationHelper` at the first job failure:
+The retry cycle uses an ISO 8601 repeat expression, parsed by `DurationHelper` at the first job failure:
 
 ```
 R[<n>]/<ISO-8601 duration>[/<end date>]
@@ -273,9 +290,8 @@ R[<n>]/<ISO-8601 duration>[/<end date>]
 - `R` — Repeat indicator (required)
 - `Rn` — Repeat exactly `n` times
 - `R` without number — Repeat indefinitely (bounded by `Integer.MAX_VALUE - 1`)
-- A cron expression is also accepted in place of the ISO 8601 form
 
-Only a single phase is supported. `DurationHelper` splits the expression on `/` only — multi-phase (semicolon-separated) cycles, a bare `R5` without a `/`, or a phase that is not a valid date/duration (e.g. `R/5`) all fail to parse and throw `ActivitiException` at the first job failure.
+Only the ISO 8601 form is accepted — cron expressions are **not** parsed by `DurationHelper`; cron is only used for `timeCycle` on timer events by the business calendars (see [Business Calendars](../bpmn/reference/business-calendars.md)). Only a single phase is supported. `DurationHelper` splits the expression on `/` only — multi-phase (semicolon-separated) cycles, a bare `R5` without a `/`, or a phase that is not a valid date/duration (e.g. `R/5`) all fail to parse and throw `ActivitiException` at the first job failure.
 
 ### Examples
 

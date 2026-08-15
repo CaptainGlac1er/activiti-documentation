@@ -41,13 +41,14 @@ The **RepositoryService** manages all artifacts stored in the engine's repositor
 ### Core Concepts
 
 ```
-Deployment
-    ├── Process Definition (v1)
-    ├── Process Definition (v2)
-    ├── BPMN XML
-    ├── Process Image
-    └── Form Definitions
+Deployment A (deployment #1)        Deployment B (deployment #2)
+    ├── Process Definition (v1)       ├── Process Definition (v2)
+    ├── BPMN XML                      ├── BPMN XML
+    ├── Process Image                 ├── Process Image
+    └── Form Definitions              └── Form Definitions
 ```
+
+Process definition versions are created **across deployments**, never within one: every deployment of a process key produces a new version (v1, v2, …) in its own deployment, so a single deployment contains at most one version per process key.
 
 ---
 
@@ -131,7 +132,7 @@ public Deployment deployFromGit(String gitUrl, String branch) {
         .name("Git Deployment: " + branch);
     
     for (File bpmnFile : bpmnFiles) {
-        builder.addFile(bpmnFile);
+        builder.addInputStream(bpmnFile.getName(), new FileInputStream(bpmnFile));
     }
     
     return builder.deploy();
@@ -231,9 +232,13 @@ public class ProcessDefinitionInfo {
         System.out.println("Has Graphical Notation: " + processDef.hasGraphicalNotation());
         System.out.println("Has Start Form Key: " + processDef.hasStartFormKey());
         System.out.println("Suspended: " + processDef.isSuspended());
+        System.out.println("App Version: " + processDef.getAppVersion());
+        System.out.println("Engine Version: " + processDef.getEngineVersion());
     }
 }
 ```
+
+`getAppVersion()` returns the application version stamped on the process definition — set automatically when its deployment was created with a project manifest (see [Advanced Deployment Builder](../../advanced/deployment-builder.md#versioning-app-version--rollback)); the value can also be written explicitly with `setAppVersion(Integer)`. `getEngineVersion()` returns the engine version the definition was deployed on (e.g. `5` or `6`).
 
 ### Retrieving Process Resources
 
@@ -490,6 +495,7 @@ void suspendProcessDefinitionById(String id);
 void suspendProcessDefinitionById(String id, boolean suspendProcessInstances, Date suspensionDate);
 void activateProcessDefinitionById(String id);
 void activateProcessDefinitionById(String id, boolean activateProcessInstances, Date activationDate);
+void setProcessDefinitionCategory(String processDefinitionId, String category);
 
 // Resources
 List<String> getDeploymentResourceNames(String deploymentId);
@@ -507,14 +513,28 @@ ProcessDefinitionQuery createProcessDefinitionQuery();
 
 // Filtering
 .processDefinitionId(String id)
+.processDefinitionIds(Set<String> ids)
+.processDefinitionIdOrKey(String idOrKey)
 .processDefinitionKey(String key)
+.processDefinitionKeys(Set<String> keys)
 .processDefinitionKeyLike(String key)
 .processDefinitionName(String name)
 .processDefinitionNameLike(String name)
-.processDefinitionVersion(int version)
+.processDefinitionVersion(Integer version)
+.processDefinitionVersionGreaterThan(Integer version)
+.processDefinitionVersionGreaterThanOrEquals(Integer version)
+.processDefinitionVersionLowerThan(Integer version)
+.processDefinitionVersionLowerThanOrEquals(Integer version)
 .processDefinitionCategory(String category)
+.processDefinitionResourceName(String resourceName)
+.processDefinitionResourceNameLike(String resourceNameLike)
 .deploymentId(String deploymentId)
+.deploymentIds(Set<String> deploymentIds)
 .processDefinitionTenantId(String tenantId)
+.processDefinitionTenantIdLike(String tenantIdLike)
+.processDefinitionWithoutTenantId()
+.startableByUser(String userId)
+.startableByGroups(List<String> groupIds)
 .active()
 .suspended()
 
@@ -523,13 +543,53 @@ ProcessDefinitionQuery createProcessDefinitionQuery();
 .orderByProcessDefinitionKey()
 .orderByProcessDefinitionName()
 .orderByProcessDefinitionVersion()
+.orderByProcessDefinitionAppVersion()
 .orderByDeploymentId()
+.orderByTenantId()
 .asc()
 .desc()
 
 // Pagination
 .listPage(int firstResult, int maxResults)
 ```
+
+`startableByUser` / `startableByGroups` are the query side of candidate starters — see [Process Definition Authorization](../../advanced/process-definition-authorization.md).
+
+### DeploymentQuery
+
+```java
+DeploymentQuery createDeploymentQuery();
+
+// Filtering
+.deploymentId(String deploymentId)
+.deploymentName(String name)
+.deploymentNameLike(String nameLike)
+.deploymentCategory(String category)
+.deploymentCategoryLike(String categoryLike)
+.deploymentCategoryNotEquals(String categoryNotEquals)
+.deploymentKey(String key)
+.deploymentKeyLike(String keyLike)
+.deploymentTenantId(String tenantId)
+.deploymentTenantIdLike(String tenantIdLike)
+.deploymentWithoutTenantId()
+.processDefinitionKey(String key)
+.processDefinitionKeyLike(String keyLike)
+.latest()
+.latestVersion()
+
+// Ordering
+.orderByDeploymentId()
+.orderByDeploymentName()
+.orderByDeploymenTime()
+.orderByTenantId()
+.asc()
+.desc()
+
+// Pagination
+.listPage(int firstResult, int maxResults)
+```
+
+Note the exact (irregular) ordering names in the API: `orderByDeploymenTime()` — not `orderByDeploymentTime()` — and `orderByTenantId()`, not `orderByDeploymentTenantId()`. `latest()` selects the deployment with the latest deployment time and is intended for use together with a deployment key.
 
 ---
 

@@ -11,7 +11,7 @@ Suspension controls whether a process instance can execute jobs (timers, async c
 
 ## Process Instance Suspension
 
-Suspending a process instance prevents execution of its timers and async jobs. The instance remains in the database and can be reactivated later.
+Suspending a process instance prevents execution of its timers and async jobs **and suspends every task of the instance**. The instance remains in the database and can be reactivated later.
 
 ```java
 // Suspend a process instance
@@ -23,9 +23,10 @@ runtimeService.activateProcessInstanceById("processInstanceId");
 
 **Key behavior:**
 - Timers and async jobs on the instance are not executed while suspended
+- Every task of the instance is suspended as well (`AbstractSetProcessInstanceStateCmd.updateTaskSuspensionState`). Every task operation implemented via `NeedsActiveTaskCmd` — claim, complete, resolve, delegate, set/remove variables, set priority/due date, add/remove identity links — then fails with `ActivitiException("Cannot execute operation: task is suspended")`
+- Tasks remain queryable; only these mutating operations are blocked
 - The instance is not affected by process definition suspension
 - In a hierarchy (e.g., subprocess), suspending one instance does not suspend related instances
-- Active tasks remain queryable but the process cannot advance past wait states with timers
 
 ## Process Definition Suspension
 
@@ -176,9 +177,10 @@ repositoryService.activateProcessDefinitionByKey("batchProcess", true, activateT
 
 ```java
 // Deploy new version but keep it suspended
+// (process definitions are active immediately on deploy;
+//  activateProcessDefinitionsOn(null) would be a no-op)
 repositoryService.createDeployment()
     .addClasspathResource("process-v2.bpmn")
-    .activateProcessDefinitionsOn(null)  // active immediately
     .deploy();
 
 // Suspend the new version until ready

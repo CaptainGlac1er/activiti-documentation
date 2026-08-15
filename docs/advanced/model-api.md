@@ -65,6 +65,12 @@ repositoryService.addModelEditorSource(modelId, editorSource);
 // Store additional editor data (e.g., canvas positions, UI state)
 byte[] editorSourceExtra = uiState.getBytes(StandardCharsets.UTF_8);
 repositoryService.addModelEditorSourceExtra(modelId, editorSourceExtra);
+
+// Read back the stored BPMN source (or null if none was added)
+byte[] storedSource = repositoryService.getModelEditorSource(modelId);
+
+// Read back the stored additional editor data (or null if none was added)
+byte[] storedExtra = repositoryService.getModelEditorSourceExtra(modelId);
 ```
 
 ## Retrieving Models
@@ -106,6 +112,14 @@ Model latest = repositoryService.createModelQuery()
 | `deploymentId(String)` | Models sourced from deployment |
 | `deployed()` | Models that are deployed |
 | `notDeployed()` | Models not yet deployed |
+| `orderByModelCategory()` | Order by category (follow by `asc()`/`desc()`) |
+| `orderByModelId()` | Order by model ID |
+| `orderByModelKey()` | Order by key |
+| `orderByModelVersion()` | Order by version |
+| `orderByModelName()` | Order by name |
+| `orderByCreateTime()` | Order by creation time |
+| `orderByLastUpdateTime()` | Order by last update time |
+| `orderByTenantId()` | Order by tenant ID |
 
 ## Deploying a Model
 
@@ -169,6 +183,8 @@ flowchart TD
 ```
 
 ### Model Versioning
+
+Model versioning is entirely **manual**: `SaveModelCmd` performs a plain insert (new ID) or update (existing ID) with no auto-increment or version bookkeeping, so whatever value the caller set via `model.setVersion(...)` is what gets persisted. Bump the version yourself — for example after each deployment, as in the [Deploying a Model](#deploying-a-model) example — and use the `modelVersion` / `latestVersion()` query methods to retrieve specific versions:
 
 ```java
 // Each model key can have multiple versions

@@ -160,11 +160,13 @@ public class TaskVariableListener implements TaskListener {
     
     @Override
     public void notify(DelegateTask task) {
-        // Set task-local variable (only visible to this task)
+        // setVariable puts the variable on the highest scope - for a task, the process execution
         task.setVariable("taskNote", "Reviewed by manager");
+
+        // Set task-local variable (only visible to this task)
         task.setVariableLocal("tempData", "temporary");
         
-        // Get task-local variable
+        // getVariable checks the task scope first, then the execution
         String note = (String) task.getVariable("taskNote");
         String temp = (String) task.getVariableLocal("tempData");
         
@@ -675,12 +677,12 @@ processAssignee(task.getAssignee()); // NPE risk
 ### 3. Use Task Variables Appropriately
 
 ```java
-// GOOD: Task-specific data in task variables
-task.setVariable("reviewNotes", "Looks good");
-task.setVariable("reviewerComments", comments);
+// GOOD: Task-specific data in task-local variables (setVariableLocal stays on the task)
+task.setVariableLocal("reviewNotes", "Looks good");
+task.setVariableLocal("reviewerComments", comments);
 
-// BAD: Process-wide data in task variables
-task.setVariable("orderId", orderId); // Use execution.setVariable()
+// BAD: Assuming task.setVariable() keeps data on the task - it propagates to the process execution
+task.setVariable("orderId", orderId); // Visible process-wide, not task-local
 ```
 
 ### 4. Document Listener Behavior
@@ -730,13 +732,13 @@ for (String user : toRemove) {
 ### 2. Confusing Task and Process Variables
 
 ```java
-// Problem: Variable scope confusion
+// Problem: assuming setVariable() stays on the task - the task's parent scope is
+// the execution, so the variable lands on the process
 task.setVariable("data", "task-level");
-Object value = task.getExecution().getVariable("data"); // null!
+Object value = task.getExecution().getVariable("data"); // "task-level", not null
 
-// Solution: Use correct scope
-task.setVariable("data", "task-level"); // Task variable
-task.getExecution().setVariable("data", "process-level"); // Process variable
+// Solution: use setVariableLocal for a variable that must stay task-local
+task.setVariableLocal("data", "task-level"); // task-local: not visible on the execution
 ```
 
 ### 3. Setting Assignee and Candidates Together
@@ -784,8 +786,9 @@ if (autoAssign) {
 | `getTenantId()` | Get tenant ID | For multi-tenant |
 | `isSuspended()` | Check if suspended | - |
 | `getVariable(String)` | Get variable | Task then process scope |
-| `setVariable(String, Object)` | Set variable | Task scope |
-| `getVariables()` | Get all variables | Task variables only |
+| `setVariable(String, Object)` | Set variable | Process scope (task's parent is the execution) |
+| `setVariableLocal(String, Object)` | Set task-local variable | Task scope only |
+| `getVariables()` | Get all variables | Includes process variables (parent scope) |
 
 ## Related Documentation
 

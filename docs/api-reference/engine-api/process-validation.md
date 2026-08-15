@@ -174,7 +174,7 @@ public class ValidatorSetFactory {
 }
 ```
 
-Creates the default validator set containing all 21 built-in validators:
+Creates the default validator set containing all 26 built-in validators:
 
 | Validator | Extends | Purpose |
 |---|---|---|
@@ -624,7 +624,7 @@ ProcessValidatorFactory.createDefaultProcessValidator()
         |
         +-- ValidatorSet("activiti-executable-process")
               |
-              +-- 21 Validator instances
+              +-- 26 Validator instances
                     |
                     |-- Each calls validate(bpmnModel, errors)
                     |-- Non-process validators check model-wide concerns
@@ -647,7 +647,7 @@ To write custom validators that enforce organization-specific BPMN rules, see [C
 1. Implement `Validator` or extend `ValidatorImpl`
 2. Use `addError()` / `addWarning()` with element context
 3. Register in a `ValidatorSet` (default or custom)
-4. Configure via `ProcessEngineConfiguration.setProcessValidator()`
+4. Configure via `ProcessEngineConfigurationImpl.setProcessValidator()` — this method exists on `ProcessEngineConfigurationImpl`, not the public `ProcessEngineConfiguration` base class
 
 You can also **disable built-in validators**:
 
@@ -663,4 +663,4 @@ defaultSet.removeValidator(ScriptTaskValidator.class);
 - [BPMN Model API](./bpmn-model.mdx)
 - [Engine API Overview](./README.md)
 - [Custom Validators](../../advanced/custom-validators.md) — Practical guide to writing and registering custom validators
-- [Engine Configuration](../../configuration.md) — `setProcessValidator()` for plugging in custom validation
+- [Engine Configuration](../../configuration.md) — `ProcessEngineConfigurationImpl.setProcessValidator()` for plugging in custom validation

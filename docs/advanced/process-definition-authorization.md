@@ -9,6 +9,20 @@ description: "Controlling who can start a process definition using candidate sta
 
 Candidate starters authorize specific users or groups to start a process definition. This is distinct from task-level identity links and provides a security layer at process-start time.
 
+## Default Authorization (Everyone Can Start)
+
+By default, any authenticated user can start a process that does not declare candidate starters in its BPMN. The Spring Boot starter registers a `CandidateStartersDeploymentConfigurer` (`org.activiti.spring.boot`), which installs a custom `BpmnDeploymentHelper`. On deployment, that helper creates candidate identity links on the process definition from the `activiti:candidateStarterUsers` / `activiti:candidateStarterGroups` attributes of the `<process>` element — and if **neither attribute is present**, it additionally adds a candidate GROUP identity link for the `EVERYONE_GROUP` constant, `"*"`.
+
+`ProcessRuntimeImpl` applies the same constant on the query side: its access check runs `startableByUser(<authenticated user>)` combined with `startableByGroups(<user's groups> + "*")`, so a definition carrying the `"*"` group link is startable by everyone.
+
+**Practical consequence:** a process deployed without candidate starter attributes is visible and startable by all authenticated users.
+
+**How to restrict:**
+
+- Declare `activiti:candidateStarterUsers` and/or `activiti:candidateStarterGroups` on the `<process>` element — the presence of either attribute suppresses the automatic `"*"` group link at deployment.
+- Manage individual starters at runtime with `repositoryService.addCandidateStarterUser(...)` / `addCandidateStarterGroup(...)` (and `deleteCandidateStarterUser(...)` / `deleteCandidateStarterGroup(...)`), including removing the `"*"` group if it was added at deployment.
+- Note: the standard BPMN `<potentialStarter>` element populates the candidate lists but does not set the flags the deployment helper checks, so it does **not** suppress the automatic `"*"` group link.
+
 ## API
 
 ```java

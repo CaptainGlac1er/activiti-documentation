@@ -39,6 +39,28 @@ public interface EventLogEntry {
 }
 ```
 
+## Logged Event Types
+
+The database event log does **not** capture every engine operation. `EventLogger.initializeDefaultHandlers()` registers a **fixed set of handlers**, and only the event types those handlers cover are written to `ACT_EVT_LOG`:
+
+**Task events** — `TASK_CREATED`, `TASK_COMPLETED`, `TASK_ASSIGNED`
+
+**Sequence flow** — `SEQUENCEFLOW_TAKEN`
+
+**Activity events** — `ACTIVITY_STARTED`, `ACTIVITY_COMPLETED`, `ACTIVITY_SIGNALED`, `ACTIVITY_MESSAGE_RECEIVED`, `ACTIVITY_COMPENSATE`, `ACTIVITY_ERROR_RECEIVED`
+
+**Variable events** — `VARIABLE_CREATED`, `VARIABLE_UPDATED`, `VARIABLE_DELETED`
+
+**Process-instance start / end** — `PROCESSINSTANCE_START`, `PROCESSINSTANCE_END`
+
+For the task, sequence-flow, activity, and variable events, the value stored in the `type` column is the `ActivitiEventType` name itself (e.g. `TASK_CREATED`, `ACTIVITY_STARTED`, `VARIABLE_UPDATED`).
+
+Process-instance start and end are a special case. `EventLogger.getEventHandler(...)` watches the generic `ENTITY_INITIALIZED` and `ENTITY_DELETED` events and, when the affected entity is the **root execution** of a process instance, routes them to `ProcessInstanceStartedEventHandler` and `ProcessInstanceEndedEventHandler`. Those handlers write the custom type strings `PROCESSINSTANCE_START` and `PROCESSINSTANCE_END`.
+
+> **Note:** `PROCESS_STARTED` and `PROCESS_COMPLETED` are **in-memory engine event types** (see [Engine Event System](./engine-event-system.md)); they are **never** written to `ACT_EVT_LOG`. Job, timer, entity-lifecycle, engine-lifecycle, membership, and history events are likewise not logged by the database event logger.
+
+The JSON payload stored in the `data` column uses the field names defined by the `Fields` constants in `org.activiti.engine.impl.event.logger.handler.Fields` (e.g. `activityId`, `processInstanceId`, `variables`, `assignee`, `timeStamp`).
+
 ## Querying Event Logs
 
 ```java
@@ -57,6 +79,10 @@ List<EventLogEntry> page = managementService
 // Delete a specific entry (typically for testing)
 managementService.deleteEventLogEntry(1000L);
 ```
+
+## Extending the Event Logger
+
+The logger can be extended in memory. `EventLogger.addEventLoggerListener(EventLoggerListener)` registers a listener whose single callback, `void eventsAdded(EventLogger databaseEventLogger)`, is invoked each time the logger flushes its buffered entries — that is, when the command context closes and the events have been written to the store. Use it to react to newly persisted events without re-reading `ACT_EVT_LOG`.
 
 ## Use Cases
 
@@ -101,10 +127,12 @@ List<EventLogEntry> entries = managementService
 
 LocalDateTime start = null, end = null;
 for (EventLogEntry entry : entries) {
-    if (entry.getType().contains("PROCESS_STARTED") && start == null) {
+    // ACT_EVT_LOG stores PROCESSINSTANCE_START / PROCESSINSTANCE_END,
+    // not PROCESS_STARTED / PROCESS_COMPLETED (those are in-memory engine event types)
+    if ("PROCESSINSTANCE_START".equals(entry.getType()) && start == null) {
         start = LocalDateTime.ofInstant(entry.getTimeStamp().toInstant(), ZoneId.systemDefault());
     }
-    if (entry.getType().contains("PROCESS_COMPLETED")) {
+    if ("PROCESSINSTANCE_END".equals(entry.getType())) {
         end = LocalDateTime.ofInstant(entry.getTimeStamp().toInstant(), ZoneId.systemDefault());
     }
 }
@@ -119,7 +147,7 @@ if (start != null && end != null) {
 | Feature | Database Event Log | History Tables | Engine Event System |
 |---------|-------------------|----------------|---------------------|
 | Persistence | Database (sequential) | Database (structured) | In-memory listeners |
-| Granularity | Every engine operation | Configured by level | Configured by listener |
+| Granularity | Fixed set of event types (see [Logged Event Types](#logged-event-types)) | Configured by level | Configured by listener |
 | Tamper evidence | Sequential log numbers | No | No |
 | Survives restart | Yes | Yes | No |
 | Query flexibility | By log number, process ID | Rich query API | N/A (push model) |

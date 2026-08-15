@@ -54,7 +54,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 <exclusiveGateway id="approvalDecision" name="Approval Required?"/>
 
 <sequenceFlow id="approvePath" sourceRef="approvalDecision" targetRef="approveTask">
-  <conditionExpression>${amount < 1000}</conditionExpression>
+  <conditionExpression>${amount &lt; 1000}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="rejectPath" sourceRef="approvalDecision" targetRef="rejectTask">
@@ -142,11 +142,11 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 <exclusiveGateway id="approvalLevel" name="Approval Level Required"/>
 
 <sequenceFlow id="managerApproval" sourceRef="approvalLevel" targetRef="managerTask">
-  <conditionExpression>${amount >= 1000 and amount < 5000}</conditionExpression>
+  <conditionExpression>${amount >= 1000 and amount &lt; 5000}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="directorApproval" sourceRef="approvalLevel" targetRef="directorTask">
-  <conditionExpression>${amount >= 5000 and amount < 10000}</conditionExpression>
+  <conditionExpression>${amount >= 5000 and amount &lt; 10000}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="executiveApproval" sourceRef="approvalLevel" targetRef="executiveTask">
@@ -154,7 +154,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 </sequenceFlow>
 
 <sequenceFlow id="noApproval" sourceRef="approvalLevel" targetRef="autoApprove">
-  <conditionExpression>${amount < 1000}</conditionExpression>
+  <conditionExpression>${amount &lt; 1000}</conditionExpression>
 </sequenceFlow>
 ```
 

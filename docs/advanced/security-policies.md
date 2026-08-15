@@ -138,7 +138,7 @@ A user with `WRITE` access implicitly has `READ` access. The `canRead()` method 
 When any security check is performed, the following evaluation order applies:
 
 1. **No policies defined** — If `activiti.security.policies` is empty or absent, all users with the required role can access everything.
-2. **ACTIVITI_ADMIN role** — Users with the `ACTIVITI_ADMIN` role bypass all declarative policies and have full access.
+2. **ACTIVITI_ADMIN role (direct checks only)** — The admin check exists only in `BaseSecurityPoliciesManagerImpl.hasPermission()`, which backs the direct `canRead()`/`canWrite()` permission checks: an admin user passes those checks regardless of policy matching. It does **not** apply to query restriction — `restrictQuery()` goes through `getAllowedKeys()`, which has no admin check, so an admin matching no policy (or group) still gets the `denyAll()` (`missing-<uuid>`) empty result from `ProcessRuntime.processDefinitions()`/`processInstances()`.
 3. **User and group matching** — A policy matches if the authenticated user appears in `users` **or** any of their groups appears in `groups`.
 4. **Key matching** — The `keys` list restricts which process definitions the policy applies to. The `ProcessSecurityPoliciesManagerImpl` uses **exact match** (`equalsIgnoreCase`) for process definition and instance keys. The base `BaseSecurityPoliciesManagerImpl` uses **prefix match** (`startsWith`), useful when audit queries receive full definition IDs (e.g., `myProcess:3:abc123`).
 5. **Wildcard** — A `*` in the `keys` list grants access to all process definitions for that policy.
@@ -148,12 +148,12 @@ graph TD
     A["Security Check Requested"] --> B{"Policies Defined?"}
     B -- No --> C["ALLOW ALL"]
     B -- Yes --> D{"User has ACTIVITI_ADMIN?"}
-    D -- Yes --> C
+    D -- Yes --> C2["ALLOW (direct canRead/canWrite checks only —<br/>queries still restricted by policy keys)"]
     D -- No --> E{"User in policy.users<br/>OR any group in policy.groups?"}
     E -- No --> F["DENY"]
     E -- Yes --> G{"Key matches?<br/>(exact or startsWith or wildcard)"}
     G -- No --> F
-    G -- Yes --> H{"Access level sufficient?<br/>(READ includes WRITE)"}
+    G -- Yes --> H{"Access level sufficient?<br/>(WRITE implies READ)"}
     H -- No --> F
     H -- Yes --> C
 ```
@@ -452,14 +452,16 @@ public class SecurityConfig {
 |------|--------|-------|-------------------|-----------------|-------------------|
 | john | hr-managers, employees | ACTIVITI_USER | READ + WRITE | READ | READ + WRITE |
 | jane | hr-staff | ACTIVITI_USER | READ | -- | READ |
-| admin | -- | ACTIVITI_ADMIN | Bypass all | Bypass all | Bypass all |
+| admin | -- | ACTIVITI_ADMIN | Bypass (direct checks) | Bypass (direct checks) | Bypass (direct checks) |
+
+The `ACTIVITI_ADMIN` bypass applies to direct `canRead()`/`canWrite()` permission checks only. Query restriction (`ProcessRuntime.processDefinitions()`/`processInstances()`) still filters by policy keys — an admin matching no policy receives an empty (`denyAll()`) result.
 
 ## Best Practices
 
 - **Use groups over users** in policies for maintainability. Individual user entries are harder to audit and update.
 - **Scope policies with `serviceName`** when deploying multiple Activiti-enabled apps. Policies without matching `serviceName` are ignored for that application.
 - **Prefer `READ` over `WRITE`** unless modification is genuinely required. The principle of least privilege reduces attack surface.
-- **Remember `ACTIVITI_ADMIN` bypasses all policies.** Limit this role to service accounts and administrators, not regular users.
+- **Remember `ACTIVITI_ADMIN` bypasses direct `canRead()`/`canWrite()` policy checks (but not query restriction).** Limit this role to service accounts and administrators, not regular users.
 - **Test policy evaluation** with multiple group combinations. A user matching multiple policies accumulates keys from all matching policies.
 - **The `*` wildcard is powerful but dangerous.** Use it only for administrative users and consider audit implications.
 - **Write access requires being the initiator.** Even with `WRITE` policy access, a user cannot modify process instances they didn't start.

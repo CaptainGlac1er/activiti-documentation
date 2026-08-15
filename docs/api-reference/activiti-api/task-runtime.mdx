@@ -191,18 +191,18 @@ Page<Task> tasks(Pageable pageable);
 Page<Task> tasks(Pageable pageable, GetTasksPayload payload);
 ```
 
-**Purpose**: Query tasks with filters.
+**Purpose**: Query tasks.
 
-**Default Query**: Returns tasks where:
+**Default Query**: Always scoped to the authenticated user. Returns tasks where:
 - User is the assignee, OR
-- User is in a candidate group
+- User is a candidate user or is in a candidate group, OR
+- User is the task owner
 
 **Filter Options**:
-- By assignee
-- By candidate groups
 - By process instance
 - By parent task (sub-tasks)
-- Standalone tasks
+
+**Note**: `assignee` and `groups` values set on the payload are not applied as filters. The user runtime overwrites `assigneeId`/`groups` with the authenticated user and the user's groups before building the query, so filtering by another user or group is silently ignored. The admin runtime (`TaskAdminRuntime.tasks`) ignores `assigneeId`/`groups` entirely and applies only `processInstanceId` and `parentTaskId`.
 
 **Examples**:
 
@@ -210,27 +210,6 @@ Page<Task> tasks(Pageable pageable, GetTasksPayload payload);
 ```java
 Page<Task> myTasks = taskRuntime.tasks(
     Pageable.of(0, 20, Order.by("createdDate", Order.Direction.DESC))
-);
-```
-
-**Get Tasks by Assignee**:
-```java
-Page<Task> assignedTasks = taskRuntime.tasks(
-    Pageable.of(0, 20),
-    TaskPayloadBuilder.tasks()
-        .withAssignee("john.doe")
-        .build()
-);
-```
-
-**Get Tasks by Group**:
-```java
-Page<Task> groupTasks = taskRuntime.tasks(
-    Pageable.of(0, 20),
-    TaskPayloadBuilder.tasks()
-        .withGroup("managers")
-        .withGroup("reviewers")
-        .build()
 );
 ```
 
@@ -488,7 +467,7 @@ Task deleted = taskRuntime.delete(
 
 **Authorization**:
 - User must be able to see the task
-- User must be the assignee
+- User must be the assignee or the task owner
 
 **Effects**:
 - Task status changes to CANCELLED/DELETED
@@ -887,10 +866,9 @@ User can see task if:
 
 ### 1. Task Query Optimization
 
-Use specific filters:
+Use specific filters (`processInstanceId` and `parentTaskId` are the effective filters; `assignee`/`groups` are scoped to the authenticated user):
 ```java
 // Good - specific query
-.withAssignee("john.doe")
 .withProcessInstanceId(instanceId)
 
 // Bad - broad query
@@ -941,7 +919,7 @@ Claim: Must be candidate
 Complete: Must be assignee
 Update: Must be assignee or claim first
 Assign: Must be current assignee
-Delete: Must be assignee
+Delete: Must be assignee or owner
 ```
 
 ### Admin vs User Runtime

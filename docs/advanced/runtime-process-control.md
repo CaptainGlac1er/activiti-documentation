@@ -39,9 +39,26 @@ String realOrderNumber = orderService.assignOrderNumber(pi.getBusinessKey());
 runtimeService.updateBusinessKey(pi.getId(), realOrderNumber);
 ```
 
+## Terminating / Cancelling Process Instances
+
+The public terminate API is `runtimeService.deleteProcessInstance(processInstanceId, deleteReason)` — the only `deleteProcessInstance` overload exposed by `RuntimeService` (there is no `skipSubprocesses`/variables variant, and no API to move an execution or change activity state).
+
+```java
+// Terminate a running process instance; the reason may be null
+runtimeService.deleteProcessInstance("processInstanceId", "cancelled by admin");
+```
+
+What the engine does on deletion (`ExecutionEntityManagerImpl.deleteProcessInstanceCascade`):
+- Cascades into the instance's embedded and multi-instance subprocess executions
+- Cancels the instance's jobs (timer/async/suspended/dead-letter), dispatching a `JOB_CANCELED` event per job
+- Fills the default reason `DeleteReason.PROCESS_INSTANCE_DELETED` (`"process instance deleted"`) when none is given
+- Dispatches the `PROCESS_CANCELLED` engine event (an `ActivitiProcessCancelledEvent` whose `cause` is the delete reason); a terminate end event likewise dispatches `PROCESS_CANCELLED` when it ends an instance (`TerminateEndEventActivityBehavior.sendProcessInstanceCancelledEvent`)
+
 ## Triggering Stuck Executions
 
 The `trigger()` method advances an execution that is stuck at an activity that doesn't expect further input (e.g., an event gateway with expired alternatives).
+
+> **Restriction — suspended executions:** Neither `trigger()` nor `signalEventReceived(name, executionId)` can target a **suspended** execution. `trigger()` runs via `TriggerCmd` (which extends `NeedsActiveExecutionCmd`) and throws `ActivitiException("Cannot trigger an execution that is suspended")`; `signalEventReceived` (`SignalEventReceivedCmd`) likewise throws `ActivitiException` when the target execution is suspended. Activate the process instance before triggering or signaling it.
 
 ### Basic Trigger
 

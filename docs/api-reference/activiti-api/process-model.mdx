@@ -680,29 +680,27 @@ public class MessageEventPayload implements Payload {
 }
 ```
 
-**Purpose**: Payload for sending messages to running processes.
+**Purpose**: Payload modeling the message metadata of a BPMN message event — it is the payload carried by the `BPMNMessage` entity (`getMessagePayload()`). It is **not** an input to `ProcessRuntime`: to send a message to a running process, use `ReceiveMessagePayload` with `ProcessRuntime.receive(...)`; to start a process by message, use `StartMessagePayload` with `ProcessRuntime.start(StartMessagePayload)`. Neither of those is a subclass of `MessageEventPayload`.
 
 **Key Fields**:
 
 1. **Message Identification**
-   - `name`: Message name (must match BPMN message)
+   - `name`: BPMN message name
 
 2. **Correlation**
-   - `correlationKey`: For message correlation
-   - `businessKey`: Process business key
+   - `correlationKey`: Message correlation key
+   - `businessKey`: Business key of the process instance
 
 3. **Message Data**
    - `variables`: Message payload variables
 
-**Usage Example**:
+**Usage Example** (reading the payload from a message event entity, e.g. `BPMNMessageReceivedEvent`):
 ```java
-ReceiveMessagePayload payload = MessagePayloadBuilder.receive("paymentReceived")
-    .withCorrelationKey("ORDER-123")
-    .withVariable("amount", 500.00)
-    .withVariable("paymentId", "PAY-456")
-    .build();
+BPMNMessage message = event.getEntity();
+MessageEventPayload payload = message.getMessagePayload();
 
-processRuntime.receive(payload);
+String messageName = payload.getName();
+String correlationKey = payload.getCorrelationKey();
 ```
 
 ### SignalPayload
@@ -1022,7 +1020,7 @@ StartProcessPayload
 // Start by message
 StartMessagePayload
 
-// Send message
+// Model a BPMN message event payload (BPMNMessage entity)
 MessageEventPayload
 ```
 

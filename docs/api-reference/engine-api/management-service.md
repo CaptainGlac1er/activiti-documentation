@@ -12,7 +12,7 @@ The `ManagementService` provides administrative and maintenance operations for t
 
 - [Overview](#overview)
 - [Job Management](#job-management)
-- [Engine Metrics](#engine-metrics)
+- [Operational Monitoring](#operational-monitoring)
 - [Database Operations](#database-operations)
 - [API Reference](#api-reference)
 - [Best Practices](#best-practices)
@@ -69,8 +69,10 @@ Retrieve detailed metadata (column names, types, etc.) for a specific table:
 TableMetaData metaData = managementService.getTableMetaData("ACT_RU_TASK");
 
 if (metaData != null) {
-    for (TableColumn column : metaData.getColumns()) {
-        System.out.println(column.getName() + " - " + column.getType());
+    List<String> columnNames = metaData.getColumnNames();
+    List<String> columnTypes = metaData.getColumnTypes();
+    for (int i = 0; i < columnNames.size(); i++) {
+        System.out.println(columnNames.get(i) + " - " + columnTypes.get(i));
     }
 }
 ```
@@ -226,7 +228,7 @@ String deadLetterStacktrace = managementService.getDeadLetterJobExceptionStacktr
 ```java
 TimerJobQuery timerJobQuery = managementService.createTimerJobQuery();
 
-List<TimerJob> timerJobs = timerJobQuery
+List<Job> timerJobs = timerJobQuery
     .processInstanceId("process-id")
     .list();
 ```
@@ -292,7 +294,7 @@ Job restoredJob = managementService.moveDeadLetterJobToExecutableJob("dead-lette
 ```java
 SuspendedJobQuery suspendedQuery = managementService.createSuspendedJobQuery();
 
-List<SuspendedJob> suspendedJobs = suspendedQuery.list();
+List<Job> suspendedJobs = suspendedQuery.list();
 ```
 
 ---
@@ -421,11 +423,11 @@ try (Connection connection = dataSource.getConnection()) {
 
 ---
 
-## Engine Metrics
+## Operational Monitoring
 
-### Job Execution Metrics
+`ManagementService` has **no dedicated metrics API** (there is no `MetricType` and no `getMetrics(...)` method). Throughput and engine health are instead observed through the table-introspection methods (`getTableCount()`, `getTableMetaData(...)`) and the job queries covered earlier. The patterns below are common monitoring/maintenance routines built on those APIs:
 
-Track job execution performance:
+### 1. Monitor Failed Jobs
 
 ```java
 public void monitorFailedJobs(ManagementService managementService) {
@@ -478,12 +480,14 @@ public Map<String, Long> getDatabaseHealth(ManagementService managementService) 
 ### 4. Clean Up Old Dead Letter Jobs
 
 ```java
+// Note: the Job API does not expose a creation timestamp — the job's
+// duedate (when the failing execution was due) is the age proxy.
 public void cleanupOldDeadLetterJobs(ManagementService managementService, Date cutoffDate) {
     List<Job> deadLetterJobs = managementService.createDeadLetterJobQuery()
         .list();
 
     for (Job job : deadLetterJobs) {
-        if (job.getCreateTime().before(cutoffDate)) {
+        if (job.getDuedate() != null && job.getDuedate().before(cutoffDate)) {
             managementService.deleteDeadLetterJob(job.getId());
             System.out.println("Deleted old dead letter job: " + job.getId());
         }

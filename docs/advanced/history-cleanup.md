@@ -9,15 +9,17 @@ description: "Managing history data growth in Activiti — cleanup strategies, r
 
 Activiti's history tables grow continuously as processes execute. Without cleanup, `ACT_HI_*` tables can become a significant storage and performance burden. This guide covers history levels, cleanup APIs, and retention strategies.
 
+> **Important: with Spring Boot, the history tables are disabled by default.** `spring.activiti.db-history-used` defaults to **false** (the engine's own `isDbHistoryUsed` default is `true`), so a default Spring Boot application does not create or use any `ACT_HI_*` tables at all. Enable history with `spring.activiti.db-history-used: true` and set `spring.activiti.history-level` explicitly (the starter defaults it to `NONE`) before applying the cleanup guidance on this page. See [Spring Boot Starter](../api-reference/engine-api/spring-boot-starter.mdx) for the property reference.
+
 ## History Levels Recap
 
 Activiti supports four history levels that control what data is persisted:
 
-| Level | Activities | Tasks | Variables | Details (form, assignment, transitions) |
-|-------|-----------|-------|-----------|----------------------------------------|
+| Level | Activities | Tasks | Variables | Details (variable updates) |
+|-------|-----------|-------|-----------|----------------------------|
 | `NONE` | No | No | No | No |
-| `ACTIVITY` | Yes | Yes | No | No |
-| `AUDIT` | Yes | Yes | Yes | Yes |
+| `ACTIVITY` | Yes | No | Yes | No |
+| `AUDIT` | Yes | Yes | Yes | No |
 | `FULL` | Yes | Yes | Yes (all updates) | Yes (all updates) |
 
 Configuration:
@@ -51,9 +53,11 @@ historyService.deleteHistoricProcessInstance(processInstanceId);
 // - HistoricVariableInstance
 // - HistoricDetail
 // - HistoricIdentityLink
+// - Task and process comments (ACT_HI_COMMENT)
+// - Sub-process historic instances (recurses into children)
 ```
 
-`deleteHistoricProcessInstance` cascades to all child history records for that instance. It removes entries from `ACT_HI_PROCINST`, `ACT_HI_ACTINST`, `ACT_HI_TASKINST`, `ACT_HI_VARINST`, `ACT_HI_DETAIL`, and `ACT_HI_IDENTITYLINK`.
+`deleteHistoricProcessInstance` cascades to all child history records for that instance. It removes entries from `ACT_HI_PROCINST`, `ACT_HI_ACTINST`, `ACT_HI_TASKINST`, `ACT_HI_VARINST`, `ACT_HI_DETAIL`, `ACT_HI_IDENTITYLINK`, and `ACT_HI_COMMENT` (comments), and recurses into sub-process historic instances, deleting their history as well.
 
 ### Deleting Historic Task Instances
 

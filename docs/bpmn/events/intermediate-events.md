@@ -193,6 +193,36 @@ Send a global signal:
 
 **Use Case:** Notify other processes of completion
 
+#### Signal Scope and Signal Expressions
+
+Signals are **global by default**: a throw event wakes every waiting subscription for that signal name, even in other process instances. Two attributes refine this:
+
+- **`activiti:scope` on `<signal>`** — `activiti:scope="processInstance"` limits the signal to the process instance the throw event runs in. The default (no scope, or `activiti:scope="global"`) keeps the global behavior.
+- **`activiti:signalExpression` on `<signalEventDefinition>`** — the expression is evaluated at execution time and used as the signal name. It is only used when no `signalRef` is present (`signalRef` takes precedence).
+
+```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<signal id="orderSignal" name="Order Signal" activiti:scope="processInstance"/>
+
+<intermediateCatchEvent id="waitForOrderSignal">
+  <signalEventDefinition signalRef="orderSignal"/>
+</intermediateCatchEvent>
+
+<intermediateThrowEvent id="sendOrderSignal">
+  <signalEventDefinition signalRef="orderSignal"/>
+</intermediateThrowEvent>
+
+<intermediateThrowEvent id="sendDynamicSignal">
+  <signalEventDefinition activiti:signalExpression="${orderStatusSignal}"/>
+</intermediateThrowEvent>
+```
+
+**Runtime behavior:**
+- A throw event referencing a `processInstance`-scoped signal only wakes catch subscriptions of the **same process instance** (matched by process instance id + signal name). With the default scope it wakes matching subscriptions across process instances (matched by signal name + tenant).
+- The scope is read from the `<signal>` element referenced by `signalRef`; the catch subscription stores the scope when it is created, and the throw event checks the same scope to decide which subscriptions to wake.
+- `runtimeService.signalEventReceived(...)` only wakes **global** subscriptions — process-instance-scoped signals must be triggered by a throw event from within the process itself.
+- On catch events, `activiti:signalExpression` is evaluated when the subscription is created (again, only if no `signalRef` is set). `activiti:async="true"` on the definition schedules the woken catch event asynchronously (as a job) instead of processing it synchronously.
+
 ### 4. Link Intermediate Events
 
 Create internal process jumps:

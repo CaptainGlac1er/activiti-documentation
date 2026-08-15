@@ -277,24 +277,24 @@ Events represent **something that happens** during the execution of a process. T
 ### Example 6: Event Sub-Processes
 
 ```xml
-<!-- Non-interrupting event sub-process -->
-<eventSubProcess id="loggingSubProcess" isInterrupting="false">
-  <startEvent id="logSignal">
+<!-- Non-interrupting event sub-process (NOT SUPPORTED: signal start events inside event sub-processes are never triggered; shown for illustration only — see Start Events, section 4) -->
+<subProcess id="loggingSubProcess" triggeredByEvent="true">
+  <startEvent id="logSignal" isInterrupting="false">
     <signalEventDefinition signalRef="logEvent"/>
   </startEvent>
   <serviceTask id="logActivity" name="Log Event" activiti:class="com.example.Logger"/>
   <endEvent id="logEnd"/>
-</eventSubProcess>
+</subProcess>
 
 <!-- Interrupting event sub-process -->
-<eventSubProcess id="escalationSubProcess" isInterrupting="true">
-  <startEvent id="escalationMessage">
+<subProcess id="escalationSubProcess" triggeredByEvent="true">
+  <startEvent id="escalationMessage" isInterrupting="true">
     <messageEventDefinition messageRef="escalationMsg"/>
   </startEvent>
   <message id="escalationMsg" name="Escalation Message"/>
   <userTask id="escalationTask" name="Handle Escalation"/>
   <endEvent id="escalationEnd"/>
-</eventSubProcess>
+</subProcess>
 ```
 
 ## Activiti Customizations
@@ -317,6 +317,25 @@ Events represent **something that happens** during the execution of a process. T
 runtimeService.messageEventReceived("orderMessage", processInstanceId, 
     Map.of("orderId", "12345"));
 ```
+
+**Message Name Expressions and Correlation Keys:**
+
+Two `activiti:` attributes refine `<messageEventDefinition>`:
+
+```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<intermediateCatchEvent id="waitForOrder">
+  <messageEventDefinition messageRef="orderMessage" activiti:correlationKey="${orderId}"/>
+</intermediateCatchEvent>
+
+<intermediateCatchEvent id="waitForDynamicMessage">
+  <messageEventDefinition activiti:messageExpression="${orderStatusMessage}"/>
+</intermediateCatchEvent>
+```
+
+- **`activiti:messageExpression`** — the expression is evaluated at execution time and used as the message name of the subscription. `messageRef` takes precedence: the expression is only used when no `messageRef` is present.
+- **`activiti:correlationKey`** — the expression is evaluated when the subscription is created and stored on the message subscription (its `configuration`). It identifies the subscription: creating a second subscription with the same message name and correlation key fails at execution time with a duplicate-subscription error. The key is also carried on the engine's `MESSAGE_SENT`/`MESSAGE_RECEIVED` events.
+- The correlation key does not change message matching: `runtimeService.messageEventReceived(...)` still selects the subscription by message name and process instance — the key identifies *which* subscription, not *where* the message is sent.
 
 ### Timer Expressions
 
@@ -349,6 +368,8 @@ runtimeService.signalEventReceived("globalSignal");
 runtimeService.signalEventReceived("globalSignal", 
     Map.of("signalData", "value"));
 ```
+
+> **Note:** Signals are global by default. A signal can be scoped to a single process instance by adding `activiti:scope="processInstance"` to the `<signal>` definition — this limits matching subscriptions to that instance. Alternatively, `activiti:signalExpression` can be used on the `<signalEventDefinition>` to evaluate an expression as the signal name.
 
 ### Error Handling
 

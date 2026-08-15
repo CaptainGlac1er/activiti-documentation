@@ -338,7 +338,7 @@ public class ServiceAccessDelegate implements JavaDelegate {
     
     @Override
     public void execute(DelegateExecution execution) {
-        // Get process engine
+        // Get process engine configuration
         ProcessEngineConfiguration config = execution.getEngineServices();
 
         // Access engine services
@@ -346,18 +346,12 @@ public class ServiceAccessDelegate implements JavaDelegate {
         TaskService taskService = config.getTaskService();
         RepositoryService repositoryService = config.getRepositoryService();
         HistoryService historyService = config.getHistoryService();
-        ManagementService managementService = processEngine.getManagementService();
+        ManagementService managementService = config.getManagementService();
         
         // Use services (generally not recommended - prefer injection)
         List<Task> tasks = taskService.createTaskQuery()
             .processInstanceId(execution.getProcessInstanceId())
             .list();
-        
-        // Get engine configuration
-        ProcessEngineConfiguration config = processEngine.getProcessEngineConfiguration();
-        
-        // Get engine name
-        String engineName = processEngine.getName();
     }
 }
 ```

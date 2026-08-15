@@ -84,7 +84,7 @@ config.setPreBpmnParseHandlers(Arrays.asList(
     new CustomPreParseHandler()
 ));
 
-// Custom default (runs alongside built-in handlers)
+// Custom default (REPLACES the built-in handler for each element type it handles — not additive)
 config.setCustomDefaultBpmnParseHandlers(Arrays.asList(
     new CustomUserTaskHandler()
 ));
@@ -240,10 +240,11 @@ public class DefaultDueDateHandler implements BpmnParseHandler {
 
 ```mermaid
 flowchart TD
-    A["Pre-parse handlers (in order registered)"] --> B["Built-in handlers for each element type"]
-    B --> C["Custom default handlers (in order registered)"]
-    C --> D["Post-parse handlers (in order registered)"]
+    A["Pre-parse handlers (in order registered)"] --> B["Built-in handlers — a custom default handler replaces the built-in handler for each type it handles (position in the list is kept)"]
+    B --> C["Post-parse handlers (in order registered)"]
 ```
+
+A custom default handler is **not** an additional phase: `ProcessEngineConfigurationImpl.getDefaultBpmnParseHandlers()` swaps each built-in handler whose handled type matches a custom handler (logging "Replacing default BpmnParseHandler … with …"). A custom `UserTask` default handler fully supersedes `UserTaskParseHandler` — it is not additive.
 
 Handlers registered in the same phase execute in the order they were added to the configuration.
 
@@ -252,7 +253,7 @@ Handlers registered in the same phase execute in the order they were added to th
 - Parse handlers modify the **BPMN model element** directly (e.g., `userTask.setBehavior()`), not a separate runtime activity object
 - The `AbstractBpmnParseHandler<T>` base class provides `createExecutionListener()` for building listeners from `ActivitiListener` model objects
 - Use **pre-parse** to transform the model before the engine processes it
-- Use **custom default** to add to or replace behavior alongside built-in handlers
+- Use **custom default** to fully replace a built-in handler for the element types it handles (replacement, not additive)
 - Use **post-parse** to inspect and modify the final model after all built-in processing is complete
 
 ## Implementing Custom ActivityBehavior
@@ -331,7 +332,7 @@ Note that `setBehavior(Object)` is declared on `FlowNode`, not on `BaseElement` 
 Or override the `ActivityBehaviorFactory`:
 
 ```java
-ProcessEngineConfiguration config = ...;
+ProcessEngineConfigurationImpl config = ...;
 config.setActivityBehaviorFactory(new CustomActivityBehaviorFactory());
 ```
 

@@ -309,6 +309,24 @@ Map<String, GraphicInfo> locationMap = model.getLocationMap();
 Map<String, List<GraphicInfo>> flowLocationMap = model.getFlowLocationMap();
 ```
 
+### Usage with the Image Generator
+
+`BpmnAutoLayout.execute()` is the library hook for auto-layout after importing a `BpmnModel` without diagram information (for example, one parsed from XML that has no `<BPMNDi>` section). It first clears all existing `GraphicInfo` entries from `bpmnModel.getLocationMap()` and `bpmnModel.getFlowLocationMap()`, then regenerates the coordinates — any stale or missing geometry is replaced.
+
+Run the layout **before** image generation: `ProcessDiagramGenerator` (implemented by `DefaultProcessDiagramGenerator`) throws `org.activiti.image.exception.ActivitiInterchangeInfoNotFoundException` when `bpmnModel.hasDiagramInterchangeInfo()` is `false` and no default diagram is requested.
+
+```java
+BpmnModel model = ...; // e.g. parsed from XML without BPMNDi
+
+new BpmnAutoLayout(model).execute(); // regenerate coordinates before rendering
+
+try (InputStream diagram = diagramGenerator.generateDiagram(model, emptyList(), emptyList())) {
+    // write the SVG output
+}
+```
+
+See [Image Generator](./image-generator.md) for the full diagram rendering API.
+
 ---
 
 ## Dependencies

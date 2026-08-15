@@ -242,12 +242,15 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <parallelGateway id="dataFetchJoin" name="All Data Fetched"/>
 
 <!-- Aggregate results -->
+<!-- JUEL (Activiti's expression language) has no list literal syntax: ${[dbData, apiData, cacheData]}
+     is not a valid expression. Build the list in Java (e.g. in a service task delegate) and
+     reference it as a variable -->
 <serviceTask id="aggregateData" 
              name="Aggregate Data" 
              activiti:delegateExpression="${dataService.aggregate()}">
   
   <activiti:field name="sources">
-    <activiti:expression>${[dbData, apiData, cacheData]}</activiti:expression>
+    <activiti:expression>${dataSources}</activiti:expression>
   </activiti:field>
 </serviceTask>
 ```

@@ -177,7 +177,8 @@ Inject values into delegates and listeners using `<activiti:field>`:
 ### Custom XML Elements
 
 ```xml
-<serviceTask id="task1" name="Task">
+<serviceTask id="task1" name="Task"
+             xmlns:custom="http://example.com/custom">
   
   <extensionElements>
     <custom:myExtension>

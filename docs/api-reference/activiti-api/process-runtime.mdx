@@ -366,6 +366,12 @@ ProcessInstance suspended = processRuntime.suspend(
 );
 ```
 
+**Authorization**:
+- Security policy must allow write access to the process definition
+- User must be the process initiator (`startUserId`)
+- Being a task assignee or candidate of the instance grants no write access
+- No admin bypass in user runtime; admin access is via `ProcessAdminRuntime`
+
 **Use Cases**:
 - Waiting for external approval
 - Temporary halt for investigation
@@ -390,6 +396,12 @@ ProcessInstance resumed = processRuntime.resume(
     ProcessPayloadBuilder.resume().withProcessInstanceId(instanceId).build()
 );
 ```
+
+**Authorization**:
+- Security policy must allow write access to the process definition
+- User must be the process initiator (`startUserId`)
+- Being a task assignee or candidate of the instance grants no write access
+- No admin bypass in user runtime; admin access is via `ProcessAdminRuntime`
 
 #### Delete Process
 
@@ -420,9 +432,10 @@ ProcessInstance deleted = processRuntime.delete(
 ```
 
 **Authorization**:
-- User must be assignee of active tasks
-- Or have admin privileges
-- Or be process initiator (configurable)
+- Security policy must allow write access to the process definition
+- User must be the process initiator (`startUserId`)
+- Being a task assignee or candidate of the instance grants no write access
+- No admin bypass in user runtime; admin access is via `ProcessAdminRuntime`
 
 #### Update Process
 
@@ -434,8 +447,8 @@ ProcessInstance update(UpdateProcessPayload payload);
 
 **Updatable Fields**:
 - Name
-- Description
 - Business key
+- Description — present in the payload but not applied by the runtime
 
 **Example**:
 ```java
@@ -447,6 +460,12 @@ ProcessInstance updated = processRuntime.update(
         .build()
 );
 ```
+
+**Authorization**:
+- Security policy must allow write access to the process definition
+- User must be the process initiator (`startUserId`)
+- Being a task assignee or candidate of the instance grants no write access
+- No admin bypass in user runtime; admin access is via `ProcessAdminRuntime`
 
 ### 4. Event Operations
 
@@ -556,6 +575,12 @@ processRuntime.setVariables(
 - Accessible throughout process
 - Available to all tasks
 
+**Authorization**:
+- Security policy must allow write access to the process definition
+- User must be the process initiator (`startUserId`)
+- Being a task assignee or candidate of the instance grants no write access
+- No admin bypass in user runtime; admin access is via `ProcessAdminRuntime`
+
 #### Remove Variables
 
 ```java
@@ -575,6 +600,12 @@ processRuntime.removeVariables(
 );
 ```
 
+**Authorization**:
+- Security policy must allow write access to the process definition
+- User must be the process initiator (`startUserId`)
+- Being a task assignee or candidate of the instance grants no write access
+- No admin bypass in user runtime; admin access is via `ProcessAdminRuntime`
+
 ### 6. Metadata Operations
 
 #### Process Definition Meta
@@ -586,9 +617,7 @@ ProcessDefinitionMeta processDefinitionMeta(String processDefinitionKey);
 **Purpose**: Retrieve process definition metadata.
 
 **Returns**:
-- Active activities
-- Variable definitions
-- Form information
+- `ProcessDefinitionMeta` exposing only `getProcessDefinitionKey()` (read access is checked via `processDefinition(...)`)
 
 **Example**:
 ```java
@@ -605,9 +634,7 @@ ProcessInstanceMeta processInstanceMeta(String processInstanceId);
 **Purpose**: Retrieve process instance metadata.
 
 **Returns**:
-- Current activities
-- Execution path
-- Instance information
+- `ProcessInstanceMeta` exposing `getProcessInstanceId()` and `getActiveActivitiesIds()` (read access is checked via `processInstance(...)`)
 
 **Example**:
 ```java

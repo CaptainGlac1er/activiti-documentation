@@ -111,6 +111,7 @@ const sidebars: SidebarsConfig = {
             'bpmn/reference/multi-instance',
             'bpmn/reference/task-listeners',
             'bpmn/reference/execution-listeners',
+            'bpmn/reference/process-event-listeners',
             'bpmn/reference/java-delegate',
             'bpmn/reference/delegate-execution-api',
             'bpmn/reference/delegate-task-api',

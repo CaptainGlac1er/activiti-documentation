@@ -73,11 +73,17 @@ The `##WebService` implementation is specified via the `implementation` attribut
           implementation="##WebService"
           operationRef="sendOrderOperation"/>
 
-<operation id="sendOrderOperation">
-  <inboundMessage variable="orderData" messageRef="orderMessage"/>
-</operation>
+<interface id="orderService" name="Order Service">
+  <operation id="sendOrderOperation">
+    <inMessageRef>orderMessage</inMessageRef>
+    <outMessageRef>orderResponse</outMessageRef>
+  </operation>
+</interface>
 <message id="orderMessage" name="OrderMessage"/>
+<message id="orderResponse" name="OrderResponse"/>
 ```
+
+The operation's message references are **child elements** — `<inMessageRef>` and `<outMessageRef>` — whose text content is the referenced message `id` (they are not attributes). The engine resolves the operation's input message from the `<inMessageRef>` text.
 
 **Note:** For custom Java implementations, use a **Service Task** instead. Send Task does not support `activiti:class`.
 
@@ -87,7 +93,7 @@ The `##WebService` implementation is specified via the `implementation` attribut
 |---------|-----------|--------------|--------------|
 | Direction | Outbound only | Both directions | Inbound only |
 | Wait state | No | No | Yes |
-| Message event | `ACTIVITY_MESSAGE_SENT` | — | `ACTIVITY_MESSAGE_RECEIVED` |
+| Message event | — (generic activity events only) | — | `ACTIVITY_MESSAGE_RECEIVED` |
 | Typical use | Notify external system | Call service, get response | Wait for external event |
 
 ```mermaid
@@ -95,7 +101,7 @@ graph TD
     subgraph SendTask["Send Task"]
         S1["Outbound only"]
         S2["No wait state"]
-        S3["ACTIVITY_MESSAGE_SENT event"]
+        S3["No message event dispatched"]
     end
     subgraph ServiceTask["Service Task"]
         ST1["Bidirectional"]
@@ -111,15 +117,15 @@ graph TD
 
 ## Event Dispatch
 
-A Send Task dispatches `ACTIVITY_MESSAGE_SENT` when it completes. This can be captured via the engine event system:
+A Send Task does **not** dispatch a message event: `ACTIVITY_MESSAGE_SENT` exists in `ActivitiEventType`, but the engine dispatches it only from message intermediate throw and message end events (`AbstractThrowMessageEventActivityBehavior`), never from send task behaviors. A send task dispatches the same generic activity events as any other activity — `ACTIVITY_STARTED` before execution and `ACTIVITY_COMPLETED` when it finishes. This can be captured via the engine event system:
 
 ```java
 public class SendTaskEventListener implements ActivitiEventListener {
     public void onEvent(ActivitiEvent event) {
-        if (event.getType() == ActivitiEventType.ACTIVITY_MESSAGE_SENT
-            && event instanceof ActivitiMessageEvent) {
-            ActivitiMessageEvent msg = (ActivitiMessageEvent) event;
-            System.out.println("Message sent from activity: " + msg.getActivityId());
+        if (event.getType() == ActivitiEventType.ACTIVITY_COMPLETED
+            && event instanceof ActivitiActivityEvent) {
+            ActivitiActivityEvent activityEvent = (ActivitiActivityEvent) event;
+            System.out.println("Send task completed: " + activityEvent.getActivityId());
         }
     }
     public boolean isFailOnException() { return false; }

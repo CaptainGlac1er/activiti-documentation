@@ -192,6 +192,7 @@ TASK_BOX_COLOR            = new Color(249, 249, 249)
 SUBPROCESS_BOX_COLOR      = new Color(255, 255, 255)
 EVENT_COLOR               = new Color(255, 255, 255)
 CONNECTION_COLOR          = new Color(88, 88, 88)
+CONDITIONAL_INDICATOR_COLOR = new Color(255, 255, 255)
 HIGHLIGHT_CURRENT_COLOR   = new Color(87, 255, 174)
 HIGHLIGHT_COMPLETED_ACTIVITY_COLOR = new Color(51, 153, 255)
 HIGHLIGHT_ERRORED_ACTIVITY_COLOR  = new Color(255, 55, 87)
@@ -295,9 +296,9 @@ ANNOTATION_TEXT_PADDING = 7
 | `generateImage()` | Serializes the Batik SVG DOM to an `InputStream` (UTF-8) |
 | `close()` | Disposes the graphics context |
 | `connectionPerfectionizer(sourceShapeType, targetShapeType, ...)` | Adjusts flow endpoint coordinates to shape boundaries |
-| `createShape(SHAPE_TYPE, GraphicInfo)` | Creates `Rectangle2D`, `Ellipse2D`, or `Path2D` for intersection math |
-| `getIntersection(Shape, Line2D)` | Calculates where a flow line intersects a shape's border |
 | `fitTextToWidth(original, width)` | Truncates text with "..." to fit available width |
+
+(Internal helpers `createShape(SHAPE_TYPE, GraphicInfo)` and `getIntersection(Shape, Line2D)` are `private static` inside `DefaultProcessDiagramCanvas` and not callable.)
 
 ### SHAPE_TYPE Enum
 
@@ -391,7 +392,18 @@ List<String> activeActivityIds = runtimeService.getActiveActivityIds(processInst
 
 BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinitionId);
 
-try (InputStream svgStream = generator.generateDiagram(bpmnModel, activeActivityIds)) {
+// The 10-arg overload is required for green (#57FFAE) "current" highlighting:
+// the 2-arg overload maps IDs to highLightedActivities, which is rendered with
+// the completed color blue (#3399FF)
+try (InputStream svgStream = generator.generateDiagram(
+        bpmnModel,
+        Collections.emptyList(),  // highLightedActivities (completed path — blue)
+        Collections.emptyList(),  // highLightedFlows (blue)
+        activeActivityIds,        // currentActivities — green
+        Collections.emptyList(),  // erroredActivities (red)
+        "Arial", "Arial", "Arial",
+        false,
+        null)) {
     // Activities in activeActivityIds are highlighted in green (#57FFAE)
 }
 ```

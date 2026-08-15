@@ -192,6 +192,46 @@ When you call `RuntimeService.messageEventReceived("msg", "executionId")`, the s
 
 Signal events (`signalEventReceived`) work differently: a signal without an execution ID (e.g., `signalEventReceived("signalName")`) is broadcast only to **globally scoped** signal subscriptions — subscriptions scoped to a process instance are not triggered.
 
+### Full list of message and signal dispatch overloads
+
+All overloads live on `RuntimeService`. Synchronous variants deliver to the waiting executions in the calling thread; the `*Async` variants instead schedule a message job (`JOB_TYPE_MESSAGE`, handled by `ProcessEventJobHandler`) that is picked up by the async executor. The `WithTenantId` variants restrict dispatch to one tenant and exist **only for signals** — there is no `messageEventReceivedWithTenantId`.
+
+| Method | Delivered to | Sync / Async |
+|--------|--------------|--------------|
+| `messageEventReceived(String messageName, String executionId)` | The single execution bound to the message subscription | Sync |
+| `messageEventReceived(String messageName, String executionId, Map<String, Object> processVariables)` | Same, plus variables set on the execution | Sync |
+| `messageEventReceivedAsync(String messageName, String executionId)` | Same, delivered by the async executor | Async |
+| `signalEventReceived(String signalName)` | All matching signal subscriptions | Sync |
+| `signalEventReceived(String signalName, Map<String, Object> processVariables)` | All matching subscriptions, plus variables | Sync |
+| `signalEventReceivedAsync(String signalName)` | All matching subscriptions | Async |
+| `signalEventReceived(String signalName, String executionId)` | A single execution subscribed to the signal | Sync |
+| `signalEventReceived(String signalName, String executionId, Map<String, Object> processVariables)` | Same, plus variables | Sync |
+| `signalEventReceivedAsync(String signalName, String executionId)` | Same, delivered by the async executor | Async |
+| `signalEventReceivedWithTenantId(String signalName, String tenantId)` | All matching subscriptions within one tenant | Sync |
+| `signalEventReceivedWithTenantId(String signalName, Map<String, Object> processVariables, String tenantId)` | Same, plus variables | Sync |
+| `signalEventReceivedAsyncWithTenantId(String signalName, String tenantId)` | Same, delivered by the async executor | Async |
+
+Execution-scoped overloads throw `ActivitiObjectNotFoundException` if the execution does not exist and `ActivitiException` if the execution has not subscribed to the named message or signal (for signals, also when the execution is suspended).
+
+### Signal scope behavior
+
+`SignalEventReceivedCmd` enforces signal scoping with three rules worth knowing when you query or dispatch signals:
+
+- **The global-scope filter also applies to execution-scoped dispatch.** When you target a specific execution, the command looks up that execution's subscriptions for the signal name — but only subscriptions where `isGlobalScoped()` are actually woken. A subscription is global-scoped when its signal scope is `"global"` or unset; it is process-instance-scoped when the scope is `"processInstance"`.
+- **Process-instance-scoped signals must be thrown from within the process** — by a signal throw activity. Throwing such a signal through `RuntimeService` against an execution whose subscription is process-instance-scoped is a no-op.
+- **Start-event subscriptions carry a NULL process instance ID.** Message and signal start event subscriptions are created at deploy time with only the event name, the start activity ID, the process definition ID, and (if any) the tenant ID set — `processInstanceId` remains `NULL`. You can use this to distinguish start-event subscriptions from the runtime subscriptions of live process instances when querying `ACT_RU_EVENT_SUBSCR`.
+
+## Related Startup Events
+
+`StartMessageDeployedEvent(s)` are not produced by any of the query APIs above — they are published **at application startup** by `StartMessageDeployedEventProducer`, a Spring `SmartLifecycle` component registered by `ProcessEngineAutoConfiguration`:
+
+1. On context startup, it loads every deployed process definition.
+2. For each definition it queries `ACT_RU_EVENT_SUBSCR` for `message`-type subscriptions whose `configuration` equals the process definition ID and whose process instance ID is `NULL` — exactly the subscriptions created for **message start events** at deploy time.
+3. Each of those becomes a `StartMessageDeployedEvent` (carrying a `StartMessageDeploymentDefinition` with the message subscription and its process definition), dispatched to registered `ProcessRuntimeEventListener<StartMessageDeployedEvent>` listeners.
+4. If any events were produced, the whole batch is also published as a Spring `ApplicationEvent` — `StartMessageDeployedEvents` — for the rest of the application.
+
+This is the hook that lets a Spring Boot application react to "which message start events are available" as soon as the engine starts.
+
 ## Related Documentation
 
 - [Intermediate Events](../bpmn/events/intermediate-events.md) — Message, signal, and timer catch events

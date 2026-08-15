@@ -23,6 +23,8 @@ public interface RuntimeEvent<ENTITY, TYPE> {
     String getProcessDefinitionId();
     String getProcessDefinitionKey();
     String getParentProcessInstanceId();
+    Integer getProcessDefinitionVersion();
+    String getBusinessKey();
 }
 ```
 
@@ -30,10 +32,14 @@ The core event families are:
 
 | Family | Parent interface | Entity type | Event types |
 |--------|------------------|-------------|-------------|
-| **Process** | `ProcessRuntimeEvent<T>` | `ProcessInstance` | `PROCESS_CREATED`, `PROCESS_STARTED`, `PROCESS_COMPLETED`, `PROCESS_CANCELLED`, `PROCESS_SUSPENDED`, `PROCESS_RESUMED`, `PROCESS_UPDATED` |
+| **Process** | `ProcessRuntimeEvent<T>` | `ProcessInstance` | `PROCESS_CREATED`, `PROCESS_STARTED`, `PROCESS_COMPLETED`, `PROCESS_CANCELLED`, `PROCESS_SUSPENDED`, `PROCESS_RESUMED`, `PROCESS_UPDATED`, `PROCESS_DELETED` |
 | **Task** | `TaskRuntimeEvent<T>` | `Task` | `TASK_CREATED`, `TASK_ASSIGNED`, `TASK_COMPLETED`, `TASK_UPDATED`, `TASK_ACTIVATED`, `TASK_SUSPENDED`, `TASK_CANCELLED` |
+| **Task candidate** | `TaskCandidateUserEvent<T>` / `TaskCandidateGroupEvent<T>` | `TaskCandidateUser` / `TaskCandidateGroup` | `TASK_CANDIDATE_USER_ADDED`, `TASK_CANDIDATE_USER_REMOVED`, `TASK_CANDIDATE_GROUP_ADDED`, `TASK_CANDIDATE_GROUP_REMOVED` |
+| **Process candidate starter** | `ProcessCandidateStarterUserEvent<T>` / `ProcessCandidateStarterGroupEvent<T>` | `ProcessCandidateStarterUser` / `ProcessCandidateStarterGroup` | `PROCESS_CANDIDATE_STARTER_USER_ADDED`, `PROCESS_CANDIDATE_STARTER_USER_REMOVED`, `PROCESS_CANDIDATE_STARTER_GROUP_ADDED`, `PROCESS_CANDIDATE_STARTER_GROUP_REMOVED` |
 | **Variable** | `VariableEvent` | `VariableInstance` | `VARIABLE_CREATED`, `VARIABLE_UPDATED`, `VARIABLE_DELETED` |
 | **BPMN** | `ExtendedProcessRuntimeEvent<T>` | `BPMNElement` | Element-specific (see below) |
+
+Task candidate events are documented in the [Task Model](./task-model.mdx) module page, and process candidate starter events in [Process Definition Authorization](../../advanced/process-definition-authorization.md).
 
 ## Process Events
 

@@ -58,7 +58,7 @@ Task listeners support **four lifecycle events**:
 | Event | When It Fires | Use Cases |
 |-------|---------------|-----------|
 | `create` | Task is created | Notifications, initial setup, logging |
-| `assignment` | Assignee/candidates change | Dynamic routing, notifications |
+| `assignment` | Assignee changes (candidate add/remove does not fire it) | Dynamic routing, notifications |
 | `complete` | Task is completed | Audit logging, notifications, cleanup |
 | `delete` | Task is deleted | Cleanup, logging |
 | `all` | All events | Universal handler |
@@ -146,6 +146,8 @@ public interface TransactionDependentTaskListener {
 }
 ```
 
+**Note:** the `Task` parameter is `org.activiti.bpmn.model.Task` (a snapshot of the BPMN element, extends `Activity`), not `DelegateTask` — it exposes `getName()` but no `getAssignee()`.
+
 **Key differences:**
 
 | Aspect | `TaskListener` | `TransactionDependentTaskListener` |
@@ -168,10 +170,15 @@ public class TaskCompletedNotifier implements TransactionDependentTaskListener {
                        Map<String, Object> executionVariables,
                        Map<String, Object> customPropertiesMap) {
 
+        // The Task here is org.activiti.bpmn.model.Task (extends Activity):
+        // it exposes getName() but NOT getAssignee() — read the assignee
+        // from the execution variables map instead.
+        Object assignee = executionVariables.get("assignee");
+
         // Safe to send notifications — task state is committed
         notificationService.sendTaskCompleted(
             task.getName(),
-            task.getAssignee(),
+            assignee,
             processInstanceId
         );
 

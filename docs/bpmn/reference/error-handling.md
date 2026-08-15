@@ -651,11 +651,13 @@ public class ErrorEventListener implements ActivitiEventListener {
 ### Querying Error Information
 
 ```java
-// Get historic activity instances related to errors
-List<HistoricActivityInstance> errorActivities = historyService
+// activityType is the lowercased element class name (DefaultHistoryManager.parseActivityType),
+// so a boundary error event has type "boundaryEvent" - "error" never matches.
+// Note: this query returns all boundary events, not only error ones.
+List<HistoricActivityInstance> boundaryEvents = historyService
     .createHistoricActivityInstanceQuery()
     .processInstanceId(processInstanceId)
-    .activityType("error")
+    .activityType("boundaryEvent")
     .list();
 ```
 

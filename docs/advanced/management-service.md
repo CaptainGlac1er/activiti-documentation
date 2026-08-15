@@ -11,6 +11,8 @@ The `ManagementService` provides administrative and maintenance operations on th
 
 The service is marked `@Internal`, indicating it should not be used in business workflows but rather in admin tools, monitoring dashboards, and recovery scripts.
 
+Deployment lifecycle administration — querying deployments (`createDeploymentQuery()`) and deleting deployments (`deleteDeployment(String, boolean)`) — lives on `RepositoryService`, not `ManagementService`.
+
 ## Getting the ManagementService
 
 ```java

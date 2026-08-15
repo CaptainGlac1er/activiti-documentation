@@ -2,12 +2,12 @@
 sidebar_label: Transaction
 slug: /bpmn/subprocesses/transaction
 title: "Transaction SubProcess"
-description: "Complete guide to Transaction SubProcesses in Activiti - all-or-nothing atomic operations with compensation and rollback support."
+description: "How the transaction element is parsed and executed in Activiti - a regular sub-process with cancel end event and compensation support."
 ---
 
 # Transaction SubProcess
 
-Transaction SubProcesses model **all-or-nothing execution** of a group of activities. The transaction is *committed* when execution reaches its normal end event, and it is *canceled* (rolled back) only when execution reaches a **cancel end event** (`<endEvent><cancelEventDefinition/></endEvent>`). A plain error thrown by an activity does **not** cancel the transaction — it propagates outward and, if unhandled, fails the process instance.
+Transaction SubProcesses group activities that should be treated as a unit. The `<transaction>` element is **parsed and modeled** by the engine, but it executes with the engine's **regular sub-process behavior** — there is no BPMN *commit* step and no database-level atomicity. The transaction is *canceled* only when execution reaches a **cancel end event** (`<endEvent><cancelEventDefinition/></endEvent>`) paired with a cancel boundary event on the transaction; reaching it cancels the transaction scope and triggers the transaction's compensation handlers. A plain error thrown by an activity does **not** cancel the transaction — it propagates outward and, if unhandled, fails the process instance.
 
 ## Overview
 
@@ -20,20 +20,20 @@ Transaction SubProcesses model **all-or-nothing execution** of a group of activi
 </transaction>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Parsed and modeled; executed as a regular sub-process  
 **Activiti Extensions:** Compensation handling, error propagation
 
 ## Key Features
 
 ### Standard BPMN Features
-- **Atomic Execution** - Commit on the normal end event, cancel via the cancel end event
+- **Regular Sub-Process Execution** - No commit semantics; the transaction simply completes at its normal end event
+- **Cancel End Event** - Cancels the transaction scope via the cancel end event
 - **Rollback Support** - Cancellation triggers the transaction's compensation flow
 - **Compensation** - Undo completed activities
 - **Error Handling** - Transaction-specific error events
 
 ### Activiti Extensions
 - **Custom Compensation Logic** - Define rollback behavior
-- **Integration with DB Transactions** - Database-level atomicity
 - **Error Event Definitions** - Custom transaction errors
 - **Scope Management** - Variable isolation
 
@@ -96,8 +96,8 @@ Simple transaction with a commit path and a cancel path:
 ```
 
 **Behavior:**
-- The transaction **commits** when execution reaches the normal end event (`transEnd`)
-- The transaction is **canceled** (rolled back) only when execution reaches the cancel end event (`cancelEnd` with `<cancelEventDefinition/>`)
+- The transaction **completes** when execution reaches the normal end event (`transEnd`) — there is no special commit step
+- The transaction is **canceled** only when execution reaches the cancel end event (`cancelEnd` with `<cancelEventDefinition/>`)
 - A plain error from a service task does NOT cancel the transaction — it propagates outward and fails the process instance if unhandled
 - Activiti does NOT automatically roll back side effects from service tasks (e.g., external API calls, database writes outside the engine)
 - You must define compensation logic to undo completed activities
@@ -250,9 +250,9 @@ Transactions within transactions:
 ```
 
 **Behavior:**
-- Each transaction is committed when it reaches its normal end event, and canceled only when it reaches its own cancel end event
+- Each transaction completes when it reaches its normal end event (no commit semantics), and is canceled only when it reaches its own cancel end event
 - If the inner transaction is canceled, route the flow so the outer transaction can also be canceled via its own cancel end event
-- Both must commit for the complete transaction
+- Both must complete for the full transaction to finish successfully
 
 ## Complete Real-World Example
 
@@ -354,7 +354,7 @@ Transactions within transactions:
 ```
 
 **Transaction Guarantees:**
-- The transaction commits only when execution reaches `transEnd`; it is canceled only when execution reaches the cancel end event (`cancelEnd`) — a plain error from a step does not cancel it
+- The transaction completes only when execution reaches `transEnd` (no commit semantics); it is canceled only when execution reaches the cancel end event (`cancelEnd`) — a plain error from a step does not cancel it
 - On cancellation, the engine triggers the compensation boundary event and runs the associated `isForCompensation="true"` handlers
 - Activiti does NOT automatically undo side effects from service tasks (payments, inventory changes, etc.)
 - You must explicitly define compensation handlers to reverse completed activities
@@ -428,7 +428,7 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 
 ### 4. **Data Synchronization**
 - Multi-system updates
-- Database consistency
+- Coordinated compensating updates when a step fails
 - API integrations
 
 ## Related Documentation

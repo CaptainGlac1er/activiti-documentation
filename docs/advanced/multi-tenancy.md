@@ -50,7 +50,7 @@ When a deployment is created with a tenant ID, the following entities inherit it
 | Task | ProcessInstance | `taskTenantId()` |
 | Execution | ProcessInstance | `executionTenantId()` |
 | Job (all types) | Deployment | `jobTenantId()` |
-| EventSubscription | Deployment | `eventSubscriptionTenantId()` |
+| EventSubscription | Deployment | `tenantId(String)` on the internal `EventSubscriptionQueryImpl` (`org.activiti.engine.impl`) — no public query method exists |
 | HistoricProcessInstance | ProcessInstance | `processInstanceTenantId()` |
 | HistoricTaskInstance | Task | `taskTenantId()` |
 
@@ -535,7 +535,11 @@ List<Task> tasks = taskService.createTaskQuery()
 
 ### Signal and Message Events Are Tenant-Aware
 
-Message and signal events respect tenant boundaries. A signal thrown by one tenant will only be caught by processes deployed to the same tenant. This ensures inter-process communication does not leak across tenants.
+Tenant scoping applies to the `WithTenantId` overloads. `signalEventReceivedWithTenantId(name, tenantId)` (and the `signalEventReceivedAsyncWithTenantId` variant) only match signal subscriptions registered for that tenant, and `startProcessInstanceByMessageAndTenantId(...)` only matches message start event subscriptions of that tenant.
+
+The plain overloads are **cross-tenant**: `MybatisEventSubscriptionDataManager` filters by `TENANT_ID_` only when the tenant ID is non-null and not `NO_TENANT_ID`, and `runtimeService.signalEventReceived(name)` passes `null` — so a plain signal is delivered to waiting processes of **all** tenants. If you rely on tenant isolation for inter-process communication, always use the `WithTenantId` overloads.
+
+Intermediate message correlation (`messageEventReceived(name, executionId)`) is execution-scoped and therefore stays within a single tenant by construction.
 
 ### Test with Multiple Tenants
 

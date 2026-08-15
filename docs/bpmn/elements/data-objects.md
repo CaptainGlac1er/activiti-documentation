@@ -14,9 +14,7 @@ BPMN Data Objects and Data Stores provide a way to model data associated with a 
 A Data Object represents a piece of data relevant to the process. It carries metadata about the data item, including localization support for name and description.
 
 ```xml
-<dataObject id="orderData" name="Order Data">
-  <dataState name="draft"/>
-</dataObject>
+<dataObject id="orderData" name="Order Data"/>
 ```
 
 ### Data Object Properties
@@ -26,28 +24,44 @@ A Data Object represents a piece of data relevant to the process. It carries met
 | `name` | Display name with localization support |
 | `description` | Human-readable description with localization |
 | `itemSubjectRef` | Reference to a data type definition |
-| `dataState` | Current state (e.g., `draft`, `confirmed`, `archived`) |
 | `isCollection` | Whether the data object represents a collection |
 
 ### Valued Data Objects
 
-Data objects with initial values:
+Data objects with initial values. The type is selected via the `itemSubjectRef` attribute and the value is provided as a `<activiti:value>` child element:
 
 ```xml
-<stringDataObject id="defaultName" name="Default Name" value="Unknown"/>
-<integerDataObject id="maxRetries" name="Max Retries" value="3"/>
-<booleanDataObject id="isActive" name="Is Active" value="true"/>
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<dataObject id="defaultName" name="Default Name" itemSubjectRef="xsd:string">
+  <extensionElements>
+    <activiti:value>Unknown</activiti:value>
+  </extensionElements>
+</dataObject>
+<dataObject id="maxRetries" name="Max Retries" itemSubjectRef="xsd:int">
+  <extensionElements>
+    <activiti:value>3</activiti:value>
+  </extensionElements>
+</dataObject>
+<dataObject id="isActive" name="Is Active" itemSubjectRef="xsd:boolean">
+  <extensionElements>
+    <activiti:value>true</activiti:value>
+  </extensionElements>
+</dataObject>
 ```
 
-Supported valued types: `string`, `boolean`, `integer`, `long`, `double`, `date`.
+Supported `itemSubjectRef` values: `xsd:string`, `xsd:int`, `xsd:long`, `xsd:double`, `xsd:boolean`, `xsd:datetime`.
 
 ## Data Store
 
 A Data Store represents an external repository of data that the process reads from or writes to. Unlike data objects (which are process-scoped), data stores are **process-independent**.
 
 ```xml
-<dataStore id="customerDb" name="Customer Database" itemSubjectRef="jdbc://customers"/>
+<dataStore id="customerDb" name="Customer Database" itemSubjectRef="jdbc://customers">
+  <dataState>active</dataState>
+</dataStore>
 ```
+
+The `<dataState>` child element is parsed from its text content and applies to data stores and data store references only — not to data objects.
 
 ### Data Store Reference
 
@@ -87,6 +101,29 @@ runtimeService.setVariable(processInstanceId, "orderData", orderObject);
 runtimeService.removeVariable(processInstanceId, "orderData");
 ```
 
+### Task-Scoped Data Objects
+
+The engine's `TaskService` exposes task-scoped equivalents of the data object API. A task's scope is the execution scope of that task — the data objects visible from the task, including parent scopes — and the locale/localization-fallback behavior is identical to the execution-scoped API above. All overloads throw `ActivitiObjectNotFoundException` when no task exists for the given id.
+
+| Method | Description |
+|--------|-------------|
+| `getDataObjects(String taskId)` | All data objects visible from the task's scope |
+| `getDataObjects(String taskId, String locale, boolean withLocalizationFallback)` | Same, with localized name and description |
+| `getDataObjects(String taskId, Collection<String> dataObjectNames)` | Data objects filtered by name |
+| `getDataObjects(String taskId, Collection<String> dataObjectNames, String locale, boolean withLocalizationFallback)` | Name filter with localized name and description |
+| `getDataObject(String taskId, String dataObject)` | A single data object, or `null` if undefined |
+| `getDataObject(String taskId, String dataObjectName, String locale, boolean withLocalizationFallback)` | A single data object with localized name and description, or `null` if undefined |
+
+```java
+// All data objects visible from the task's scope (including parent scopes)
+Map<String, DataObject> taskDataObjects = taskService.getDataObjects(taskId);
+
+// A single data object by name — null when the data object is not defined
+DataObject orderData = taskService.getDataObject(taskId, "orderData");
+```
+
+See the [TaskService reference](../../api-reference/engine-api/task-service.md) for the full task-scoped API.
+
 ### Data Object Interface
 
 ```java
@@ -108,7 +145,6 @@ public interface DataObject {
 | BPMN modeling | Visible in process diagram | Not modeled in BPMN |
 | API | `getDataObject()` (read-only); use `setVariable()`/`removeVariable()` to modify | `getVariable()`, `setVariable()` |
 | Collection flag | `isCollection` property | Not tracked |
-| Data state | `dataState` property | Not tracked |
 
 ```mermaid
 graph TD
@@ -116,7 +152,6 @@ graph TD
         DO1["Metadata: name, description, type"]
         DO2["Localization support"]
         DO3["isCollection flag"]
-        DO4["dataState property"]
         DO5["Read via getDataObject()"]
     end
     subgraph ProcessVar["Process Variable (Runtime)"]

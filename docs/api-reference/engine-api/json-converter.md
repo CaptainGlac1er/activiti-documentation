@@ -176,7 +176,7 @@ Resolves the attached-to activity by traversing the `outgoing` references of par
 | `UserTaskJsonConverter` | `UserTask` | `UserTask` | Assignee, candidates, priority, due date, form key, form properties, IDM integration. Implements `FormAwareConverter`, `FormKeyAwareConverter`. |
 | `ServiceTaskJsonConverter` | `ServiceTask` | `ServiceTask` | Class/expression/delegate expression, result variable, field extensions, mail/Camel/Mule/DMN subtypes. Implements `DecisionTableKeyAwareConverter`. |
 | `ScriptTaskJsonConverter` | `ScriptTask` | `ScriptTask` | Script format and script text. |
-| `SendTaskJsonConverter` | `SendTask` | `SendTask` | Delegates to ServiceTask converter. |
+| `SendTaskJsonConverter` | `SendTask` | `SendTask` | Minimal implementation: empty `convertElementToJson`; `convertJsonToElement` returns a bare `SendTask`. |
 | `ReceiveTaskJsonConverter` | `ReceiveTask` | `ReceiveTask` | — |
 | `ManualTaskJsonConverter` | `ManualTask` | `ManualTask` | — |
 | `BusinessRuleTaskJsonConverter` | `BusinessRule` | `BusinessRuleTask` | Rule class, input variables, result variable, rules list, exclude variables. |
@@ -278,6 +278,120 @@ Flow and edge nodes additionally include `dockers` (connection points) and `targ
 ```
 
 Pool shapes contain nested `childShapes` with lane definitions, and their `outgoing` array can reference boundary events and message flows.
+
+## Element Property Payloads
+
+The modeler serializes each element's configuration as a flat `properties` object on the shape node (see [Editor JSON Structure](#editor-json-structure)). The property-name vocabulary is defined in `StencilConstants` (`activiti-core/activiti-json-converter/src/main/java/org/activiti/editor/constants/StencilConstants.java`). A modeler (or any programmatic producer of editor JSON) must emit these exact names, and a consumer must read them back.
+
+### Property names per element type
+
+| Element / concern | Property names | Notes |
+|---|---|---|
+| **Common (all shapes)** | `overrideid`, `name`, `documentation`, `asynchronousdefinition`, `exclusivedefinition` | Boolean properties accept `true`/`false` or `"Yes"`/`"No"` |
+| **Process (canvas `properties`)** | `process_id`, `process_version`, `process_author`, `process_namespace`, `process_executable` | `process_executable` is written only when the process is *not* executable (value `"No"`); see [Modeler Integration Notes](#modeler-integration-notes) |
+| **Service task** | `servicetaskclass`, `servicetaskexpression`, `servicetaskdelegateexpression`, `servicetaskresultvariable`, `servicetaskfields` | Class, expression, and delegate-expression are mutually exclusive; `servicetaskfields` is a wrapper object holding a `fields` array (each field: `name` plus `stringValue` or `expression`; `string` is also accepted when parsing) |
+| **Mail task** | `mailtaskto`, `mailtaskfrom`, `mailtasksubject`, `mailtaskcc`, `mailtaskbcc`, `mailtasktext`, `mailtaskhtml`, `mailtaskcharset` | Stencil ID `MailTask`; converted to a `ServiceTask` of type `mail` |
+| **Mule task** | `muletaskendpointurl`, `muletasklanguage`, `muletaskpayloadexpression`, `muletaskresultvariable` | Stencil ID `MuleTask`; converted to a `ServiceTask` of type `mule` |
+| **DMN (decision) task** | `decisiontaskdecisiontablereference` | Stencil ID `DecisionTask`; value is an object with sub-keys `decisiontablereferenceid`, `decisiontablereferencename`, `decisionTableReferenceKey` |
+| **Multi-instance (any activity)** | `multiinstance_type`, `multiinstance_cardinality`, `multiinstance_collection`, `multiinstance_variable`, `multiinstance_condition` | `multiinstance_type` is parsed case-insensitively (`sequential`/`parallel`; `none` disables multi-instance); `convertToJson` writes `Sequential`/`Parallel` |
+| **Timer definitions** | `timerdurationdefinition`, `timercycledefinition`, `timerdatedefinition`, `timerenddatedefinition` | Used by start, catch, and boundary timer events. When parsing, a date takes precedence over a cycle, which takes precedence over a duration; `timerenddatedefinition` sets the end date of a cyclic timer |
+| **User task** | `usertaskassignment`, `prioritydefinition`, `duedatedefinition`, `assignee`, `owner`, `candidateUsers`, `candidateGroups`, `categorydefinition`, `formkeydefinition` | |
+| **Form properties (user task, start event)** | `formproperties` | Wrapper object holding a `formProperties` array; each property: `id`, `name`, `type`, `expression`, `variable`, `datePattern`, `required`, `readable`, `writable`, and `enumValues` (array of `{ "id", "name" }` items) when `type` is `enum` |
+| **Listeners** | `tasklisteners`, `executionlisteners` | Wrapper objects; each listener item uses `event`, `className`, `expression`, `delegateExpression`, and `fields` |
+
+### Property object examples
+
+Each example is a complete shape node as it appears in `childShapes`.
+
+**1. Service task with class implementation and one field injection**
+
+```json
+{
+  "resourceId": "shape_service_1",
+  "stencil": { "id": "ServiceTask" },
+  "bounds": {
+    "lowerRight": { "x": 320, "y": 140 },
+    "upperLeft": { "x": 180, "y": 70 }
+  },
+  "outgoing": [ { "resourceId": "flow_1" } ],
+  "properties": {
+    "overrideid": "ServiceTask_1",
+    "name": "Send Notification",
+    "servicetaskclass": "com.example.notify.NotifyService",
+    "servicetaskfields": {
+      "fields": [
+        { "name": "message", "stringValue": "Order approved" }
+      ]
+    }
+  }
+}
+```
+
+**2. User task with one form property**
+
+```json
+{
+  "resourceId": "shape_usertask_1",
+  "stencil": { "id": "UserTask" },
+  "bounds": {
+    "lowerRight": { "x": 460, "y": 140 },
+    "upperLeft": { "x": 320, "y": 70 }
+  },
+  "outgoing": [ { "resourceId": "flow_2" } ],
+  "properties": {
+    "overrideid": "UserTask_1",
+    "name": "Review Order",
+    "assignee": "${manager}",
+    "formproperties": {
+      "formProperties": [
+        { "id": "approved", "name": "Approved", "type": "boolean" }
+      ]
+    }
+  }
+}
+```
+
+**3. Timer boundary event (time duration)**
+
+```json
+{
+  "resourceId": "shape_boundary_timer_1",
+  "stencil": { "id": "BoundaryTimerEvent" },
+  "bounds": {
+    "lowerRight": { "x": 310, "y": 150 },
+    "upperLeft": { "x": 280, "y": 120 }
+  },
+  "properties": {
+    "overrideid": "BoundaryTimerEvent_1",
+    "name": "Timeout",
+    "timerdurationdefinition": "PT1H"
+  }
+}
+```
+
+A boundary event is a sibling shape, not a child shape: the attached activity's shape must list this shape's `resourceId` in its own `outgoing` array — that is how `BoundaryEventJsonConverter` resolves the attached reference.
+
+**4. Multi-instance service task**
+
+```json
+{
+  "resourceId": "shape_service_2",
+  "stencil": { "id": "ServiceTask" },
+  "bounds": {
+    "lowerRight": { "x": 600, "y": 140 },
+    "upperLeft": { "x": 460, "y": 70 }
+  },
+  "outgoing": [ { "resourceId": "flow_3" } ],
+  "properties": {
+    "overrideid": "ServiceTask_2",
+    "name": "Process Items",
+    "servicetaskexpression": "${itemService.process(item)}",
+    "multiinstance_type": "parallel",
+    "multiinstance_collection": "items",
+    "multiinstance_variable": "item"
+  }
+}
+```
 
 ## Property Constants
 
@@ -383,6 +497,55 @@ ObjectNode editorJson = converter.convertToJson(bpmnModel, formKeyMap, decisionT
 
 The resulting `BpmnModel` can be passed to `BpmnXMLConverter` to generate BPMN 2.0 XML for deployment.
 
+### Full round trip: editor JSON to deployment
+
+The complete pipeline from editor JSON to a deployed process definition:
+
+```java
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.activiti.bpmn.converter.BpmnXMLConverter;
+import org.activiti.bpmn.model.BpmnModel;
+import org.activiti.editor.language.json.converter.BpmnJsonConverter;
+import org.activiti.engine.RepositoryService;
+import org.activiti.engine.repository.Deployment;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+// 1. Read the editor JSON produced by the modeler
+byte[] jsonBytes = Files.readAllBytes(Paths.get("model.json"));
+ObjectMapper objectMapper = new ObjectMapper();
+JsonNode editorJson = objectMapper.readTree(jsonBytes);
+
+// 2. Editor JSON -> BpmnModel
+BpmnJsonConverter jsonConverter = new BpmnJsonConverter();
+BpmnModel bpmnModel = jsonConverter.convertToBpmnModel(editorJson);
+
+// 3. BpmnModel -> BPMN 2.0 XML
+BpmnXMLConverter xmlConverter = new BpmnXMLConverter();
+byte[] bpmnXml = xmlConverter.convertToXML(bpmnModel);
+
+// 4. Deploy the generated XML
+Deployment deployment = repositoryService.createDeployment()
+        .addString("order-process.bpmn20.xml", new String(bpmnXml, StandardCharsets.UTF_8))
+        .deploy();
+```
+
+Method signatures:
+
+- `BpmnJsonConverter.convertToBpmnModel(JsonNode modelNode)` — or `convertToBpmnModel(JsonNode modelNode, Map<String, String> formKeyMap, Map<String, String> decisionTableKeyMap)`.
+- `BpmnXMLConverter.convertToXML(BpmnModel model)` returns `byte[]` (UTF-8); an overload `convertToXML(BpmnModel model, String encoding)` accepts a different encoding.
+- `RepositoryService.createDeployment()` returns a `DeploymentBuilder`; `DeploymentBuilder.addString(String resourceName, String text)` registers the resource, and `deploy()` performs the deployment.
+
+### Modeler Integration Notes
+
+- **Standalone libraries.** `activiti-json-converter` and `activiti-bpmn-layout` have no production consumer inside this repository — the Activiti modeler and its REST layer are not part of this codebase. These modules are consumed externally (the only in-repo references are the test suites of `activiti-bpmn-converter`).
+- **Default target namespace.** `convertToBpmnModel` sets the model's target namespace to `http://activiti.org/test` up front, and only overrides it if the canvas `properties` node carries a non-empty `process_namespace` value. If the editor JSON has no `process_namespace` property, the generated `<definitions>` element carries `targetNamespace="http://activiti.org/test"`.
+- **Non-executable marker.** `convertToJson` writes the canvas property `process_executable` with the value `"No"` for non-executable processes, and does the same for non-executable pools (collaborations). Executable processes and pools omit the property entirely.
+
 ### Custom Element Converter Registration
 
 The converter uses two static maps populated at class load time:
@@ -393,9 +556,11 @@ The converter uses two static maps populated at class load time:
 For custom BPMN elements, you can add converters to these maps. This requires modifying the static registration — typically done by creating a subclass of `BpmnJsonConverter` or using reflection:
 
 ```java
-// Add custom converter for a proprietary element
-// convertersToJsonMap.put(MyCustomElement.class, new MyCustomElementJsonConverter());
-// convertersToBpmnMap.put("MyCustomElement", new MyCustomElementJsonConverter());
+// Add custom converter for a proprietary element.
+// Both maps are Map<?, Class<? extends BaseBpmnJsonConverter>> — the values must
+// be converter CLASS objects (as every built-in fillTypes() does), not instances:
+// convertersToJsonMap.put(MyCustomElement.class, MyCustomElementJsonConverter.class);
+// convertersToBpmnMap.put("MyCustomElement", MyCustomElementJsonConverter.class);
 ```
 
 This is an advanced customization for teams building proprietary modeler integrations.

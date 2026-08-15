@@ -185,6 +185,30 @@ dispatcher.removeEventListener(listener);
 dispatcher.setEnabled(false);
 ```
 
+### At Runtime via RuntimeService
+
+`RuntimeService` exposes the same dispatcher operations as a public API — an alternative to reaching into the `ProcessEngineConfiguration`:
+
+```java
+RuntimeService runtimeService = processEngine.getRuntimeService();
+
+// Register a listener for ALL events
+runtimeService.addEventListener(new AllEventListener());
+
+// Register a listener for specific event types only
+runtimeService.addEventListener(new TaskListener(),
+    ActivitiEventType.TASK_CREATED,
+    ActivitiEventType.TASK_COMPLETED);
+
+// Remove a listener (regardless of the types it was registered for)
+runtimeService.removeEventListener(listener);
+
+// Dispatch an event to all registered listeners
+runtimeService.dispatchEvent(anActivitiEvent);
+```
+
+> **Note:** `dispatchEvent(ActivitiEvent)` throws `ActivitiException` if the `ActivitiEventDispatcher` is disabled, and `ActivitiIllegalArgumentException` if the event is not suitable for dispatching.
+
 ### Via Configuration Properties
 
 ```xml

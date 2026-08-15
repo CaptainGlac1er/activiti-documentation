@@ -58,12 +58,15 @@ flowchart TD
 
 ### Job Types
 
-| Job Type | Description | Source | Table |
-|----------|-------------|--------|-------|
-| **Executable** | Async service tasks, script tasks | `activiti:async="true"` | `ACT_RU_JOB` |
-| **Timer** | Timer events, due dates | `<timerEventDefinition>` | `ACT_RU_TIMER_JOB` |
-| **Message** | Message correlations | `<messageEventDefinition>` | `ACT_RU_JOB` |
-| **Signal** | Signal correlations | `<signalEventDefinition>` | `ACT_RU_JOB` |
+The `org.activiti.engine.runtime.Job` interface defines two job types: `Job.JOB_TYPE_TIMER` (`timer`) and `Job.JOB_TYPE_MESSAGE` (`message`). Which handler runs a job is determined by its `jobHandlerType`.
+
+| Job Type | Handler (`jobHandlerType`) | Description | Created By | Table |
+|----------|----------------------------|-------------|------------|-------|
+| **Async continuation** (`message`) | `async-continuation` | Continue execution after an async boundary | `activiti:async="true"` on a flow node | `ACT_RU_JOB` |
+| **Timer** (`timer`) | `timer-start-event`, `trigger-timer` | Timer start events, boundary/intermediate timer events | `<timerEventDefinition>` | `ACT_RU_TIMER_JOB` (moved to `ACT_RU_JOB` when due) |
+| **Async event dispatch** (`message`) | `event` | Deliver a signal or message event asynchronously | `signalEventReceivedAsync(...)`, `messageEventReceivedAsync(...)` | `ACT_RU_JOB` |
+
+Signal and message **catch events without an async flag create no jobs at all**. `IntermediateCatchSignalEventActivityBehavior` and `IntermediateCatchMessageEventActivityBehavior` register an **event subscription** (`ACT_RU_EVENT_SUBSCR`); the waiting execution is woken synchronously when the event is thrown or correlated.
 
 ## Configuration
 
@@ -93,7 +96,7 @@ spring:
       default-queue-size-full-wait-time: 0              # Wait when queue is full
 
       # Retry configuration
-      retry-wait-time-in-millis: 500        # Wait before retrying failed job
+      retry-wait-time-in-millis: 500        # Despite the name, applied as SECONDS (see note below)
       number-of-retries: 3                  # Default retries per job
 
       # Lock times (milliseconds)
@@ -178,7 +181,7 @@ public class AsyncExecutionConfig {
     </timerEventDefinition>
   </intermediateCatchEvent>
 
-  <!-- Message event creates message job -->
+  <!-- Message catch event creates an event subscription (ACT_RU_EVENT_SUBSCR), not a job -->
   <intermediateCatchEvent id="messageEvent">
     <messageEventDefinition messageRef="myMessage"/>
   </intermediateCatchEvent>
@@ -208,39 +211,15 @@ Async Executor Acquisition Loop:
 
 ### 3. Job Execution
 
-```java
-// Worker thread execution flow
-public void executeJob(Job job) {
-    try {
-        // 1. Load job details and context
-        JobDetails details = loadJobDetails(job);
-        
-        // 2. Determine job handler based on type
-        JobHandler handler = getJobHandler(job.getType());
-        
-        // 3. Execute business logic
-        handler.execute(details);
-        
-        // 4. Mark job as complete (delete from ACT_RU_JOB)
-        completeJob(job.getId());
-        
-    } catch (Exception e) {
-        // 5. Handle failure
-        if (job.getRetries() > 0) {
-            // Decrement retries
-            setJobRetries(job.getId(), job.getRetries() - 1);
-            
-            // Set next retry time with backoff
-            Date retryTime = calculateRetryTime(job, e);
-            setJobRetryTime(job.getId(), retryTime);
-            
-        } else {
-            // Move to dead letter table (ACT_RU_DEADLETTER_JOB)
-            moveToDeadLetter(job.getId(), e);
-        }
-    }
-}
-```
+Each acquired job is submitted to the executor thread pool as an `ExecuteAsyncRunnable`. The real flow:
+
+1. **Exclusive lock (if needed)** — for exclusive jobs, `ExecuteAsyncRunnable` acquires the exclusive lock first (`LockExclusiveJobCmd`); if it cannot, the job lock is released via `unacquire()` so another executor can pick it up.
+2. **Execute** — `ExecuteAsyncRunnable.executeJob()` runs `ExecuteAsyncJobCmd`, which re-fetches the job (it may have been deleted concurrently) and calls `DefaultJobManager.execute(Job)`. That method dispatches on the job type (`Job.JOB_TYPE_MESSAGE` or `Job.JOB_TYPE_TIMER`).
+3. **Handler lookup** — `DefaultJobManager.executeJobHandler(JobEntity)` looks up the `JobHandler` for the job's `jobHandlerType` from the handler registry on the engine configuration (`ProcessEngineConfigurationImpl.getJobHandlers()`, populated by `initJobHandlers()`) and invokes it.
+4. **Job removal** — once the handler has run, the job row is deleted from `ACT_RU_JOB`; repeating timer jobs schedule their next timer before removal.
+5. **Unlock** — the exclusive lock is released (`UnlockExclusiveJobCmd`) after success.
+
+On failure, `ExecuteAsyncRunnable.handleFailedJob(...)` runs `HandleFailedJobCmd`, which delegates to the `FailedJobCommandFactory` (default: `JobRetryCmd`) in a new transaction — see [Job Lifecycle](../../advanced/job-lifecycle.md#failed-job-handling).
 
 ### 4. Job Retry Mechanism
 
@@ -254,7 +233,7 @@ flowchart TD
     Decrement --> Backoff["Calculate backoff"]
     Backoff --> SetTime["Set retry time"]
     SetTime --> Reschedule["Reschedule job"]
-    Reschedule --> Wait["Wait retry-wait-time-in-millis"]
+    Reschedule --> Wait["Wait asyncFailedJobWaitTime (seconds)"]
     Wait --> Retry["Re-acquire and retry"]
     
     Decision -->|No| DeadLetter["Move to dead letter<br>(ACT_RU_DEADLETTER_JOB)"]
@@ -263,10 +242,12 @@ flowchart TD
 **Fixed Retry Interval:**
 The engine uses a fixed retry interval configured via `retry-wait-time-in-millis`. There is no exponential backoff. Each retry is scheduled at the same fixed interval from the time of failure.
 
-For example, with `retry-wait-time-in-millis: 500`:
-- 1st failure: retry after 500ms
-- 2nd failure: retry after 500ms
-- 3rd failure: retry after 500ms
+> **Units warning:** Despite its name, `retry-wait-time-in-millis` is **not** applied in milliseconds. `ProcessEngineAutoConfiguration` passes it straight to `setAsyncFailedJobWaitTime()`, and `JobRetryCmd.calculateDueDate` applies that value via `Calendar.SECOND` — so the value is interpreted as **seconds**. The default `500` therefore means the first retry happens after ~500 seconds (~8.3 minutes), not after 500 ms.
+
+For example, with `retry-wait-time-in-millis: 500` (the default):
+- 1st failure: retry after ~500 s (~8.3 minutes)
+- 2nd failure: retry after ~500 s (~8.3 minutes)
+- 3rd failure: retry after ~500 s (~8.3 minutes)
 - etc.
 
 ## Job Management
@@ -617,7 +598,7 @@ public class IdempotentJobHandler implements JavaDelegate {
     
     @Override
     public void execute(DelegateExecution execution) {
-        String jobId = execution.getVariable("jobId");
+        String jobId = (String) execution.getVariable("jobId");
         
         // Check if already processed
         if (processedRepository.exists(jobId)) {
@@ -704,8 +685,8 @@ List<Job> deadJobs = managementService.createDeadLetterJobQuery().list();
     }
 
 // 2. Fix underlying issue
-// 3. Manually retry if appropriate
-managementService.moveDeadLetterJobToExecutableJob(job.getId(), 3);
+// 3. Manually retry if appropriate (e.g. the first failed job)
+managementService.moveDeadLetterJobToExecutableJob(deadJobs.get(0).getId(), 3);
 ```
 
 ### 4. Timer Jobs Not Firing

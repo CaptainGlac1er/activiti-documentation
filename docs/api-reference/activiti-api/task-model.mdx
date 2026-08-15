@@ -299,6 +299,39 @@ public interface TaskCancelledEvent extends TaskRuntimeEvent<Task> {
 
 **Additional Data**: Cancellation reason.
 
+#### TaskActivatedEvent
+
+```java
+public interface TaskActivatedEvent extends TaskRuntimeEvent<Task> {
+}
+```
+
+**Triggered When**: A task's suspension state changes to active. When the containing process instance is activated, the engine cascades the new suspension state to all of the instance's tasks, firing this event per task.
+
+**Payload**: The current task state via `getEntity()` (`Task`), plus the standard runtime event fields — no additional event-specific fields.
+
+#### TaskSuspendedEvent
+
+```java
+public interface TaskSuspendedEvent extends TaskRuntimeEvent<Task> {
+}
+```
+
+**Triggered When**: A task's suspension state changes to suspended. When the containing process instance is suspended, the engine cascades the new suspension state to all of the instance's tasks, firing this event per task.
+
+**Payload**: The current task state via `getEntity()` (`Task`), plus the standard runtime event fields — no additional event-specific fields.
+
+#### TaskUpdatedEvent
+
+```java
+public interface TaskUpdatedEvent extends TaskRuntimeEvent<Task> {
+}
+```
+
+**Triggered When**: A task's persisted state is updated — a generic task change such as a name, description, priority, or due date update. Assignment/claim also fires this event, since the engine dispatches the assignment event alongside the underlying update event.
+
+**Payload**: The current task state via `getEntity()` (`Task`), plus the standard runtime event fields — no additional event-specific fields.
+
 ### Task Candidate Events
 
 #### TaskCandidateUserEvent

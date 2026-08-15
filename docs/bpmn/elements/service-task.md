@@ -201,7 +201,7 @@ Connectors work seamlessly with extension JSON for variable mapping:
 {
   "id": "movieProcess",
   "extensions": {
-    "Process_movieProcess": {
+    "movieProcess": {
       "mappings": {
         "getMovieTask": {
           "inputs": {
@@ -561,7 +561,7 @@ public class EmailConnector implements Connector {
 {
   "id": "notificationProcess",
   "extensions": {
-    "Process_notificationProcess": {
+    "notificationProcess": {
       "mappings": {
         "sendEmail": {
           "inputs": {
@@ -600,6 +600,68 @@ public class EmailConnector implements Connector {
 - ✅ Type-safe with IDE support
 
 **Recommendation:** For new development, create custom Connector beans instead of relying on built-in legacy connectors. The built-in mail connector is maintained for backward compatibility but lacks modern Spring integration features.
+
+### 5. Web Service Implementation
+
+A Service Task can call a web service using the standard BPMN `implementation` attribute set to `##WebService`, combined with an `operationRef` that points to a declared operation:
+
+```xml
+<serviceTask id="callExternalApi"
+             name="Call External Web Service"
+             implementation="##WebService"
+             operationRef="sendOrderOperation"/>
+```
+
+**How it works:** `ServiceTaskParseHandler` detects `implementation="##WebService"` (with a non-empty `operationRef`) and wires up `WebServiceActivityBehavior`. At runtime that behavior looks up the operation by `operationRef` and reads the input message from the operation's `<inMessageRef>`.
+
+The operation **must** be declared inside an `<interface>` element — the engine parses operations only as children of `<interface>`. The operation's `<inMessageRef>` and `<outMessageRef>` child elements carry the referenced message `id` as **text content** (they are not attributes):
+
+```xml
+<interface id="orderService" name="Order Service">
+  <operation id="sendOrderOperation" name="Send Order">
+    <inMessageRef>orderMessage</inMessageRef>
+    <outMessageRef>orderResponse</outMessageRef>
+  </operation>
+</interface>
+<message id="orderMessage" name="OrderMessage"/>
+<message id="orderResponse" name="OrderResponse"/>
+```
+
+**Complete example:**
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="webServiceDefinitions"
+             targetNamespace="http://activiti.org/examples"
+             xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:activiti="http://activiti.org/bpmn">
+
+  <process id="webServiceProcess" name="Web Service Process" isExecutable="true">
+    <startEvent id="start"/>
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="callExternalApi"/>
+
+    <serviceTask id="callExternalApi"
+                 name="Call External Web Service"
+                 implementation="##WebService"
+                 operationRef="sendOrderOperation"/>
+
+    <sequenceFlow id="flow2" sourceRef="callExternalApi" targetRef="end"/>
+    <endEvent id="end"/>
+  </process>
+
+  <interface id="orderService" name="Order Service">
+    <operation id="sendOrderOperation" name="Send Order">
+      <inMessageRef>orderMessage</inMessageRef>
+      <outMessageRef>orderResponse</outMessageRef>
+    </operation>
+  </interface>
+
+  <message id="orderMessage" name="OrderMessage"/>
+  <message id="orderResponse" name="OrderResponse"/>
+</definitions>
+```
+
+**Note:** This is a standard BPMN mechanism — `implementation` and `operationRef` are unprefixed attributes, so no `activiti:` extensions are required. The same `##WebService` + `operationRef` mechanism is also available on [Send Tasks](./send-task.md).
 
 ## Advanced Features
 
@@ -879,7 +941,7 @@ The sidecar extension JSON `constants` section only defines **process variables*
 {
   "id": "paymentProcess",
   "extensions": {
-    "Process_paymentProcess": {
+    "paymentProcess": {
       "constants": {
         "processPayment": {
           "maxRetries": {
@@ -996,7 +1058,7 @@ If you prefer the built-in mail functionality (legacy syntax only):
     </activiti:field>
     
     <activiti:field name="subject">
-       <activiti:expression>"Order Confirmation: " + order.id</activiti:expression>
+       <activiti:expression>${"Order Confirmation: " + order.id}</activiti:expression>
      </activiti:field>
     
     <activiti:field name="text">
@@ -1013,7 +1075,7 @@ If you prefer the built-in mail functionality (legacy syntax only):
 {
   "id": "orderProcess",
   "extensions": {
-    "Process_orderProcess": {
+    "orderProcess": {
       "mappings": {
         "validateOrder": {
           "inputs": {

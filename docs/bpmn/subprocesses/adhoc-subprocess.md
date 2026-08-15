@@ -130,9 +130,9 @@ Complex completion logic:
   
   <!-- Complete if: (A and B) OR (C and D) OR all tasks -->
   <completionCondition>
-    ${(taskACompleted && taskBCompleted) || 
-     (taskCCompleted && taskDCompleted) || 
-     (taskACompleted && taskBCompleted && taskCCompleted && taskDCompleted)}
+    ${(taskACompleted &amp;&amp; taskBCompleted) || 
+     (taskCCompleted &amp;&amp; taskDCompleted) || 
+     (taskACompleted &amp;&amp; taskBCompleted &amp;&amp; taskCCompleted &amp;&amp; taskDCompleted)}
   </completionCondition>
 </adHocSubProcess>
 ```

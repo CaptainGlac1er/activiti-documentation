@@ -180,7 +180,7 @@ taskService.complete(taskId);
 
 ### Losing the Owner
 
-If you set `assignee` after delegation, you overwrite the delegation state. Use `resolveTask()` to properly return the task to the owner.
+Setting the `assignee` after delegation does **not** clear the delegation state — the engine never resets it on `setAssignee` (only `delegateTask()` sets it to `PENDING`, and `resolveTask()` sets it to `RESOLVED`). A task reassigned while still `PENDING` stays `PENDING`: `taskService.complete()` still throws *"A delegated task cannot be completed, but should be resolved instead"*. Use `resolveTask()` to return the task — it sets the state to `RESOLVED` and reassigns the task to its `owner`.
 
 ## Related Documentation
 

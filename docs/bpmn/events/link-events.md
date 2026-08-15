@@ -376,7 +376,7 @@ public class VariableUser implements JavaDelegate {
   </sequenceFlow>
   
   <sequenceFlow id="lowValue" sourceRef="valueCheck" targetRef="finalize">
-    <conditionExpression>${amount <= 10000}</conditionExpression>
+    <conditionExpression>${amount &lt;= 10000}</conditionExpression>
   </sequenceFlow>
   
   <userTask id="directorApproval" name="Director Approval" 
@@ -670,7 +670,7 @@ The definition `id` values (and the `<target>` references) are what tie a throw 
 <exclusiveGateway id="checkRetries"/>
 
 <sequenceFlow id="retry" sourceRef="checkRetries" targetRef="loop1">
-  <conditionExpression>${retryCount < 3}</conditionExpression>
+  <conditionExpression>${retryCount &lt; 3}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="exit" sourceRef="checkRetries" targetRef="nextTask">

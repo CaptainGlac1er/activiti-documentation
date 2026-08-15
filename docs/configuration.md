@@ -185,11 +185,13 @@ config.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREAT
 
 | Option | Constant | Use Case | Description |
 |--------|----------|----------|-------------|
-| `FALSE` | `DB_SCHEMA_UPDATE_FALSE` | Production | No automatic changes, manual migrations required |
-| `TRUE` | `DB_SCHEMA_UPDATE_TRUE` | Dev/Test | Auto-update schema on startup |
-| `CREATE_DROP` | `DB_SCHEMA_UPDATE_CREATE_DROP` | Testing | Drop and recreate schema each run |
+| `false` | `DB_SCHEMA_UPDATE_FALSE` | Production | No automatic changes; the DB schema version is checked against the library when the engine is created and an exception is thrown if they don't match |
+| `true` | `DB_SCHEMA_UPDATE_TRUE` | Dev/Test | A check is performed when the engine is built and the schema is updated if necessary (Spring Boot starter default) |
+| `create-drop` | `DB_SCHEMA_UPDATE_CREATE_DROP` | Testing | Creates the schema when the engine is created and drops it when the engine is closed/shutdown |
+| `create` | `DB_SCHEMA_UPDATE_CREATE` (on `ProcessEngineConfigurationImpl`) | Testing | Creates the schema when the engine is created; no drop on close |
+| `drop-create` | `DB_SCHEMA_UPDATE_DROP_CREATE` (on `ProcessEngineConfigurationImpl`) | Testing | Drops the existing schema (errors ignored) and creates a fresh schema when the engine is created |
 
-The Spring Boot property `spring.activiti.database-schema-update` is a **String**; valid values are `"true"`, `"false"`, and `"create-drop"` (mapped to the `DB_SCHEMA_UPDATE_*` constants above).
+The Spring Boot property `spring.activiti.database-schema-update` is a **String**; valid values are `"true"`, `"false"`, `"create-drop"`, `"create"`, and `"drop-create"` (mapped to the `DB_SCHEMA_UPDATE_*` constants above). The starter default is `"true"`.
 
 ### Custom Schema Configuration
 

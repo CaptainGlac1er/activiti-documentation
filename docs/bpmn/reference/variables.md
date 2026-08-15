@@ -301,8 +301,10 @@ execution.removeVariablesLocal();
 <startEvent id="messageStart">
   <messageEventDefinition messageRef="orderMessage"/>
 </startEvent>
+```
 
-<!-- Runtime: Start with variables -->
+```java
+// Runtime: Start with variables
 runtimeService.startProcessInstanceByKey("orderProcess", 
     Map.of("orderId", "123", "customer", "John"));
 ```
@@ -373,7 +375,7 @@ taskService.complete(taskId, Map.of(
 <sequenceFlow id="lowValue" 
               sourceRef="amountGateway" 
               targetRef="autoApprove">
-  <conditionExpression>${orderTotal <= 1000}</conditionExpression>
+  <conditionExpression>${orderTotal &lt;= 1000}</conditionExpression>
 </sequenceFlow>
 ```
 

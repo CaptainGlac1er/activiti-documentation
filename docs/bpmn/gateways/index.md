@@ -87,7 +87,7 @@ All gateways (except parallel) support conditions on outgoing sequence flows:
 </sequenceFlow>
 
 <sequenceFlow id="flow2" sourceRef="gateway1" targetRef="task2">
-  <conditionExpression>${amount <= 1000}</conditionExpression>
+  <conditionExpression>${amount &lt;= 1000}</conditionExpression>
 </sequenceFlow>
 ```
 
@@ -129,11 +129,11 @@ Gateways work seamlessly with multi-instance activities:
 <exclusiveGateway id="amountDecision" name="Order Amount Check" default="defaultFlow"/>
 
 <sequenceFlow id="smallOrder" sourceRef="amountDecision" targetRef="standardProcessing">
-  <conditionExpression>${orderAmount < 100}</conditionExpression>
+  <conditionExpression>${orderAmount &lt; 100}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="mediumOrder" sourceRef="amountDecision" targetRef="managerApproval">
-  <conditionExpression>${orderAmount >= 100 && orderAmount < 1000}</conditionExpression>
+  <conditionExpression>${orderAmount >= 100 &amp;&amp; orderAmount &lt; 1000}</conditionExpression>
 </sequenceFlow>
 
 <sequenceFlow id="largeOrder" sourceRef="amountDecision" targetRef="directorApproval">

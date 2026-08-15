@@ -153,8 +153,8 @@ SubProcesses have their own **variable scope**:
   <startEvent id="start1"/>
   <serviceTask id="task1">
     <ioSpecification>
-      <inputDataItem name="input"/>
-      <outputDataItem name="output"/>
+      <dataInput name="input"/>
+      <dataOutput name="output"/>
     </ioSpecification>
   </serviceTask>
   <endEvent id="end1"/>
@@ -164,9 +164,11 @@ SubProcesses have their own **variable scope**:
 **Variable Visibility:**
 - **Local Variables:** Only accessible within subprocess
 - **Inherited Variables:** Accessible from parent process
-- **Data Associations:** Control variable flow in/out
+- **Data Associations:** Parsed, but no runtime effect (see below)
 
 ### Data Input/Output Associations
+
+**Note:** The engine parses input/output associations on a subprocess, but they have **no runtime effect** in this engine — variable flow is governed by variable scope (local vs. inherited), not by data associations.
 
 ```xml
 <subProcess id="dataProcess" name="Data Processing">

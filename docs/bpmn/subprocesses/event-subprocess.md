@@ -9,10 +9,12 @@ description: "Complete guide to Event SubProcesses in Activiti - interrupting an
 
 Event SubProcesses are **specialized subprocesses** that are triggered by events occurring within their scope. They're primarily used for **exception handling** and **asynchronous event processing** from external triggers.
 
+> **Note:** The supported element name is `<subProcess>` with the `triggeredByEvent="true"` attribute (for example `<subProcess id="errorHandler" triggeredByEvent="true">`). A literal `<eventSubProcess>` element does not exist in this engine: the BPMN parser only creates an event subprocess from a `<subProcess>` element carrying `triggeredByEvent="true"`. If you write `<eventSubProcess>` anyway, no event subprocess is created — the element is not recognized and, when schema validation is disabled, it is silently ignored with no error (its child elements are then parsed as part of the enclosing process scope).
+
 ## Overview
 
 ```xml
-<eventSubProcess id="errorHandler">
+<subProcess id="errorHandler" triggeredByEvent="true">
   <startEvent id="errorStart">
     <errorEventDefinition errorRef="Error001"/>
   </startEvent>
@@ -20,12 +22,12 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
   <endEvent id="errorEnd"/>
   <sequenceFlow id="flow1" sourceRef="errorStart" targetRef="handleError"/>
   <sequenceFlow id="flow2" sourceRef="handleError" targetRef="errorEnd"/>
-</eventSubProcess>
+</subProcess>
 ```
 
 **BPMN 2.0 Standard:** Fully Supported
 
-**Important:** The `EventSubProcess` class in Activiti extends `SubProcess` with no additional fields. The trigger type (error, message, signal) is determined entirely by the start event definition **inside** the event subprocess, not by attributes on the `<eventSubProcess>` element itself. Similarly, interrupting vs non-interrupting behavior is controlled by the `isInterrupting` attribute on the **inner `<startEvent>`**, not on the event subprocess.
+**Important:** The `EventSubProcess` class in Activiti extends `SubProcess` with no additional fields. The trigger type (error, message, signal) is determined entirely by the start event definition **inside** the event subprocess, not by attributes on the `<subProcess triggeredByEvent="true">` element itself. Similarly, interrupting vs non-interrupting behavior is controlled by the `isInterrupting` attribute on the **inner `<startEvent>`**, not on the event subprocess.
 
 ## Key Features
 
@@ -37,9 +39,9 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 | **Non-Interrupting** | Error, message, or signal with `isInterrupting="false"` on start event | Runs parallel to parent | Logging, notifications |
 | **Error** | `<errorEventDefinition errorRef="..."/>` or `errorCode="..."` | Catches errors | Error recovery |
 | **Message** | `<messageEventDefinition messageRef=""/>` | Waits for message | External triggers |
-| **Signal** | `<signalEventDefinition signalRef=""/>` | Global broadcast | Cross-process communication |
+| **Signal** | `<signalEventDefinition signalRef=""/>` | **Not supported** (see [section 5](#5-signal-event-subprocess-not-supported)) | — |
 
-> **Note:** Only `error`, `message`, and `signal` start event definitions are valid on an event subprocess — the engine's `EventSubprocessValidator` rejects any other trigger type. In particular, **timer** and **compensation** cannot start an event subprocess: for time-outs, use a [boundary timer event](../events/boundary-event.md) on the activity, and for undo operations, use the [compensation pattern](./transaction.md#2-transaction-with-compensation) (compensation boundary event + `isForCompensation="true"` handler).
+> **Note:** Only `error`, `message`, and `signal` start event definitions are valid on an event subprocess — the engine's `EventSubprocessValidator` rejects any other trigger type. In particular, **timer** and **compensation** cannot start an event subprocess: for time-outs, use a [boundary timer event](../events/boundary-event.md) on the activity, and for undo operations, use the [compensation pattern](./transaction.md#2-transaction-with-compensation) (compensation boundary event + `isForCompensation="true"` handler). A `signal` start definition passes this validation, but is **never triggered at runtime** (see [section 5](#5-signal-event-subprocess-not-supported)).
 
 ## Configuration Options
 
@@ -54,7 +56,7 @@ Cancels parent activities when triggered. By default, start events in event subp
   <endEvent id="end"/>
 
   <!-- Interrupting event subprocess (default behavior) -->
-  <eventSubProcess id="errorHandler">
+  <subProcess id="errorHandler" triggeredByEvent="true">
     <startEvent id="errorStart" isInterrupting="true">
       <errorEventDefinition errorCode="APP001"/>
     </startEvent>
@@ -63,7 +65,7 @@ Cancels parent activities when triggered. By default, start events in event subp
 
     <sequenceFlow id="errorFlow1" sourceRef="errorStart" targetRef="handleError"/>
     <sequenceFlow id="errorFlow2" sourceRef="handleError" targetRef="errorEnd"/>
-  </eventSubProcess>
+  </subProcess>
 
   <sequenceFlow id="flow1" sourceRef="start" targetRef="task1"/>
   <sequenceFlow id="flow2" sourceRef="task1" targetRef="end"/>
@@ -88,7 +90,7 @@ Runs parallel without canceling parent:
   <endEvent id="end"/>
 
   <!-- Non-interrupting message event subprocess -->
-  <eventSubProcess id="cancelHandler">
+  <subProcess id="cancelHandler" triggeredByEvent="true">
     <startEvent id="messageStart" isInterrupting="false">
       <messageEventDefinition messageRef="cancelMessage"/>
     </startEvent>
@@ -97,7 +99,7 @@ Runs parallel without canceling parent:
 
     <sequenceFlow id="cancelFlow1" sourceRef="messageStart" targetRef="logCancel"/>
     <sequenceFlow id="cancelFlow2" sourceRef="logCancel" targetRef="cancelEnd"/>
-  </eventSubProcess>
+  </subProcess>
 
   <sequenceFlow id="flow1" sourceRef="start" targetRef="task1"/>
   <sequenceFlow id="flow2" sourceRef="task1" targetRef="end"/>
@@ -124,7 +126,7 @@ Catches and handles errors:
     <endEvent id="subEnd"/>
 
     <!-- Error event subprocess -->
-    <eventSubProcess id="errorHandler">
+    <subProcess id="errorHandler" triggeredByEvent="true">
       <startEvent id="errorStart">
         <errorEventDefinition errorRef="ApplicationError"/>
       </startEvent>
@@ -133,7 +135,7 @@ Catches and handles errors:
 
       <sequenceFlow id="errorFlow1" sourceRef="errorStart" targetRef="handleError"/>
       <sequenceFlow id="errorFlow2" sourceRef="handleError" targetRef="errorEnd"/>
-    </eventSubProcess>
+    </subProcess>
 
     <sequenceFlow id="subFlow1" sourceRef="subStart" targetRef="riskyTask"/>
     <sequenceFlow id="subFlow2" sourceRef="riskyTask" targetRef="subEnd"/>
@@ -166,7 +168,7 @@ Waits for external messages:
   <endEvent id="end"/>
 
   <!-- Message event subprocess for cancellation -->
-  <eventSubProcess id="cancelOrder">
+  <subProcess id="cancelOrder" triggeredByEvent="true">
     <startEvent id="cancelStart">
       <messageEventDefinition messageRef="cancelOrderMessage"/>
     </startEvent>
@@ -175,7 +177,7 @@ Waits for external messages:
 
     <sequenceFlow id="cancelFlow1" sourceRef="cancelStart" targetRef="refundOrder"/>
     <sequenceFlow id="cancelFlow2" sourceRef="refundOrder" targetRef="cancelEnd"/>
-  </eventSubProcess>
+  </subProcess>
 
   <sequenceFlow id="flow1" sourceRef="start" targetRef="prepareOrder"/>
   <sequenceFlow id="flow2" sourceRef="prepareOrder" targetRef="end"/>
@@ -187,18 +189,21 @@ Waits for external messages:
 <message id="cancelOrderMessage" name="Cancel Order Message"/>
 ```
 
-### 5. Signal Event SubProcess
+### 5. Signal Event SubProcess (Not Supported)
 
-Responds to global signals:
+An event subprocess started by a `<signalEventDefinition>` is **not supported**. Although the `EventSubprocessValidator` accepts `signal` start event definitions on event subprocesses, the engine creates **neither an event subscription nor an activity behavior** for them: at deployment, `EventSubscriptionManager` only registers signal subscriptions for **top-level** start events, and `StartEventParseHandler` only assigns behaviors for message and error start events inside event subprocesses. The subprocess is therefore never triggered.
+
+For cross-process communication, use a signal start event on a **main process** instead (see [Start Events — Signal Start Event](../events/start-event.md#4-signal-start-event)). The example below is shown **only** to illustrate what does *not* work:
 
 ```xml
+<!-- NOT SUPPORTED: a signal start event inside an event subprocess is never triggered -->
 <subProcess id="monitoredProcess" name="Monitored Process">
   <startEvent id="start"/>
   <serviceTask id="task1" name="Process Data"/>
   <endEvent id="end"/>
 
-  <!-- Signal event subprocess -->
-  <eventSubProcess id="emergencyStop">
+  <!-- Signal event subprocess (not supported) -->
+  <subProcess id="emergencyStop" triggeredByEvent="true">
     <startEvent id="signalStart">
       <signalEventDefinition signalRef="EmergencyStop"/>
     </startEvent>
@@ -207,7 +212,7 @@ Responds to global signals:
 
     <sequenceFlow id="signalFlow1" sourceRef="signalStart" targetRef="cleanup"/>
     <sequenceFlow id="signalFlow2" sourceRef="cleanup" targetRef="signalEnd"/>
-  </eventSubProcess>
+  </subProcess>
 
   <sequenceFlow id="flow1" sourceRef="start" targetRef="task1"/>
   <sequenceFlow id="flow2" sourceRef="task1" targetRef="end"/>
@@ -269,7 +274,8 @@ Compensation (undo) operations are modeled differently in Activiti: a compensati
     <endEvent id="fulfillEnd"/>
 
     <!-- Signal event subprocess for order timeout (external scheduler sends the signal) -->
-    <eventSubProcess id="orderTimeout">
+    <!-- NOT SUPPORTED: signal start events inside event subprocesses are never triggered (see section 5); use a message-based subprocess instead -->
+    <subProcess id="orderTimeout" triggeredByEvent="true">
       <startEvent id="timeoutStart">
         <signalEventDefinition signalRef="orderTimeoutSignal"/>
       </startEvent>
@@ -278,10 +284,10 @@ Compensation (undo) operations are modeled differently in Activiti: a compensati
 
       <sequenceFlow id="timeoutFlow1" sourceRef="timeoutStart" targetRef="cancelTimeout"/>
       <sequenceFlow id="timeoutFlow2" sourceRef="cancelTimeout" targetRef="timeoutEnd"/>
-    </eventSubProcess>
+    </subProcess>
 
     <!-- Message event subprocess for order cancellation -->
-    <eventSubProcess id="orderCancellation">
+    <subProcess id="orderCancellation" triggeredByEvent="true">
       <startEvent id="cancelStart">
         <messageEventDefinition messageRef="cancelOrder"/>
       </startEvent>
@@ -290,10 +296,10 @@ Compensation (undo) operations are modeled differently in Activiti: a compensati
 
       <sequenceFlow id="cancelFlow1" sourceRef="cancelStart" targetRef="processRefund"/>
       <sequenceFlow id="cancelFlow2" sourceRef="processRefund" targetRef="cancelEnd"/>
-    </eventSubProcess>
+    </subProcess>
 
     <!-- Non-interrupting message event subprocess for expediting -->
-    <eventSubProcess id="orderExpedite">
+    <subProcess id="orderExpedite" triggeredByEvent="true">
       <startEvent id="expediteStart" isInterrupting="false">
         <messageEventDefinition messageRef="expediteOrder"/>
       </startEvent>
@@ -302,10 +308,11 @@ Compensation (undo) operations are modeled differently in Activiti: a compensati
 
       <sequenceFlow id="expediteFlow1" sourceRef="expediteStart" targetRef="updatePriority"/>
       <sequenceFlow id="expediteFlow2" sourceRef="updatePriority" targetRef="expediteEnd"/>
-    </eventSubProcess>
+    </subProcess>
 
     <!-- Signal event subprocess for emergency stop -->
-    <eventSubProcess id="emergencyStop">
+    <!-- NOT SUPPORTED: signal start events inside event subprocesses are never triggered (see section 5); use a message-based subprocess instead -->
+    <subProcess id="emergencyStop" triggeredByEvent="true">
       <startEvent id="emergencyStart">
         <signalEventDefinition signalRef="systemEmergency"/>
       </startEvent>
@@ -314,7 +321,7 @@ Compensation (undo) operations are modeled differently in Activiti: a compensati
 
       <sequenceFlow id="emergencyFlow1" sourceRef="emergencyStart" targetRef="emergencyCleanup"/>
       <sequenceFlow id="emergencyFlow2" sourceRef="emergencyCleanup" targetRef="emergencyEnd"/>
-    </eventSubProcess>
+    </subProcess>
 
     <sequenceFlow id="flow1" sourceRef="fulfillStart" targetRef="checkInventory"/>
     <sequenceFlow id="flow2" sourceRef="checkInventory" targetRef="inventoryCheck"/>
@@ -355,16 +362,11 @@ runtimeService.signalEventReceived("systemEmergency");
 runtimeService.signalEventReceived("systemEmergency", Map.of("reason", "Maintenance"));
 ```
 
-### Date-Based Start Timers
+### Start Timers
 
-```java
-// Process start timers fire automatically (duration- or cycle-based)
-// Date-based start timers use a variable holding the start date/time
-Map<String, Object> vars = Map.of(
-    "startTime", ZonedDateTime.now().plusHours(2)
-);
-runtimeService.startProcessInstanceByKey("orderProcess", vars);
-```
+Timer start events are **not supported** inside event sub-processes (see the types table above).
+
+For main processes, timer start events are supported: at deployment the engine schedules a timer job (type `timer-start-event`) and starts the process automatically when it fires. Note that the timer expression is resolved at deployment time — a `timeDate` expression cannot reference process variables, since no process instance exists yet. See the start event page, section 3, for details.
 
 ## Best Practices
 
@@ -382,7 +384,7 @@ runtimeService.startProcessInstanceByKey("orderProcess", vars);
 - **Wrong Interrupting Setting** - Verify `isInterrupting` attribute is on the **start event**, not the event subprocess
 - **Scope Confusion** - Event subprocess only works within its parent scope
 - **Timer Precision** - Timers may not fire exactly on time
-- **Signal Broadcasting** - Signals trigger ALL matching event subprocesses
+- **Signal Broadcasting** - A global signal is received by every matching subscription (process starts and intermediate catch events); it cannot start an event subprocess
 - **Error Handling** - Ensure errors are properly defined and referenced
 
 ## Related Documentation

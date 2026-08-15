@@ -85,7 +85,7 @@ Variable mapping for call activities can be configured via `<activiti:in>`/`<act
 {
   "id": "subProcessExtensions",
   "extensions": {
-    "Process_myProcess": {
+    "subProcess": {
       "mappings": {
         "mappedCall": {
           "inputs": {
@@ -174,7 +174,7 @@ Variable mapping is configured via `fulfillmentProcess-extensions.json`:
 {
   "id": "fulfillmentProcessExtensions",
   "extensions": {
-    "Process_myProcess": {
+    "fulfillmentProcess": {
       "mappings": {
         "callOrderFulfillment": {
           "inputs": {
@@ -207,7 +207,7 @@ Variable mapping for the dynamic call:
 {
   "id": "dynamicCallExtensions",
   "extensions": {
-    "Process_myProcess": {
+    "myProcess": {
       "mappings": {
         "dynamicFulfillment": {
           "inputs": {
@@ -245,7 +245,7 @@ If variable mapping is needed for each instance, configure it via process extens
 {
   "id": "batchProcessingExtensions",
   "extensions": {
-    "Process_myProcess": {
+    "itemProcessingSubProcess": {
       "mappings": {
         "batchProcessing": {
           "inputs": {
@@ -283,7 +283,7 @@ To pass variables in nested calls, use process extension JSON:
 {
   "id": "nestedCallsExtensions",
   "extensions": {
-    "Process_myProcess": {
+    "orderManagement": {
       "mappings": {
         "callOrderProcess": {
           "inputs": {

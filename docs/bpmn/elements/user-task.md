@@ -66,7 +66,7 @@ Directly assign the task to a specific user:
 
 **Runtime Behavior:**
 - Task is immediately assigned
-- Only the assignee can claim/complete the task
+- The engine `TaskService` performs no assignee enforcement: `claim()` only rejects claiming a task that already has a **different** assignee (`ActivitiTaskAlreadyClaimedException`), and `complete()` does not check the assignee. Assignee/candidate visibility is enforced by the modern `TaskRuntime` API instead (claiming requires the authenticated user to be a candidate; completing requires the authenticated user to be the assignee)
 - Can be changed via Task Service
 
 ### 2. Owner
@@ -282,7 +282,7 @@ Execute custom logic at task lifecycle events:
 
 **Supported Events:**
 - `create` - When task is created
-- `assignment` - When assignee or candidates change
+- `assignment` - When the assignee changes (adding/removing candidates does not fire this event)
 - `complete` - When task is completed
 - `delete` - When task is deleted
 - `all` - All of the above events

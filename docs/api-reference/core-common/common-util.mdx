@@ -35,7 +35,7 @@ The **activiti-common-util** module provides essential utility classes for date 
 - **Type Conversion**: Convert between various date/time types
 - **Timezone Awareness**: ZoneId support for proper timezone handling
 - **Spring Boot Integration**: Auto-configuration with customizable patterns
-- **NOT Thread-Safe**: `DateFormatterProvider` has mutable setters (`setDateFormatPattern`, `setZoneId`) — do not share instances across threads without synchronization
+- **NOT Thread-Safe**: `DateFormatterProvider` has a mutable setter (`setDateFormatPattern`) — do not share instances across threads without synchronization
 - **Exception Handling**: Robust error handling for invalid dates
 
 ### Module Structure
@@ -71,13 +71,13 @@ The **activiti-common-util** module provides essential utility classes for date 
 flowchart TD
     subgraph DateUtils["Date Utilities"]
         subgraph DateFormatter["DateFormatterProvider<br>(Central Date Utility)"]
-            Config["Configuration:<br>- dateFormatPattern<br>- zoneId"]
+            Config["Configuration:<br>- dateFormatPattern (configurable)<br>- zoneId (fixed UTC)"]
             Ops["Operations:<br>- parse String → Date<br>- toDate Object → Date"]
         end
         
         subgraph AutoConfig["ActivitiCoreCommonUtilAutoConfiguration<br>(Spring Boot Auto-Config)"]
             AC1["- Creates DateFormatterProvider bean"]
-            AC2["- Configures date format pattern and zone ID"]
+            AC2["- Configures date format pattern (zone fixed to UTC)"]
             AC3["- Conditional on missing bean"]
         end
     end
@@ -124,11 +124,11 @@ flowchart TD
 - Convert various date/time types to `java.util.Date`
 - Handle timezone-aware operations
 - Provide flexible date pattern support
-- Manage default timezone (UTC)
+- Manage timezone (fixed to UTC)
 
 **Configuration:**
 - `dateFormatPattern`: Date format pattern (default: `yyyy-MM-dd[['T']HH:mm:ss[.SSS][XXX]]`)
-- `zoneId`: Timezone for date operations (default: `ZoneOffset.UTC`)
+- `zoneId`: Timezone for date operations (fixed to `ZoneOffset.UTC`; read via `getZoneId()`, cannot be changed)
 
 **Supported Input Types:**
 - `String` - Parsed using configured pattern
@@ -142,7 +142,7 @@ flowchart TD
 
 **Design Pattern:** Provider pattern with configurable behavior
 
-**Thread Safety:** NOT thread-safe. The class has mutable setter methods (`setDateFormatPattern`, `setZoneId`) that can change the configuration at any time. If shared across threads, external synchronization is required, or each thread should use its own instance.
+**Thread Safety:** NOT thread-safe. The class has a mutable setter (`setDateFormatPattern`) that can change the configuration at any time. If shared across threads, external synchronization is required, or each thread should use its own instance.
 
 **Example:**
 ```java
@@ -279,12 +279,10 @@ public class DateFormatterProvider {
         this.dateFormatPattern = dateFormatPattern;
     }
     
+    // The zone is pinned to UTC in the field initializer and cannot be
+    // changed; getZoneId() always returns ZoneOffset.UTC.
     public ZoneId getZoneId() {
         return zoneId;
-    }
-    
-    public void setZoneId(ZoneId zoneId) {
-        this.zoneId = zoneId;
     }
 }
 ```
@@ -308,7 +306,7 @@ public class ActivitiCoreCommonUtilAutoConfiguration {
      @Bean
      @ConditionalOnMissingBean
      public DateFormatterProvider dateFormatterProvider(
-             @Value("${date-format-pattern:yyyy-MM-dd HH:mm:ss}")
+             @Value("${spring.activiti.date-format-pattern:yyyy-MM-dd[['T']HH:mm:ss[.SSS][XXX]]}")
              String dateFormatPattern) {
         return new DateFormatterProvider(dateFormatPattern);
     }
@@ -323,12 +321,11 @@ public class CustomDateConfig {
     
     /**
      * Override default date format pattern.
+     * Only the pattern is configurable — the zone is always UTC.
      */
     @Bean
     public DateFormatterProvider customDateFormatterProvider() {
-        DateFormatterProvider provider = new DateFormatterProvider("dd/MM/yyyy HH:mm:ss");
-        provider.setZoneId(ZoneId.of("America/New_York"));
-        return provider;
+        return new DateFormatterProvider("dd/MM/yyyy HH:mm:ss");
     }
 }
 ```
@@ -401,9 +398,8 @@ public class DateFormatConfig {
     
     @Bean
     public DateFormatterProvider usDateFormatProvider() {
-        DateFormatterProvider provider = new DateFormatterProvider("MM/dd/yyyy HH:mm:ss");
-        provider.setZoneId(ZoneId.of("America/New_York"));
-        return provider;
+        // Only the pattern varies between providers; the zone is always UTC.
+        return new DateFormatterProvider("MM/dd/yyyy HH:mm:ss");
     }
 }
 
@@ -429,15 +425,18 @@ public class ProcessVariableDateHandler {
     
     @Autowired
     private DateFormatterProvider dateFormatterProvider;
-    
-    public void handleProcessVariable(String variableName, Object value) {
+
+    @Autowired
+    private RuntimeService runtimeService;
+
+    public void handleProcessVariable(String executionId, String variableName, Object value) {
         // Convert process variable to Date
         Date dateValue = dateFormatterProvider.toDate(value);
-        
-        // Use in process logic
-        processEngine.setVariable(variableName, dateValue);
+
+        // Set it on the running execution (org.activiti.engine.RuntimeService)
+        runtimeService.setVariable(executionId, variableName, dateValue);
     }
-    
+
     public boolean isDateBeforeToday(Object dateValue) {
         Date date = dateFormatterProvider.toDate(dateValue);
         Date today = new Date();
@@ -446,9 +445,9 @@ public class ProcessVariableDateHandler {
 }
 ```
 
-### Timezone-Aware Operations
+### Timezone Handling
 
-**Important:** `DateFormatterProvider` is NOT thread-safe due to its mutable `setZoneId` method. Never use a `setZoneId`/restore pattern on a shared Spring bean — it will cause race conditions. Instead, create a new instance for each timezone-specific operation:
+**Important:** `DateFormatterProvider` always operates in UTC — the zone is pinned to `ZoneOffset.UTC` and can only be read via `getZoneId()`, never changed. To represent a timestamp from another timezone, include the zone offset in the input string (the default pattern supports an optional `XXX` offset), or convert with `java.time` before calling `toDate()`:
 
 ```java
 @Service
@@ -457,21 +456,15 @@ public class TimezoneAwareDateService {
     @Autowired
     private DateFormatterProvider dateFormatterProvider;
 
-    public Date parseWithTimezone(String dateStr, String timezone) {
-        // Create a new instance for the different timezone
-        DateFormatterProvider provider = new DateFormatterProvider(
-            dateFormatterProvider.getDateFormatPattern()
-        );
-        provider.setZoneId(ZoneId.of(timezone));
-        return provider.parse(dateStr);
+    public Date parseOffsetDate(String dateStr) {
+        // "2024-01-15T10:30:00-05:00" — the offset is honored, the result is an instant
+        return dateFormatterProvider.parse(dateStr);
     }
 
-    public Date convertToUtc(String dateStr, String sourceTimezone) {
-        DateFormatterProvider provider = new DateFormatterProvider(
-            dateFormatterProvider.getDateFormatPattern()
-        );
-        provider.setZoneId(ZoneId.of(sourceTimezone));
-        return provider.parse(dateStr);
+    public Date convertToUtc(LocalDateTime localTime, String sourceTimezone) {
+        // Interpret a local value in the given zone, then hand it to the provider
+        ZonedDateTime zoned = localTime.atZone(ZoneId.of(sourceTimezone));
+        return dateFormatterProvider.toDate(zoned);
     }
 }
 ```
@@ -536,15 +529,19 @@ DateFormatterProvider provider = new DateFormatterProvider(
 DateFormatterProvider provider = new DateFormatterProvider("MM/dd/yyyy");
 ```
 
-### 2. Always Specify Timezone
+### 2. Include the Timezone in the Data
+
+The provider always parses in UTC, so carry the offset in the value itself:
 
 ```java
-// GOOD - Explicit timezone
-DateFormatterProvider provider = new DateFormatterProvider(pattern);
-provider.setZoneId(ZoneId.of("America/New_York"));
+// GOOD - Timestamp carries its own offset; stored as an instant
+DateFormatterProvider provider = new DateFormatterProvider(
+    "yyyy-MM-dd[['T']HH:mm:ss[.SSS][XXX]]"
+);
+Date date = provider.parse("2024-01-15T10:30:00-05:00");
 
-// BAD - Relying on system default
-// Uses system timezone which may vary
+// BAD - Zoneless value is interpreted as UTC
+Date ambiguous = provider.parse("2024-01-15 10:30:00");
 ```
 
 ### 3. Handle Parsing Exceptions
@@ -630,13 +627,9 @@ public void setDateFormatPattern(String dateFormatPattern);
 
 /**
  * Get the timezone for date operations.
+ * Always returns {@code ZoneOffset.UTC} — the zone is immutable.
  */
 public ZoneId getZoneId();
-
-/**
- * Set the timezone for date operations.
- */
-public void setZoneId(ZoneId zoneId);
 ```
 
 **Parsing Methods:**
@@ -709,13 +702,14 @@ The `DateFormatterProvider` bean accepts a date format pattern via its construct
 **Problem:** Dates appear in wrong timezone
 
 **Solution:**
-1. Explicitly set timezone in DateFormatterProvider
-2. Use UTC as default for consistency
+1. Remember `DateFormatterProvider` always operates in UTC — `getZoneId()` returns `ZoneOffset.UTC` and the zone cannot be changed
+2. Include the zone offset in date strings — the default pattern supports an optional `XXX` offset
 3. Convert to local timezone only for display
 
 ```java
 DateFormatterProvider provider = new DateFormatterProvider(pattern);
-provider.setZoneId(ZoneOffset.UTC);  // Always use UTC internally
+// provider.getZoneId() is always ZoneOffset.UTC
+Date date = provider.parse("2024-01-15T10:30:00-05:00");
 ```
 
 ### Null Pointer Exception on toDate()

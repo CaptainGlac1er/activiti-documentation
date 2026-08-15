@@ -351,14 +351,14 @@ Reference a connector action in the `implementation` attribute:
 
 ### With Process Variables
 
-Process variables are **automatically mapped** to connector inputs based on name matching:
+Process variables are **not** automatically mapped to connector inputs by name:
 
 ```xml
 <serviceTask id="processImage"
              implementation="Process Image Connector.processImageActionName"/>
 ```
 
-If the connector expects inputs `input_variable_name_1` and `expectedKey`, the process must have variables with those exact names.
+At runtime, `ExtensionsVariablesMappingProvider.calculateInputVariables` decides what the connector receives: **without a process-extensions mapping for the activity, the connector receives its constants only** — no process variables. With an explicit `inputs` mapping, only the mapped variables (plus constants) are passed; with `mappingType: MAP_ALL_INPUTS` for the activity, **all** process variables (plus constants) are passed. See [Process Extensions](../reference/process-extensions.md) for the mapping syntax.
 
 ### Output Variables
 
@@ -472,27 +472,20 @@ activiti:
     dir: classpath:/custom-connectors/  # Custom connector location
 ```
 
-### Multiple Connector Directories
+### Single Location Only
 
-The `activiti.connectors.dir` property supports comma-separated paths:
-
-```yaml
-# application.yml
-activiti:
-  connectors:
-    dir: classpath:/connectors/,classpath:/custom-connectors/
-```
+The `activiti.connectors.dir` property is a **single** resource path: `ConnectorDefinitionService` resolves it with `resourceLoader.getResource(connectorRoot)` and scans that location for `**.json` files. The value is **not** split on commas — a setting like `dir: classpath:/connectors/,classpath:/custom-connectors/` matches no resource, so no connector definitions are loaded at all. If you need definitions from several locations, consolidate them under one directory.
 
 **Note:** `ConnectorDefinitionService` is auto-configured by Activiti. Only override it if you need custom behavior beyond what `activiti.connectors.dir` provides.
 
 ## Variable Mapping
 
-### Automatic Name Matching
+### What the Connector Receives
 
-Connectors use **automatic variable mapping** based on name matching:
+There is **no name-based automatic mapping** of process variables to connector inputs. `ExtensionsVariablesMappingProvider.calculateInputVariables` (invoked when `DefaultServiceTaskBehavior` builds the `IntegrationContext`) determines the inputs:
 
-1. **Inputs**: Process variables with names matching connector input `name` fields are passed to the connector
-2. **Outputs**: Connector output `name` fields become process variables after execution
+1. **Inputs**: Without a process-extensions mapping for the activity, the connector receives its **constants only**. With an explicit `inputs` mapping, only the mapped variables (plus constants) are passed. With `mappingType: MAP_ALL_INPUTS` (or `MAP_ALL`), **all** process variables (plus constants) are passed. See [Process Extensions](../reference/process-extensions.md)
+2. **Outputs**: Whatever the connector adds via `addOutBoundVariable(...)` is written back to the process execution after the connector completes
 
 ### Example
 
@@ -519,7 +512,7 @@ Connectors use **automatic variable mapping** based on name matching:
 **Process Variables Before:**
 ```java
 Map<String, Object> variables = Map.of(
-    "input-variable-name-1", "some value"  // Matches connector input
+    "input-variable-name-1", "some value"  // Passed to the connector only if the activity mapping is MAP_ALL_INPUTS (or explicitly mapped)
 );
 ```
 
@@ -551,8 +544,9 @@ public class CustomConnectorTest {
 
     @Test
     public void testConnectorExecution() {
-        // Create test context
-        IntegrationContext context = new IntegrationContext();
+        // Create test context: IntegrationContext is an interface; the concrete class is
+        // IntegrationContextImpl (org.activiti.api.runtime.model.impl, activiti-api-process-model-impl)
+        IntegrationContextImpl context = new IntegrationContextImpl();
         context.addInBoundVariable("input_variable_name_1", "test value");
         context.addInBoundVariable("expectedKey", true);
 
@@ -587,7 +581,7 @@ public class ProcessWithConnectorIT {
         );
 
         // Process should complete automatically
-        assertThat(process.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
+        assertThat(process.getStatus()).isEqualTo(ProcessInstance.ProcessInstanceStatus.COMPLETED);
 
         // Verify output variables
         List<VariableInstance> variables = processRuntime.variables(

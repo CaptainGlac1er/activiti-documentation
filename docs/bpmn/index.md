@@ -124,7 +124,6 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | **Input Data** | Activity input |
 | **Output Data** | Activity output |
 | **Data Association** | Data flow |
-| **Group** | Visual grouping |
 | **Annotation** | Documentation |
 | **Association** | Relationships |
 | **Lane** | Swimlane division |
@@ -191,7 +190,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | Extension | Description | Example |
 |-----------|-------------|---------|
 | **async** | Background execution | `activiti:async="true"` |
-| **exclusive** | Locking mode | `activiti:exclusive="true"` |
+| **exclusive** | Controls whether the async-continuation job for this node is exclusive — an exclusive job locks the process instance while the async execution is pending | `activiti:exclusive="false"` |
 | **skipExpression** | Conditional skip (serviceTask / userTask only) | `activiti:skipExpression="${flag}"` |
 | **executionListener** | Lifecycle hooks | `<activiti:executionListener/>` |
 | **multiInstance** | Iteration | `<multiInstanceLoopCharacteristics/>` |
@@ -298,7 +297,7 @@ Execute custom logic at task lifecycle events:
 
 **Supported Events:**
 - `create` - When task is created
-- `assignment` - When assignee/candidates change
+- `assignment` - When the assignee changes (adding/removing candidates does not fire this event)
 - `complete` - When task is completed
 - `delete` - When task is deleted
 - `all` - All of the above events

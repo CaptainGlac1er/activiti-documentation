@@ -250,7 +250,7 @@ spring:
     deployment-name: "SpringAutoDeployment"
 
     # Database schema update strategy. Default: "true"
-    # Options: true, false, create-drop, create, validate
+    # Options: true, false, create, create-drop, drop-create
     database-schema-update: true
 
     # Database schema name (for databases that support schemas). Default: null
@@ -322,6 +322,7 @@ Process extension JSON files are discovered by the `ProcessExtensionResourceFind
 |----------|---------|-------------|
 | `spring.activiti.process.extensions.dir` | `NOT_DEFINED` — falls back to `spring.activiti.process-definition-location-prefix` | Location prefix for scanning process extension files |
 | `spring.activiti.process.extensions.suffix` | `**-extensions.json` | Single file-suffix string; only files ending in `-extensions.json` are loaded |
+| `spring.activiti.applicationsLocation` | `classpath:/applications/` | String location scanned for Activiti application archives (`.zip`) that are auto-deployed at startup. See [Spring Application](../core-common/spring-application.md) |
 
 `spring.activiti.process-definition-location-suffixes` (the BPMN suffix list) is **not** used for extension scanning.
 
@@ -335,7 +336,7 @@ Process extension JSON files are discovered by the `ProcessExtensionResourceFind
 spring:
   activiti:
     async-executor:
-      # Retry wait time in milliseconds for failed jobs. Default: 500
+      # Retry wait time for failed jobs. Despite the name, applied as SECONDS. Default: 500
       retry-wait-time-in-millis: 500
 
       # Number of retries for a job. Default: 3
@@ -560,7 +561,7 @@ public class CustomProcessDeployedListener
 
     @Override
     public void onEvent(ProcessDeployedEvent event) {
-        log.info("Process deployed: {}", event.getProcessDefinition().getKey());
+        log.info("Process deployed: {}", event.getEntity().getKey());
     }
 }
 ```
@@ -752,14 +753,16 @@ spring:
 **Symptom:** Method-level security annotations not working
 
 **Solution:**
-```yaml
-spring:
-  activiti:
-    security:
-      enabled: true
-```
 
-Ensure `GlobalMethodSecurityConfiguration` is on the classpath.
+Method security is **enabled by default** — `ActivitiMethodSecurityAutoConfiguration` is
+conditional on the property with `@ConditionalOnProperty(name = "spring.activiti.security.enabled", matchIfMissing = true)`.
+Setting the property to `true` is therefore a no-op; the property only **disables** method
+security when set to `false`.
+
+- Check that `spring.activiti.security.enabled` has not been set to `false` in your configuration
+  (remove the property or set it back to `true` to restore the default behavior).
+- Ensure `GlobalMethodSecurityConfiguration` is on the classpath — the auto-configuration is
+  also conditional on this class being present (`@ConditionalOnClass`).
 
 ### Debug Mode
 
