@@ -543,12 +543,17 @@ public class StartProcessPayload implements Payload {
 - Log event processing
 
 ```java
-@EventListener
-public void onEvent(ProcessCompletedEvent event) {
-    try {
-        asyncExecutor.execute(() -> processEvent(event));
-    } catch (Exception e) {
-        log.error("Event processing failed", e);
+@Component
+public class ProcessCompletionListener
+    implements ProcessRuntimeEventListener<ProcessCompletedEvent> {
+
+    @Override
+    public void onEvent(ProcessCompletedEvent event) {
+        try {
+            asyncExecutor.execute(() -> processEvent(event));
+        } catch (Exception e) {
+            log.error("Event processing failed", e);
+        }
     }
 }
 ```

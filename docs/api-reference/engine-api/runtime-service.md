@@ -638,19 +638,21 @@ List<Job> timerJobs = managementService.createTimerJobQuery()
 ### Timer Configuration
 
 ```java
-// In BPMN:
-// <boundaryEvent timerEventDefinition="...">
+// In BPMN (timerEventDefinition is a child element of the boundary event):
+// <timerEventDefinition>
 //   <timeDuration>PT1H</timeDuration>
-// </boundaryEvent>
+// </timerEventDefinition>
 
-// Or cyclic timer:
-// <timeCycle>RRULE:FREQ=DAILY;INTERVAL=1</timeCycle>
+// Or a cyclic timer (R[<n>]/<ISO-8601 duration> or a cron expression):
+// <timerEventDefinition>
+//   <timeCycle>R/PT24H</timeCycle>
+// </timerEventDefinition>
 ```
 
 **Timer types and when to use:**
 - **Time Duration**: Relative timer (e.g., "1 hour from now") - use for timeouts, SLAs
 - **Time Date**: Absolute timer (e.g., "2024-12-31 23:59:59") - use for specific deadlines
-- **Time Cycle**: Repeating timer (iCal RRULE) - use for recurring jobs
+- **Time Cycle**: Repeating timer (`R[<n>]/<ISO-8601 duration>` or cron; iCal RRULE is not supported) - use for recurring jobs
 
 **Common timer patterns:**
 1. **Boundary timer on task**: Escalation if task not completed in X time
@@ -905,21 +907,21 @@ ProcessInstanceQuery createProcessInstanceQuery();
 // Filtering
 .processInstanceId(String id)
 .processInstanceBusinessKey(String key)
-.processInstanceBusinessKeyLike(String key)
 .processDefinitionId(String id)
 .processDefinitionKey(String key)
 .superProcessInstanceId(String id)
 .subProcessInstanceId(String id)
-.tenantIdIn(List<String> tenantIds)
+.processInstanceTenantId(String tenantId)
+.processInstanceTenantIdLike(String tenantIdLike)
+.processInstanceWithoutTenantId()
 .active()
 .suspended()
 
 // Ordering
 .orderByProcessInstanceId()
 .orderByProcessDefinitionKey()
-.orderByProcessDefinitionName()
-.orderByProcessDefinitionVersion()
-.orderByStartTime()
+.orderByProcessDefinitionId()
+.orderByTenantId()
 .asc()
 .desc()
 

@@ -626,13 +626,17 @@ public class PaymentService implements JavaDelegate {
 import org.activiti.engine.delegate.event.ActivitiEventListener;
 import org.activiti.engine.delegate.event.ActivitiEvent;
 import org.activiti.engine.delegate.event.ActivitiEventType;
+import org.activiti.engine.delegate.event.ActivitiActivityEvent;
 
 public class ErrorEventListener implements ActivitiEventListener {
 
     @Override
     public void onEvent(ActivitiEvent event) {
         if (event.getType() == ActivitiEventType.ACTIVITY_ERROR_RECEIVED) {
-            System.out.println("Error on activity: " + event.getActivityId());
+            if (event instanceof ActivitiActivityEvent) {
+                String activityId = ((ActivitiActivityEvent) event).getActivityId();
+                System.out.println("Error on activity: " + activityId);
+            }
             System.out.println("Execution: " + event.getExecutionId());
         }
     }

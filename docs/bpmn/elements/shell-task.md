@@ -141,10 +141,12 @@ The `ShellExecutorContext` passed to the factory has these getters: `getArgList(
     <activiti:field name="directory" stringValue="/opt/deploy"/>
     <activiti:field name="outputVariable" stringValue="deployOutput"/>
   </extensionElements>
-  <boundaryEvent id="deployError" cancelActivity="true">
-    <errorEventDefinition errorRef="deployErrorDef"/>
-  </boundaryEvent>
 </serviceTask>
+
+<!-- Boundary events must be siblings of the task (attachedToRef), not nested inside it -->
+<boundaryEvent id="deployError" attachedToRef="deploy" cancelActivity="true">
+  <errorEventDefinition errorRef="deployErrorDef"/>
+</boundaryEvent>
 ```
 
 ### Retry Configuration
@@ -153,9 +155,10 @@ When running async, shell tasks benefit from retry configuration:
 
 ```xml
 <serviceTask id="resilientShell" name="Resilient Command" activiti:type="shell"
-    activiti:async="true"
-    activiti:failedJobRetryTimeCycle="R3/PT5M">
+    activiti:async="true">
   <extensionElements>
+    <!-- The retry cycle is parsed only from this extension element; the same name as an attribute is ignored -->
+    <activiti:failedJobRetryTimeCycle>R3/PT5M</activiti:failedJobRetryTimeCycle>
     <activiti:field name="command" stringValue="curl"/>
     <activiti:field name="arg1" stringValue="-s"/>
     <activiti:field name="arg2">

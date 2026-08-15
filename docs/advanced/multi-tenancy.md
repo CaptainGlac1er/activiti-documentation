@@ -431,12 +431,12 @@ The Spring Boot starter (`ActivitiProperties`) supports standard mail server con
 ```yaml
 spring:
   activiti:
-  mail-server-host: smtp.example.com
-  mail-server-port: 587
-  mail-server-user-name: notifications@example.com
-  mail-server-password: secret
-  mail-server-use-tls: true
-  mail-server-default-from: activiti@example.com
+    mail-server-host: smtp.example.com
+    mail-server-port: 587
+    mail-server-user-name: notifications@example.com
+    mail-server-password: secret
+    mail-server-use-tls: true
+    mail-server-default-from: activiti@example.com
 ```
 
 ### Basic Multi-Tenancy in Spring Boot

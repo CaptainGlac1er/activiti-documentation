@@ -7,7 +7,7 @@ description: "Complete guide to Transaction SubProcesses in Activiti - all-or-no
 
 # Transaction SubProcess
 
-Transaction SubProcesses ensure **all-or-nothing execution** of a group of activities. If any activity fails, the entire transaction is rolled back, maintaining data consistency and integrity.
+Transaction SubProcesses model **all-or-nothing execution** of a group of activities. The transaction is *committed* when execution reaches its normal end event, and it is *canceled* (rolled back) only when execution reaches a **cancel end event** (`<endEvent><cancelEventDefinition/></endEvent>`). A plain error thrown by an activity does **not** cancel the transaction — it propagates outward and, if unhandled, fails the process instance.
 
 ## Overview
 
@@ -26,8 +26,8 @@ Transaction SubProcesses ensure **all-or-nothing execution** of a group of activ
 ## Key Features
 
 ### Standard BPMN Features
-- **Atomic Execution** - All activities succeed or all fail
-- **Rollback Support** - Automatic rollback on failure
+- **Atomic Execution** - Commit on the normal end event, cancel via the cancel end event
+- **Rollback Support** - Cancellation triggers the transaction's compensation flow
 - **Compensation** - Undo completed activities
 - **Error Handling** - Transaction-specific error events
 
@@ -41,7 +41,7 @@ Transaction SubProcesses ensure **all-or-nothing execution** of a group of activ
 
 ### 1. Basic Transaction
 
-Simple transaction with automatic rollback:
+Simple transaction with a commit path and a cancel path:
 
 ```xml
 <process id="bankTransfer" name="Bank Transfer Process">
@@ -58,7 +58,7 @@ Simple transaction with automatic rollback:
       <conditionExpression>${hasSufficientFunds}</conditionExpression>
     </sequenceFlow>
     
-    <sequenceFlow id="noFunds" sourceRef="fundsCheck" targetRef="transEnd">
+    <sequenceFlow id="noFunds" sourceRef="fundsCheck" targetRef="cancelEnd">
       <conditionExpression>${!hasSufficientFunds}</conditionExpression>
     </sequenceFlow>
     
@@ -70,6 +70,11 @@ Simple transaction with automatic rollback:
     
     <endEvent id="transEnd"/>
     
+    <!-- Reaching this end event cancels (rolls back) the transaction -->
+    <endEvent id="cancelEnd">
+      <cancelEventDefinition/>
+    </endEvent>
+    
     <sequenceFlow id="flow1" sourceRef="transStart" targetRef="validateFunds"/>
     <sequenceFlow id="flow2" sourceRef="validateFunds" targetRef="fundsCheck"/>
     <sequenceFlow id="flow3" sourceRef="debitSource" targetRef="creditDestination"/>
@@ -77,15 +82,23 @@ Simple transaction with automatic rollback:
     <sequenceFlow id="flow5" sourceRef="recordTransaction" targetRef="transEnd"/>
   </transaction>
   
+  <!-- Cancel boundary event (sibling of the transaction, attachedToRef) - required for the cancel end event -->
+  <boundaryEvent id="cancelBoundary" attachedToRef="transferTransaction">
+    <cancelEventDefinition/>
+  </boundaryEvent>
+  
   <endEvent id="end"/>
   
   <sequenceFlow id="mainFlow" sourceRef="start" targetRef="transferTransaction"/>
   <sequenceFlow id="mainFlow2" sourceRef="transferTransaction" targetRef="end"/>
+  <sequenceFlow id="cancelFlow" sourceRef="cancelBoundary" targetRef="end"/>
 </process>
 ```
 
 **Behavior:**
-- If an error occurs, the transaction subprocess triggers compensation via `<cancelEventDefinition>` boundary events
+- The transaction **commits** when execution reaches the normal end event (`transEnd`)
+- The transaction is **canceled** (rolled back) only when execution reaches the cancel end event (`cancelEnd` with `<cancelEventDefinition/>`)
+- A plain error from a service task does NOT cancel the transaction — it propagates outward and fails the process instance if unhandled
 - Activiti does NOT automatically roll back side effects from service tasks (e.g., external API calls, database writes outside the engine)
 - You must define compensation logic to undo completed activities
 - Use transactions to coordinate compensating activities, not as automatic DB-style rollbacks
@@ -95,72 +108,109 @@ Simple transaction with automatic rollback:
 Define compensation (undo) logic for completed activities:
 
 ```xml
-<transaction id="orderTransaction" name="Order Processing Transaction">
-  <startEvent id="transStart"/>
+<process id="orderProcess" name="Order Processing">
+  <startEvent id="start"/>
   
-  <serviceTask id="reserveInventory" name="Reserve Inventory" 
-                activiti:class="com.example.InventoryReservationService"/>
-  
-  <serviceTask id="processPayment" name="Process Payment"
-                activiti:class="com.example.PaymentProcessingService"/>
-  
-  <serviceTask id="updateOrderStatus" name="Update Order Status" activiti:class="com.example.OrderStatusService"/>
-  
-  <!-- Compensation event subprocess -->
-  <eventSubProcess id="compensationHandler">
-    <startEvent id="compStart">
-      <compensateEventDefinition activityRef="processPayment"/>
-    </startEvent>
+  <transaction id="orderTransaction" name="Order Processing Transaction">
+    <startEvent id="transStart"/>
     
-    <serviceTask id="refundPayment" name="Refund Payment" activiti:class="com.example.PaymentRefundService"/>
+    <serviceTask id="reserveInventory" name="Reserve Inventory" 
+                 activiti:class="com.example.InventoryReservationService"/>
     
-    <endEvent id="compEnd"/>
+    <serviceTask id="processPayment" name="Process Payment"
+                 activiti:class="com.example.PaymentProcessingService"/>
     
-    <sequenceFlow id="compFlow1" sourceRef="compStart" targetRef="refundPayment"/>
-    <sequenceFlow id="compFlow2" sourceRef="refundPayment" targetRef="compEnd"/>
-  </eventSubProcess>
+    <serviceTask id="updateOrderStatus" name="Update Order Status" activiti:class="com.example.OrderStatusService"/>
+    
+    <endEvent id="transEnd"/>
+    
+    <!-- Reaching this end event cancels the transaction -->
+    <endEvent id="cancelEnd">
+      <cancelEventDefinition/>
+    </endEvent>
+    
+    <sequenceFlow id="flow1" sourceRef="transStart" targetRef="reserveInventory"/>
+    <sequenceFlow id="flow2" sourceRef="reserveInventory" targetRef="processPayment"/>
+    <sequenceFlow id="flow3" sourceRef="processPayment" targetRef="updateOrderStatus"/>
+    <sequenceFlow id="flow4" sourceRef="updateOrderStatus" targetRef="transEnd"/>
+  </transaction>
   
-  <endEvent id="transEnd"/>
+  <!-- Cancel boundary event (sibling, attachedToRef) - required for the cancel end event -->
+  <boundaryEvent id="cancelBoundary" attachedToRef="orderTransaction">
+    <cancelEventDefinition/>
+  </boundaryEvent>
   
-  <sequenceFlow id="flow1" sourceRef="transStart" targetRef="reserveInventory"/>
-  <sequenceFlow id="flow2" sourceRef="reserveInventory" targetRef="processPayment"/>
-  <sequenceFlow id="flow3" sourceRef="processPayment" targetRef="updateOrderStatus"/>
-  <sequenceFlow id="flow4" sourceRef="updateOrderStatus" targetRef="transEnd"/>
-</transaction>
+  <!-- Compensation boundary event ON the transaction (sibling, attachedToRef) -->
+  <boundaryEvent id="transactionCompensation" attachedToRef="orderTransaction">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <!-- Associations to the compensation handlers -->
+  <association id="refundAssociation" sourceRef="transactionCompensation" targetRef="refundPayment"/>
+  <association id="releaseAssociation" sourceRef="transactionCompensation" targetRef="releaseInventory"/>
+  
+  <!-- Compensation handlers - isForCompensation="true" is required on each -->
+  <serviceTask id="refundPayment" name="Refund Payment" 
+               activiti:class="com.example.PaymentRefundService"
+               isForCompensation="true"/>
+  
+  <serviceTask id="releaseInventory" name="Release Inventory" 
+               activiti:class="com.example.InventoryReleaseService"
+               isForCompensation="true"/>
+  
+  <endEvent id="end"/>
+  
+  <sequenceFlow id="mainFlow1" sourceRef="start" targetRef="orderTransaction"/>
+  <sequenceFlow id="mainFlow2" sourceRef="orderTransaction" targetRef="end"/>
+  <sequenceFlow id="cancelFlow" sourceRef="cancelBoundary" targetRef="end"/>
+</process>
 ```
 
 **Compensation Behavior:**
-- If `updateOrderStatus` fails, compensation is triggered
-- `processPayment` is compensated (refund executed)
-- `reserveInventory` is compensated (inventory released)
-- Compensation happens in reverse order
+- A compensation-start **event subprocess is NOT supported** (the `EventSubprocessValidator` only allows error/message/signal starts); the compensation boundary event on the transaction is the canonical trigger
+- When the transaction is canceled (its cancel end event is reached), the engine triggers the compensation boundary event and runs the associated handlers
+- Each compensation handler must declare `isForCompensation="true"` — the engine fails with `Compensation activity could not be found (or it is missing 'isForCompensation="true"')` otherwise
+- Handlers are invoked in reverse order of the compensated activities
+- `processPayment` is compensated (refund executed), then `reserveInventory` (inventory released)
 
 ### 3. Transaction with Error Handling
 
 Handle transaction-specific errors:
 
 ```xml
-<transaction id="paymentTransaction" name="Payment Transaction">
-  <startEvent id="transStart"/>
+<process id="paymentProcess" name="Payment Process">
+  <startEvent id="start"/>
   
-  <serviceTask id="validatePayment" name="Validate Payment Details" activiti:class="com.example.PaymentValidator"/>
+  <transaction id="paymentTransaction" name="Payment Transaction">
+    <startEvent id="transStart"/>
+    
+    <serviceTask id="validatePayment" name="Validate Payment Details" activiti:class="com.example.PaymentValidator"/>
+    
+    <serviceTask id="processCharge" name="Process Credit Card Charge" activiti:class="com.example.ChargeProcessor"/>
+    
+    <endEvent id="transEnd"/>
+    
+    <sequenceFlow id="flow1" sourceRef="transStart" targetRef="validatePayment"/>
+    <sequenceFlow id="flow2" sourceRef="validatePayment" targetRef="processCharge"/>
+    <sequenceFlow id="flow3" sourceRef="processCharge" targetRef="transEnd"/>
+  </transaction>
   
-  <serviceTask id="processCharge" name="Process Credit Card Charge" activiti:class="com.example.ChargeProcessor"/>
-  
-  <!-- Error boundary event on transaction -->
-  <boundaryEvent id="paymentError" cancelActivity="true">
+  <!-- Error boundary event on the transaction (sibling, attachedToRef) - error boundary events are always interrupting -->
+  <boundaryEvent id="paymentError" attachedToRef="paymentTransaction">
     <errorEventDefinition errorRef="PaymentError"/>
   </boundaryEvent>
   
-  <endEvent id="transEnd"/>
+  <userTask id="handleError" name="Handle Payment Error"/>
   
-  <sequenceFlow id="flow1" sourceRef="transStart" targetRef="validatePayment"/>
-  <sequenceFlow id="flow2" sourceRef="validatePayment" targetRef="processCharge"/>
-  <sequenceFlow id="flow3" sourceRef="processCharge" targetRef="transEnd"/>
+  <endEvent id="end"/>
+  
+  <sequenceFlow id="mainFlow" sourceRef="start" targetRef="paymentTransaction"/>
+  <sequenceFlow id="mainFlow2" sourceRef="paymentTransaction" targetRef="end"/>
   <sequenceFlow id="errorFlow" sourceRef="paymentError" targetRef="handleError"/>
-</transaction>
+  <sequenceFlow id="errorFlow2" sourceRef="handleError" targetRef="end"/>
+</process>
 
-<!-- Error definition -->
+<!-- Error definition (declare in the definitions fragment) -->
 <error id="PaymentError" name="Payment Error" errorCode="PAY001"/>
 ```
 
@@ -200,9 +250,9 @@ Transactions within transactions:
 ```
 
 **Behavior:**
-- Inner transaction failure rolls back inner operations
-- Outer transaction also rolls back if inner fails
-- Both must succeed for complete transaction
+- Each transaction is committed when it reaches its normal end event, and canceled only when it reaches its own cancel end event
+- If the inner transaction is canceled, route the flow so the outer transaction can also be canceled via its own cancel end event
+- Both must commit for the complete transaction
 
 ## Complete Real-World Example
 
@@ -229,7 +279,8 @@ Transactions within transactions:
       <conditionExpression>${inventoryStatus.available}</conditionExpression>
     </sequenceFlow>
     
-    <sequenceFlow id="notAvailable" sourceRef="inventoryAvailable" targetRef="transEnd">
+    <!-- No inventory: cancel the transaction (nothing is reserved yet, so no compensation is needed) -->
+    <sequenceFlow id="notAvailable" sourceRef="inventoryAvailable" targetRef="cancelEnd">
       <conditionExpression>${!inventoryStatus.available}</conditionExpression>
     </sequenceFlow>
     
@@ -255,21 +306,12 @@ Transactions within transactions:
     <!-- Step 5: Send confirmation -->
     <serviceTask id="sendConfirmation" name="Send Order Confirmation" activiti:class="com.example.OrderConfirmationService"/>
     
-    <!-- Compensation handler for rollback -->
-    <eventSubProcess id="compensationHandler">
-      <startEvent id="compStart">
-        <compensateEventDefinition activityRef="createShippingLabel"/>
-      </startEvent>
-      
-      <serviceTask id="cancelShipping" name="Cancel Shipping Label" activiti:class="com.example.ShippingCancellation"/>
-      
-      <endEvent id="compEnd"/>
-      
-      <sequenceFlow id="compFlow1" sourceRef="compStart" targetRef="cancelShipping"/>
-      <sequenceFlow id="compFlow2" sourceRef="cancelShipping" targetRef="compEnd"/>
-    </eventSubProcess>
-    
     <endEvent id="transEnd"/>
+    
+    <!-- Reaching this end event cancels the transaction and triggers compensation -->
+    <endEvent id="cancelEnd">
+      <cancelEventDefinition/>
+    </endEvent>
     
     <sequenceFlow id="flow1" sourceRef="transStart" targetRef="checkInventory"/>
     <sequenceFlow id="flow2" sourceRef="checkInventory" targetRef="inventoryAvailable"/>
@@ -281,6 +323,24 @@ Transactions within transactions:
     <sequenceFlow id="flow8" sourceRef="sendConfirmation" targetRef="transEnd"/>
   </transaction>
   
+  <!-- Cancel boundary event (sibling, attachedToRef) - required for the cancel end event -->
+  <boundaryEvent id="cancelBoundary" attachedToRef="orderTransaction">
+    <cancelEventDefinition/>
+  </boundaryEvent>
+  
+  <!-- Compensation boundary event ON the transaction (sibling, attachedToRef) -->
+  <boundaryEvent id="transactionCompensation" attachedToRef="orderTransaction">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <!-- Association to the compensation handler -->
+  <association id="shippingAssociation" sourceRef="transactionCompensation" targetRef="cancelShipping"/>
+  
+  <!-- Compensation handler - isForCompensation="true" is required -->
+  <serviceTask id="cancelShipping" name="Cancel Shipping Label" 
+               activiti:class="com.example.ShippingCancellation"
+               isForCompensation="true"/>
+  
   <userTask id="packOrder" name="Pack Order for Shipment" activiti:assignee="${warehouseStaff}"/>
   
   <endEvent id="end"/>
@@ -289,11 +349,13 @@ Transactions within transactions:
   <sequenceFlow id="mainFlow2" sourceRef="receiveOrder" targetRef="orderTransaction"/>
   <sequenceFlow id="mainFlow3" sourceRef="orderTransaction" targetRef="packOrder"/>
   <sequenceFlow id="mainFlow4" sourceRef="packOrder" targetRef="end"/>
+  <sequenceFlow id="cancelFlow" sourceRef="cancelBoundary" targetRef="packOrder"/>
 </process>
 ```
 
 **Transaction Guarantees:**
-- If any step throws an error, the cancel boundary event on the transaction subprocess is triggered
+- The transaction commits only when execution reaches `transEnd`; it is canceled only when execution reaches the cancel end event (`cancelEnd`) — a plain error from a step does not cancel it
+- On cancellation, the engine triggers the compensation boundary event and runs the associated `isForCompensation="true"` handlers
 - Activiti does NOT automatically undo side effects from service tasks (payments, inventory changes, etc.)
 - You must explicitly define compensation handlers to reverse completed activities
 - The transaction subprocess provides structured compensation flow, not automatic rollback
@@ -322,9 +384,9 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 ### Handling Transaction Failures
 
 ```java
-// Transaction failures are automatic
-// Compensation is triggered by the engine
-// Custom error handling via boundary events
+// Cancellation happens when the transaction reaches its cancel end event
+// The engine then triggers the compensation boundary event and its handlers
+// Custom error handling via boundary events (e.g., catch an error and route to the cancel end event)
 ```
 
 ## Best Practices

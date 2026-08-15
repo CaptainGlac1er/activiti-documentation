@@ -77,10 +77,10 @@ Events represent **something that happens** during the execution of a process. T
 </timerEventDefinition>
 ```
 
-**Cycle Timer:**
+**Cycle Timer (cron expression):**
 ```xml
 <timerEventDefinition>
-  <timeCycle>RRULE:FREQ=DAILY;INTERVAL=1</timeCycle>
+  <timeCycle>0 0 8 * * ?</timeCycle>
 </timerEventDefinition>
 ```
 
@@ -109,7 +109,7 @@ Events represent **something that happens** during the execution of a process. T
 ### Link Event Definition
 
 ```xml
-<linkEventDefinition name="link1"/>
+<linkEventDefinition id="link1"/>
 ```
 
 ### Compensate Event Definition
@@ -137,9 +137,17 @@ Events represent **something that happens** during the execution of a process. T
   <messageEventDefinition messageRef="orderReceived"/>
 </startEvent>
 
-<!-- Timer start events are NOT supported in Activiti -->
+<!-- Timer start event: a timer job (type "timer-start-event") is created at deployment and fired by the async executor -->
+<startEvent id="timerStart" name="Scheduled Start">
+  <timerEventDefinition>
+    <timeCycle>0 0 2 * * ?</timeCycle>
+  </timerEventDefinition>
+</startEvent>
 
-<!-- Timer and signal start events are NOT supported. Use message or error start events within event sub-processes -->
+<!-- Signal start event: an event subscription is created at deployment; triggered via runtimeService.signalEventReceived("orderSignal") -->
+<startEvent id="signalStart" name="Signal Start">
+  <signalEventDefinition signalRef="orderSignal"/>
+</startEvent>
 
 <!-- Multiple start events (any can trigger) -->
 <startEvent id="altStart1">
@@ -325,10 +333,9 @@ runtimeService.messageEventReceived("orderMessage", processInstanceId,
 - `P1D` - 1 day
 - `P2W` - 2 weeks
 
-**iCalendar Recurrence Format:**
-```xml
-<timeCycle>RRULE:FREQ=DAILY;INTERVAL=1;COUNT=10</timeCycle>
-```
+**Cycle Timer Format:**
+- ISO 8601 repeat: `R[<n>]/<ISO-8601 duration>` (e.g. `R5/PT24H`) or a cron expression (e.g. `0 0 8 * * ?`)
+- iCalendar `RRULE` format is NOT supported
 
 ### Signal Broadcasting
 
@@ -353,7 +360,8 @@ runtimeService.signalEventReceived("globalSignal",
 
 **Catch Errors:**
 ```xml
-<boundaryEvent id="catchPaymentError" cancelActivity="true">
+<!-- Attached to the activity that throws the error (e.g., a serviceTask with id="paymentTask") -->
+<boundaryEvent id="catchPaymentError" attachedToRef="paymentTask" cancelActivity="true">
   <errorEventDefinition errorRef="PaymentError"/>
 </boundaryEvent>
 ```
@@ -420,7 +428,7 @@ runtimeService.signalEventReceived("paymentCompleted",
 ```java
 // Get timer jobs
 List<Job> timerJobs = managementService.createJobQuery()
-    .jobType(JobType.TIMER)
+    .timers()
     .list();
 
 // Delete timer job

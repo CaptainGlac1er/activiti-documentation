@@ -514,7 +514,7 @@ ProcessDefinitionQuery createProcessDefinitionQuery();
 .processDefinitionVersion(int version)
 .processDefinitionCategory(String category)
 .deploymentId(String deploymentId)
-.tenantIdIn(List<String> tenantIds)
+.processDefinitionTenantId(String tenantId)
 .active()
 .suspended()
 

@@ -73,16 +73,19 @@ Execute subprocess for multiple items:
 
 ```xml
 <subProcess id="processItems" name="Process Order Items">
+  <!-- Multi-instance characteristics are a child of the subProcess with no children of their own;
+       the subprocess body stays as direct children of the subProcess -->
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${orderItems}"
-    activiti:elementVariable="item">
-    
-    <startEvent id="miStart"/>
-    <userTask id="processItem" name="Process Item"/>
-    <endEvent id="miEnd"/>
-    
-  </multiInstanceLoopCharacteristics>
+    activiti:elementVariable="item"/>
+  
+  <startEvent id="miStart"/>
+  <userTask id="processItem" name="Process Item"/>
+  <endEvent id="miEnd"/>
+  
+  <sequenceFlow id="miFlow1" sourceRef="miStart" targetRef="processItem"/>
+  <sequenceFlow id="miFlow2" sourceRef="processItem" targetRef="miEnd"/>
 </subProcess>
 ```
 
@@ -101,14 +104,20 @@ Add exception handling at subprocess level:
   <userTask id="task1" name="Perform Operation"/>
   <endEvent id="end1"/>
   
-  <!-- Timer boundary event on subprocess -->
-  <boundaryEvent id="timeout" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT1H</timeDuration>
-    </timerEventDefinition>
-    <sequenceFlow id="timeoutFlow" targetRef="handleTimeout"/>
-  </boundaryEvent>
+  <sequenceFlow id="flow1" sourceRef="start1" targetRef="task1"/>
+  <sequenceFlow id="flow2" sourceRef="task1" targetRef="end1"/>
 </subProcess>
+
+<!-- Timer boundary event on the subprocess (sibling, attachedToRef) -->
+<boundaryEvent id="timeout" attachedToRef="criticalProcess" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT1H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
+
+<userTask id="handleTimeout" name="Handle Timeout"/>
+
+<sequenceFlow id="timeoutFlow" sourceRef="timeout" targetRef="handleTimeout"/>
 ```
 
 ### 4. SubProcess with Execution Listeners
@@ -161,20 +170,20 @@ SubProcesses have their own **variable scope**:
 
 ```xml
 <subProcess id="dataProcess" name="Data Processing">
-  <!-- Input association -->
+  <!-- Input association (BPMN 2.0 uses <from>/<to>) -->
   <dataInputAssociation>
-    <sourceRef>parentVariable</sourceRef>
-    <targetRef>localInput</targetRef>
+    <from>parentVariable</from>
+    <to>localInput</to>
   </dataInputAssociation>
   
   <!-- Output association -->
   <dataOutputAssociation>
-    <sourceRef>localOutput</sourceRef>
-    <targetRef>parentResult</targetRef>
+    <from>localOutput</from>
+    <to>parentResult</to>
   </dataOutputAssociation>
   
   <startEvent id="start1"/>
-  <task id="task1"/>
+  <userTask id="task1"/>
   <endEvent id="end1"/>
 </subProcess>
 ```
@@ -237,25 +246,24 @@ SubProcesses have their own **variable scope**:
   <startEvent id="start"/>
   
   <subProcess id="processBatch" name="Process Batch Items">
+    <!-- Multi-instance characteristics are a (childless) child of the subProcess -->
     <multiInstanceLoopCharacteristics 
       isSequential="false"
       activiti:collection="${batchItems}"
-      activiti:elementVariable="item">
-      
-      <startEvent id="miStart"/>
-      
-      <serviceTask id="processItem" name="Process Item">
-        <activiti:field name="item">
-          <activiti:expression>${item}</activiti:expression>
-        </activiti:field>
-      </serviceTask>
-      
-      <endEvent id="miEnd"/>
-      
-      <sequenceFlow id="miFlow" sourceRef="miStart" targetRef="processItem"/>
-      <sequenceFlow id="miFlow2" sourceRef="processItem" targetRef="miEnd"/>
-      
-    </multiInstanceLoopCharacteristics>
+      activiti:elementVariable="item"/>
+    
+    <startEvent id="miStart"/>
+    
+    <serviceTask id="processItem" name="Process Item">
+      <activiti:field name="item">
+        <activiti:expression>${item}</activiti:expression>
+      </activiti:field>
+    </serviceTask>
+    
+    <endEvent id="miEnd"/>
+    
+    <sequenceFlow id="miFlow" sourceRef="miStart" targetRef="processItem"/>
+    <sequenceFlow id="miFlow2" sourceRef="processItem" targetRef="miEnd"/>
   </subProcess>
   
   <endEvent id="end"/>

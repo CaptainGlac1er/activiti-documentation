@@ -141,7 +141,7 @@ public class TimerMonitor implements BPMNElementEventListener<BPMNTimerFiredEven
     @Override
     public void onEvent(BPMNTimerFiredEvent event) {
         BPMNTimer timer = (BPMNTimer) event.getEntity();
-        recordTimerFired(timer.getName());
+        recordTimerFired(timer.getElementId());
     }
 }
 ```
@@ -165,17 +165,15 @@ All events also implement the **typed event interfaces** such as `ProcessEventLi
 
 ## Consuming Events in Spring Boot
 
-Events are also published as Spring application events, so you can consume them with `@EventListener`/`@TransactionalEventListener`. This is the most common approach in a Spring Boot application because it integrates with Spring's standard event infrastructure.
+Process, task, variable, and BPMN lifecycle events are **not** Spring application events — they are dispatched only to typed listener beans (e.g. `ProcessRuntimeEventListener`, `TaskRuntimeEventListener`) registered in the Spring context. Only signal and message payloads (`SignalPayload`, `ReceiveMessagePayload`) are also published as Spring application events, so `@EventListener` works for those.
 
 ```java
 @Component
-public class OrderProcessSubscriber {
+public class OrderProcessSubscriber implements ProcessRuntimeEventListener<ProcessStartedEvent> {
 
-    @EventListener
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onProcessStarted(ProcessStartedEvent event) {
+    @Override
+    public void onEvent(ProcessStartedEvent event) {
         ProcessInstance process = event.getEntity();
-        // Executes after the transaction commits
         sendOrderConfirmation(process.getId());
     }
 }
@@ -183,7 +181,7 @@ public class OrderProcessSubscriber {
 
 ### Transactional Semantics
 
-- `@TransactionalEventListener` with `AFTER_COMMIT` runs only after the process operation's transaction commits — useful for sending notifications, emitting analytics, or calling external systems without holding the DB transaction open.
+- Only signal and message payloads are Spring events (published from the runtime's `@Transactional` methods), so `@TransactionalEventListener` with `AFTER_COMMIT` can defer side effects until that transaction commits — useful for sending notifications, emitting analytics, or calling external systems without holding the DB transaction open.
 - `@EventListener` (no transaction phase) executes synchronously inside the caller's transaction by default.
 
 ### Registering Configuration Listeners
@@ -219,9 +217,8 @@ When an engine event occurs, the API layer converts the raw engine event into a 
 flowchart LR
     A[Engine event] --> B[Event Converter]
     B --> C[Typed API event]
-    C --> D[Listeners via config]
-    C --> E[Spring application event]
-    E --> F["@EventListener / @TransactionalEventListener"]
+    C --> D["ProcessRuntimeEventListener beans"]
+    C --> E["TaskRuntimeEventListener beans"]
 ```
 
 The converters live in the `event.impl` package (`ToVariableCreatedConverter`, `ToVariableUpdatedConverter`, `ToVariableDeletedConverter`, etc.) and map engine events to API events.
@@ -230,16 +227,21 @@ The converters live in the `event.impl` package (`ToVariableCreatedConverter`, `
 
 1. **Process events idempotently** — event delivery can fire more than once on retries:
 ```java
-@EventListener
-public void onProcessCompleted(ProcessCompletedEvent event) {
-    if (alreadyProcessed(event.getId())) {
-        return;
+@Component
+public class ProcessCompletionListener
+    implements ProcessRuntimeEventListener<ProcessCompletedEvent> {
+
+    @Override
+    public void onEvent(ProcessCompletedEvent event) {
+        if (alreadyProcessed(event.getId())) {
+            return;
+        }
+        processEvent(event);
+        markAsProcessed(event.getId());
     }
-    processEvent(event);
-    markAsProcessed(event.getId());
 }
 ```
-2. **Use `AFTER_COMMIT`** for external side effects (notifications, emails, metrics).
+2. **Use `AFTER_COMMIT`** for external side effects (notifications, emails, metrics) on the signal/message payloads that are Spring events.
 3. **Keep listeners fast** — they run in the caller's thread; offload heavy work to async (`@Async`) or a queue.
 4. **Prefer typed listeners** (`ProcessEventListener`, `BPMNElementEventListener`) over raw `RuntimeEvent` for clarity.
 

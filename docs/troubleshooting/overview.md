@@ -449,14 +449,22 @@ spring.activiti.async-executor.core-pool-size=10
 ```
 
 **Solution 2: Force Job Execution (Development Only)**
+
+The `AsyncExecutor` interface only exposes `start()`, `shutdown()`, and `executeAsyncJob(Job)` — there is no `executeJobs(...)` method. To force a job to run in development, use the `ManagementService` admin APIs (documented as "for administration or testing"):
+
 ```java
-@Scheduled(fixedRate = 5000)
-public void executeJobs() {
-    RepositoryService repositoryService = ...;
-    repositoryService.getProcessEngineConfiguration()
-        .getAsyncExecutor()
-        .executeJobs(1);
+// Find jobs that are due and not locked, then force synchronous execution of the first one
+List<Job> jobs = managementService.createJobQuery()
+    .unlocked()
+    .duedateLowerThan(new Date())
+    .list();
+if (!jobs.isEmpty()) {
+    managementService.executeJob(jobs.get(0).getId());
 }
+
+// Timer jobs with a future due date must first be moved to the executable job table
+Job executableTimer = managementService.moveTimerToExecutableJob("timerJobId");
+managementService.executeJob(executableTimer.getId());
 ```
 
 **Solution 3: Check Gateway Conditions**

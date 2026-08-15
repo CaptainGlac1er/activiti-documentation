@@ -14,14 +14,20 @@ Link Events allow you to **create jumps within a process** without drawing seque
 ```xml
 <!-- Link Throw Event - the jump source -->
 <intermediateThrowEvent id="jumpToReview">
-  <linkEventDefinition name="ReviewLink"/>
+  <linkEventDefinition id="jumpToReviewLinkId">
+    <target>reviewEntryPointLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <!-- Link Catch Event - the jump destination -->
 <intermediateCatchEvent id="reviewEntryPoint">
-  <linkEventDefinition name="ReviewLink"/>
+  <linkEventDefinition id="reviewEntryPointLinkId">
+    <source>jumpToReviewLinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 ```
+
+**How Throw and Catch Are Paired:** the throw event's `<linkEventDefinition>` carries a `<target>` whose value is the `id` of the catch event's `<linkEventDefinition>`. The `name` attribute is parsed but **not** used for matching. The catch definition lists each contributing throw definition `id` as a `<source>` element (the process validator requires at least one). Links only work within the same process.
 
 **BPMN 2.0 Standard:** Fully Supported  
 **Activiti Extensions:** None (standard BPMN behavior)
@@ -33,18 +39,18 @@ Link Events allow you to **create jumps within a process** without drawing seque
 | Feature | Description |
 |---------|-------------|
 | **Same Process** | Links work only within the same process |
-| **Name Matching** | Throw and catch must have identical names |
+| **ID Matching** | The throw's `<target>` must equal the catch's `linkEventDefinition` `id` |
 | **No Data Flow** | Links don't transfer data (use variables) |
 | **Diagram Clarity** | Reduces crossing flow lines |
-| **Multiple Sources** | One catch can have multiple throws |
-| **Single Target** | One throw goes to one catch (by name) |
-| **Internal Fields** | The `LinkEventDefinition` model includes `target` (catch event ID), `name` (link name), and `sources` (list of throw event IDs) — these are populated internally by the parser and are not set directly in BPMN XML |
+| **Multiple Sources** | One catch can have multiple throws (each a `<source>`) |
+| **Single Target** | One throw goes to one catch (by `<target>` id) |
+| **XML Elements** | The throw's `<linkEventDefinition>` must contain a `<target>` with the catch definition `id`; the catch's definition must contain at least one `<source>` with a throw definition `id`. The `name` attribute is parsed but not used for matching |
 
 ### Link Event vs Sequence Flow
 
 | Aspect | Sequence Flow | Link Event |
 |--------|---------------|------------|
-| **Visual** | Drawn line | Named jump |
+| **Visual** | Drawn line | ID-based jump |
 | **Complexity** | Can create spaghetti | Keeps diagram clean |
 | **Data** | Automatic flow | Variables shared via process |
 | **Use Case** | Simple flows | Complex branching |
@@ -79,12 +85,16 @@ Simple jump from one point to another:
   
   <!-- Link throw - jumps to catch -->
   <intermediateThrowEvent id="throwLink">
-    <linkEventDefinition name="SkipToReview"/>
+    <linkEventDefinition id="throwLinkId">
+      <target>catchLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Link catch - receives the jump -->
   <intermediateCatchEvent id="catchLink">
-    <linkEventDefinition name="SkipToReview"/>
+    <linkEventDefinition id="catchLinkId">
+      <source>throwLinkId</source>
+    </linkEventDefinition>
   </intermediateCatchEvent>
   
   <userTask id="reviewTask" name="Review Task"/>
@@ -117,24 +127,34 @@ Consolidate multiple paths into one entry point:
   <!-- Path 1 -->
   <userTask id="task1" name="Task 1"/>
   <intermediateThrowEvent id="throw1">
-    <linkEventDefinition name="ConsolidatePoint"/>
+    <linkEventDefinition id="throw1LinkId">
+      <target>consolidateLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Path 2 -->
   <userTask id="task2" name="Task 2"/>
   <intermediateThrowEvent id="throw2">
-    <linkEventDefinition name="ConsolidatePoint"/>
+    <linkEventDefinition id="throw2LinkId">
+      <target>consolidateLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Path 3 -->
   <userTask id="task3" name="Task 3"/>
   <intermediateThrowEvent id="throw3">
-    <linkEventDefinition name="ConsolidatePoint"/>
+    <linkEventDefinition id="throw3LinkId">
+      <target>consolidateLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Single catch point for all paths -->
   <intermediateCatchEvent id="consolidateCatch">
-    <linkEventDefinition name="ConsolidatePoint"/>
+    <linkEventDefinition id="consolidateLinkId">
+      <source>throw1LinkId</source>
+      <source>throw2LinkId</source>
+      <source>throw3LinkId</source>
+    </linkEventDefinition>
   </intermediateCatchEvent>
   
   <userTask id="finalTask" name="Final Task"/>
@@ -179,20 +199,30 @@ Jump to error handling without crossing flows:
   
   <!-- Error links from various points -->
   <intermediateThrowEvent id="errorFromStep1">
-    <linkEventDefinition name="ErrorHandler"/>
+    <linkEventDefinition id="errorFromStep1LinkId">
+      <target>errorHandlerLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <intermediateThrowEvent id="errorFromStep2">
-    <linkEventDefinition name="ErrorHandler"/>
+    <linkEventDefinition id="errorFromStep2LinkId">
+      <target>errorHandlerLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <intermediateThrowEvent id="errorFromStep3">
-    <linkEventDefinition name="ErrorHandler"/>
+    <linkEventDefinition id="errorFromStep3LinkId">
+      <target>errorHandlerLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Single error handling entry -->
   <intermediateCatchEvent id="errorHandler">
-    <linkEventDefinition name="ErrorHandler"/>
+    <linkEventDefinition id="errorHandlerLinkId">
+      <source>errorFromStep1LinkId</source>
+      <source>errorFromStep2LinkId</source>
+      <source>errorFromStep3LinkId</source>
+    </linkEventDefinition>
   </intermediateCatchEvent>
   
   <serviceTask id="handleError" name="Handle Error"/>
@@ -254,12 +284,16 @@ Variables are shared via process scope:
   
   <!-- Jump over some tasks -->
   <intermediateThrowEvent id="skipTask">
-    <linkEventDefinition name="SkipToProcess"/>
+    <linkEventDefinition id="skipTaskLinkId">
+      <target>afterSkipLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Variables still available after link -->
   <intermediateCatchEvent id="afterSkip">
-    <linkEventDefinition name="SkipToProcess"/>
+    <linkEventDefinition id="afterSkipLinkId">
+      <source>skipTaskLinkId</source>
+    </linkEventDefinition>
   </intermediateCatchEvent>
   
   <serviceTask id="useVariables" name="Use Variables" 
@@ -329,7 +363,9 @@ public class VariableUser implements JavaDelegate {
   </sequenceFlow>
   
   <intermediateThrowEvent id="rejectLink">
-    <linkEventDefinition name="RejectionPoint"/>
+    <linkEventDefinition id="rejectLinkId">
+      <target>rejectionPointLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Level 2 approval (for high value) -->
@@ -359,12 +395,17 @@ public class VariableUser implements JavaDelegate {
   </sequenceFlow>
   
   <intermediateThrowEvent id="rejectLink2">
-    <linkEventDefinition name="RejectionPoint"/>
+    <linkEventDefinition id="rejectLink2LinkId">
+      <target>rejectionPointLinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Single rejection handling point -->
   <intermediateCatchEvent id="rejectionPoint">
-    <linkEventDefinition name="RejectionPoint"/>
+    <linkEventDefinition id="rejectionPointLinkId">
+      <source>rejectLinkId</source>
+      <source>rejectLink2LinkId</source>
+    </linkEventDefinition>
   </intermediateCatchEvent>
   
   <userTask id="notifyRejection" name="Notify Rejection"/>
@@ -405,7 +446,9 @@ public class VariableUser implements JavaDelegate {
   
   <!-- State 1 -->
   <intermediateCatchEvent id="state1">
-    <linkEventDefinition name="State1"/>
+    <linkEventDefinition id="state1LinkId">
+      <source>backToState1LinkId</source>
+    </linkEventDefinition>
   </intermediateCatchEvent>
   
   <serviceTask id="processState1" name="Process State 1"/>
@@ -414,17 +457,23 @@ public class VariableUser implements JavaDelegate {
   
   <!-- Go to State 2 -->
   <intermediateThrowEvent id="toState2">
-    <linkEventDefinition name="State2"/>
+    <linkEventDefinition id="toState2LinkId">
+      <target>state2LinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Go to State 3 -->
   <intermediateThrowEvent id="toState3">
-    <linkEventDefinition name="State3"/>
+    <linkEventDefinition id="toState3LinkId">
+      <target>state3LinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- State 2 -->
   <intermediateCatchEvent id="state2">
-    <linkEventDefinition name="State2"/>
+    <linkEventDefinition id="state2LinkId">
+      <source>toState2LinkId</source>
+    </linkEventDefinition>
   </intermediateCatchEvent>
   
   <serviceTask id="processState2" name="Process State 2"/>
@@ -433,17 +482,24 @@ public class VariableUser implements JavaDelegate {
   
   <!-- Back to State 1 -->
   <intermediateThrowEvent id="backToState1">
-    <linkEventDefinition name="State1"/>
+    <linkEventDefinition id="backToState1LinkId">
+      <target>state1LinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- Go to State 3 -->
   <intermediateThrowEvent id="state2ToState3">
-    <linkEventDefinition name="State3"/>
+    <linkEventDefinition id="state2ToState3LinkId">
+      <target>state3LinkId</target>
+    </linkEventDefinition>
   </intermediateThrowEvent>
   
   <!-- State 3 -->
   <intermediateCatchEvent id="state3">
-    <linkEventDefinition name="State3"/>
+    <linkEventDefinition id="state3LinkId">
+      <source>toState3LinkId</source>
+      <source>state2ToState3LinkId</source>
+    </linkEventDefinition>
   </intermediateCatchEvent>
   
   <serviceTask id="processState3" name="Process State 3"/>
@@ -523,16 +579,24 @@ for (Execution execution : executions) {
 
 ## Best Practices
 
-### 1. Use Descriptive Link Names
+### 1. Use Descriptive Link IDs
+
+The definition `id` values (and the `<target>` references) are what tie a throw to its catch, so make them descriptive:
 
 ```xml
 <!-- GOOD: Clear purpose -->
-<linkEventDefinition name="SkipToFinalApproval"/>
-<linkEventDefinition name="RouteToErrorHandler"/>
+<intermediateThrowEvent id="skipValidation">
+  <linkEventDefinition id="skipToFinalApprovalLinkId">
+    <target>finalApprovalLinkId</target>
+  </linkEventDefinition>
+</intermediateThrowEvent>
 
 <!-- BAD: Generic -->
-<linkEventDefinition name="Link1"/>
-<linkEventDefinition name="Jump"/>
+<intermediateThrowEvent id="throw1">
+  <linkEventDefinition id="link1LinkId">
+    <target>link1CatchLinkId</target>
+  </linkEventDefinition>
+</intermediateThrowEvent>
 ```
 
 ### 2. Consolidate Similar Paths
@@ -540,24 +604,35 @@ for (Execution execution : executions) {
 ```xml
 <!-- GOOD: Multiple throws to one catch -->
 <intermediateThrowEvent id="error1">
-  <linkEventDefinition name="ErrorHandler"/>
+  <linkEventDefinition id="error1LinkId">
+    <target>errorHandlerLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateThrowEvent id="error2">
-  <linkEventDefinition name="ErrorHandler"/>
+  <linkEventDefinition id="error2LinkId">
+    <target>errorHandlerLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateCatchEvent id="errorCatch">
-  <linkEventDefinition name="ErrorHandler"/>
+  <linkEventDefinition id="errorHandlerLinkId">
+    <source>error1LinkId</source>
+    <source>error2LinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 
 <!-- BAD: Separate error handling for each -->
 <intermediateThrowEvent id="error1">
-  <linkEventDefinition name="Error1Handler"/>
+  <linkEventDefinition id="error1LinkId">
+    <target>error1HandlerLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateCatchEvent id="error1Catch">
-  <linkEventDefinition name="Error1Handler"/>
+  <linkEventDefinition id="error1HandlerLinkId">
+    <source>error1LinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 ```
 
@@ -566,22 +641,30 @@ for (Execution execution : executions) {
 ```xml
 <!-- BAD: Infinite loop -->
 <intermediateThrowEvent id="loop1">
-  <linkEventDefinition name="Loop"/>
+  <linkEventDefinition id="loop1LinkId">
+    <target>catch1LinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateCatchEvent id="catch1">
-  <linkEventDefinition name="Loop"/>
+  <linkEventDefinition id="catch1LinkId">
+    <source>loop1LinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 
 <sequenceFlow id="back" sourceRef="catch1" targetRef="loop1"/>
 
 <!-- GOOD: Controlled loop with exit -->
 <intermediateThrowEvent id="loop1">
-  <linkEventDefinition name="RetryLoop"/>
+  <linkEventDefinition id="loop1LinkId">
+    <target>catch1LinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateCatchEvent id="catch1">
-  <linkEventDefinition name="RetryLoop"/>
+  <linkEventDefinition id="catch1LinkId">
+    <source>loop1LinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 
 <exclusiveGateway id="checkRetries"/>
@@ -601,16 +684,20 @@ for (Execution execution : executions) {
 <!-- GOOD: Documented -->
 <!-- 
   Link: Skip validation for trusted sources
-  Throw: After source check
-  Catch: Before processing
+  Throw: After source check (definition id "skipValidationLinkId")
+  Catch: Before processing (definition id "processingLinkId")
 -->
 <intermediateThrowEvent id="skipValidation">
-  <linkEventDefinition name="TrustedSourceBypass"/>
+  <linkEventDefinition id="skipValidationLinkId">
+    <target>processingLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <!-- BAD: No context -->
 <intermediateThrowEvent id="throw1">
-  <linkEventDefinition name="Link1"/>
+  <linkEventDefinition id="link1LinkId">
+    <target>link1CatchLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 ```
 
@@ -619,42 +706,54 @@ for (Execution execution : executions) {
 ```xml
 <!-- GOOD: Reduces crossing lines -->
 <intermediateThrowEvent id="jump">
-  <linkEventDefinition name="Consolidate"/>
+  <linkEventDefinition id="jumpLinkId">
+    <target>consolidateLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <!-- BAD: Obscures flow logic -->
 <intermediateThrowEvent id="mysteryJump">
-  <linkEventDefinition name="UnknownDestination"/>
+  <linkEventDefinition id="mysteryJumpLinkId">
+    <target>unknownLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 ```
 
 ## Common Pitfalls
 
-### 1. Mismatched Link Names
+### 1. Mismatched Link IDs
 
-**Problem:** Throw and catch names don't match
+**Problem:** The throw's `<target>` doesn't point at the catch's definition `id`
 
 ```xml
-<!-- WRONG: Names don't match -->
+<!-- WRONG: Target does not match the catch definition id -->
 <intermediateThrowEvent id="throw1">
-  <linkEventDefinition name="MyLink"/>
+  <linkEventDefinition id="throw1LinkId">
+    <target>someOtherLinkId</target>  <!-- No catch definition has this id -->
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateCatchEvent id="catch1">
-  <linkEventDefinition name="MyLink2"/>  <!-- Different! -->
+  <linkEventDefinition id="catch1LinkId">
+    <source>throw1LinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 
-<!-- CORRECT: Same name -->
+<!-- CORRECT: Target equals the catch definition id -->
 <intermediateThrowEvent id="throw1">
-  <linkEventDefinition name="MyLink"/>
+  <linkEventDefinition id="throw1LinkId">
+    <target>catch1LinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateCatchEvent id="catch1">
-  <linkEventDefinition name="MyLink"/>  <!-- Same -->
+  <linkEventDefinition id="catch1LinkId">
+    <source>throw1LinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 ```
 
-**Error:** `ActivitiException: No link catch event found for link name: MyLink`
+**Error:** At throw time, `LinkThrowEventFlowNodeHelper.findRelatedIntermediateCatchEventForLinkEvent` returns `null`, the execution's current flow element is set to `null`, and the engine fails with a `NullPointerException` while continuing the process. Deployment validation also rejects a throw without any `<target>` (`LINK_EVENT_DEFINITION_MISSING_TARGET`) and a catch without any `<source>` (`LINK_EVENT_DEFINITION_MISSING_SOURCE`).
 
 ### 2. Using Links Across Processes
 
@@ -664,13 +763,17 @@ for (Execution execution : executions) {
 <!-- WRONG: Link in called process -->
 <callActivity id="callSub" calledElement="subProcess">
   <intermediateThrowEvent id="throw1">
-    <linkEventDefinition name="CrossProcess"/>  <!-- Won't work -->
+    <linkEventDefinition id="throw1LinkId">
+      <target>crossProcessLinkId</target>  <!-- Won't work -->
+    </linkEventDefinition>
   </intermediateThrowEvent>
 </callActivity>
 
 <!-- CORRECT: Link within same process -->
 <intermediateThrowEvent id="throw1">
-  <linkEventDefinition name="WithinProcess"/>  <!-- Works -->
+  <linkEventDefinition id="withinProcessLinkId">
+    <target>withinProcessCatchLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 ```
 
@@ -683,11 +786,15 @@ for (Execution execution : executions) {
 <serviceTask id="setVar" activiti:class="com.example.SetVariable"/>
 
 <intermediateThrowEvent id="throw1">
-  <linkEventDefinition name="Jump"/>
+  <linkEventDefinition id="throw1LinkId">
+    <target>catch1LinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateCatchEvent id="catch1">
-  <linkEventDefinition name="Jump"/>
+  <linkEventDefinition id="catch1LinkId">
+    <source>throw1LinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 
 <!-- Variable set before throw is still available after catch -->
@@ -699,18 +806,24 @@ for (Execution execution : executions) {
 **Problem:** Catch event with no corresponding throw
 
 ```xml
-<!-- WRONG: Orphan catch -->
+<!-- WRONG: Orphan catch - no throw targets this link id -->
 <intermediateCatchEvent id="orphanCatch">
-  <linkEventDefinition name="NeverThrown"/>
+  <linkEventDefinition id="orphanLinkId">
+    <source>unrelatedThrowLinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 
-<!-- CORRECT: Ensure throw exists -->
+<!-- CORRECT: Ensure a throw's target points at the catch's link id -->
 <intermediateThrowEvent id="theThrow">
-  <linkEventDefinition name="ProperlyLinked"/>
+  <linkEventDefinition id="theThrowLinkId">
+    <target>theCatchLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <intermediateCatchEvent id="theCatch">
-  <linkEventDefinition name="ProperlyLinked"/>
+  <linkEventDefinition id="theCatchLinkId">
+    <source>theThrowLinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 ```
 

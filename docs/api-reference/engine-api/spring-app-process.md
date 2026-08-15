@@ -23,7 +23,7 @@ The module contains three classes:
 
 ## SPI Overview
 
-This process-support module provides *process-specific implementations* of the application entry discovery and deployment SPI defined in the core-common `activiti-spring-application` module. The `ApplicationEntryDiscovery` and `ApplicationEntryDeployer` contracts and their wiring through Spring dependency injection are documented on the canonical contract page: [Spring Application](../../core-common/spring-application.md).
+This process-support module provides *process-specific implementations* of the application entry discovery and deployment SPI defined in the core-common `activiti-spring-application` module. The `ApplicationEntryDiscovery` and `ApplicationEntryDeployer` contracts and their wiring through Spring dependency injection are documented on the canonical contract page: [Spring Application](../core-common/spring-application.md).
 
 ---
 

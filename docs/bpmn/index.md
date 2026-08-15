@@ -57,7 +57,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | **Parallel Gateway** | AND - all paths | ⊞ | [Parallel Gateway](./gateways/parallel-gateway.md) |
 | **Inclusive Gateway** | OR - one or more | ⦿ | [Inclusive Gateway](./gateways/inclusive-gateway.md) |
 | **Event-Based Gateway** | Route by events | ⏣ | [Event-Based Gateway](./gateways/event-gateway.md) |
-| **Complex Gateway** | Advanced conditions | ⊟ | [Complex Gateway](./gateways/complex-gateway.md) |
+| **Complex Gateway** | NOT supported — converted to exclusive (XOR) gateway | ⊟ | [Complex Gateway](./gateways/complex-gateway.md) |
 
 ### Event Elements
 
@@ -67,9 +67,11 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 |------|-------------|----------|
 | **None** | Standard start | Manual process initiation |
 | **Message** | Wait for message | Event-driven processes |
-| **Timer** | Time-based start | Scheduled processes |
-| **Signal** | Global signal | Broadcast triggers |
-| **Conditional** | Condition met | Dynamic starts |
+| **Timer** | Time-based start (deploy-time timer job) | Scheduled processes |
+| **Signal** | Global signal (deploy-time subscription) | Broadcast triggers |
+| **Conditional** | Condition met | **Not supported** |
+
+**Note:** Timer and Signal start events are supported. Timer start events are registered as a timer job at deployment time (job type `timer-start-event`) and fired by the async executor; signal start events are registered as an event subscription at deployment time and triggered via `runtimeService.signalEventReceived("…")`. Conditional start events are **NOT supported**.
 
 #### Intermediate Events
 
@@ -190,7 +192,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 |-----------|-------------|---------|
 | **async** | Background execution | `activiti:async="true"` |
 | **exclusive** | Locking mode | `activiti:exclusive="true"` |
-| **skipExpression** | Conditional skip | `activiti:skipExpression="${flag}"` |
+| **skipExpression** | Conditional skip (serviceTask / userTask only) | `activiti:skipExpression="${flag}"` |
 | **executionListener** | Lifecycle hooks | `<activiti:executionListener/>` |
 | **multiInstance** | Iteration | `<multiInstanceLoopCharacteristics/>` |
 | **boundaryEvents** | Exception handling | `<boundaryEvent/>` |
@@ -230,7 +232,6 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 |-----------|-------------|
 | **scriptFormat** | Language |
 | **script** | Inline code |
-| **resource** | External script |
 | **resultVariable** | Output |
 | **autoStoreVariables** | Auto-persist script variable changes |
 
@@ -353,7 +354,7 @@ Configure retry policies for failed jobs:
 ```xml
 <serviceTask id="service1" activiti:async="true">
   <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R5/PT5M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
@@ -454,11 +455,7 @@ Route based on events (messages, timers, errors).
 - Complex event handling
 
 ### [Complex Gateway](./gateways/complex-gateway.md)
-Advanced routing with conditions and dependencies.
-
-**Activiti Customizations:**
-- Activation conditions
-- Completion conditions
+**NOT supported at runtime.** There is no complex-gateway parse handler: `ComplexGatewayXMLConverter` converts a `<complexGateway>` to an exclusive gateway, so it executes with exclusive (XOR) gateway semantics — at most one path is taken. Complex-gateway features (activation conditions, completion conditions) are ignored.
 
 ## Event Elements (Detailed)
 
@@ -469,11 +466,12 @@ Initiates a process instance.
 
 **Activiti Customizations:**
 - Message start events
-- Timer start events
-- Signal start events
-- Conditional start events
+- Timer start events (registered as a timer job at deployment, fired by the async executor)
+- Signal start events (registered as an event subscription at deployment, triggered via `runtimeService.signalEventReceived("…")`)
 - Candidate starters
 - Form key support
+
+**Note:** Conditional start events are NOT supported.
 
 ### [Intermediate Events](./events/intermediate-events.md)
 Events that occur during process execution.
@@ -482,7 +480,6 @@ Events that occur during process execution.
 - **Message** - Wait for external message
 - **Timer** - Wait for time condition
 - **Signal** - Wait for signal
-- **Conditional** - Wait for condition
 - **Link** - Jump from link throw event
 
 **Throw Events:**
@@ -503,7 +500,7 @@ Terminates a process or sub-process.
 - **Terminator** - Normal completion
 - **Error** - End with error
 - **Cancel** - Cancel parent sub-process
-- **Signal** - Send signal on end
+- **Signal** - NOT supported — falls through to a plain none end event
 - **Message** - Send message on end
 - **Terminate** - End entire process instance
 
@@ -610,7 +607,7 @@ Add custom metadata:
 </userTask>
 ```
 
-### Process Extensions (*.extension.json)
+### Process Extensions (*.extensions.json)
 Define variables, mappings, and constants separately from BPMN:
 - [Process Extensions Guide](./reference/process-extensions.md) - Complete documentation
 - Separation of concerns for better maintainability

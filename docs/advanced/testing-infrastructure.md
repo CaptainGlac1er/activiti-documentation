@@ -130,9 +130,9 @@ void shouldProcessOrder() {
                 .withProcessDefinitionKey("orderProcess")
                 .withVariable("orderId", "ORD-123")
                 .build())
-        .expectFields(businessKey("ORD-123"))
+        .expectFields(processInstance().businessKey("ORD-123"))
         .expectEvents(endEvent("orderCompleted").hasBeenCompleted())
-        .expect(        hasTask("Review Order", Task.TaskStatus.CREATED))
+        .expect(        processInstance().hasTask("Review Order", Task.TaskStatus.CREATED))
         .andReturn();
 
     // Get the task ID from the task runtime or assertion scope
@@ -169,7 +169,7 @@ ProcessInstance pi = processOperations.start(
 |---------|---------|----------|
 | `hasBeenStarted()` | `OperationScopeMatcher` | `PROCESS_CREATED` and `PROCESS_STARTED` events exist |
 | `hasBeenCompleted()` | `OperationScopeMatcher` | `PROCESS_COMPLETED` event exists |
-| `status(ProcessInstanceStatus)` | `ProcessResultMatcher` | Process instance has the given status (`COMPLETED`, `RUNNING`, `CANCELED`, `SUSPENDED`) |
+| `status(ProcessInstanceStatus)` | `ProcessResultMatcher` | Process instance has the given status (`CREATED`, `RUNNING`, `SUSPENDED`, `CANCELLED`, `COMPLETED`) |
 | `name(String)` | `ProcessResultMatcher` | Process definition name matches |
 | `businessKey(String)` | `ProcessResultMatcher` | Business key matches |
 | `hasTask(taskName, taskStatus, matchers...)` | `ProcessTaskMatcher` | A task with the given name and status exists; optional `TaskResultMatcher`s applied |
@@ -177,10 +177,10 @@ ProcessInstance pi = processOperations.start(
 ```java
 processOperations.start(payload)
     .expectFields(
-        status(ProcessInstance.ProcessInstanceStatus.RUNNING),
-        businessKey("BK-001"))
+        processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+        processInstance().businessKey("BK-001"))
     .expect(
-        hasTask("Approve", Task.TaskStatus.CREATED,
+        processInstance().hasTask("Approve", Task.TaskStatus.CREATED,
             TaskMatchers.withAssignee("manager")));
 ```
 
@@ -271,7 +271,7 @@ processOperations.start(payload)
 import static org.activiti.test.matchers.SignalMatchers.*;
 
 processOperations.signal(
-        SignalPayloadBuilder.withName("orderReceived")
+        ProcessPayloadBuilder.signal().withName("orderReceived")
             .build())
     .expectEventsOnProcessInstance(processInstance,
         signal("orderReceived").hasBeenReceived());
@@ -831,7 +831,7 @@ ProcessInstance pi = processOperations.start(
     .andReturn();
 
 processOperations.signal(
-        SignalPayloadBuilder.withName("orderCompleteSignal")
+        ProcessPayloadBuilder.signal().withName("orderCompleteSignal")
             .build())
     .expectEventsOnProcessInstance(pi,
         signal("orderCompleteSignal").hasBeenReceived(),
@@ -1235,16 +1235,19 @@ Timer-based workflows are difficult to test because real timers require waiting.
 ```java
 import org.activiti.engine.runtime.Clock;
 
+@Autowired
+private ProcessEngine engine;
+
 @BeforeEach
-void setUp(ProcessEngineConfiguration config) {
+void setUp() {
     // Obtain the Clock from the engine configuration
-    Clock clock = config.getClock();
+    Clock clock = engine.getProcessEngineConfiguration().getClock();
     // Fix time so timers are deterministic
     clock.setCurrentTime(new Date());
 }
 
 @Test
-void testTimerFires(ProcessEngine engine) {
+void testTimerFires() {
     RuntimeService runtime = engine.getRuntimeService();
     ManagementService mgmt = engine.getManagementService();
     ProcessEngineConfiguration config = engine.getProcessEngineConfiguration();

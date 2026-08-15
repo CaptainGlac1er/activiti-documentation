@@ -143,8 +143,9 @@ Deleting a model does not delete its deployment — the deployed process definit
 ```java
 byte[] source = repositoryService.getModelEditorSource(modelId);
 BpmnXMLConverter converter = new BpmnXMLConverter();
+// First parameter is an InputStreamProvider (functional interface: getInputStream()), not an InputStream
 BpmnModel bpmnModel = converter.convertToBpmnModel(
-    new ByteArrayInputStream(source), true, false);
+    () -> new ByteArrayInputStream(source), true, false);
 
 // Now you can deploy programmatically
 repositoryService.createDeployment()

@@ -93,21 +93,13 @@ All gateways (except parallel) support conditions on outgoing sequence flows:
 
 **Expression Types:**
 - **EL Expressions:** `${variable.method()}`
-- **Formal Expressions:** `<formalExpression>expression</formalExpression>`
 
 ### Default Flow
 
-Specify a default path when no conditions match:
+Specify a default path when no conditions match, using the `default` **attribute** on the gateway (flow node):
 
 ```xml
 <exclusiveGateway id="gateway1" default="flow1"/>
-```
-
-Or on the gateway element:
-```xml
-<exclusiveGateway id="gateway1">
-  <default>flow1</default>
-</exclusiveGateway>
 ```
 
 ### Multi-Instance Integration
@@ -134,7 +126,7 @@ Gateways work seamlessly with multi-instance activities:
 
 ```xml
 <!-- Decision based on order amount -->
-<exclusiveGateway id="amountDecision" name="Order Amount Check"/>
+<exclusiveGateway id="amountDecision" name="Order Amount Check" default="defaultFlow"/>
 
 <sequenceFlow id="smallOrder" sourceRef="amountDecision" targetRef="standardProcessing">
   <conditionExpression>${orderAmount < 100}</conditionExpression>
@@ -258,10 +250,12 @@ List<Execution> executions = runtimeService.createExecutionQuery()
     .activityId("gateway1")
     .list();
 
-// Check which path was taken
+// Check which path was taken (the historic activity instances of the
+// entered activities, in start-time order, reveal the selected flows)
 List<HistoricActivityInstance> activities = historyService.createHistoricActivityInstanceQuery()
     .processInstanceId(processInstanceId)
-    .activityIdIn("flow1", "flow2", "flow3")
+    .orderByHistoricActivityInstanceStartTime()
+    .asc()
     .list();
 ```
 
@@ -271,9 +265,11 @@ List<HistoricActivityInstance> activities = historyService.createHistoricActivit
 // Change gateway behavior at runtime (advanced)
 DynamicBpmnService dynamicBpmnService = processEngine.getDynamicBpmnService();
 
-// Add/remove sequence flows
-dynamicBpmnService.addSequenceFlow(processDefinitionId, "gateway1", "newTarget");
+// Change the condition of an existing sequence flow
+dynamicBpmnService.changeSequenceFlowCondition("flow1", "${amount > 5000}");
 ```
+
+There is no `addSequenceFlow` API. To add or remove sequence flows around a gateway, modify the BPMN model and **redeploy the process** with the modified model.
 
 ## Related Documentation
 

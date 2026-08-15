@@ -129,11 +129,11 @@ System.out.println(tree);
 
 Output:
 ```
-12345 : theStart, parent id null (process instance)
+12345 : theStart (process instance)
 └── 12346 : serviceTask1, parent id 12345 (active)
 ```
 
-Each node shows: execution ID, current activity/flow, parent ID, and status flags (`active`, `scope`, `multi instance root`, `ended`, `not active`).
+Each node shows: execution ID, current activity/flow, parent ID (the `parent id` segment is omitted when it is `null`), and status flags (`active`, `scope`, `multi instance root`, `ended`, `not active`).
 
 ## Use Cases
 

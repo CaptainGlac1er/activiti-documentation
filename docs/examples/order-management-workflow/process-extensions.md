@@ -651,8 +651,6 @@ Here's the complete `orderManagementProcess-extensions.json`:
 ```json
 {
   "id": "orderManagementProcess",
-  "name": "Order Management Workflow",
-  "type": "PROCESS",
   "extensions": {
     "orderManagementProcess": {
       "properties": {

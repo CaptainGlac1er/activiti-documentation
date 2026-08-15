@@ -128,7 +128,7 @@ Form properties define the fields collected at process start time. They are conf
             activiti:formKey="order-entry-form.html"/>
 ```
 
-**order-entry-form-extension.json:**
+**order-entry-form-extensions.json:**
 ```json
 {
   "extensions": {

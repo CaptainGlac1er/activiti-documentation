@@ -22,13 +22,13 @@ runtimeService.addUserIdentityLink(
 runtimeService.addGroupIdentityLink(
     processInstanceId, "groupId", "participant");
 
-// Convenience methods (implicitly set type to "candidate")
+// Convenience methods (implicitly set type to "participant")
 runtimeService.addParticipantUser(processInstanceId, "userId");
 runtimeService.addParticipantGroup(processInstanceId, "groupId");
 
-// Note: addParticipantUser() / addParticipantGroup() create CANDIDATE-type links,
-// not "participant" links. Use addUserIdentityLink()/addGroupIdentityLink() with
-// an explicit type for participant tracking (see Use Cases below).
+// Note: addParticipantUser() / addParticipantGroup() create PARTICIPANT-type links,
+// not "candidate" links. Use addUserIdentityLink(..., "candidate") /
+// addGroupIdentityLink(..., "candidate") for candidate links.
 ```
 
 ### Removing Identity Links

@@ -111,8 +111,10 @@ addError(errors, "message", process, "activityId");
 
 ### Option 1: Replace the Default Validator
 
+To extend the **default** validator set, start from the factory's default validator. A bare `new ProcessValidatorImpl()` has no validator sets initialized, so `getValidatorSets()` would return `null` and the lookup below would fail:
+
 ```java
-ProcessValidatorImpl customValidator = new ProcessValidatorImpl();
+ProcessValidator customValidator = new ProcessValidatorFactory().createDefaultProcessValidator();
 
 // Add your validator to the default set
 ValidatorSet defaultSet = customValidator.getValidatorSets()
@@ -126,8 +128,8 @@ if (defaultSet != null) {
     defaultSet.addValidator(new NoTerminateEndEventValidator());
 }
 
-// Configure the engine
-ProcessEngineConfiguration config = ...;
+// Configure the engine (setProcessValidator is on ProcessEngineConfigurationImpl)
+ProcessEngineConfigurationImpl config = ...;
 config.setProcessValidator(customValidator);
 ```
 
@@ -142,7 +144,8 @@ companySet.addValidator(new NoTerminateEndEventValidator());
 
 customValidator.addValidatorSet(companySet);
 
-ProcessEngineConfiguration config = ...;
+// Configure the engine (setProcessValidator is on ProcessEngineConfigurationImpl)
+ProcessEngineConfigurationImpl config = ...;
 config.setProcessValidator(customValidator);
 ```
 
@@ -154,7 +157,8 @@ public class ValidatorConfiguration {
 
     @Bean
     public ProcessValidator customProcessValidator() {
-        ProcessValidatorImpl validator = ProcessValidatorFactory.createDefaultProcessValidator();
+        // createDefaultProcessValidator() is an instance method that returns the ProcessValidator interface
+        ProcessValidator validator = new ProcessValidatorFactory().createDefaultProcessValidator();
 
         ValidatorSet defaultSet = validator.getValidatorSets()
             .stream()

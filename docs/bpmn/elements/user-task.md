@@ -366,30 +366,22 @@ Execute task for multiple users:
 - `loopCounter` - Current iteration counter (set for each instance, in both sequential and parallel multi-instance)
 - `elementVariable` - Current element from collection (if specified)
 
-**Multi-Instance with Input/Output Data:**
+**Multi-Instance Data Items (Not Parsed):**
+
+BPMN-standard `<inputDataItem>`/`<outputDataItem>` data associations (including `<assignment><from>/<to>`) are **not parsed** by the engine — they are silently ignored. Multi-instance iteration is driven solely by the `activiti:collection` and `activiti:elementVariable` attributes (plus `completionCondition`):
+
 ```xml
 <userTask id="reviewTask" name="Review">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${reviewers}"
     activiti:elementVariable="reviewer">
-    
-    <inputDataItem name="reviewerId">
-      <assignment>
-        <from>${reviewer}</from>
-        <to>${reviewerId}</to>
-      </assignment>
-    </inputDataItem>
-    
-    <outputDataItem name="reviewResult" collection="${reviewResults}">
-      <assignment>
-        <from>${review}</from>
-        <to>${reviewResult}</to>
-      </assignment>
-    </outputDataItem>
+    <completionCondition>${reviewCount >= requiredApprovals}</completionCondition>
   </multiInstanceLoopCharacteristics>
 </userTask>
 ```
+
+> **Warning:** If an `<inputDataItem name="...">` element is present, its `name` attribute **is** parsed and silently **overrides** `activiti:elementVariable`. Don't add `inputDataItem`/`outputDataItem` elements to multi-instance characteristics (the `collection` attribute of `outputDataItem` is also ignored).
 
 ### Form Properties
 
@@ -402,9 +394,9 @@ Define form fields:
     <activiti:formProperty name="age" type="int" required="false" default="0"/>
     <activiti:formProperty name="email" type="string" required="true"/>
     <activiti:formProperty name="department" type="string">
-      <activiti:value>Engineering</activiti:value>
-      <activiti:value>Marketing</activiti:value>
-      <activiti:value>Sales</activiti:value>
+      <activiti:value id="eng" name="Engineering"/>
+      <activiti:value id="mkt" name="Marketing"/>
+      <activiti:value id="sales" name="Sales"/>
     </activiti:formProperty>
     <activiti:formProperty name="joinDate" type="date"/>
     <activiti:formProperty name="salary" type="double"/>
@@ -422,7 +414,7 @@ Define form fields:
 - `date` - Date
 - `enum` - Enumerated values
 
-> **Note:** The `<activiti:formProperty>` feature is a **legacy** mechanism. The BPMN converter parses `formProperty` elements into the process model, but this engine version does not execute them at runtime (there is no form-type registry in the engine). Types such as `dateselection`, `timeselection`, `datetimeselection`, `user`, and `group` are legacy Activiti/Flowable form types that are not present in this codebase. For modern UI integration, prefer a `formKey` and an external form system.
+> **Note:** The `<activiti:formProperty>` feature is a **legacy** mechanism. The BPMN converter parses `formProperty` elements into the process model, but this engine version does not execute them at runtime (there is no form-type registry in the engine). Types such as `dateselection`, `timeselection`, `datetimeselection`, `user`, and `group` are legacy Activiti/Flowable form types that are not present in this codebase. For modern UI integration, prefer a `formKey` and an external form system. Also note that `<activiti:value>` **text content is not read** — only the `id` and `name` attributes are parsed, so write values as attributes (e.g., `<activiti:value id="eng" name="Engineering"/>`).
 
 ## Complete Examples
 
@@ -456,35 +448,22 @@ Define form fields:
           activiti:candidateUsers="${reviewers}"
           activiti:skipExpression="${skipPeerReview}">
   
+  <!-- Data associations are not parsed - iteration is driven by activiti:collection + activiti:elementVariable -->
   <multiInstanceLoopCharacteristics 
     isSequential="false" 
     activiti:collection="${reviewers}"
     activiti:elementVariable="reviewer">
     <completionCondition>${reviewResults.size() >= minReviewsRequired}</completionCondition>
-    
-    <inputDataItem name="reviewerId">
-      <assignment>
-        <from>${reviewer}</from>
-        <to>${reviewerId}</to>
-      </assignment>
-    </inputDataItem>
-    
-    <outputDataItem name="reviewResult" collection="${reviewResults}">
-      <assignment>
-        <from>${review}</from>
-        <to>${reviewResult}</to>
-      </assignment>
-    </outputDataItem>
   </multiInstanceLoopCharacteristics>
   
   <extensionElements>
     <activiti:formProperty name="reviewComment" type="string"/>
     <activiti:formProperty name="rating" type="int">
-      <activiti:value>1</activiti:value>
-      <activiti:value>2</activiti:value>
-      <activiti:value>3</activiti:value>
-      <activiti:value>4</activiti:value>
-      <activiti:value>5</activiti:value>
+      <activiti:value id="1" name="1"/>
+      <activiti:value id="2" name="2"/>
+      <activiti:value id="3" name="3"/>
+      <activiti:value id="4" name="4"/>
+      <activiti:value id="5" name="5"/>
     </activiti:formProperty>
   </extensionElements>
 </userTask>

@@ -119,7 +119,7 @@ List<Task> myTasks = taskService.createTaskQuery()
 
 // Get unclaimed tasks
 List<Task> unclaimedTasks = taskService.createTaskQuery()
-    .taskAssigneeNull()
+    .taskUnassigned()
     .list();
 
 // Get tasks by name
@@ -366,13 +366,17 @@ runtimeService.setVariable(processInstanceId, "processVar", "value");
 taskService.addCandidateUser(taskId, "john.doe");
 
 // Add multiple candidate users
-taskService.addCandidateUsers(taskId, Arrays.asList("john.doe", "jane.doe"));
+for (String candidateUser : Arrays.asList("john.doe", "jane.doe")) {
+    taskService.addCandidateUser(taskId, candidateUser);
+}
 
 // Add candidate group
 taskService.addCandidateGroup(taskId, "managers");
 
 // Add multiple candidate groups
-taskService.addCandidateGroups(taskId, Arrays.asList("managers", "admins"));
+for (String candidateGroup : Arrays.asList("managers", "admins")) {
+    taskService.addCandidateGroup(taskId, candidateGroup);
+}
 ```
 
 ### Removing Candidates
@@ -398,9 +402,9 @@ List<Task> groupCandidateTasks = taskService.createTaskQuery()
     .taskCandidateGroup("managers")
     .list();
 
-// Tasks where user is in candidate group
+// Tasks where user is candidate, in a candidate group, or assigned
 List<Task> tasks = taskService.createTaskQuery()
-    .taskCandidateGroupMember("john.doe")
+    .taskCandidateOrAssigned("john.doe")
     .list();
 ```
 
@@ -644,7 +648,7 @@ void resolveTask(String taskId, Map<String, Object> variables, Map<String, Objec
 
 // Variables
 Object getVariable(String taskId, String variableName);
-Object getVariable(String taskId, String variableName, boolean isLocal);
+<T> T getVariable(String taskId, String variableName, Class<T> variableClass);
 Object getVariableLocal(String taskId, String variableName);
 <T> T getVariableLocal(String taskId, String variableName, Class<T> variableClass);
 boolean hasVariable(String taskId, String variableName);
@@ -698,18 +702,16 @@ TaskQuery createTaskQuery();
 
 // Filtering
 .taskId(String id)
-.taskIdIn(Collection<String> taskIds)
 .taskName(String name)
 .taskNameLike(String name)
 .taskDescription(String description)
 .taskDescriptionLike(String description)
 .taskAssignee(String assignee)
 .taskAssigneeLike(String assignee)
-.taskAssigneeNull()
+.taskUnassigned()
 .taskOwner(String owner)
 .taskCandidateUser(String candidateUser)
 .taskCandidateGroup(String candidateGroup)
-.taskCandidateGroupMember(String user)
 .processInstanceId(String id)
 .processInstanceBusinessKey(String key)
 .executionId(String id)
@@ -722,7 +724,9 @@ TaskQuery createTaskQuery();
 .withoutTaskDueDate()
 .taskCreatedBefore(Date before)
 .taskCreatedAfter(Date after)
-.tenantIdIn(Collection<String> tenantIds)
+.taskTenantId(String tenantId)
+.taskTenantIdLike(String tenantIdLike)
+.taskWithoutTenantId()
 
 // Ordering
 .orderByTaskId()

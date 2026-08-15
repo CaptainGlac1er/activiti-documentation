@@ -45,7 +45,7 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 - `event` - The event type (create, assignment, complete, delete, all)
 - `class` - Fully qualified class name implementing TaskListener
 - `expression` - EL expression to evaluate
-- `delegateExpression` - Spring bean method call
+- `delegateExpression` - Expression resolving to a Spring bean implementing `TaskListener`
 - `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
 - `customPropertiesResolverClass` - Fully qualified class name of the custom properties resolver
 - `customPropertiesResolverExpression` - EL expression to evaluate for the resolver
@@ -283,8 +283,12 @@ public class ComprehensiveTaskListener implements TaskListener {
 ```java
 public class TaskCreatedNotificationListener implements TaskListener {
     
-    @Autowired
+    // Injected via <activiti:field> — see BPMN configuration below
     private NotificationService notificationService;
+    
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
     
     @Override
     public void notify(DelegateTask task) {
@@ -326,10 +330,14 @@ public class TaskCreatedNotificationListener implements TaskListener {
 ```xml
 <userTask id="approvalTask" name="Approval Task" activiti:assignee="${manager}">
   <extensionElements>
-    <activiti:taskListener event="create" class="com.example.TaskCreatedNotificationListener"/>
+    <activiti:taskListener event="create" class="com.example.TaskCreatedNotificationListener">
+      <activiti:field name="notificationService" expression="${notificationService}"/>
+    </activiti:taskListener>
   </extensionElements>
 </userTask>
 ```
+
+> **Note:** Listeners wired via `activiti:class` are instantiated by the engine through reflection (`ClassDelegate.defaultInstantiateDelegate`) — Spring annotations such as `@Autowired` are **not** processed and the field would stay `null`. Inject dependencies with `<activiti:field>` (e.g. `expression="${beanName}"` to pull a Spring bean) or use `delegateExpression` pointing to a Spring-managed `TaskListener`.
 
 ### Example 2: Assignment Change Tracker
 
@@ -392,8 +400,12 @@ public class AssignmentChangeTracker implements TaskListener {
 ```java
 public class TaskCompletionAuditor implements TaskListener {
     
-    @Autowired
+    // Injected via <activiti:field> — see BPMN configuration below
     private AuditService auditService;
+    
+    public void setAuditService(AuditService auditService) {
+        this.auditService = auditService;
+    }
     
     @Override
     public void notify(DelegateTask task) {
@@ -442,7 +454,9 @@ public class TaskCompletionAuditor implements TaskListener {
 ```xml
 <userTask id="auditedTask" name="Audited Task">
   <extensionElements>
-    <activiti:taskListener event="complete" class="com.example.TaskCompletionAuditor"/>
+    <activiti:taskListener event="complete" class="com.example.TaskCompletionAuditor">
+      <activiti:field name="auditService" expression="${auditService}"/>
+    </activiti:taskListener>
   </extensionElements>
 </userTask>
 ```
@@ -947,7 +961,7 @@ public class EventAwareListener implements TaskListener {
 ## Related Documentation
 
 - [User Task](../elements/user-task.md) - User task configuration
-- [Execution Listeners](../common-features.md) - Activity-level listeners
+- [Execution Listeners](./execution-listeners.md) - Activity-level listeners
 - [Common Features](../common-features.md) - Other BPMN extensions
 - [Variables](./variables.md) - Task variables
 

@@ -13,7 +13,7 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 
 ```xml
 <scriptTask id="script1" name="Calculate Total" scriptFormat="javascript">
-  total = quantity * price;
+  <script><![CDATA[total = quantity * price;]]></script>
 </scriptTask>
 ```
 
@@ -29,9 +29,11 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 ```xml
 <scriptTask id="jsScript" name="JavaScript Calculation" 
             scriptFormat="javascript">
-  var total = quantity * price;
-  var discount = total * 0.1;
-  result = total - discount;
+  <script><![CDATA[
+    var total = quantity * price;
+    var discount = total * 0.1;
+    result = total - discount;
+  ]]></script>
 </scriptTask>
 ```
 
@@ -40,9 +42,11 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 ```xml
 <scriptTask id="groovyScript" name="Groovy Processing" 
             scriptFormat="groovy">
-  def order = execution.getVariable('order')
-  def validated = order.validate()
-  execution.setVariable('validated', validated)
+  <script><![CDATA[
+    def order = execution.getVariable('order')
+    def validated = order.validate()
+    execution.setVariable('validated', validated)
+  ]]></script>
 </scriptTask>
 ```
 
@@ -67,11 +71,15 @@ Specify if script is inline or external:
 ```xml
 <!-- Inline (default) -->
 <scriptTask scriptFormat="javascript">
-  // script code here
+  <script><![CDATA[
+    // script code here
+  ]]></script>
 </scriptTask>
 ```
 
 > **Note:** The `activiti:resource` attribute is **not supported** for ScriptTasks in Activiti. Scripts must be defined inline.
+
+> **Note:** The script body must be placed in a `<script>` child element. Text written directly under `<scriptTask>` is not parsed — the task's script stays null, the engine logs a warning when parsing the process, and the process validator reports a `SCRIPT_TASK_MISSING_SCRIPT` error for the task.
 
 ### Result Variable
 
@@ -81,7 +89,7 @@ Store script output:
 <scriptTask id="calculation"
              scriptFormat="javascript"
              activiti:resultVariable="calculationResult">
-  result = input1 + input2;
+  <script><![CDATA[result = input1 + input2;]]></script>
 </scriptTask>
 ```
 
@@ -93,8 +101,10 @@ By default, scripts run with a copy of all process variables. Changes made to va
 <scriptTask id="updateScript"
              scriptFormat="groovy"
              activiti:autoStoreVariables="true">
-  execution.setVariable('updatedValue', newValue)
-  // Changes are automatically persisted when autoStoreVariables=true
+  <script><![CDATA[
+    execution.setVariable('updatedValue', newValue)
+    // Changes are automatically persisted when autoStoreVariables=true
+  ]]></script>
 </scriptTask>
 ```
 
@@ -111,7 +121,9 @@ Run scripts asynchronously:
             name="Long Running Script"
             scriptFormat="groovy"
             activiti:async="true">
-  // Script code
+  <script><![CDATA[
+    // Script code
+  ]]></script>
 </scriptTask>
 ```
 
@@ -137,7 +149,9 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 <process id="processWithBoundary">
   <!-- Script task -->
   <scriptTask id="riskyScript" name="Risky Script" scriptFormat="javascript">
-    // Script that might fail
+    <script><![CDATA[
+      // Script that might fail
+    ]]></script>
   </scriptTask>
   
   <!-- Boundary event as sibling, not child -->
@@ -159,19 +173,20 @@ Boundary events must be **siblings** of the script task (not nested inside it):
             name="Transform Order Data"
             scriptFormat="groovy"
             activiti:resultVariable="transformedOrder">
-  
-  def order = execution.getVariable('order')
-  
-  // Transform order data
-  def transformed = [
-    orderId: order.id,
-    customerName: "${order.customer.firstName} ${order.customer.lastName}",
-    totalAmount: order.items.sum { it.price * it.quantity },
-    itemCount: order.items.size(),
-    processedDate: new Date()
-  ]
-  
-  execution.setVariable('transformedOrder', transformed)
+  <script><![CDATA[
+    def order = execution.getVariable('order')
+    
+    // Transform order data
+    def transformed = [
+      orderId: order.id,
+      customerName: "${order.customer.firstName} ${order.customer.lastName}",
+      totalAmount: order.items.sum { it.price * it.quantity },
+      itemCount: order.items.size(),
+      processedDate: new Date()
+    ]
+    
+    execution.setVariable('transformedOrder', transformed)
+  ]]></script>
 </scriptTask>
 ```
 
@@ -182,23 +197,24 @@ Boundary events must be **siblings** of the script task (not nested inside it):
             name="Calculate Final Price"
             scriptFormat="javascript"
             activiti:resultVariable="finalPrice">
-  
-  var basePrice = execution.getVariable('basePrice');
-  var quantity = execution.getVariable('quantity');
-  var discountRate = execution.getVariable('discountRate') || 0;
-  var taxRate = execution.getVariable('taxRate') || 0.1;
-  
-  // Calculate subtotal
-  var subtotal = basePrice * quantity;
-  
-  // Apply discount
-  var afterDiscount = subtotal * (1 - discountRate);
-  
-  // Add tax
-  var withTax = afterDiscount * (1 + taxRate);
-  
-  // Round to 2 decimal places
-  result = Math.round(withTax * 100) / 100;
+  <script><![CDATA[
+    var basePrice = execution.getVariable('basePrice');
+    var quantity = execution.getVariable('quantity');
+    var discountRate = execution.getVariable('discountRate') || 0;
+    var taxRate = execution.getVariable('taxRate') || 0.1;
+    
+    // Calculate subtotal
+    var subtotal = basePrice * quantity;
+    
+    // Apply discount
+    var afterDiscount = subtotal * (1 - discountRate);
+    
+    // Add tax
+    var withTax = afterDiscount * (1 + taxRate);
+    
+    // Round to 2 decimal places
+    result = Math.round(withTax * 100) / 100;
+  ]]></script>
 </scriptTask>
 ```
 
@@ -208,13 +224,14 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 <scriptTask id="callExternalAPI" 
             name="Fetch External Data"
             scriptFormat="groovy">
-  
-  def url = "https://api.example.com/data/${execution.getVariable('id')}"
-  def response = new URL(url).text
-  
-  def json = new groovy.json.JsonSlurper().parseText(response)
-  
-  execution.setVariable('externalData', json)
+  <script><![CDATA[
+    def url = "https://api.example.com/data/${execution.getVariable('id')}"
+    def response = new URL(url).text
+    
+    def json = new groovy.json.JsonSlurper().parseText(response)
+    
+    execution.setVariable('externalData', json)
+  ]]></script>
 </scriptTask>
 ```
 
@@ -224,29 +241,30 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 <scriptTask id="validateData" 
             name="Validate Input"
             scriptFormat="javascript">
-  
-  var input = execution.getVariable('inputData');
-  var errors = [];
-  
-  // Validate required fields
-  if (!input.name) {
-    errors.push('Name is required');
-  }
-  
-  if (!input.email || !input.email.includes('@')) {
-    errors.push('Valid email is required');
-  }
-  
-  if (input.age && (input.age < 0 || input.age > 150)) {
-    errors.push('Age must be between 0 and 150');
-  }
-  
-  execution.setVariable('validationErrors', errors);
-  execution.setVariable('isValid', errors.length === 0);
-  
-  if (errors.length > 0) {
-    throw new Error('Validation failed: ' + errors.join(', '));
-  }
+  <script><![CDATA[
+    var input = execution.getVariable('inputData');
+    var errors = [];
+    
+    // Validate required fields
+    if (!input.name) {
+      errors.push('Name is required');
+    }
+    
+    if (!input.email || !input.email.includes('@')) {
+      errors.push('Valid email is required');
+    }
+    
+    if (input.age && (input.age < 0 || input.age > 150)) {
+      errors.push('Age must be between 0 and 150');
+    }
+    
+    execution.setVariable('validationErrors', errors);
+    execution.setVariable('isValid', errors.length === 0);
+    
+    if (errors.length > 0) {
+      throw new Error('Validation failed: ' + errors.join(', '));
+    }
+  ]]></script>
 </scriptTask>
 ```
 
@@ -257,16 +275,18 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 <scriptTask id="jsCalc" 
             scriptFormat="javascript"
             activiti:resultVariable="sum">
-  result = a + b + c;
+  <script><![CDATA[result = a + b + c;]]></script>
 </scriptTask>
 
 <!-- Groovy for complex object manipulation -->
 <scriptTask id="groovyProcess" 
             scriptFormat="groovy">
-  def list = execution.getVariable('items')
-  def filtered = list.findAll { it.active }
-  def sorted = filtered.sort { it.name }
-  execution.setVariable('processedItems', sorted)
+  <script><![CDATA[
+    def list = execution.getVariable('items')
+    def filtered = list.findAll { it.active }
+    def sorted = filtered.sort { it.name }
+    execution.setVariable('processedItems', sorted)
+  ]]></script>
 </scriptTask>
 ```
 
@@ -331,8 +351,10 @@ public class CustomScriptEngine implements javax.script.ScriptEngine {
 ```xml
 <!-- Avoid executing untrusted code -->
 <scriptTask id="safeScript" scriptFormat="javascript">
-  // Only use trusted variables
-  var result = execution.getVariable('trustedInput');
+  <script><![CDATA[
+    // Only use trusted variables
+    var result = execution.getVariable('trustedInput');
+  ]]></script>
 </scriptTask>
 ```
 

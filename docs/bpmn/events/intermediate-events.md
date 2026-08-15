@@ -133,21 +133,23 @@ Wait until a specific date:
 
 #### Cycle Timer
 
-Repeat at intervals using iCalendar recurrence rules:
+Repeat at intervals. `timeCycle` accepts the `R[<n>]/<ISO-8601 duration>` format or a cron expression — iCal/RRULE rules are **not supported**:
 
 ```xml
 <intermediateCatchEvent id="cycleTimer">
   <timerEventDefinition>
-    <timeCycle>R/10/PT1H</timeCycle>
+    <timeCycle>R10/PT1H</timeCycle>
   </timerEventDefinition>
 </intermediateCatchEvent>
 ```
 
 **Cycle Formats:**
-- `R/10/PT1H` - Repeat 10 times, every 1 hour
+- `R10/PT1H` - Repeat 10 times, every 1 hour
 - `R/PT5M` - Repeat indefinitely, every 5 minutes
 - `R5/PT1D` - Repeat 5 times, every day
-- `RRULE:FREQ=DAILY;INTERVAL=1` - iCalendar format
+- `0 0 9 * * ?` - cron expression (e.g., daily at 09:00)
+
+> **Note:** iCal recurrence rules (`RRULE:FREQ=DAILY;...`) are not supported: the engine parses `timeCycle` only as `R[<n>]/<duration>` or as a cron expression and fails otherwise.
 
 **Timer Event Types Summary:**
 | Type | Element | Description | Example |
@@ -219,9 +221,11 @@ Trigger compensation (undo) operations:
 
 ```xml
 <intermediateThrowEvent id="compensatePayment">
-  <compensateEventDefinition activityRef="processPayment"/>
+  <compensateEventDefinition/>
 </intermediateThrowEvent>
 ```
+
+**Precondition:** a throw-compensation event only triggers handlers for which a compensation subscription exists — the compensated activity needs a compensation boundary event (`<compensateEventDefinition/>`), an `<association>` from that boundary event to a handler activity with `isForCompensation="true"`, and the activity must have completed. If no matching subscription exists, the throw event does nothing (the engine continues silently). `activityRef` is optional — when omitted (as above), the compensation is broadcast to all completed activities in the current scope. See [Compensation Events](./compensation-events.md) for the full pattern.
 
 **Use Case:** Rollback completed activities
 

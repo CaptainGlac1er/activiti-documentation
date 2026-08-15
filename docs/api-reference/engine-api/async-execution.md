@@ -13,12 +13,10 @@ The **Async Execution** framework is a critical component of the Activiti engine
 
 ```java
 // Async executor configuration
-ProcessEngineConfigurationImpl configuration = ProcessEngineConfigurationImpl
+ProcessEngineConfiguration configuration = ProcessEngineConfiguration
     .createStandaloneProcessEngineConfiguration();
 
 configuration.setAsyncExecutorActivate(true);  // Enable async executor
-configuration.setAsyncExecutorNumberOfRetries(3);
-configuration.setAsyncExecutorMaxAsyncJobsDuePerAcquisition(10);
 ```
 
 **Key Responsibilities:**
@@ -115,14 +113,15 @@ spring:
 ### Java Configuration (Standalone)
 
 ```java
+import org.activiti.engine.ProcessEngineConfiguration;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 
 public class AsyncExecutionConfig {
     
     @Bean
     public ProcessEngineConfigurationImpl processEngineConfiguration() {
-        ProcessEngineConfigurationImpl config = 
-            ProcessEngineConfigurationImpl.createStandaloneProcessEngineConfiguration();
+        ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl)
+            ProcessEngineConfiguration.createStandaloneProcessEngineConfiguration();
         
         // Enable async executor
         config.setAsyncExecutorActivate(true);
@@ -478,23 +477,27 @@ public class DeadLetterAnalysis {
 
 ### 1. Right-Size Thread Pool
 
+CPU-bound jobs (cores + 1):
+
 ```yaml
-# GOOD: Match thread pool to workload
 spring:
   activiti:
     async-executor:
-      # CPU-bound jobs: cores + 1
       core-pool-size: 4
       max-pool-size: 8
-      
-      # I/O-bound jobs: cores * 2 to cores * 4
+```
+
+I/O-bound jobs (cores * 2 to cores * 4):
+
+```yaml
+spring:
+  activiti:
+    async-executor:
       core-pool-size: 8
       max-pool-size: 20
-
-# BAD: Arbitrary sizes
-core-pool-size: 1        # Too slow
-max-pool-size: 100       # Resource exhaustion
 ```
+
+**Avoid arbitrary sizes** (e.g., `core-pool-size: 1` with `max-pool-size: 100`) — they cause slowness or resource exhaustion.
 
 ### 2. Configure Appropriate Acquisition Batches
 
@@ -660,7 +663,7 @@ spring:
     async-executor-activate: true  # Must be true
 ```
 
-Check logs for: `Async executor started` message
+Check logs for: `Starting up the default async job executor [org.activiti.spring.SpringAsyncExecutor]` message
 
 ### 2. Jobs Stuck in Suspended State
 

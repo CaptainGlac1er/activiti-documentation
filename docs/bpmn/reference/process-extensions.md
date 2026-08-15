@@ -2,12 +2,12 @@
 sidebar_label: Process Extensions
 slug: /bpmn/reference/process-extensions
 title: "Process Extensions"
-description: "Complete guide to using *-extension.json files for variable mapping, properties, and constants in Activiti processes - separation of concerns for maintainable workflows."
+description: "Complete guide to using *-extensions.json files for variable mapping, properties, and constants in Activiti processes - separation of concerns for maintainable workflows."
 ---
 
-# Process Extensions (*.extension.json)
+# Process Extensions (*.extensions.json)
 
-Process Extensions files (named `*-extension.json`) provide a **powerful mechanism** to define process variables, variable mappings, and constants **separately** from your BPMN diagram. This separation of concerns makes your processes more maintainable, testable, and flexible.
+Process Extensions files (named `*-extensions.json`) provide a **powerful mechanism** to define process variables, variable mappings, and constants **separately** from your BPMN diagram. This separation of concerns makes your processes more maintainable, testable, and flexible.
 
 ## Overview
 
@@ -26,7 +26,7 @@ Process Extensions files (named `*-extension.json`) provide a **powerful mechani
 
 **File Naming Convention:**
 - BPMN file: `myProcess.bpmn`
-- Extensions file: `myProcess-extension.json`
+- Extensions file: `myProcess-extensions.json`
 
 **Key Benefits:**
 - **Separation of Concerns** - Keep variable definitions separate from process flow
@@ -56,7 +56,6 @@ Process Extensions files (named `*-extension.json`) provide a **powerful mechani
 ```json
 {
   "id": "processName",
-  "name": "Process Display Name",
   "extensions": {
     "Process_processName": {
       "properties": { ... },
@@ -72,7 +71,6 @@ Process Extensions files (named `*-extension.json`) provide a **powerful mechani
 | Component | Description | Required |
 |-----------|-------------|----------|
 | `id` | Process identifier (matches BPMN process id) | Yes |
-| `name` | Optional display name | ❌ No |
 | `extensions` | Container for all extension definitions | Yes |
 | `Process_<id>` | Process-specific extensions | Yes |
 | `properties` | Process variable definitions | ❌ No |
@@ -648,12 +646,11 @@ Constants define **fixed values** that can be used across multiple activities wi
 
 **BPMN File:** `orderProcess.bpmn`
 
-**Extensions File:** `orderProcess-extension.json`
+**Extensions File:** `orderProcess-extensions.json`
 
 ```json
 {
   "id": "orderProcess",
-  "name": "E-Commerce Order Processing",
   "extensions": {
     "Process_orderProcess": {
       "properties": {
@@ -915,7 +912,7 @@ Use skip expressions in BPMN to conditionally apply mappings:
 ```
 
 ```json
-// In extension.json - only applies if task executes
+// In extensions.json - only applies if task executes
 "mappings": {
   "optionalTask": {
     "inputs": { ... },
@@ -983,14 +980,14 @@ Place extension files in the same directory as your BPMN files:
 ```
 src/main/resources/processes/
 ├── orderProcess.bpmn
-├── orderProcess-extension.json
+├── orderProcess-extensions.json
 ├── approvalProcess.bpmn
-└── approvalProcess-extension.json
+└── approvalProcess-extensions.json
 ```
 
 ### Spring Boot Configuration
 
-No special configuration needed - Activiti automatically loads `*-extension.json` files alongside BPMN definitions during deployment.
+No special configuration needed - Activiti automatically loads `*-extensions.json` files alongside BPMN definitions during deployment.
 
 ### Runtime Behavior
 

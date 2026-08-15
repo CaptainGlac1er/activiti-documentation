@@ -184,14 +184,13 @@ List<EventSubscriptionEntity> signals =
 
 ## Relationship to RuntimeService
 
-When you call `RuntimeService.messageEventReceived("msg", "correlation")`, the engine:
+When you call `RuntimeService.messageEventReceived("msg", "executionId")`, the second parameter is the ID of the **execution** that should receive the message — there is no 1-argument overload. The engine:
 
-1. Queries `EventSubscriptionEntityManager` for matching subscriptions
-2. Finds the first `message`-type subscription with `eventName = "msg"`
-3. Triggers the associated execution
-4. Deletes the subscription
+1. Queries `EventSubscriptionEntityManager` for `message`-type subscriptions with `eventName = "msg"` bound to that specific execution
+2. Fails with an `ActivitiException` if that execution has no such subscription
+3. Triggers the matching subscription, delivering the message to that specific execution
 
-Signal events (`signalEventReceived`) work similarly but broadcast to **all** matching signal subscriptions (not just the first).
+Signal events (`signalEventReceived`) work differently: a signal without an execution ID (e.g., `signalEventReceived("signalName")`) is broadcast only to **globally scoped** signal subscriptions — subscriptions scoped to a process instance are not triggered.
 
 ## Related Documentation
 

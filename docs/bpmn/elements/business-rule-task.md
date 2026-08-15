@@ -324,6 +324,8 @@ A valid DMN Service Task must:
 
 **Validation:** The `ExternalInvocationTaskValidator` enforces the above rules. Missing or empty `decisionTableReferenceKey` produces error `DMN_TASK_NO_KEY`: _"No decision table reference key is defined on the dmn activity"_.
 
+> **Note (runtime behavior):** passing validation does not give the task an executor. At parse time, `ServiceTaskParseHandler` wires special behavior only for the `mail`, `mule`, `camel`, and `shell` types; any other `activiti:type` value — including `dmn` — merely logs a warning ("Invalid service task type") and leaves the task with a **null behavior**. A bare `activiti:type="dmn"` service task without a registered connector or bean that reads the `decisionTableReferenceKey` is therefore a **runtime no-op**: nothing executes the decision.
+
 #### Why Service Task Instead of Business Rule Task for DMN?
 
 | Criterion | Business Rule Task | DMN Service Task + Connector |
@@ -494,8 +496,11 @@ public interface DynamicBpmnService {
     void saveProcessDefinitionInfo(String processDefinitionId, ObjectNode infoNode);
     ObjectNode changeDmnTaskDecisionTableKey(String id, String decisionTableKey);
     void changeDmnTaskDecisionTableKey(String id, String decisionTableKey, ObjectNode infoNode);
+    // ...
 }
 ```
+
+_The DMN-relevant subset is shown — the real interface has about 40 methods (service task, user task, script task, sequence flow condition, and localization changes)._
 
 **Example — Switching decision table versions at runtime:**
 
@@ -803,14 +808,15 @@ Run rule evaluation in the background:
 
 ### Skip Expression
 
-Conditionally skip rule evaluation:
+> **Note:** `activiti:skipExpression` is **not** parsed on `<businessRuleTask>` — the business rule task converter only reads the `class`, `rules`, `resultVariable`, `ruleVariablesInput`, and `exclude` attributes. The engine supports skip expressions on **service tasks** and **user tasks** (qualified `activiti:skipExpression` attribute) and on **sequence flows** (unqualified `skipExpression` attribute).
+
+To conditionally skip rule evaluation, express the condition inside your `BusinessRuleTaskDelegate` implementation (return early when validation is not needed), or wrap the evaluation in a service task with a skip expression:
 
 ```xml
-<businessRuleTask id="optionalRules" 
-                  name="Optional Validation"
-                  activiti:class="com.example.OptionalRuleTask"
-                  activiti:skipExpression="${!validateOrder}"
-                  activiti:resultVariable="validationResult"/>
+<serviceTask id="optionalValidation" 
+             name="Optional Validation"
+             activiti:class="com.example.OptionalRuleTask"
+             activiti:skipExpression="${!validateOrder}"/>
 ```
 
 ### Execution Listeners

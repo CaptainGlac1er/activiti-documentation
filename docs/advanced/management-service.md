@@ -292,7 +292,7 @@ A job enters the dead letter table (`ACT_RU_DEADLETTER_JOB`) when:
 
 When a job fails, `HandleFailedJobCmd` delegates to `FailedJobCommandFactory` (default: `DefaultFailedJobCommandFactory`), which creates a `JobRetryCmd`. The retry command:
 
-1. Checks the service task's `failedJobRetryTimeCycle` attribute (R/IS/O syntax, e.g., `R5/PT10S`)
+1. Checks the service task's `failedJobRetryTimeCycle` extension element (single-phase `R[<n>]/ISO-8601` syntax, e.g., `R5/PT10S`)
 2. If configured, applies the custom retry schedule
 3. Otherwise, uses engine defaults (`asyncFailedJobWaitTime` for message jobs, `defaultFailedJobWaitTime` for timer jobs)
 4. If `retries <= 1` after decrement, moves to dead letter table
@@ -577,7 +577,8 @@ Programmatic schema upgrade on a given connection:
 ```java
 Connection connection = dataSource.getConnection();
 String result = managementService.databaseSchemaUpgrade(connection, null, null);
-// result is "updated" if schema was changed, or "no update" if already current
+// result is "upgraded Activiti from <old version> to <new version>" when an upgrade runs,
+// or null when no upgrade was needed
 ```
 
 This method runs without a transaction (`transactionNotSupported()`), creates a `DbSqlSession` on the provided connection, and calls `dbSchemaUpdate()`.
@@ -783,9 +784,13 @@ Dead letter jobs are not acquired by any executor, making them safe for admin ma
 ### Best Practices
 
 1. **Monitor dead letter queue regularly** — A growing `ACT_RU_DEADLETTER_JOB` table indicates systemic issues
-2. **Use `failedJobRetryTimeCycle` in BPMN** — Configure retry schedules at the service task level rather than relying on engine defaults:
+2. **Use `failedJobRetryTimeCycle` in BPMN** — Configure retry schedules at the service task level rather than relying on engine defaults. It is an extension **element**, not an attribute:
    ```xml
-   <serviceTask activiti:failedJobRetryTimeCycle="R5/PT10S" ...>
+   <serviceTask ...>
+     <extensionElements>
+       <activiti:failedJobRetryTimeCycle>R5/PT10S</activiti:failedJobRetryTimeCycle>
+     </extensionElements>
+   </serviceTask>
    ```
 3. **Check exception stack traces before deleting** — A dead letter job may contain evidence of a recurring bug
 4. **Enable event logging for critical processes** — The sequential log provides an audit trail for post-incident analysis

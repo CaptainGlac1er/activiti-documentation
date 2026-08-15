@@ -47,7 +47,7 @@ The **activiti-api-impl** module provides the concrete implementation of the Act
 - **Facade Pattern**: Hide engine complexity behind runtime interfaces
 - **Converter Pattern**: Dedicated `ModelConverter` implementations for each model type
 - **Builder Pattern**: `ProcessPayloadBuilder` and `TaskPayloadBuilder` for fluent payload construction
-- **Event-Driven Architecture**: Spring `ApplicationEventPublisher` for process and task events
+- **Event-Driven Architecture**: typed API events dispatched to registered listener beans (`ProcessRuntimeEventListener`/`TaskRuntimeEventListener`); only signal and message payloads are also published via Spring `ApplicationEventPublisher`
 - **Security-First**: `ProcessRuntimeImpl` and `TaskRuntimeImpl` use `@PreAuthorize("hasRole('ACTIVITI_USER')")`; `ProcessAdminRuntimeImpl` and `TaskAdminRuntimeImpl` use `@PreAuthorize("hasAnyRole('ACTIVITI_ADMIN','APPLICATION_MANAGER')")`
 
 ---
@@ -398,7 +398,8 @@ public class ProcessRuntimeImpl implements ProcessRuntime {
 Runtime beans are configured via `ProcessRuntimeAutoConfiguration` and equivalent task configuration:
 
 ```java
-@Configuration
+@AutoConfiguration
+@AutoConfigureAfter(CommonRuntimeAutoConfiguration.class)
 public class ProcessRuntimeAutoConfiguration {
 
     @Bean
@@ -713,7 +714,7 @@ List<Task> apiTasks = taskConverter.from(engineTaskList);
 
 ### Event Conversion Architecture
 
-Events use the Spring `ApplicationEventPublisher` pattern. Each event type has a dedicated converter and listener delegate.
+Events are bridged from the engine to the API through dedicated converters and listener delegates. Each event type has a converter that produces the typed API event and a delegate that dispatches it to the registered typed listeners.
 
 ### Process Event Converters
 
@@ -721,23 +722,23 @@ Events use the Spring `ApplicationEventPublisher` pattern. Each event type has a
 |---|---|---|
 | `ToAPIProcessCreatedEventConverter` | `ENGINE_PROCESS_CREATED` | `ProcessCreatedEvent` |
 | `ToAPIProcessStartedEventConverter` | `ENGINE_PROCESS_STARTED` | `ProcessStartedEvent` |
-| `ToProcessCompletedConverter` | `ENGINE_PROCESS_COMPLETED` | `ProcessCompleted` |
-| `ToProcessCancelledConverter` | `ENGINE_PROCESS_CANCELLED` | `ProcessCancelled` |
-| `ToProcessUpdatedConverter` | `ENGINE_PROCESS_UPDATED` | `ProcessUpdated` |
-| `ToProcessSuspendedConverter` | `ENGINE_PROCESS_SUSPENDED` | `ProcessSuspended` |
-| `ToProcessResumedConverter` | `ENGINE_PROCESS_RESUMED` | `ProcessResumed` |
+| `ToProcessCompletedConverter` | `ENGINE_PROCESS_COMPLETED` | `ProcessCompletedEvent` |
+| `ToProcessCancelledConverter` | `ENGINE_PROCESS_CANCELLED` | `ProcessCancelledEvent` |
+| `ToProcessUpdatedConverter` | `ENGINE_PROCESS_UPDATED` | `ProcessUpdatedEvent` |
+| `ToProcessSuspendedConverter` | `ENGINE_PROCESS_SUSPENDED` | `ProcessSuspendedEvent` |
+| `ToProcessResumedConverter` | `ENGINE_PROCESS_RESUMED` | `ProcessResumedEvent` |
 
 ### Task Event Converters
 
 | Converter | Engine Event | API Event |
 |---|---|---|
 | `ToAPITaskCreatedEventConverter` | `ENGINE_TASK_CREATED` | `TaskCreatedEvent` |
-| `ToTaskCompletedConverter` | `ENGINE_TASK_COMPLETED` | `TaskCompleted` |
-| `ToTaskCancelledConverter` | `ENGINE_TASK_CANCELLED` | `TaskCancelled` |
-| `ToAPITaskUpdatedEventConverter` | `ENGINE_TASK_UPDATED` | `TaskUpdated` |
+| `ToTaskCompletedConverter` | `ENGINE_TASK_COMPLETED` | `TaskCompletedEvent` |
+| `ToTaskCancelledConverter` | `ENGINE_TASK_CANCELLED` | `TaskCancelledEvent` |
+| `ToAPITaskUpdatedEventConverter` | `ENGINE_TASK_UPDATED` | `TaskUpdatedEvent` |
 | `ToAPITaskAssignedEventConverter` | `ENGINE_TASK_ASSIGNED` | `TaskAssignedEvent` |
-| `ToTaskActivatedConverter` | `ENGINE_TASK_ACTIVATED` | `TaskActivated` |
-| `ToTaskSuspendedConverter` | `ENGINE_TASK_SUSPENDED` | `TaskSuspended` |
+| `ToTaskActivatedConverter` | `ENGINE_TASK_ACTIVATED` | `TaskActivatedEvent` |
+| `ToTaskSuspendedConverter` | `ENGINE_TASK_SUSPENDED` | `TaskSuspendedEvent` |
 
 ### BPMN Activity Event Converters
 
@@ -746,7 +747,7 @@ Events use the Spring `ApplicationEventPublisher` pattern. Each event type has a
 | `ToActivityStartedConverter` | `ACTIVITY_STARTED` | `BPMNActivityStartedEvent` |
 | `ToActivityCompletedConverter` | `ACTIVITY_COMPLETED` | `BPMNActivityCompletedEvent` |
 | `ToActivityCancelledConverter` | `ACTIVITY_CANCELLED` | `BPMNActivityCancelledEvent` |
-| `ToSequenceFlowTakenConverter` | `SEQUENCE_FLOW_TAKEN` | `BPMNSequenceFlowTaken` |
+| `ToSequenceFlowTakenConverter` | `SEQUENCE_FLOW_TAKEN` | `BPMNSequenceFlowTakenEvent` |
 
 ### Timer, Signal, and Message Converters
 
@@ -766,20 +767,37 @@ Events use the Spring `ApplicationEventPublisher` pattern. Each event type has a
 
 ### Event Listener Delegates
 
-Each event type has a corresponding `*ListenerDelegate` that receives the engine event, converts it using the appropriate converter, and publishes the API event through `ApplicationEventPublisher`.
+Each event type has a corresponding `*ListenerDelegate` that receives the engine event, converts it using the appropriate converter, and dispatches the API event to the registered typed listener beans (no `ApplicationEventPublisher` is involved for lifecycle events).
 
 ```java
-// Example listener delegate pattern
-public class ProcessCreatedListenerDelegate {
-    private final ApplicationEventPublisher eventPublisher;
-    private final ProcessRuntimeConfiguration configuration;
+// org.activiti.runtime.api.event.internal
+public class ProcessCreatedListenerDelegate implements ActivitiEventListener {
 
-    public void handle(ActivitiEvent event) {
-        ProcessCreatedEvent apiEvent =
-            new ToAPIProcessCreatedEventConverter(event).toAPIEvent();
-        configuration.processEventListeners().forEach(
-            listener -> listener.onEvent(apiEvent));
-        eventPublisher.publishEvent(apiEvent);
+    private List<ProcessRuntimeEventListener<ProcessCreatedEvent>> listeners;
+
+    private ToAPIProcessCreatedEventConverter entityCreatedEventConverter;
+
+    public ProcessCreatedListenerDelegate(List<ProcessRuntimeEventListener<ProcessCreatedEvent>> listeners,
+                                          ToAPIProcessCreatedEventConverter entityCreatedEventConverter) {
+        this.listeners = listeners;
+        this.entityCreatedEventConverter = entityCreatedEventConverter;
+    }
+
+    @Override
+    public void onEvent(ActivitiEvent event) {
+        if (event instanceof ActivitiEntityEvent) {
+            entityCreatedEventConverter.from((ActivitiEntityEvent) event)
+                    .ifPresent(convertedEvent -> {
+                        for ( ProcessRuntimeEventListener<ProcessCreatedEvent> listener : listeners ) {
+                            listener.onEvent(convertedEvent);
+                        }
+                    });
+        }
+    }
+
+    @Override
+    public boolean isFailOnException() {
+        return false;
     }
 }
 ```
@@ -948,7 +966,7 @@ if (!task.getAssignee().equals(authenticatedUserId)) {
 **Invalid Payload:**
 ```java
 // ProcessRuntimeImpl - required fields
-if (payload.getProcessDefinitionKeys() == null) {
+if (getProcessDefinitionsPayload == null) {
     throw new IllegalStateException("payload cannot be null");
 }
 
@@ -1051,7 +1069,7 @@ class ProcessRuntimeIntegrationTest {
         assertNotNull(instance.getId());
 
         Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 10));
-        assertTrue(tasks.getItems().size() > 0);
+        assertTrue(tasks.getContent().size() > 0);
     }
 }
 ```

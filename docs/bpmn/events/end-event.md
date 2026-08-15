@@ -7,7 +7,7 @@ description: "Complete guide to End Events in Activiti - terminating process ins
 
 # End Event
 
-End Events mark the **completion** of a process or sub-process. They can be simple terminators or trigger additional actions like sending messages, signals, or throwing errors.
+End Events mark the **completion** of a process or sub-process. They can be simple terminators or trigger additional actions like sending messages or throwing errors.
 
 ## Overview
 
@@ -20,9 +20,9 @@ End Events mark the **completion** of a process or sub-process. They can be simp
   <errorEventDefinition errorRef="ProcessError"/>
 </endEvent>
 
-<!-- Signal end event -->
-<endEvent id="signalEnd">
-  <signalEventDefinition signalRef="completionSignal"/>
+<!-- Terminate end event -->
+<endEvent id="terminateEnd">
+  <terminateEventDefinition/>
 </endEvent>
 ```
 
@@ -155,6 +155,7 @@ The `TerminateEventDefinition` model supports two additional attributes:
 - `terminateMultiInstance` (boolean, default `false`): When `true` and used within a multi-instance, terminates all multi-instance instances of the embedded subprocess/call activity. Only the first parent multi-instance structure is affected. If `terminateAll` is `true`, it takes precedence over this attribute.
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Standard terminate end — terminates current scope -->
 <endEvent id="terminateEnd">
   <terminateEventDefinition/>
@@ -238,6 +239,7 @@ A process can have multiple end events:
 Set variables before ending:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="setEndVariables" name="Set End Variables" activiti:class="com.example.VariableSetter"/>
 
 <sequenceFlow id="flow1" sourceRef="setEndVariables" targetRef="endEvent"/>
@@ -394,29 +396,36 @@ public class VariableSetter implements JavaDelegate {
 ### Querying Completed Processes
 
 ```java
-// Get completed process instances
-List<ProcessInstance> completed = runtimeService.createProcessInstanceQuery()
+// Get completed process instances (from history, not the runtime service)
+List<HistoricProcessInstance> completed = historyService.createHistoricProcessInstanceQuery()
     .finished()
     .list();
 
-// Get process instance with end event info
+// Get a running process instance
 ProcessInstance instance = runtimeService.createProcessInstanceQuery()
     .processInstanceId("instanceId")
     .singleResult();
 ```
 
-### Handling End Event Signals
+### Sending Signals to Processes
+
+End events emit nothing — they do not broadcast signals. `runtimeService.signalEventReceived` **sends** a signal to the processes that are waiting on signal catch events (intermediate catch or signal start events):
 
 ```java
-// Listen for signals from end events
-// Signals are broadcast to all waiting processes
+// Send the "orderShipped" signal to all processes waiting for it
 runtimeService.signalEventReceived("orderShipped");
+
+// Signal with variables
+Map<String, Object> variables = Map.of("orderId", "12345");
+runtimeService.signalEventReceived("orderShipped", variables);
 ```
+
+Signal **end** events are unsupported: a signal definition on an end event is ignored and the end event behaves as a plain end event. To broadcast a signal when a process ends, place an intermediate throw signal event before the end event.
 
 ## Best Practices
 
 1. **Use Terminator for Normal End** - Simple completion
-2. **Signal for Notifications** - Cross-process communication
+2. **Throw Signal Before End** - Cross-process communication (signal end events are not supported)
 3. **Terminate for Early Exit** - Force end all branches
 4. **Error for Exceptions** - Clear error indication
 5. **Multiple End Events** - Different completion scenarios

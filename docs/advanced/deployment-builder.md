@@ -87,7 +87,7 @@ repositoryService.createDeployment()
 
 // Query tenant-specific deployments
 repositoryService.createDeploymentQuery()
-    .tenantIdIn("tenant-123")
+    .deploymentTenantId("tenant-123")
     .list();
 ```
 

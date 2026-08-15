@@ -177,8 +177,8 @@ Specify when the multi-instance activity should complete.
   <!-- Complete when 3 instances done -->
   <completionCondition>${nrOfCompletedInstances >= 3}</completionCondition>
   
-  <!-- Complete when 80% done -->
-  <completionCondition>${nrOfCompletedInstances / nrOfInstances >= 0.8}</completionCondition>
+  <!-- Complete when 80% done (divide by a double to guarantee fractional division) -->
+  <completionCondition>${nrOfCompletedInstances / (nrOfInstances / 1.0) >= 0.8}</completionCondition>
   
 </multiInstanceLoopCharacteristics>
 ```
@@ -193,7 +193,7 @@ Specify when the multi-instance activity should complete.
   
   <!-- Complete when 80% done OR all rejected -->
   <completionCondition>
-    ${nrOfCompletedInstances / nrOfInstances >= 0.8 || 
+    ${nrOfCompletedInstances / (nrOfInstances / 1.0) >= 0.8 || 
      rejectedCount == nrOfInstances}
   </completionCondition>
   
@@ -394,8 +394,8 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
     activiti:elementVariable="item">
     <outputDataItem name="processResult"/>
     
-    <!-- Complete when 95% processed successfully -->
-    <completionCondition>${successCount / nrOfInstances >= 0.95}</completionCondition>
+    <!-- Complete when 95% processed successfully (divide by a double to guarantee fractional division) -->
+    <completionCondition>${successCount / (nrOfInstances / 1.0) >= 0.95}</completionCondition>
     
     <!-- 'item' contains the current collection element in each instance -->
     <!-- Service task should set 'processResult' variable for output aggregation -->
@@ -484,7 +484,7 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
   </multiInstanceLoopCharacteristics>
   <extensionElements>
     <!-- Each instance runs as async job -->
-    <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R3/PT1M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
@@ -584,7 +584,7 @@ Listeners must be inside `extensionElements`:
 <serviceTask id="miTask" activiti:async="true">
   <multiInstanceLoopCharacteristics ... />
   <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R/3</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R3/PT1M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 <!-- Boundary event as sibling -->

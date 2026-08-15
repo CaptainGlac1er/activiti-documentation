@@ -17,8 +17,17 @@ A Data Grid is composed of rows, and each row is composed of fields (name/value 
 DataGrid grid = new DataGrid();
 
 DataGridRow row = new DataGridRow();
-row.addField(new DataGridField("name", "John Doe"));
-row.addField(new DataGridField("email", "john@example.com"));
+
+DataGridField nameField = new DataGridField();
+nameField.setName("name");
+nameField.setValue("John Doe");
+row.getFields().add(nameField);
+
+DataGridField emailField = new DataGridField();
+emailField.setName("email");
+emailField.setValue("john@example.com");
+row.getFields().add(emailField);
+
 grid.getRows().add(row);
 ```
 

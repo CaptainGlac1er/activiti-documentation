@@ -417,12 +417,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ConnectorConfiguration {
 
-    @Bean
+    // Bean name must EXACTLY match the `implementation` attribute value in the BPMN,
+    // e.g. implementation="customConnector"
+    @Bean(name = "customConnector")
     public Connector customConnector() {
         return new CustomConnector();
     }
 }
 ```
+
+The engine resolves the connector with `applicationContext.getBean(implementation, Connector.class)` (`DefaultServiceTaskBehavior`), so the Spring bean name must **exactly equal** the `implementation` attribute string (case-sensitive). Use `@Bean(name = "...")` or `@Component("...")` to set the bean name explicitly — a plain `@Bean` defaults to the method name.
 
 ### Example: MealsConnector
 

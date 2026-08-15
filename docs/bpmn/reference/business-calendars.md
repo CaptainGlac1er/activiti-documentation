@@ -209,6 +209,8 @@ Two schedule versions are supported:
 | `VER:1` | `AdvancedSchedulerResolverWithoutTimeZone` | Ignores DST; uses server time zone (legacy behavior) |
 | `VER:2` (default) | `AdvancedSchedulerResolverWithTimeZone` | Respects DST transitions in the specified time zone |
 
+> **Note:** The `VER:n` and `DSTZONE:zone` suffixes are only processed by the `AdvancedCycleBusinessCalendar`. With the engine's default configuration the `cycle` calendar is a plain `CycleBusinessCalendar`: there, an ISO cycle string with these suffixes **fails to parse**, and a CRON string **silently ignores** them (the timer runs in the server time zone). Register the advanced calendar — as the engine's own Spring factory does, replacing the default `cycle` entry (see [Registering Custom Calendars](#registering-custom-calendars)) — before using the suffixes.
+
 ```xml
 <!-- DST-aware: runs at 8:30 PM Eastern time, handles clock changes -->
 <bpmn:timeCycle>R/PT1D DSTZONE:US/Eastern</bpmn:timeCycle>
@@ -310,13 +312,17 @@ Cycle expressions are parsed by splitting on `/` into segments:
 | `Rn` | `R5/PT1H` | Repeat 5 times, every 1 hour |
 | `R/Pduration` | `R/PT1D` | Infinite repeat, daily |
 | `R/start/Pduration` | `R/2026-01-01T08:00:00/PT1H` | Start at given time, repeat hourly |
-| `R/start/end/Pduration` | `R/2026-01-01T08:00:00/2026-01-01T18:00:00/PT30M` | Bounded range |
+| `R/start/end/Pduration` | — | **Not supported** — at most 3 `/`-separated segments are allowed; a 4-segment string fails to parse. Bound the range with the `activiti:endDate` attribute instead |
 
 **DurationHelper parsing logic:**
 
 ```java
 // Source: DurationHelper constructor
 List<String> expression = asList(expressionS.split("/"));
+
+if (expression.size() > 3 || expression.isEmpty()) {
+    throw new ActivitiIllegalArgumentException("Cannot parse duration");
+}
 
 if (expression.get(0).startsWith("R")) {
     isRepeat = true;
@@ -352,8 +358,9 @@ if (isDuration(expression.get(0))) {
 <!-- Fire starting at noon, every day -->
 <bpmn:timeCycle>R/2026-01-01T12:00:00/PT1D</bpmn:timeCycle>
 
-<!-- Fire from Jan 1 to Mar 1, every week -->
-<bpmn:timeCycle>R/2026-01-01T00:00:00/2026-03-01T00:00:00/PT1W</bpmn:timeCycle>
+<!-- Fire from Jan 1 until Mar 1, every week.
+     A 4-segment cycle (R/start/end/PT1W) is not supported — bound the range with activiti:endDate -->
+<bpmn:timeCycle activiti:endDate="2026-03-01T00:00:00">R/2026-01-01T00:00:00/PT1W</bpmn:timeCycle>
 ```
 
 **Repeat cycle with end date attribute:**
@@ -574,23 +581,23 @@ if (StringUtils.isNotEmpty(calendarName)) {
 ```xml
 <bpmn:serviceTask id="longTask"
     name="Process Data"
-    activiti:class="com.example.DataProcessor">
+    activiti:class="com.example.DataProcessor"/>
 
-  <!-- Timeout after 15 minutes -->
-  <bpmn:boundaryEvent id="timeout" cancelActivity="true">
-    <bpmn:timerEventDefinition>
-      <bpmn:timeDuration>PT15M</bpmn:timeDuration>
-    </bpmn:timerEventDefinition>
-  </bpmn:boundaryEvent>
+<!-- Boundary events must be siblings of the task (attachedToRef), not nested inside it -->
 
-  <!-- Retry reminder every 5 minutes for up to 1 hour -->
-  <bpmn:boundaryEvent id="reminder" cancelActivity="false">
-    <bpmn:timerEventDefinition>
-      <bpmn:timeCycle>R12/PT5M</bpmn:timeCycle>
-    </bpmn:timerEventDefinition>
-  </bpmn:boundaryEvent>
+<!-- Timeout after 15 minutes -->
+<bpmn:boundaryEvent id="timeout" attachedToRef="longTask" cancelActivity="true">
+  <bpmn:timerEventDefinition>
+    <bpmn:timeDuration>PT15M</bpmn:timeDuration>
+  </bpmn:timerEventDefinition>
+</bpmn:boundaryEvent>
 
-</bpmn:serviceTask>
+<!-- Retry reminder every 5 minutes for up to 1 hour -->
+<bpmn:boundaryEvent id="reminder" attachedToRef="longTask" cancelActivity="false">
+  <bpmn:timerEventDefinition>
+    <bpmn:timeCycle>R12/PT5M</bpmn:timeCycle>
+  </bpmn:timerEventDefinition>
+</bpmn:boundaryEvent>
 ```
 
 ### Timer Event Diagram
@@ -772,6 +779,8 @@ public BusinessCalendarManager businessCalendarManager(ClockReader clockReader) 
 
 Daylight saving time transitions can cause timers to fire at unexpected wall-clock times when the underlying time zone shifts by an hour.
 
+> **Prerequisite:** `VER:n` and `DSTZONE:zone` suffixes are only processed by the `AdvancedCycleBusinessCalendar` (see [AdvancedCycleBusinessCalendar](#advancedcyclebusinesscalendar) above). Under the default `cycle` calendar, an ISO string with these suffixes fails to parse and a CRON string silently ignores them.
+
 **Without DST handling (VER:1 or no DSTZONE):**
 - `R/PT1D` always adds exactly 24 hours
 - A timer set for 2:00 AM will fire at 3:00 AM after the spring-forward transition
@@ -934,15 +943,14 @@ calendar.add(Calendar.YEAR, duration.getYears() * duration.getSign());
 
   <bpmn:serviceTask id="process"
       name="Process"
-      activiti:class="com.example.Processor">
+      activiti:class="com.example.Processor"/>
 
-    <!-- Retry up to 5 times, every 2 minutes, stop after 2026-12-31 -->
-    <bpmn:boundaryEvent id="retry" cancelActivity="true">
-      <bpmn:timerEventDefinition>
-        <bpmn:timeCycle activiti:endDate="2026-12-31T23:59:59">R5/PT2M</bpmn:timeCycle>
-      </bpmn:timerEventDefinition>
-    </bpmn:boundaryEvent>
-  </bpmn:serviceTask>
+  <!-- Retry up to 5 times, every 2 minutes, stop after 2026-12-31 (boundary event is a sibling of the task) -->
+  <bpmn:boundaryEvent id="retry" attachedToRef="process" cancelActivity="true">
+    <bpmn:timerEventDefinition>
+      <bpmn:timeCycle activiti:endDate="2026-12-31T23:59:59">R5/PT2M</bpmn:timeCycle>
+    </bpmn:timerEventDefinition>
+  </bpmn:boundaryEvent>
 
   <bpmn:sequenceFlow sourceRef="process" targetRef="end"/>
 

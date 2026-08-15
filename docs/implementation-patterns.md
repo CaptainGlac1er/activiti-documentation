@@ -69,6 +69,8 @@ public class ActivitiConfig {
 }
 ```
 
+> **Note:** The Spring Boot starter already provides the engine bean via `ProcessEngineAutoConfiguration` — define it yourself only for custom setups.
+
 **Pros:**
 - Simple to develop and deploy
 - No network latency between components
@@ -206,13 +208,13 @@ public class HybridWorkflowApp {
 
 // External integration via events
 @Component
-public class ExternalIntegrationListener {
+public class ExternalIntegrationListener implements ProcessRuntimeEventListener<ProcessCompletedEvent> {
     
     @Autowired
     private RabbitTemplate rabbitTemplate;
     
-    @EventListener
-    public void onProcessCompleted(ProcessCompletedEvent event) {
+    @Override
+    public void onEvent(ProcessCompletedEvent event) {
         ProcessInstance process = event.getEntity();
         
         // Send to external system
@@ -445,16 +447,12 @@ public class EventDrivenWorkflowService {
     }
     
     private void startOrderProcess(Order order) {
-        ProcessInstance instance = processRuntime.start(
+        // ProcessStartedEvent is fired by the engine itself; it cannot be published from application code
+        processRuntime.start(
             ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .withVariable("order", order)
                 .build()
-        );
-        
-        // Publish event
-        applicationEventPublisher.publishEvent(
-            new ProcessStartedEvent(instance.getId())
         );
     }
 }
@@ -612,6 +610,7 @@ flowchart LR
 ```java
 @Entity
 @Table(name = "process_events")
+@Builder
 public class ProcessEvent {
     @Id
     private String eventId;
@@ -625,13 +624,15 @@ public class ProcessEvent {
 }
 
 @Service
-public class EventSourcingService {
+public class EventSourcingService implements ProcessRuntimeEventListener<ProcessStartedEvent> {
     
     @Autowired
     private ProcessEventRepository eventRepository;
     
-    @EventListener
-    public void onProcessEvent(RuntimeEvent<?, ?> event) {
+    // One typed listener per event type; register additional beans for the
+    // other ProcessRuntimeEvent types you want to persist.
+    @Override
+    public void onEvent(ProcessStartedEvent event) {
         ProcessEvent processEvent = ProcessEvent.builder()
             .eventId(UUID.randomUUID().toString())
             .processInstanceId(event.getProcessInstanceId())
@@ -748,17 +749,29 @@ flowchart TD
 @Service
 public class ABACSecurityService {
     
+    @Autowired
+    private ProcessRuntime processRuntime;
+    
     public boolean evaluateAccess(String userId, String taskId, String action) {
         User user = getUser(userId);
         Task task = getTask(taskId);
         
         // Policy: User can complete task if:
         // 1. User is assignee OR
-        // 2. User has required skill AND task priority is low OR
+        // 2. User has the required skill (process variable) AND task priority is low OR
         // 3. User is manager of task owner
         
         boolean isAssignee = task.getAssignee().equals(userId);
-        boolean hasSkill = user.getSkills().contains(task.getRequiredSkill());
+        String requiredSkill = processRuntime.variables(
+            ProcessPayloadBuilder.variables()
+                .withProcessInstanceId(task.getProcessInstanceId())
+                .build())
+            .stream()
+            .filter(variable -> "requiredSkill".equals(variable.getName()))
+            .findFirst()
+            .map(VariableInstance::getValue)
+            .orElse(null);
+        boolean hasSkill = requiredSkill != null && user.getSkills().contains(requiredSkill);
         boolean lowPriority = task.getPriority() < 50;
         boolean isManager = isManagerOf(user, task.getOwner());
         
@@ -851,10 +864,6 @@ flowchart TD
 **Configuration:**
 ```yaml
 spring:
-  cloud:
-    cluster:
-      enabled: true
-
   activiti:
     async-executor-activate: true
     async-executor:

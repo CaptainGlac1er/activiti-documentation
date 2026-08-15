@@ -326,6 +326,8 @@ public class CustomElementHandler extends AbstractBpmnParseHandler<CustomElement
 }
 ```
 
+Note that `setBehavior(Object)` is declared on `FlowNode`, not on `BaseElement` — a hypothetical custom element type such as `CustomElement` must extend `FlowNode` (directly, or via a subclass such as `UserTask`) for this to compile.
+
 Or override the `ActivityBehaviorFactory`:
 
 ```java
@@ -339,8 +341,8 @@ config.setActivityBehaviorFactory(new CustomActivityBehaviorFactory());
 |---------|------|
 | Activity completes normally | `leave(execution)` |
 | Activity waits for external event | Set up `IntermediateCatchMessageEventActivityBehavior` or similar |
-| Activity creates a sub-execution | `execution.startFlowScope()` or use `Context.getCommandContext().getExecutionEntityManager().createChildExecution()` |
-| Activity destroys its scope | Call `Context.getAgenda().planDestroyScopeOperation()` |
+| Activity creates a sub-execution | Create a child execution and mark it as a scope: `Context.getCommandContext().getExecutionEntityManager().createChildExecution((ExecutionEntity) execution)` + `childExecution.setScope(true)` (the pattern the engine's own behaviors use) |
+| Activity destroys its scope | Call `Context.getAgenda().planDestroyScopeOperation((ExecutionEntity) execution)` |
 | Activity completes and triggers specific flow | Use `DelegateHelper.leaveDelegate(execution, sequenceFlowId)` |
 
 ## Related Documentation

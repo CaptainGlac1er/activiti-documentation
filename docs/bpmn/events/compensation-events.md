@@ -12,20 +12,24 @@ Compensation Events provide a mechanism to **undo or compensate for completed ac
 ## Overview
 
 ```xml
-<!-- Compensation boundary event on activity -->
-<serviceTask id="placeOrder" name="Place Order">
-  <boundaryEvent id="compensateOrder" attachedToRef="placeOrder" 
-                 cancelActivity="false">
-    <compensateEventDefinition activityRef="placeOrder"/>
-  </boundaryEvent>
-</serviceTask>
+<!-- Activity to be compensated -->
+<serviceTask id="placeOrder" name="Place Order"/>
 
-<!-- Compensation throw event -->
+<!-- Compensation boundary event (sibling of the activity) -->
+<boundaryEvent id="compensateOrder" attachedToRef="placeOrder" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
+
+<!-- Association from the boundary event to the compensation handler -->
+<association id="compensateOrderAssoc" sourceRef="compensateOrder" targetRef="cancelOrder"/>
+
+<!-- Compensation handler - isForCompensation="true" is required -->
+<serviceTask id="cancelOrder" name="Cancel Order" isForCompensation="true"/>
+
+<!-- Throw compensation (activityRef omitted = broadcast within scope) -->
 <intermediateThrowEvent id="triggerCompensation">
-  <compensateEventDefinition activityRef="placeOrder"/>
+  <compensateEventDefinition/>
 </intermediateThrowEvent>
-
-<!-- Compensation end events are NOT supported — falls through to "What to do?" in source -->
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
@@ -46,9 +50,9 @@ Compensation Events provide a mechanism to **undo or compensate for completed ac
 
 | Feature | Description |
 |---------|-------------|
-| **Non-Interrupting** | Always `cancelActivity="false"` |
+| **Interrupting Mode** | Both `cancelActivity="true"` and `cancelActivity="false"` are accepted; `false` (non-interrupting) is the typical setup |
 | **Completed Activities** | Only compensates completed tasks |
-| **Activity Reference** | `activityRef` is optional — if empty/null, compensation broadcasts to ALL completed activities in the current scope |
+| **Activity Reference** | `activityRef` is optional — if empty/null, compensation broadcasts to ALL completed activities in the current scope. When set on a **throw** event it must reference the compensation **handler** activity (subscriptions are keyed by the handler id); pointing it at the source activity matches no subscription |
 | **waitForCompletion** | Attribute exists on `CompensateEventDefinition` but is **not yet implemented** (TODO in source). Always defaults to `true` |
 | **Order** | Compensates in reverse order |
 | **Variables** | Original variables available |
@@ -94,44 +98,67 @@ Compensation:
 Define compensation handler on an activity:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="placeOrder" name="Place Order" 
-             activiti:class="com.example.OrderPlacer">
-  
-  <!-- Compensation event - always non-interrupting -->
-  <boundaryEvent id="compensatePlaceOrder" attachedToRef="placeOrder" 
-                 cancelActivity="false">
-    <compensateEventDefinition activityRef="placeOrder"/>
-  </boundaryEvent>
-  
-</serviceTask>
+             activiti:class="com.example.OrderPlacer"/>
 
-<!-- Compensation flow -->
-<sequenceFlow id="compFlow" sourceRef="compensatePlaceOrder" targetRef="cancelOrder"/>
+<!-- Compensation boundary event (sibling of the activity) -->
+<boundaryEvent id="compensatePlaceOrder" attachedToRef="placeOrder" 
+               cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
 
+<!-- Association from the boundary event to the compensation handler -->
+<association id="compensatePlaceOrderAssoc" sourceRef="compensatePlaceOrder" targetRef="cancelOrder"/>
+
+<!-- Compensation handler - isForCompensation="true" is required -->
 <serviceTask id="cancelOrder" name="Cancel Order" 
-             activiti:class="com.example.OrderCanceler"/>
+             activiti:class="com.example.OrderCanceler" isForCompensation="true"/>
 ```
 
 **Important:**
-- `cancelActivity="false"` is required (compensation is always non-interrupting)
-- `activityRef` must match the activity being compensated
-- Compensation task runs when another activity triggers compensation
+- The boundary event must be a **sibling** of the activity (with `attachedToRef`); nested inside the activity element it is dropped by the parser
+- The handler is linked with an `<association>` and must declare `isForCompensation="true"` — otherwise the engine throws `Compensation activity could not be found (or it is missing 'isForCompensation="true"')` when the activity completes
+- `cancelActivity` accepts both `true` and `false`; `false` is the typical (non-interrupting) setup
+- The compensation handler runs when a throw-compensation event is triggered (after the activity has completed)
 
 ### 2. Intermediate Compensation Throw Event
 
 Trigger compensation from anywhere in the process:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="compensationProcess" name="Compensation Example">
   
   <startEvent id="start"/>
   
-  <!-- Activity that might need compensation -->
+  <!-- Activities that might need compensation -->
   <serviceTask id="reserveInventory" name="Reserve Inventory" 
                activiti:class="com.example.InventoryReserver"/>
   
   <serviceTask id="processPayment" name="Process Payment" 
                activiti:class="com.example.PaymentProcessor"/>
+  
+  <!-- Compensation boundary events (siblings of the activities) -->
+  <boundaryEvent id="compReserve" attachedToRef="reserveInventory" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <boundaryEvent id="compPayment" attachedToRef="processPayment" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <!-- Associations from the boundary events to the compensation handlers -->
+  <association id="compReserveAssoc" sourceRef="compReserve" targetRef="releaseInventory"/>
+  
+  <association id="compPaymentAssoc" sourceRef="compPayment" targetRef="refundPayment"/>
+  
+  <!-- Compensation handlers - isForCompensation="true" is required -->
+  <serviceTask id="releaseInventory" name="Release Inventory" 
+               activiti:class="com.example.InventoryRelease" isForCompensation="true"/>
+  
+  <serviceTask id="refundPayment" name="Refund Payment" 
+               activiti:class="com.example.PaymentRefund" isForCompensation="true"/>
   
   <!-- Decision point -->
   <exclusiveGateway id="shipmentCheck"/>
@@ -141,18 +168,14 @@ Trigger compensation from anywhere in the process:
     <conditionExpression>${shipmentSuccess}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Shipment failed - trigger compensation -->
+  <!-- Shipment failed - trigger compensation for both previous activities -->
   <sequenceFlow id="failed" sourceRef="shipmentCheck" targetRef="compensate">
     <conditionExpression>${!shipmentSuccess}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Throw compensation for both previous activities -->
+  <!-- Throw compensation (activityRef omitted = broadcast within scope) -->
   <intermediateThrowEvent id="compensate">
-    <compensateEventDefinition activityRef="processPayment"/>
-  </intermediateThrowEvent>
-  
-  <intermediateThrowEvent id="compensate2">
-    <compensateEventDefinition activityRef="reserveInventory"/>
+    <compensateEventDefinition/>
   </intermediateThrowEvent>
   
   <serviceTask id="shipOrder" name="Ship Order"/>
@@ -163,64 +186,17 @@ Trigger compensation from anywhere in the process:
   <sequenceFlow id="flow1" sourceRef="start" targetRef="reserveInventory"/>
   <sequenceFlow id="flow2" sourceRef="reserveInventory" targetRef="processPayment"/>
   <sequenceFlow id="flow3" sourceRef="processPayment" targetRef="shipmentCheck"/>
-  <sequenceFlow id="flow4" sourceRef="compensate" targetRef="compensate2"/>
-  <sequenceFlow id="flow5" sourceRef="compensate2" targetRef="failureEnd"/>
-  <sequenceFlow id="flow6" sourceRef="shipOrder" targetRef="successEnd"/>
+  <sequenceFlow id="flow4" sourceRef="compensate" targetRef="failureEnd"/>
+  <sequenceFlow id="flow5" sourceRef="shipOrder" targetRef="successEnd"/>
   
 </process>
 ```
 
-### 3. Compensation End Event
+**How it works:** When `reserveInventory` and `processPayment` complete, the engine registers a compensation subscription for each (via the boundary events and associations). The throw event without `activityRef` broadcasts the compensation to the current scope: the handlers run in reverse order of completion (`refundPayment` first, then `releaseInventory`).
 
-Compensate and terminate in one step:
+### 3. Compensation End Event (Not Supported)
 
-```xml
-<process id="compensateEndProcess" name="Compensate and End">
-  
-  <startEvent id="start"/>
-  
-  <serviceTask id="allocateResource" name="Allocate Resource" 
-               activiti:class="com.example.ResourceAllocator"/>
-  
-  <serviceTask id="processData" name="Process Data" 
-               activiti:class="com.example.DataProcessor"/>
-  
-  <exclusiveGateway id="validationCheck"/>
-  
-  <!-- Validation passed -->
-  <sequenceFlow id="passed" sourceRef="validationCheck" targetRef="commit">
-    <conditionExpression>${valid}</conditionExpression>
-  </sequenceFlow>
-  
-  <!-- Validation failed - trigger compensation via intermediate throw events -->
-  <sequenceFlow id="failed" sourceRef="validationCheck" targetRef="compensate1">
-    <conditionExpression>${!valid}</conditionExpression>
-  </sequenceFlow>
-  
-  <!-- Compensation throw events (intermediate throw) -->
-  <intermediateThrowEvent id="compensate1">
-    <compensateEventDefinition activityRef="processData"/>
-  </intermediateThrowEvent>
-  
-  <intermediateThrowEvent id="compensate2">
-    <compensateEventDefinition activityRef="allocateResource"/>
-  </intermediateThrowEvent>
-  
-  <sequenceFlow id="flow4" sourceRef="compensate1" targetRef="compensate2"/>
-  <sequenceFlow id="flow5" sourceRef="compensate2" targetRef="failureEnd"/>
-  
-  <serviceTask id="commit" name="Commit Changes"/>
-  
-  <endEvent id="successEnd"/>
-  <endEvent id="failureEnd"/>
-  
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="allocateResource"/>
-  <sequenceFlow id="flow2" sourceRef="allocateResource" targetRef="processData"/>
-  <sequenceFlow id="flow3" sourceRef="processData" targetRef="validationCheck"/>
-  <sequenceFlow id="flow6" sourceRef="commit" targetRef="successEnd"/>
-  
-</process>
-```
+There is no compensation end event element in Activiti — a `compensateEventDefinition` on an end event gets no behavior (the `CompensateEventDefinitionParseHandler` only handles throw events and boundary events). Boundary/throw compensation is the supported mechanism: to compensate and then terminate, place a throw-compensation event in the flow before the end event (as in the examples below).
 
 **Note:** `activityRef` is optional. When omitted, the compensation event broadcasts to ALL completed activities in the current compensation scope.
 
@@ -231,35 +207,36 @@ Compensate and terminate in one step:
 ### Example 1: E-Commerce Order Process
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="E-Commerce Order Processing">
   
   <startEvent id="start"/>
   
   <!-- Step 1: Reserve inventory -->
   <serviceTask id="reserveInventory" name="Reserve Inventory" 
-               activiti:class="com.example.InventoryService">
-    <boundaryEvent id="compReserve" attachedToRef="reserveInventory" cancelActivity="false">
-      <compensateEventDefinition activityRef="reserveInventory"/>
-    </boundaryEvent>
-  </serviceTask>
+               activiti:class="com.example.InventoryService"/>
   
-  <sequenceFlow id="compReserveFlow" sourceRef="compReserve" targetRef="releaseInventory"/>
+  <boundaryEvent id="compReserve" attachedToRef="reserveInventory" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compReserveAssoc" sourceRef="compReserve" targetRef="releaseInventory"/>
   
   <serviceTask id="releaseInventory" name="Release Inventory" 
-               activiti:class="com.example.InventoryReleaseService"/>
+               activiti:class="com.example.InventoryReleaseService" isForCompensation="true"/>
   
   <!-- Step 2: Process payment -->
   <serviceTask id="processPayment" name="Process Payment" 
-               activiti:class="com.example.PaymentService">
-    <boundaryEvent id="compPayment" attachedToRef="processPayment" cancelActivity="false">
-      <compensateEventDefinition activityRef="processPayment"/>
-    </boundaryEvent>
-  </serviceTask>
+               activiti:class="com.example.PaymentService"/>
   
-  <sequenceFlow id="compPaymentFlow" sourceRef="compPayment" targetRef="refundPayment"/>
+  <boundaryEvent id="compPayment" attachedToRef="processPayment" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compPaymentAssoc" sourceRef="compPayment" targetRef="refundPayment"/>
   
   <serviceTask id="refundPayment" name="Refund Payment" 
-               activiti:class="com.example.RefundService"/>
+               activiti:class="com.example.RefundService" isForCompensation="true"/>
   
   <!-- Step 3: Create shipment -->
   <serviceTask id="createShipment" name="Create Shipment" 
@@ -278,13 +255,9 @@ Compensate and terminate in one step:
     <conditionExpression>${!shipmentValid}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Compensation throw events -->
+  <!-- Throw compensation (activityRef omitted = broadcast within scope) -->
   <intermediateThrowEvent id="compensatePaymentEvent">
-    <compensateEventDefinition activityRef="processPayment"/>
-  </intermediateThrowEvent>
-  
-  <intermediateThrowEvent id="compensateReserveEvent">
-    <compensateEventDefinition activityRef="reserveInventory"/>
+    <compensateEventDefinition/>
   </intermediateThrowEvent>
   
   <serviceTask id="confirmOrder" name="Confirm Order" 
@@ -298,55 +271,63 @@ Compensate and terminate in one step:
   <sequenceFlow id="flow2" sourceRef="reserveInventory" targetRef="processPayment"/>
   <sequenceFlow id="flow3" sourceRef="processPayment" targetRef="createShipment"/>
   <sequenceFlow id="flow4" sourceRef="createShipment" targetRef="shipmentValidation"/>
-  <sequenceFlow id="flow5" sourceRef="compensatePaymentEvent" targetRef="compensateReserveEvent"/>
-  <sequenceFlow id="flow6" sourceRef="compensateReserveEvent" targetRef="failureEnd"/>
-  <sequenceFlow id="flow7" sourceRef="confirmOrder" targetRef="successEnd"/>
+  <sequenceFlow id="flow5" sourceRef="compensatePaymentEvent" targetRef="failureEnd"/>
+  <sequenceFlow id="flow6" sourceRef="confirmOrder" targetRef="successEnd"/>
   
 </process>
 ```
 
 **Compensation Flow:**
 1. Shipment validation fails
-2. Trigger compensation for `processPayment` → executes `refundPayment`
-3. Trigger compensation for `reserveInventory` → executes `releaseInventory`
-4. Process ends with failure
+2. The throw-compensation event broadcasts within scope → handlers run in reverse order of completion: `refundPayment` (compensates #2), then `releaseInventory` (compensates #1)
+3. Process ends with failure
 
 ### Example 2: Multi-Step Approval with Compensation
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="approvalProcess" name="Approval with Compensation">
   
   <startEvent id="start"/>
   
   <!-- Step 1: Financial approval -->
   <userTask id="financialApproval" name="Financial Approval" 
-            activiti:assignee="${financeManager}">
-    <boundaryEvent id="compFinancial" attachedToRef="financialApproval" cancelActivity="false">
-      <compensateEventDefinition activityRef="financialApproval"/>
-    </boundaryEvent>
-  </userTask>
+            activiti:assignee="${financeManager}"/>
   
-  <sequenceFlow id="compFinancialFlow" sourceRef="compFinancial" targetRef="revokeFinancialApproval"/>
+  <boundaryEvent id="compFinancial" attachedToRef="financialApproval" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compFinancialAssoc" sourceRef="compFinancial" targetRef="revokeFinancialApproval"/>
   
   <serviceTask id="revokeFinancialApproval" name="Revoke Financial Approval" 
-               activiti:class="com.example.ApprovalRevoker"/>
+               activiti:class="com.example.ApprovalRevoker" isForCompensation="true"/>
   
   <!-- Step 2: Legal approval -->
   <userTask id="legalApproval" name="Legal Approval" 
-            activiti:assignee="${legalTeam}">
-    <boundaryEvent id="compLegal" attachedToRef="legalApproval" cancelActivity="false">
-      <compensateEventDefinition activityRef="legalApproval"/>
-    </boundaryEvent>
-  </userTask>
+            activiti:assignee="${legalTeam}"/>
   
-  <sequenceFlow id="compLegalFlow" sourceRef="compLegal" targetRef="revokeLegalApproval"/>
+  <boundaryEvent id="compLegal" attachedToRef="legalApproval" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compLegalAssoc" sourceRef="compLegal" targetRef="revokeLegalApproval"/>
   
   <serviceTask id="revokeLegalApproval" name="Revoke Legal Approval" 
-               activiti:class="com.example.ApprovalRevoker"/>
+               activiti:class="com.example.ApprovalRevoker" isForCompensation="true"/>
   
   <!-- Step 3: Executive approval -->
   <userTask id="executiveApproval" name="Executive Approval" 
             activiti:assignee="${ceo}"/>
+  
+  <boundaryEvent id="compExecutive" attachedToRef="executiveApproval" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compExecutiveAssoc" sourceRef="compExecutive" targetRef="revokeExecutiveApproval"/>
+  
+  <serviceTask id="revokeExecutiveApproval" name="Revoke Executive Approval" 
+               activiti:class="com.example.ApprovalRevoker" isForCompensation="true"/>
   
   <!-- Step 4: Final validation -->
   <exclusiveGateway id="finalCheck"/>
@@ -356,22 +337,13 @@ Compensate and terminate in one step:
     <conditionExpression>${allApproved}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Issue found - compensate all approvals -->
-  <sequenceFlow id="rejected" sourceRef="finalCheck" targetRef="compExec">
+  <!-- Issue found - compensate all approvals (activityRef omitted = broadcast within scope) -->
+  <sequenceFlow id="rejected" sourceRef="finalCheck" targetRef="compensateApprovals">
     <conditionExpression>${!allApproved}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Compensation chain -->
-  <intermediateThrowEvent id="compExec">
-    <compensateEventDefinition activityRef="executiveApproval"/>
-  </intermediateThrowEvent>
-  
-  <intermediateThrowEvent id="compLegalThrow">
-    <compensateEventDefinition activityRef="legalApproval"/>
-  </intermediateThrowEvent>
-  
-  <intermediateThrowEvent id="compFinancialThrow">
-    <compensateEventDefinition activityRef="financialApproval"/>
+  <intermediateThrowEvent id="compensateApprovals">
+    <compensateEventDefinition/>
   </intermediateThrowEvent>
   
   <serviceTask id="executeContract" name="Execute Contract" 
@@ -385,10 +357,8 @@ Compensate and terminate in one step:
   <sequenceFlow id="flow2" sourceRef="financialApproval" targetRef="legalApproval"/>
   <sequenceFlow id="flow3" sourceRef="legalApproval" targetRef="executiveApproval"/>
   <sequenceFlow id="flow4" sourceRef="executiveApproval" targetRef="finalCheck"/>
-  <sequenceFlow id="flow5" sourceRef="compExec" targetRef="compLegalThrow"/>
-  <sequenceFlow id="flow6" sourceRef="compLegalThrow" targetRef="compFinancialThrow"/>
-  <sequenceFlow id="flow7" sourceRef="compFinancialThrow" targetRef="failureEnd"/>
-  <sequenceFlow id="flow8" sourceRef="executeContract" targetRef="successEnd"/>
+  <sequenceFlow id="flow5" sourceRef="compensateApprovals" targetRef="failureEnd"/>
+  <sequenceFlow id="flow6" sourceRef="executeContract" targetRef="successEnd"/>
   
 </process>
 ```
@@ -396,57 +366,58 @@ Compensate and terminate in one step:
 ### Example 3: Saga Pattern Implementation
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="sagaProcess" name="Saga Pattern - Distributed Transaction">
   
   <startEvent id="start"/>
   
   <!-- Step 1: Create order -->
   <serviceTask id="createOrder" name="Create Order" 
-               activiti:class="com.example.OrderCreator">
-    <boundaryEvent id="compOrder" attachedToRef="createOrder" cancelActivity="false">
-      <compensateEventDefinition activityRef="createOrder"/>
-    </boundaryEvent>
-  </serviceTask>
+               activiti:class="com.example.OrderCreator"/>
   
-  <sequenceFlow id="compOrderFlow" sourceRef="compOrder" targetRef="cancelOrder"/>
+  <boundaryEvent id="compOrder" attachedToRef="createOrder" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compOrderAssoc" sourceRef="compOrder" targetRef="cancelOrder"/>
   <serviceTask id="cancelOrder" name="Cancel Order" 
-               activiti:class="com.example.OrderCanceler"/>
+               activiti:class="com.example.OrderCanceler" isForCompensation="true"/>
   
   <!-- Step 2: Reserve inventory -->
   <serviceTask id="reserveInventory" name="Reserve Inventory" 
-               activiti:class="com.example.InventoryReserver">
-    <boundaryEvent id="compInventory" attachedToRef="reserveInventory" cancelActivity="false">
-      <compensateEventDefinition activityRef="reserveInventory"/>
-    </boundaryEvent>
-  </serviceTask>
+               activiti:class="com.example.InventoryReserver"/>
   
-  <sequenceFlow id="compInventoryFlow" sourceRef="compInventory" targetRef="releaseInventory"/>
+  <boundaryEvent id="compInventory" attachedToRef="reserveInventory" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compInventoryAssoc" sourceRef="compInventory" targetRef="releaseInventory"/>
   <serviceTask id="releaseInventory" name="Release Inventory" 
-               activiti:class="com.example.InventoryReleaser"/>
+               activiti:class="com.example.InventoryReleaser" isForCompensation="true"/>
   
   <!-- Step 3: Process payment -->
   <serviceTask id="processPayment" name="Process Payment" 
-               activiti:class="com.example.PaymentProcessor">
-    <boundaryEvent id="compPayment" attachedToRef="processPayment" cancelActivity="false">
-      <compensateEventDefinition activityRef="processPayment"/>
-    </boundaryEvent>
-  </serviceTask>
+               activiti:class="com.example.PaymentProcessor"/>
   
-  <sequenceFlow id="compPaymentFlow" sourceRef="compPayment" targetRef="refundPayment"/>
+  <boundaryEvent id="compPayment" attachedToRef="processPayment" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compPaymentAssoc" sourceRef="compPayment" targetRef="refundPayment"/>
   <serviceTask id="refundPayment" name="Refund Payment" 
-               activiti:class="com.example.PaymentRefunder"/>
+               activiti:class="com.example.PaymentRefunder" isForCompensation="true"/>
   
   <!-- Step 4: Arrange delivery -->
   <serviceTask id="arrangeDelivery" name="Arrange Delivery" 
-               activiti:class="com.example.DeliveryArranger">
-    <boundaryEvent id="compDelivery" attachedToRef="arrangeDelivery" cancelActivity="false">
-      <compensateEventDefinition activityRef="arrangeDelivery"/>
-    </boundaryEvent>
-  </serviceTask>
+               activiti:class="com.example.DeliveryArranger"/>
   
-  <sequenceFlow id="compDeliveryFlow" sourceRef="compDelivery" targetRef="cancelDelivery"/>
+  <boundaryEvent id="compDelivery" attachedToRef="arrangeDelivery" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <association id="compDeliveryAssoc" sourceRef="compDelivery" targetRef="cancelDelivery"/>
   <serviceTask id="cancelDelivery" name="Cancel Delivery" 
-               activiti:class="com.example.DeliveryCanceler"/>
+               activiti:class="com.example.DeliveryCanceler" isForCompensation="true"/>
   
   <!-- Step 5: Final validation -->
   <exclusiveGateway id="finalValidation"/>
@@ -456,18 +427,13 @@ Compensate and terminate in one step:
     <conditionExpression>${success}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Failure - use intermediate throw compensation events -->
+  <!-- Failure - throw compensation for all completed steps (activityRef omitted = broadcast within scope) -->
   <sequenceFlow id="invalid" sourceRef="finalValidation" targetRef="compensatePaymentEvent">
     <conditionExpression>${!success}</conditionExpression>
   </sequenceFlow>
   
-  <!-- Compensation throw events (intermediate throw) -->
   <intermediateThrowEvent id="compensatePaymentEvent">
-    <compensateEventDefinition activityRef="processPayment"/>
-  </intermediateThrowEvent>
-  
-  <intermediateThrowEvent id="compensateReserveEvent">
-    <compensateEventDefinition activityRef="reserveInventory"/>
+    <compensateEventDefinition/>
   </intermediateThrowEvent>
   
   <serviceTask id="confirmSaga" name="Confirm Saga" 
@@ -476,8 +442,7 @@ Compensate and terminate in one step:
   <endEvent id="successEnd"/>
   <endEvent id="failureEnd"/>
 
-  <sequenceFlow id="flow5" sourceRef="compensatePaymentEvent" targetRef="compensateReserveEvent"/>
-  <sequenceFlow id="flow6" sourceRef="compensateReserveEvent" targetRef="failureEnd"/>
+  <sequenceFlow id="flow6" sourceRef="compensatePaymentEvent" targetRef="failureEnd"/>
   <sequenceFlow id="flow7" sourceRef="confirmSaga" targetRef="successEnd"/>
   
 </process>
@@ -575,17 +540,17 @@ for (Task task : compensationTasks) {
 
 ```xml
 <!-- GOOD: Compensation handler defined -->
-<serviceTask id="placeOrder" name="Place Order">
-  <boundaryEvent id="compOrder" attachedToRef="placeOrder" cancelActivity="false">
-    <compensateEventDefinition activityRef="placeOrder"/>
-  </boundaryEvent>
-</serviceTask>
+<serviceTask id="placeOrder" name="Place Order"/>
 
-<sequenceFlow id="compFlow" sourceRef="compOrder" targetRef="cancelOrder"/>
-<serviceTask id="cancelOrder" name="Cancel Order"/>
+<boundaryEvent id="compOrder" attachedToRef="placeOrder" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
+
+<association id="compOrderAssoc" sourceRef="compOrder" targetRef="cancelOrder"/>
+<serviceTask id="cancelOrder" name="Cancel Order" isForCompensation="true"/>
 
 <!-- BAD: No compensation handler -->
-<serviceTask id="placeOrder" name="Place Order"/>
+<serviceTask id="otherOrder" name="Place Order"/>
 <!-- Compensation will fail with no handler -->
 ```
 
@@ -683,90 +648,104 @@ public void testCompensationFlow() {
 **Problem:** No activity to handle compensation
 
 ```xml
-<!-- WRONG: Compensation event with no handler -->
-<serviceTask id="placeOrder" name="Place Order">
-  <boundaryEvent id="compOrder" attachedToRef="placeOrder" cancelActivity="false">
-    <compensateEventDefinition activityRef="placeOrder"/>
-  </boundaryEvent>
-</serviceTask>
+<!-- WRONG: Compensation boundary event with no associated handler -->
+<serviceTask id="placeOrder" name="Place Order"/>
 
-<!-- No sequence flow from compOrder! -->
+<boundaryEvent id="compOrder" attachedToRef="placeOrder" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
 
-<!-- CORRECT: Define handler -->
-<serviceTask id="placeOrder" name="Place Order">
-  <boundaryEvent id="compOrder" attachedToRef="placeOrder" cancelActivity="false">
-    <compensateEventDefinition activityRef="placeOrder"/>
-  </boundaryEvent>
-</serviceTask>
+<!-- No association to an isForCompensation="true" handler! -->
 
-<sequenceFlow id="compFlow" sourceRef="compOrder" targetRef="cancelOrder"/>
-<serviceTask id="cancelOrder" name="Cancel Order"/>
+<!-- CORRECT: Define the handler and link it with an association -->
+<serviceTask id="placeOrder" name="Place Order"/>
+
+<boundaryEvent id="compOrder" attachedToRef="placeOrder" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
+
+<association id="compFlow" sourceRef="compOrder" targetRef="cancelOrder"/>
+<serviceTask id="cancelOrder" name="Cancel Order" isForCompensation="true"/>
 ```
 
-**Error:** `ActivitiException: Compensation activity could not be found (or it is missing 'isForCompensation="true"'`
+**Error:** `ActivitiException: Compensation activity could not be found (or it is missing 'isForCompensation="true"')` — thrown when the activity completes and its compensation boundary event cannot resolve a handler. Note that a sequence flow from the boundary event to a handler is **not** enough — the engine resolves the handler through the `<association>` and requires `isForCompensation="true"` on the target.
 
 ### 2. Trying to Compensate Incomplete Activities
 
 **Problem:** Compensation only works on completed activities
 
 ```xml
-<!-- WRONG: Can't compensate activity that didn't complete -->
+<!-- Compensation only triggers for activities that completed before failure.
+     If step2 fails, step1 is only compensated if it already completed. -->
 <serviceTask id="step1" name="Step 1"/>
 <serviceTask id="step2" name="Step 2"/>
 
-<!-- If step2 fails, can't compensate step1 if it didn't complete -->
-<intermediateThrowEvent id="comp">
-  <compensateEventDefinition activityRef="step1"/>  <!-- Only if step1 completed -->
-</intermediateThrowEvent>
+<boundaryEvent id="step1Comp" attachedToRef="step1" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
+<association id="step1Assoc" sourceRef="step1Comp" targetRef="undoStep1"/>
+<serviceTask id="undoStep1" name="Undo Step 1" isForCompensation="true"/>
 
-<!-- CORRECT: Understand completion requirement -->
-<!-- Compensation only triggers for activities that completed before failure -->
+<!-- If activityRef is set, it must reference the compensation HANDLER (undoStep1),
+     not the source activity — subscriptions are keyed by the handler id. -->
+<intermediateThrowEvent id="comp">
+  <compensateEventDefinition activityRef="undoStep1"/>
+</intermediateThrowEvent>
 ```
 
-### 3. Using Interrupting Compensation
+**Note:** The engine no longer validates `activityRef` at deploy time (the legacy check is disabled in the source), so pointing it at a regular activity such as `step1` deploys without error — and then silently matches no subscription, making the throw a no-op.
 
-**Problem:** Compensation must be non-interrupting
+### 3. Interrupting vs Non-Interrupting Compensation
+
+**Problem:** It is often assumed that compensation must be non-interrupting — but both values are accepted
 
 ```xml
-<!-- WRONG: cancelActivity="true" not allowed -->
-<serviceTask id="placeOrder" name="Place Order">
-  <boundaryEvent id="compOrder" attachedToRef="placeOrder" cancelActivity="true">
-    <compensateEventDefinition activityRef="placeOrder"/>
-  </boundaryEvent>
-</serviceTask>
+<!-- Interrupting: cancelActivity="true" is accepted -->
+<serviceTask id="placeOrder" name="Place Order"/>
 
-<!-- CORRECT: Always cancelActivity="false" -->
-<serviceTask id="placeOrder" name="Place Order">
-  <boundaryEvent id="compOrder" attachedToRef="placeOrder" cancelActivity="false">
-    <compensateEventDefinition activityRef="placeOrder"/>
-  </boundaryEvent>
-</serviceTask>
+<boundaryEvent id="compOrderInterrupting" attachedToRef="placeOrder" cancelActivity="true">
+  <compensateEventDefinition/>
+</boundaryEvent>
+
+<association id="compOrderAssoc" sourceRef="compOrderInterrupting" targetRef="cancelOrder"/>
+<serviceTask id="cancelOrder" name="Cancel Order" isForCompensation="true"/>
+
+<!-- Non-interrupting: cancelActivity="false" (the typical compensation setup) -->
+<serviceTask id="bookFlight" name="Book Flight"/>
+
+<boundaryEvent id="compFlight" attachedToRef="bookFlight" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
+
+<association id="compFlightAssoc" sourceRef="compFlight" targetRef="cancelFlight"/>
+<serviceTask id="cancelFlight" name="Cancel Flight" isForCompensation="true"/>
 ```
+
+With `cancelActivity="false"`, the activity completes normally and registers a compensation subscription that a later throw-compensation event can trigger. With `cancelActivity="true"`, the boundary event cancels the attached activity when it fires and removes the compensation subscription matching `activityRef`. Note that only one compensation boundary event is allowed per activity (the validator flags multiple).
 
 ### 4. Circular Compensation
 
 **Problem:** Compensation triggers compensation
 
 ```xml
-<!-- WRONG: Circular compensation -->
-<serviceTask id="activity1" name="Activity 1">
-  <boundaryEvent id="comp1" attachedToRef="activity1" cancelActivity="false">
-    <compensateEventDefinition activityRef="activity1"/>
-  </boundaryEvent>
-</serviceTask>
+<!-- WRONG: compensation handler loops back into the compensated flow -->
+<serviceTask id="activity1" name="Activity 1"/>
+<boundaryEvent id="comp1" attachedToRef="activity1" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
+<association id="comp1Assoc" sourceRef="comp1" targetRef="undoActivity1"/>
+<serviceTask id="undoActivity1" name="Undo Activity 1" isForCompensation="true"/>
 
-<sequenceFlow id="flow1" sourceRef="comp1" targetRef="activity2"/>
+<serviceTask id="activity2" name="Activity 2"/>
+<boundaryEvent id="comp2" attachedToRef="activity2" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
+<association id="comp2Assoc" sourceRef="comp2" targetRef="undoActivity2"/>
+<serviceTask id="undoActivity2" name="Undo Activity 2" isForCompensation="true"/>
+<sequenceFlow id="comp2Flow" sourceRef="undoActivity2" targetRef="activity1"/>  <!-- Back to activity1 - loop! -->
 
-<serviceTask id="activity2" name="Activity 2">
-  <boundaryEvent id="comp2" attachedToRef="activity2" cancelActivity="false">
-    <compensateEventDefinition activityRef="activity2"/>
-  </boundaryEvent>
-</serviceTask>
-
-<sequenceFlow id="flow2" sourceRef="comp2" targetRef="activity1"/>  <!-- Back to activity1! -->
-
-<!-- CORRECT: Linear compensation flow -->
-<sequenceFlow id="flow2" sourceRef="comp2" targetRef="endEvent"/>
+<!-- CORRECT: Linear compensation flow (handler does not re-enter the process flow) -->
+<sequenceFlow id="comp2Flow" sourceRef="undoActivity2" targetRef="endEvent"/>
 ```
 
 ## Comparison with Alternatives
@@ -793,7 +772,7 @@ public void testCompensationFlow() {
 
 - [Boundary Events](./boundary-event.md) - Event attachment
 - [Intermediate Events](./intermediate-events.md) - Throw events
-- [End Events](./end-event.md) - Compensation end events
+- [End Events](./end-event.md) - Process termination
 - [Error Handling](../reference/error-handling.md) - Alternative rollback
 
 ---

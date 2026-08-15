@@ -696,7 +696,7 @@ public class MessageEventPayload implements Payload {
 
 **Usage Example**:
 ```java
-MessageEventPayload payload = MessagePayloadBuilder.receive("paymentReceived")
+ReceiveMessagePayload payload = MessagePayloadBuilder.receive("paymentReceived")
     .withCorrelationKey("ORDER-123")
     .withVariable("amount", 500.00)
     .withVariable("paymentId", "PAY-456")
@@ -773,7 +773,8 @@ public class RemoveProcessVariablesPayload implements Payload {
 processRuntime.removeVariables(
     ProcessPayloadBuilder.removeVariables()
         .withProcessInstanceId(instanceId)
-        .withVariableNames("tempVar", "oldData")
+        .withVariableNames("tempVar")
+        .withVariableNames("oldData")
         .build()
 );
 ```
@@ -1097,10 +1098,13 @@ void startProcessPayloadShouldHaveUniqueId() {
 }
 
 @Test
-void payloadShouldValidateRequiredFields() {
-    assertThrows(IllegalArgumentException.class, () -> {
-        ProcessPayloadBuilder.start()
-            .build(); // Missing process definition
+void startProcessShouldThrowForUnknownProcessDefinition() {
+    assertThrows(ActivitiObjectNotFoundException.class, () -> {
+        processRuntime.start(
+            ProcessPayloadBuilder.start()
+                .withProcessDefinitionKey("nonExistent") // missing/unknown process definition
+                .build()
+        );
     });
 }
 ```
@@ -1151,9 +1155,14 @@ taskRuntime.createVariable(...);
 
 ```java
 // Don't assume event order
-@EventListener
-public void onProcessStarted(ProcessStartedEvent event) {
-    // This may not fire before variable events
+@Component
+public class ProcessStartedListener
+    implements ProcessRuntimeEventListener<ProcessStartedEvent> {
+
+    @Override
+    public void onEvent(ProcessStartedEvent event) {
+        // This may not fire before variable events
+    }
 }
 ```
 

@@ -111,7 +111,7 @@ Human tasks include timeout handling:
                     attachedToRef="validateCustomerTask" 
                     cancelActivity="true">
   <bpmn:timerEventDefinition>
-    <bpmn:timeDuration>PT30M</timeDuration>
+    <bpmn:timeDuration>PT30M</bpmn:timeDuration>
   </bpmn:timerEventDefinition>
 </bpmn:boundaryEvent>
 ```

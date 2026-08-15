@@ -926,7 +926,7 @@ WHERE E.ACT_ID_ = 'waitForApproval'
 
 | Feature | Reference Column | Stored Content |
 |---------|-----------------|----------------|
-| Deployment resources | `ACT_RE_DEPLOYMENT` → query by `deploymentId` | BPMN XML, `.extension.json`, form files |
+| Deployment resources | `ACT_RE_DEPLOYMENT` → query by `deploymentId` | BPMN XML, `.extensions.json`, form files |
 | Process variables | `ACT_RU_VARIABLE.BYTEARRAY_ID_` | Binary and serializable variables |
 | Model editor source | `ACT_RE_MODEL.EDITOR_SOURCE_VALUE_ID_` | BPMN XML from modeler |
 | Model editor extras | `ACT_RE_MODEL.EDITOR_SOURCE_EXTRA_VALUE_ID_` | Stencil set and metadata |

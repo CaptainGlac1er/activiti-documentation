@@ -756,7 +756,7 @@ public class OrderController {
                 .build()
         );
         
-        if (!result.hasContent()) {
+        if (result.getContent() == null || result.getContent().isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         

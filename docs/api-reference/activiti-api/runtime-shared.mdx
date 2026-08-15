@@ -650,11 +650,19 @@ Pageable pageable = Pageable.of(0, requestedSize);
 public class SecurityConfig {
     @Bean
     public SecurityManager securityManager() {
-        return new AbstractSecurityManager(
+        return new SpringSecurityManager();
+    }
+}
+
+// AbstractSecurityManager is abstract - use a concrete subclass
+@Component
+public class SpringSecurityManager extends AbstractSecurityManager {
+    public SpringSecurityManager() {
+        super(
             new SecurityContextPrincipalProvider() {
                 @Override
                 public Optional<Principal> getCurrentPrincipal() {
-                    Authentication auth = 
+                    Authentication auth =
                         SecurityContextHolder.getContext().getAuthentication();
                     return auth != null && auth.getPrincipal() != null
                         ? Optional.of(auth.getPrincipal())
@@ -669,7 +677,18 @@ public class SecurityConfig {
                         : principal.getName();
                 }
             },
-            // Groups and roles providers...
+            new PrincipalGroupsProvider() {
+                @Override
+                public List<String> getGroups(Principal principal) {
+                    return List.of();
+                }
+            },
+            new PrincipalRolesProvider() {
+                @Override
+                public List<String> getRoles(Principal principal) {
+                    return List.of();
+                }
+            }
         );
     }
 }

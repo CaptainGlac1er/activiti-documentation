@@ -53,10 +53,11 @@ public class OrderService {
 }
 
 // Event listener layer: Reactive business logic
-@Service
-public class OrderEventListener {
-    @EventListener
-    public void onOrderCompleted(ProcessCompletedEvent event) {
+// Process lifecycle events are not Spring events — use a typed listener bean
+@Component
+public class OrderEventListener implements ProcessRuntimeEventListener<ProcessCompletedEvent> {
+    @Override
+    public void onEvent(ProcessCompletedEvent event) {
         // Event handling logic
     }
 }
@@ -238,13 +239,10 @@ Page<Task> allTasks = taskRuntime.tasks(Pageable.of(0, Integer.MAX_VALUE));
 
 ```xml
 <!-- BPMN Configuration -->
-<serviceTask id="externalCall" 
+<serviceTask id="externalCall"
              name="Call External API"
              activiti:async="true"
-             activiti:jobPriority="5">
-    <extensionElements>
-        <activiti:connector connectorRef="apiConnector"/>
-    </extensionElements>
+             activiti:class="com.example.ExternalApiCaller">
 </serviceTask>
 ```
 
@@ -252,13 +250,13 @@ Page<Task> allTasks = taskRuntime.tasks(Pageable.of(0, Integer.MAX_VALUE));
 
 ```java
 @Component
-public class AsyncEventListener {
+public class AsyncEventListener implements ProcessRuntimeEventListener<ProcessCompletedEvent> {
     
     @Autowired
     private TaskExecutor taskExecutor;
     
-    @EventListener
-    public void onProcessCompleted(ProcessCompletedEvent event) {
+    @Override
+    public void onEvent(ProcessCompletedEvent event) {
         taskExecutor.execute(() -> {
             // Heavy processing outside event thread
             archiveProcessData(event.getEntity());
@@ -471,13 +469,14 @@ public class SecureProcessService {
 
 ```java
 @Component
-public class SecurityAuditListener {
+public class SecurityAuditListener implements TaskRuntimeEventListener<TaskAssignedEvent>,
+                                             ProcessRuntimeEventListener<ProcessCancelledEvent> {
     
     @Autowired
     private AuditLogService auditLogService;
     
-    @EventListener
-    public void onTaskAssigned(TaskAssignedEvent event) {
+    @Override
+    public void onEvent(TaskAssignedEvent event) {
         Task task = event.getEntity();
         auditLogService.log(
             "TASK_ASSIGNED",
@@ -488,8 +487,8 @@ public class SecurityAuditListener {
         );
     }
     
-    @EventListener
-    public void onProcessCancelled(ProcessCancelledEvent event) {
+    @Override
+    public void onEvent(ProcessCancelledEvent event) {
         ProcessInstance process = event.getEntity();
         auditLogService.log(
             "PROCESS_CANCELLED",
@@ -639,10 +638,10 @@ public class RetryableProcessService {
 
 ```java
 @Component
-public class CompensationHandler {
+public class CompensationHandler implements ProcessRuntimeEventListener<ProcessCancelledEvent> {
     
-    @EventListener
-    public void onProcessCancelled(ProcessCancelledEvent event) {
+    @Override
+    public void onEvent(ProcessCancelledEvent event) {
         ProcessInstance process = event.getEntity();
         
         try {

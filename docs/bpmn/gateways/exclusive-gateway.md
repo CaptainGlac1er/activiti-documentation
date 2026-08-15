@@ -79,7 +79,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 ### Complex Conditions
 
 ```xml
-<exclusiveGateway id="complexDecision" name="Complex Routing"/>
+<exclusiveGateway id="complexDecision" name="Complex Routing" default="defaultPath"/>
 
 <sequenceFlow id="path1" sourceRef="complexDecision" targetRef="task1">
   <conditionExpression>${user.role == 'ADMIN' and amount > 10000}</conditionExpression>
@@ -117,7 +117,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 ### Example 1: Order Processing Decision
 
 ```xml
-<exclusiveGateway id="orderTypeDecision" name="Order Type"/>
+<exclusiveGateway id="orderTypeDecision" name="Order Type" default="unknownOrder"/>
 
 <sequenceFlow id="standardOrder" sourceRef="orderTypeDecision" targetRef="processStandard">
   <conditionExpression>${order.type == 'STANDARD'}</conditionExpression>
@@ -161,7 +161,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 ### Example 3: Error Handling Decision
 
 ```xml
-<exclusiveGateway id="errorType" name="Error Type"/>
+<exclusiveGateway id="errorType" name="Error Type" default="unknownError"/>
 
 <sequenceFlow id="validationError" sourceRef="errorType" targetRef="handleValidationError">
   <conditionExpression>${error.type == 'VALIDATION'}</conditionExpression>
@@ -192,15 +192,14 @@ List<HistoricActivityInstance> instances = historyService
     .activityId("decisionGateway")
     .list();
 
-// Get sequence flow taken
-HistoricProcessInstance process = historyService
-    .createHistoricProcessInstanceQuery()
+// The engine has no sequence flow history query. To determine which flow
+// was selected, inspect which target activities the process entered,
+// in start-time order:
+List<HistoricActivityInstance> enteredActivities = historyService
+    .createHistoricActivityInstanceQuery()
     .processInstanceId(processInstanceId)
-    .singleResult();
-
-List<HistoricSequenceFlowInstance> flows = historyService
-    .createHistoricSequenceFlowInstanceQuery()
-    .processInstanceId(processInstanceId)
+    .orderByHistoricActivityInstanceStartTime()
+    .asc()
     .list();
 ```
 
@@ -217,7 +216,7 @@ List<HistoricSequenceFlowInstance> flows = historyService
 
 ## Common Pitfalls
 
-- **Overlapping Conditions:** Multiple paths could be taken
+- **Overlapping Conditions:** When several conditions evaluate to true, only the first outgoing flow (in document order) with a true condition is taken; otherwise the default flow is taken; otherwise the engine throws an exception
 - **No Default Flow:** Unmatched conditions cause errors
 - **Complex Logic:** Hard to understand and maintain
 - **Missing Conditions:** Not all flows have conditions

@@ -9,9 +9,7 @@ description: "Using BPMN Pools and Lanes to model swimlanes, participants, and o
 
 Pools and Lanes (collectively "swimlanes") are BPMN **collaboration** constructs that visually organize activities by participant or department. They are represented in the BPMN model by the `Pool` and `Lane` classes, which are structural/diagrammatic elements rather than executable flow elements.
 
-:::note
-Pools and Lanes are captured in the model for diagramming and collaboration support. They do not affect runtime execution the way gateways or tasks do.
-:::
+> **Note:** Pools and Lanes are captured in the model for diagramming and collaboration support. They do not affect runtime execution the way gateways or tasks do.
 
 ## Pool
 

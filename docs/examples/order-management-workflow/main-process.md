@@ -237,8 +237,7 @@ public class CreditScoreService implements Connector {
 ```xml
 <bpmn:boundaryEvent id="creditServiceError" 
                     name="Credit Service Unavailable" 
-                    attachedToRef="checkCreditScoreTask" 
-                    cancelActivity="false">
+                    attachedToRef="checkCreditScoreTask">
   <bpmn:outgoing>flowToCreditErrorHandler</bpmn:outgoing>
   <bpmn:errorEventDefinition errorRef="creditServiceErrorDef"/>
 </bpmn:boundaryEvent>
@@ -251,8 +250,7 @@ public class CreditScoreService implements Connector {
 
 **Why error boundary?**
 - Handles service failures gracefully
-- Error boundary events are always non-cancelling in Activiti (the converter forces `cancelActivity="false"`)
-- Fires alongside the service task, allowing error recovery without interrupting
+- Error boundary events are always **interrupting** in Activiti: when the error is thrown, the attached service task is cancelled and the error flow (`flowToCreditErrorHandler`) is taken. The `cancelActivity` attribute has no effect on error events — the parse handler always creates the boundary behavior as interrupting
 - Can log, notify, or retry based on error type
 
 ---

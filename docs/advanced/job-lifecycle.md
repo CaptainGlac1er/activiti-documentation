@@ -241,7 +241,7 @@ Configure the custom factory:
 ```java
 @Bean
 public ProcessEngineConfiguration processEngineConfiguration() {
-    ProcessEngineConfigurationImpl config = ProcessEngineConfigurationImpl
+    ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl) ProcessEngineConfiguration
         .createStandaloneInMemProcessEngineConfiguration();
     config.setFailedJobCommandFactory(new CustomFailedJobCommandFactory());
     return config;
@@ -260,20 +260,22 @@ This ensures the failure handling runs in an independent transaction, even if th
 
 ## Custom Retry Cycles
 
-The `activiti:failedJobRetryTimeCycle` attribute overrides the default retry behavior with an ISO 8601 repeat expression. Defined on a per-service-task basis, it provides fine-grained control over retry count and backoff timing.
+The `activiti:failedJobRetryTimeCycle` extension element (inside `<extensionElements>`) overrides the default retry behavior with an ISO 8601 repeat expression. Defined on a per-service-task basis, it provides fine-grained control over retry count and backoff timing.
 
 ### Syntax
 
-The retry cycle uses ISO 8601 recurrence rule format, parsed by `DurationHelper`:
+The retry cycle uses an ISO 8601 repeat expression (or a cron expression), parsed by `DurationHelper` at the first job failure:
 
 ```
-R[repeatCount]/[startDate]/[duration]/[endDate]
+R[<n>]/<ISO-8601 duration>[/<end date>]
 ```
 
 - `R` — Repeat indicator (required)
 - `Rn` — Repeat exactly `n` times
 - `R` without number — Repeat indefinitely (bounded by `Integer.MAX_VALUE - 1`)
-- Multiple cycles separated by `;` for progressive backoff
+- A cron expression is also accepted in place of the ISO 8601 form
+
+Only a single phase is supported. `DurationHelper` splits the expression on `/` only — multi-phase (semicolon-separated) cycles, a bare `R5` without a `/`, or a phase that is not a valid date/duration (e.g. `R/5`) all fail to parse and throw `ActivitiException` at the first job failure.
 
 ### Examples
 
@@ -281,7 +283,7 @@ R[repeatCount]/[startDate]/[duration]/[endDate]
 <!-- Retry 5 times immediately (0 delay between retries) -->
 <serviceTask id="apiCall" activiti:async="true">
   <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R5</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R5/PT0S</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 
@@ -292,17 +294,17 @@ R[repeatCount]/[startDate]/[duration]/[endDate]
   </extensionElements>
 </serviceTask>
 
-<!-- Progressive backoff: 3 retries @ 1min, 2 retries @ 5min, 2 retries @ 30min -->
+<!-- Retry 7 times with 1-minute interval (multi-phase backoff is NOT supported) -->
 <serviceTask id="resilientCall" activiti:async="true">
   <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M;R2/PT30M</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R7/PT1M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 
-<!-- Retry 10 times with 30-second interval, then 5 times with 5-minute interval -->
+<!-- Retry 15 times with 30-second interval (multi-phase cycles are NOT supported) -->
 <serviceTask id="eventualCall" activiti:async="true">
   <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R10/PT30S;R5/PT5M</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R15/PT30S</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
@@ -420,10 +422,12 @@ List<Job> instanceJobs = managementService.createJobQuery()
     .processInstanceId("pid")
     .list();
 
-// Filter by job handler type
+// Filter by job handler type (JobQuery has no jobHandlerType filter — filter client-side)
 List<Job> asyncJobs = managementService.createJobQuery()
-    .jobHandlerType("async-continuation")
-    .list();
+    .list()
+    .stream()
+    .filter(job -> "async-continuation".equals(job.getJobHandlerType()))
+    .collect(Collectors.toList());
 ```
 
 ### Moving a Dead Letter Job Back to Executable
@@ -514,9 +518,10 @@ public class JobMonitor implements ActivitiEventListener {
             case JOB_EXECUTION_FAILURE:
                 // Log, alert, or trigger remediation
                 ActivitiExceptionEvent failure = (ActivitiExceptionEvent) event;
+                JobEntity job = (JobEntity) ((ActivitiEntityEvent) event).getEntity();
                 log.error("Job {} failed: {}", 
-                    event.getEntity().getId(), 
-                    failure.getException().getMessage());
+                    job.getId(), 
+                    failure.getCause().getMessage());
                 break;
             case JOB_RETRIES_DECREMENTED:
                 // Track retry progress
@@ -539,10 +544,13 @@ public class JobMonitor implements ActivitiEventListener {
 
 ### Thread State Monitoring
 
-The async executor exposes thread references for diagnostics:
+The `DefaultAsyncJobExecutor` exposes thread references for diagnostics (these accessors are on the default implementation, not on the `AsyncExecutor` interface):
 
 ```java
-AsyncExecutor executor = processEngine.getProcessEngineConfiguration().getAsyncExecutor();
+import org.activiti.engine.impl.asyncexecutor.DefaultAsyncJobExecutor;
+
+DefaultAsyncJobExecutor executor =
+    (DefaultAsyncJobExecutor) processEngine.getProcessEngineConfiguration().getAsyncExecutor();
 Thread timerThread = executor.getTimerJobAcquisitionThread();
 Thread asyncThread = executor.getAsyncJobAcquisitionThread();
 Thread resetThread = executor.getResetExpiredJobThread();
@@ -584,8 +592,10 @@ spring:
       
       # Failure
       number-of-retries: 3                     # Default retry count
-      retry-wait-time-in-millis: 500          # Wait before retry in milliseconds (default: 500)
+      retry-wait-time-in-millis: 500          # default: 500 — applied as SECONDS by the engine (see note below)
 ```
+
+> **Units warning:** Despite its name, `retry-wait-time-in-millis` is passed straight to `setAsyncFailedJobWaitTime()`, which `JobRetryCmd` applies via `Calendar.SECOND`. The value is therefore interpreted as **seconds** — the default `500` means a ~500 second wait before the first retry.
 
 ### Configuration Guidelines
 
@@ -602,7 +612,7 @@ spring:
 ```java
 @Bean
 public ProcessEngineConfiguration processEngineConfiguration() {
-    ProcessEngineConfigurationImpl config = ProcessEngineConfigurationImpl
+    ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl) ProcessEngineConfiguration
         .createStandaloneInMemProcessEngineConfiguration();
     
     config.setAsyncExecutorActivate(true);
@@ -610,7 +620,7 @@ public ProcessEngineConfiguration processEngineConfiguration() {
     config.setAsyncExecutorMaxPoolSize(16);
     config.setAsyncExecutorThreadPoolQueueSize(500);
     config.setAsyncExecutorNumberOfRetries(3);
-    config.setAsyncFailedJobWaitTime(5000);
+    config.setAsyncFailedJobWaitTime(5); // SECONDS before retrying a failed job (not milliseconds; engine default: 10)
     config.setAsyncExecutorMaxAsyncJobsDuePerAcquisition(20);
     config.setAsyncExecutorMaxTimerJobsPerAcquisition(10);
     config.setAsyncExecutorResetExpiredJobsInterval(60000);
@@ -635,12 +645,12 @@ Async jobs may be executed multiple times (retries, cluster recovery). Ensure jo
 
 ### 2. Set Appropriate Retry Policies
 
-Use `activiti:failedJobRetryTimeCycle` for external system calls rather than relying on default retries. Implement progressive backoff to avoid overwhelming failing services.
+Use `activiti:failedJobRetryTimeCycle` for external system calls rather than relying on default retries. Choose a conservative interval and retry count to avoid overwhelming failing services (only a single-phase cycle is supported).
 
 ```xml
 <serviceTask id="paymentService" activiti:async="true">
   <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R3/PT10S;R5/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R10/PT10S</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```

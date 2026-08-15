@@ -172,7 +172,7 @@ Control whether remaining activities are cancelled when the subprocess completes
     <userTask id="benefitsEnrollment" name="Enroll in Benefits" activiti:assignee="${newEmployee}"/>
 
     <!-- IT Tasks -->
-    <serviceTask id="createAccounts" name="Create System Accounts" activiti:class="com.example.AccountCreationService" activiti:candidateGroups="it_support"/>
+    <serviceTask id="createAccounts" name="Create System Accounts" activiti:class="com.example.AccountCreationService"/>
 
     <userTask id="equipmentSetup" name="Setup Equipment" activiti:assignee="${itSpecialist}" activiti:candidateGroups="it_support"/>
 

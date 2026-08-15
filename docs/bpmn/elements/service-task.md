@@ -92,19 +92,18 @@ public class TagImageConnector implements Connector {
 }
 ```
 
-**Or using lambda (as shown in official examples):**
+**The bean itself must be a `Connector`** — the engine resolves the `implementation` value with `getBean(implementation, Connector.class)`, so wrapping a lambda in a non-`Connector` class will fail at runtime:
 
 ```java
 @Component("tagImageConnector")
-public class TagImageConnector {
+public class TagImageConnector implements Connector {
 
-    public Connector connector() {
-        return integrationContext -> {
-            String imageUrl = integrationContext.getInBoundVariable("imageUrl");
-            // Business logic...
-            integrationContext.addOutBoundVariable("tagged", true);
-            return integrationContext;
-        };
+    @Override
+    public IntegrationContext apply(IntegrationContext integrationContext) {
+        String imageUrl = integrationContext.getInBoundVariable("imageUrl");
+        // Business logic...
+        integrationContext.addOutBoundVariable("tagged", true);
+        return integrationContext;
     }
 }
 ```
@@ -495,6 +494,7 @@ Activiti includes some built-in connectors that **only work with legacy XML synt
     </activiti:field>
   </extensionElements>
 </serviceTask>
+```
 
 **Other Built-in Connector Types (Legacy Only):**
 - `activiti:type="mule"` - Mule ESB integration
@@ -643,19 +643,19 @@ Configure retry policies for failed jobs:
               activiti:async="true">
    
    <extensionElements>
-     <!-- Retry 5 times -->
-    <activiti:failedJobRetryTimeCycle>R/5</activiti:failedJobRetryTimeCycle>
+     <!-- Retry 5 times with a 5-second interval -->
+    <activiti:failedJobRetryTimeCycle>R5/PT5S</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
 
-**Or with exponential backoff:**
+**Or with a longer fixed interval:**
 ```xml
 <serviceTask id="unreliableService" 
               implementation="externalApiService"
               activiti:async="true">
    <extensionElements>
-     <activiti:failedJobRetryTimeCycle>R5/PT1M;R3/PT5M;R2/PT30M</activiti:failedJobRetryTimeCycle>
+     <activiti:failedJobRetryTimeCycle>R3/PT5M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
@@ -666,15 +666,17 @@ Configure retry policies for failed jobs:
              activiti:async="true"
              activiti:class="com.example.ExternalApiService">
   <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R5/PT1M;R3/PT5M;R2/PT30M</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R5/PT1M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
 
 **Retry Cycle Syntax:**
-- `R/5` - Retry 5 times immediately
+- `R5/PT5S` - Retry 5 times with 5-second interval
 - `R5/PT1M` - Retry 5 times with 1 minute interval
-- `R3/PT5M;R2/PT30M` - Retry 3 times (5min), then 2 times (30min)
+- `R3/PT5M` - Retry 3 times with 5 minute interval
+
+> **Note:** Only a single-phase `R[<n>]/ISO-8601` duration (or a cron expression) is supported — the engine splits the cycle on `/` only. Chained phases separated by `;` (e.g., `R3/PT5M;R2/PT30M`) are **not** supported and fail at runtime with `failedJobRetryTimeCylcle has wrong format`.
 
 ### Skip Expression
 
@@ -861,14 +863,18 @@ public class PaymentProcessor implements Connector {
         // Process payment
         PaymentResult result = paymentGateway.process(orderId, amount, currency);
 
-        // Configure retry in application.yml or via extension JSON
+        // Engine job retries come from the failedJobRetryTimeCycle extension element on the task,
+        // not from extension JSON - read any delegate-side retry settings from process variables
         context.addOutBoundVariable("paymentResult", result);
         return context;
     }
 }
 ```
 
-**Extension JSON for Retry Configuration:**
+**Extension JSON for Variable Configuration (Not Job Retries):**
+
+The sidecar extension JSON `constants` section only defines **process variables** that your delegate can read at runtime — the engine never applies them to job retries. Job retry behavior comes exclusively from the `failedJobRetryTimeCycle` extension element on the service task (see [Job Retry Configuration](#job-retry-configuration)).
+
 ```json
 {
   "id": "paymentProcess",
@@ -876,8 +882,8 @@ public class PaymentProcessor implements Connector {
     "Process_paymentProcess": {
       "constants": {
         "processPayment": {
-          "retryCycle": {
-            "value": "R3/PT1M;R2/PT5M"
+          "maxRetries": {
+            "value": "5"
           }
         }
       }
@@ -885,6 +891,8 @@ public class PaymentProcessor implements Connector {
   }
 }
 ```
+
+In the delegate above, `maxRetries` is available as a process variable (e.g., for application-level retry logic), while the engine's own job retries are governed by `<activiti:failedJobRetryTimeCycle>R5/PT1M</activiti:failedJobRetryTimeCycle>` on the task.
 
 ### Example 2: Multi-Service Orchestration
 
@@ -988,7 +996,7 @@ If you prefer the built-in mail functionality (legacy syntax only):
     </activiti:field>
     
     <activiti:field name="subject">
-       <activiti:expression>Order Confirmation: ${order.id}</activiti:expression>
+       <activiti:expression>"Order Confirmation: " + order.id</activiti:expression>
      </activiti:field>
     
     <activiti:field name="text">
@@ -1096,7 +1104,7 @@ For reference, here's how these examples would look using legacy syntax:
              activiti:async="true">
   <extensionElements>
     <activiti:field name="paymentGateway" expression="${stripePaymentGateway}"/>
-    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M</activiti:failedJobRetryTimeCycle>
+    <activiti:failedJobRetryTimeCycle>R3/PT1M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 
@@ -1248,35 +1256,40 @@ public class PaymentServiceTest {
 </boundaryEvent>
 ```
 
-### Pattern 2: Retry with Exponential Backoff
+### Pattern 2: Retry with a Fixed Interval
 
 ```xml
 <serviceTask id="unreliableService" 
              activiti:async="true"
              activiti:class="com.example.UnreliableService">
   <extensionElements>
-    <activiti:failedJobRetryTimeCycle>R1/PT10S;R2/PT1M;R2/PT5M;R1/PT30M</activiti:failedJobRetryTimeCycle>
+    <!-- Only single-phase R/ISO-8601 cycles are supported (e.g. R3/PT5M); ';'-chained phases are not -->
+    <activiti:failedJobRetryTimeCycle>R3/PT5M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
 </serviceTask>
 ```
 
 ### Pattern 3: Compensation
 
-> **Note:** Activiti does not support `activiti:forCompensation` on ServiceTasks. Compensation is handled via BPMN compensation boundary events with `compensateEventDefinition`.
+> **Note:** The engine parses the standard BPMN `isForCompensation` attribute on all activities (including service tasks). It is **required** on the compensation handler — the task that performs the undo. Without it, the engine fails with `Compensation activity could not be found (or it is missing 'isForCompensation="true"')`.
 
 ```xml
-<!-- Mark task as compensable via compensation boundary event -->
+<!-- The activity being compensated -->
 <serviceTask id="reserveResource" 
              activiti:class="com.example.ResourceReserver"/>
 
-<!-- Compensation handler triggered via boundary event -->
-<boundaryEvent id="compensationBoundary" attachedToRef="reserveResource" 
-               cancelActivity="false">
+<!-- Compensation boundary event on the activity (sibling, attachedToRef) -->
+<boundaryEvent id="compensationBoundary" attachedToRef="reserveResource">
   <compensateEventDefinition activityRef="reserveResource"/>
 </boundaryEvent>
 
+<!-- Association from the boundary event to the compensation handler -->
+<association id="compensationAssociation" sourceRef="compensationBoundary" targetRef="compensateReservation"/>
+
+<!-- Compensation handler - isForCompensation="true" is required -->
 <serviceTask id="compensateReservation" 
-             activiti:class="com.example.ResourceCompensator"/>
+             activiti:class="com.example.ResourceCompensator"
+             isForCompensation="true"/>
 ```
 
 ## Related Documentation

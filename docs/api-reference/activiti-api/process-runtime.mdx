@@ -301,8 +301,9 @@ ProcessInstance processInstance(String processInstanceId);
 **Purpose**: Retrieve a specific process instance.
 
 **Authorization**:
-- User must have access to the instance
-- Checks if user is initiator, assignee, or has admin role
+- Security policy must allow read access to the process definition
+- Checks if user is the initiator OR an assignee/candidate of a task in the instance
+- No admin bypass in user runtime; admin access is via `ProcessAdminRuntime`
 
 **Example**:
 ```java
@@ -568,7 +569,8 @@ void removeVariables(RemoveProcessVariablesPayload payload);
 processRuntime.removeVariables(
     ProcessPayloadBuilder.removeVariables()
         .withProcessInstanceId(instanceId)
-        .withVariableNames("tempVar", "oldData")
+        .withVariableNames("tempVar")
+        .withVariableNames("oldData")
         .build()
 );
 ```
@@ -819,10 +821,15 @@ var3 = getVariable("name3");
 
 Process events asynchronously:
 ```java
-@EventListener
-@Async
-public void onProcessCompleted(ProcessCompletedEvent event) {
-    // Non-blocking processing
+@Component
+public class AsyncProcessCompletionListener
+    implements ProcessRuntimeEventListener<ProcessCompletedEvent> {
+
+    @Override
+    @Async
+    public void onEvent(ProcessCompletedEvent event) {
+        // Non-blocking processing
+    }
 }
 ```
 
@@ -840,11 +847,11 @@ ProcessRuntime enforces:
 
 **Visibility Rules**:
 ```java
-User can see process if:
+User can read a process instance if:
+- Security policy allows read (canRead) on the process definition AND
 - User is the initiator OR
-- User has active tasks in the process OR
-- User has admin role OR
-- Process is explicitly shared with user
+- User is an assignee or candidate of a task in the process
+(No admin bypass in user runtime; admin access is via ProcessAdminRuntime)
 ```
 
 ### Admin vs User Runtime
@@ -875,7 +882,7 @@ private ProcessAdminRuntime processAdminRuntime;
    - Missing required fields
    - Business rule violation
 
-3. **SecurityException**
+3. **ActivitiForbiddenException**
    - Unauthorized access
    - Insufficient permissions
    - Invalid authentication
@@ -883,6 +890,8 @@ private ProcessAdminRuntime processAdminRuntime;
 ### Error Handling Pattern
 
 ```java
+import org.activiti.core.common.spring.security.policies.ActivitiForbiddenException;
+
 try {
     processRuntime.start(payload);
 } catch (NotFoundException e) {
@@ -891,7 +900,7 @@ try {
 } catch (UnprocessableEntityException e) {
     log.error("Invalid payload: {}", e.getMessage());
     throw new ValidationException(e.getMessage());
-} catch (SecurityException e) {
+} catch (ActivitiForbiddenException e) {
     log.error("Authorization failed: {}", e.getMessage());
     throw new AccessDeniedException();
 }
@@ -979,14 +988,19 @@ public void startProcess(StartProcessRequest request) {
 ### 3. Handle Events Idempotently
 
 ```java
-@EventListener
-public void onProcessCompleted(ProcessCompletedEvent event) {
-    if (alreadyProcessed(event.getId())) {
-        return;
+@Component
+public class IdempotentProcessCompletionListener
+    implements ProcessRuntimeEventListener<ProcessCompletedEvent> {
+
+    @Override
+    public void onEvent(ProcessCompletedEvent event) {
+        if (alreadyProcessed(event.getId())) {
+            return;
+        }
+
+        processEvent(event);
+        markAsProcessed(event.getId());
     }
-    
-    processEvent(event);
-    markAsProcessed(event.getId());
 }
 ```
 

@@ -584,22 +584,17 @@ public interface Command<T> {
 // RuntimeService commands
 StartProcessInstanceCmd<T>     // starts a process instance
 SignalEventReceivedCmd         // signals an event to an execution
-SetVariableCmd                 // sets a process variable
+SetExecutionVariablesCmd       // sets process variables on an execution
 DeleteProcessInstanceCmd       // deletes a process instance
 
 // TaskService commands
 CompleteTaskCmd                // completes a task
-SetAssigneeTaskCmd             // assigns a task
-AddCandidateUserTaskCmd        // adds a candidate user
+AddIdentityLinkCmd             // adds an identity link (assignee, candidate user/group)
 
 // RepositoryService commands
 DeployCmd                      // deploys a process archive
 DeleteDeploymentCmd            // deletes a deployment
-SaveProcessDefinitionCmd       // saves a process definition
-
-// ManagementService commands
-ExecuteJobsCmd                 // executes due jobs
-CleanupCmd                     // cleans up expired history
+SaveModelCmd                   // saves a process model
 ```
 
 ### Command Implementation Example
@@ -656,16 +651,15 @@ Transaction management is handled through the command interceptor chain. The `Pr
 public abstract CommandInterceptor createTransactionInterceptor();
 ```
 
+The chain only registers the returned interceptor when it is non-null, so a configuration can opt out of command-level transaction management entirely by returning `null`.
+
 ### Environment-Specific Implementations
 
 ```java
-// StandaloneProcessEngineConfiguration — JDBC transactions
+// StandaloneProcessEngineConfiguration — no transaction interceptor
 @Override
 public CommandInterceptor createTransactionInterceptor() {
-    return new TransactionInterceptor(
-        new JdbcTransactionFactory(dataSource, autoCommit),
-        this
-    );
+    return null;
 }
 
 // SpringProcessEngineConfiguration — Spring PlatformTransactionManager
@@ -674,21 +668,23 @@ public CommandInterceptor createTransactionInterceptor() {
     return new SpringTransactionInterceptor(transactionManager);
 }
 
-// JtaProcessEngineConfiguration — JTA UserTransaction
+// JtaProcessEngineConfiguration — JTA (jakarta.transaction.TransactionManager)
 @Override
 public CommandInterceptor createTransactionInterceptor() {
-    return new JtaTransactionInterceptor(userTransaction);
+    return new JtaTransactionInterceptor(transactionManager);
 }
 ```
+
+In the standalone (JDBC) case, transactions are driven by the MyBatis `JdbcTransactionFactory`, set up in `initTransactionFactory()` (or `ManagedTransactionFactory` when `transactionsExternallyManaged` is true). The `TransactionContextInterceptor` opens a `TransactionContext` per command (by default via `StandaloneMybatisTransactionContextFactory`), which is committed or rolled back when the command context closes.
 
 ### Transaction Propagation
 
 ```mermaid
 flowchart TD
     ServiceLayer["Service Layer\n@Transactional (Spring) or standalone"] --> CmdMgr["CommandExecutor\nexecute()"]
-    CmdMgr --> TxInterceptor["TransactionInterceptor\nbegin()"]
+    CmdMgr --> TxInterceptor["TransactionContextInterceptor\nopen TransactionContext"]
     TxInterceptor --> CmdExec["Command.execute()\n(in transaction context)"]
-    CmdExec --> TxCommit["TransactionInterceptor\ncommit() / rollback()"]
+    CmdExec --> TxCommit["TransactionContext\ncommit() / rollback()"]
 ```
 
 ---

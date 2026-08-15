@@ -82,26 +82,28 @@ Asynchronous execution allows activities to run in the **background** using Acti
 </serviceTask>
 ```
 
-### Async with Exponential Backoff
+### Async with Retries
 
 ```xml
 <serviceTask id="backoffTask" 
-             name="Task with Backoff" 
+             name="Task with Retries" 
              activiti:async="true">
   
   <extensionElements>
-    <!-- Retry with increasing intervals -->
-    <activiti:failedJobRetryTimeCycle>R3/PT1M;R2/PT5M;R1/PT30M</activiti:failedJobRetryTimeCycle>
+    <!-- Retry 5 times with 1-minute interval (single-phase only) -->
+    <activiti:failedJobRetryTimeCycle>R5/PT1M</activiti:failedJobRetryTimeCycle>
   </extensionElements>
   
 </serviceTask>
 ```
 
-**Retry Cycle Syntax:**
+**Retry Cycle Syntax (single-phase only):**
 - `R5/PT0S` - Retry 5 times with no delay between retries
 - `R3/PT1M` - Retry 3 times with 1 minute interval
-- `R3/PT1M;R2/PT5M` - Retry 3 times (1min), then 2 times (5min)
-- `R5/PT10S;R3/PT1M;R2/PT5M` - Progressive backoff strategy
+- `R[<n>]/<ISO-8601 duration>[/<end date>]` - General form, e.g. `R10/PT30S/2024-01-31T23:59:59`
+- cron expressions are also accepted, e.g. `0 */5 * * * ?`
+
+Semicolon-separated multi-phase cycles (e.g. `R3/PT1M;R2/PT5M`) are NOT supported: `DurationHelper` splits on `/` only, so such cycles throw `ActivitiException` at the first job failure.
 
 ## Async Execution Flow
 
@@ -242,7 +244,7 @@ spring:
 - `max-pool-size` - Maximum thread pool size (default: 10)
 - `queue-size` - Job queue capacity (default: 100)
 - `number-of-retries` - Default retry count for failed jobs (default: 3)
-- `retry-wait-time-in-millis` - Initial wait time after first job failure, sets `asyncFailedJobWaitTime`. Subsequent retries use the retry cycle defined in `failedJobRetryTimeCycle` (default: 500ms)
+- `retry-wait-time-in-millis` - Initial wait time after first job failure; passed straight to `setAsyncFailedJobWaitTime()` (default: 500). **WARNING:** the engine applies this value as **seconds**, not milliseconds — `JobRetryCmd` adds it via `Calendar.SECOND` — so the default `500` means a ~500 second wait before the first retry. Subsequent retries use the retry cycle defined in `failedJobRetryTimeCycle` when configured.
 - `max-async-jobs-due-per-acquisition` - Jobs fetched per query (default: 1)
 - `default-async-job-acquire-wait-time-in-millis` - Wait time between acquisitions (ms) (default: 10000)
 
@@ -253,7 +255,7 @@ import org.activiti.engine.impl.asyncexecutor.AsyncExecutor;
 
 @Bean
 public ProcessEngineConfiguration processEngineConfiguration() {
-    ProcessEngineConfigurationImpl config = ProcessEngineConfigurationImpl
+    ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl) ProcessEngineConfiguration
         .createStandaloneInMemProcessEngineConfiguration();
     
     // Enable async execution

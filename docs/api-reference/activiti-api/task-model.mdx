@@ -470,7 +470,7 @@ Task task = taskRuntime.create(
         .withDueDate(new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000))
         .withPriority(50)
         .withCandidateGroup("managers")
-        .withCandidateUser("backup.reviewer")
+        .withCandidateUsers("backup.reviewer")
         .build()
 );
 ```
@@ -774,9 +774,7 @@ public class TaskResult extends Result<Task> {
 
 **Usage**:
 ```java
-TaskResult result = (TaskResult) taskRuntime.complete(payload);
-Task completedTask = result.getEntity();
-Payload usedPayload = result.getPayload();
+Task completedTask = taskRuntime.complete(payload);
 ```
 
 ---
@@ -919,13 +917,23 @@ void taskShouldHaveUniqueStatus() {
 
 @Test
 void taskShouldTrackCandidateChanges() {
-    Task task = createTask();
-    
-    task.addCandidateUser("user1");
-    assertTrue(task.getCandidateUsers().contains("user1"));
-    
-    task.removeCandidateUser("user1");
-    assertFalse(task.getCandidateUsers().contains("user1"));
+    String taskId = createTask().getId();
+
+    taskRuntime.addCandidateUsers(
+        TaskPayloadBuilder.addCandidateUsers()
+            .withTaskId(taskId)
+            .withCandidateUser("user1")
+            .build()
+    );
+    assertTrue(taskRuntime.task(taskId).getCandidateUsers().contains("user1"));
+
+    taskRuntime.deleteCandidateUsers(
+        TaskPayloadBuilder.deleteCandidateUsers()
+            .withTaskId(taskId)
+            .withCandidateUsers(List.of("user1"))
+            .build()
+    );
+    assertFalse(taskRuntime.task(taskId).getCandidateUsers().contains("user1"));
 }
 ```
 
@@ -933,11 +941,13 @@ void taskShouldTrackCandidateChanges() {
 
 ```java
 @Test
-void completeTaskPayloadShouldValidateTaskId() {
-    assertThrows(IllegalArgumentException.class, () -> {
-        TaskPayloadBuilder.complete()
-            .withTaskId(null)
-            .build();
+void completeTaskShouldThrowWhenTaskNotFound() {
+    assertThrows(NotFoundException.class, () -> {
+        taskRuntime.complete(
+            TaskPayloadBuilder.complete()
+                .withTaskId("non-existing-task")
+                .build()
+        );
     });
 }
 ```
@@ -971,11 +981,13 @@ Task task = taskRuntime.create(createPayload);
 ### 3. Candidate Management
 
 ```java
-// Bad - clearing all candidates
-task.setCandidateUsers(new ArrayList<>());
+// No mutators on the Task model - candidates are managed via the runtime API
 
 // Good - adding specific candidates
 taskRuntime.addCandidateUsers(payload);
+
+// Removing specific candidates
+taskRuntime.deleteCandidateUsers(payload);
 ```
 
 ---

@@ -224,7 +224,7 @@ public class PaymentValidationService implements Connector {
                     cancelActivity="true">
   <bpmn:outgoing>flowToRetryPayment</bpmn:outgoing>
   <bpmn:timerEventDefinition>
-    <bpmn:timeDuration>PT2M</timeDuration>
+    <bpmn:timeDuration>PT2M</bpmn:timeDuration>
   </bpmn:timerEventDefinition>
 </bpmn:boundaryEvent>
 ```
@@ -599,7 +599,7 @@ public class AccountingNotificationService implements Connector {
 ### 2. Timer Boundary Event
 
 ```xml
-<boundaryEvent id="paymentTimeoutEvent" cancelActivity="true">
+<boundaryEvent id="paymentTimeoutEvent" attachedToRef="processPaymentTask" cancelActivity="true">
   <timerEventDefinition>
     <timeDuration>PT2M</timeDuration>
   </timerEventDefinition>

@@ -419,7 +419,7 @@ List<String> highlightedFlows = historyService.createHistoricActivityInstanceQue
                 ? h.getEndTime() != null ? Stream.of(h.getActivityId()) : Stream.empty()
                 : Stream.empty())
         .collect(Collectors.toList());
-// Or collect sequence flow IDs from HistoricSequenceFlow
+// Or collect sequence flow IDs from the BpmnModel's process flows
 
 BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinitionId);
 

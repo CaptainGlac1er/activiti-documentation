@@ -174,15 +174,40 @@ spring:
       - "**.bpmn20.xml"
 ```
 
-For custom resource discovery, define `ResourceFinderDescriptor` beans programmatically:
+For custom resource discovery, define `ResourceFinderDescriptor` beans programmatically. `ResourceFinderDescriptor` is an interface — there is no `getResources()` method; instead it declares where the finder looks (`getLocationPrefix`/`getLocationSuffixes`), whether to look up at all (`shouldLookUpResources`), how to validate what was found, and the log messages to use:
 
 ```java
 @Bean
 public ResourceFinderDescriptor customResourceFinder() {
     return new ResourceFinderDescriptor() {
         @Override
-        public Resource[] getResources() {
-            // Return custom resources
+        public String getLocationPrefix() {
+            return "classpath*:**/custom-processes/";
+        }
+
+        @Override
+        public List<String> getLocationSuffixes() {
+            return List.of("**.bpmn", "**.bpmn20.xml");
+        }
+
+        @Override
+        public boolean shouldLookUpResources() {
+            return true;
+        }
+
+        @Override
+        public void validate(List<Resource> resources) {
+            // Validate discovered resources here
+        }
+
+        @Override
+        public String getMsgForEmptyResources() {
+            return "No custom process definitions were found for auto-deployment";
+        }
+
+        @Override
+        public String getMsgForResourcesFound(List<String> foundResources) {
+            return "The following custom process definition files will be deployed: " + foundResources;
         }
     };
 }

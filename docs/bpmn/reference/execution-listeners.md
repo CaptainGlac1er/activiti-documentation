@@ -30,7 +30,7 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 - `event` - The event type (start, end, take)
 - `class` - Fully qualified class name implementing ExecutionListener
 - `expression` - EL expression to evaluate
-- `delegateExpression` - Spring bean method call
+- `delegateExpression` - Expression resolving to a Spring bean implementing `ExecutionListener` (with `onTransaction`: `TransactionDependentExecutionListener`)
 - `onTransaction` - Transaction timing (before-commit, committed, rolled-back)
 - `customPropertiesResolverClass` - Fully qualified class name of the custom properties resolver
 - `customPropertiesResolverExpression` - EL expression to evaluate for the resolver
@@ -46,7 +46,7 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 ### Implementation Types
 - **Class Delegate** - Java class implementing `ExecutionListener`
 - **Expression** - EL expression evaluation
-- **Delegate Expression** - Spring bean method call
+- **Delegate Expression** - Expression resolving to a Spring bean implementing `ExecutionListener`
 - **Script** - JavaScript/Groovy script execution
 
 ### Placement Options
@@ -141,15 +141,14 @@ Evaluate EL expression:
 
 ### 3. Delegate Expression
 
-Call Spring bean method:
+The expression must resolve to a **Spring bean implementing `ExecutionListener`** (or a `JavaDelegate`); it is *not* a method call. `DelegateExpressionExecutionListener` throws `ActivitiIllegalArgumentException` if the resolved bean is neither. When the listener declares an `onTransaction` attribute, the bean must instead implement `TransactionDependentExecutionListener`.
 
 ```xml
 <userTask id="myTask" name="My Task">
   <extensionElements>
     <activiti:executionListener 
       event="start" 
-      delegateExpression="${auditService.recordActivityStart(execution)}"
-      onTransaction="rolled-back"
+      delegateExpression="${auditListener}"
       customPropertiesResolverDelegateExpression="${resolverDelegate}"/>
   </extensionElements>
 </userTask>
@@ -157,10 +156,11 @@ Call Spring bean method:
 
 **Spring Bean:**
 ```java
-@Component("auditService")
-public class AuditService {
-    
-    public void recordActivityStart(DelegateExecution execution) {
+@Component("auditListener")
+public class AuditListener implements ExecutionListener {
+
+    @Override
+    public void notify(DelegateExecution execution) {
         // Audit logic
     }
 }
@@ -467,11 +467,11 @@ Listen to event execution:
     <extensionElements>
       <activiti:executionListener 
         event="start" 
-        delegateExpression="${metricsService.recordTaskStart('validateOrder')}"/>
+        delegateExpression="${metricsListener}"/>
       
       <activiti:executionListener 
         event="end" 
-        delegateExpression="${metricsService.recordTaskEnd('validateOrder')}"/>
+        delegateExpression="${metricsListener}"/>
     </extensionElements>
   </serviceTask>
   

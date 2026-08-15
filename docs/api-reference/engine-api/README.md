@@ -270,12 +270,12 @@ repositoryService.createDeployment()
     .deploy();
 
 // Start
-String processInstanceId = runtimeService
+ProcessInstance processInstance = runtimeService
     .startProcessInstanceByKey("orderProcess");
 
 // Get task
 Task task = taskService.createTaskQuery()
-    .processInstanceId(processInstanceId)
+    .processInstanceId(processInstance.getId())
     .singleResult();
 
 // Complete
@@ -356,7 +356,7 @@ try {
     repositoryService.createDeployment()
         .addString("invalid.bpmn", bpmnContent)
         .deploy();
-} catch (ActivitiBadUserRequestException e) {
+} catch (ActivitiException e) {
     log.error("Invalid BPMN", e);
 }
 ```
@@ -402,9 +402,9 @@ taskService.createTaskQuery()
 
 ```java
 // Configure appropriate history level
-configuration.setHistory(HistoryLevel.FULL);  // Full auditing
+configuration.setHistoryLevel(HistoryLevel.FULL);  // Full auditing
 // or
-configuration.setHistory(HistoryLevel.ACTIVITY);  // Activity only
+configuration.setHistoryLevel(HistoryLevel.ACTIVITY);  // Activity only
 ```
 
 ## Migration Guide

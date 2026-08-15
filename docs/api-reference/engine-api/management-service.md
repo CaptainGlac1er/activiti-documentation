@@ -82,15 +82,13 @@ if (metaData != null) {
 Fetch paginated sections of table data:
 
 ```java
-TablePageQuery tablePageQuery = managementService.createTablePageQuery();
-
-TablePage<Task> taskPage = tablePageQuery
+TablePage tablePage = managementService.createTablePageQuery()
     .tableName("ACT_RU_TASK")
-    .firstPage()
-    .query();
+    .listPage(0, 25);
 
-for (Task task : taskPage.getResults()) {
-    System.out.println(task.getName());
+List<Map<String, Object>> rows = tablePage.getRows();
+for (Map<String, Object> row : rows) {
+    System.out.println(row.get("NAME_"));
 }
 ```
 
@@ -381,24 +379,23 @@ CustomResult result = managementService.executeCommand(
 Run custom SQL queries:
 
 ```java
+// Define a mapper interface
+public interface TaskMapper {
+    @Select("SELECT * FROM #{prefix}ACT_RU_TASK WHERE ASSIGNEE_ = #{assignee}")
+    List<Map<String, Object>> findTasksByAssignee(@Param("assignee") String assignee);
+}
+
+// Execute through ManagementService
 List<Map<String, Object>> results = managementService.executeCustomSql(
-    new CustomSqlExecution<Map<String, Object>, List<Map<String, Object>>>() {
+    new CustomSqlExecution<TaskMapper, List<Map<String, Object>>>() {
         @Override
-        public String getSql() {
-            return "SELECT * FROM ACT_RU_TASK WHERE ASSIGNEE_ = 'john'";
+        public Class<TaskMapper> getMapperClass() {
+            return TaskMapper.class;
         }
 
         @Override
-        public List<Map<String, Object>> map(ResultSet resultSet) throws SQLException {
-            // Map result set to desired format
-            List<Map<String, Object>> results = new ArrayList<>();
-            while (resultSet.next()) {
-                Map<String, Object> row = new HashMap<>();
-                row.put("TASK_ID", resultSet.getString("ID_"));
-                row.put("TASK_NAME", resultSet.getString("NAME_"));
-                results.add(row);
-            }
-            return results;
+        public List<Map<String, Object>> execute(TaskMapper mapper) {
+            return mapper.findTasksByAssignee("john");
         }
     }
 );

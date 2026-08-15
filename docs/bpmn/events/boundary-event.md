@@ -56,6 +56,7 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 Handle activity timeouts:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="approvalTask" name="Approve Request" activiti:assignee="${manager}"/>
 
 <!-- Interrupting timer - cancels task after 24 hours -->
@@ -78,23 +79,22 @@ Handle activity timeouts:
 **Timer Types:**
 - **Duration Timer:** `<timeDuration>PT24H</timeDuration>` - Relative duration
 - **Date Timer:** `<timeDate>${dueDate}</timeDate>` - Absolute date
-- **Cycle Timer:** `<timeCycle>RRULE:FREQ=DAILY;INTERVAL=1</timeCycle>` - iCalendar recurrence
+- **Cycle Timer:** `<timeCycle>R/PT1H</timeCycle>` - Repeat (use `R[<n>]/<ISO-8601 duration>` or a cron expression; iCal/RRULE is not supported)
 
 ### 2. Non-Interrupting Timer Boundary Event
 
 Log activity without canceling:
 
 ```xml
-<serviceTask id="longRunningTask" name="Process Data" activiti:class="com.example.DataProcessor">
-  
-  <!-- Non-interrupting timer - logs progress every hour -->
-  <boundaryEvent id="progressLog" attachedToRef="longRunningTask" cancelActivity="false">
-    <timerEventDefinition>
-      <timeDuration>PT1H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-</serviceTask>
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<serviceTask id="longRunningTask" name="Process Data" activiti:class="com.example.DataProcessor"/>
+
+<!-- Non-interrupting timer - logs progress every hour (cycle timer; a one-shot timeDuration would only log once) -->
+<boundaryEvent id="progressLog" attachedToRef="longRunningTask" cancelActivity="false">
+  <timerEventDefinition>
+    <timeCycle>R/PT1H</timeCycle>
+  </timerEventDefinition>
+</boundaryEvent>
 
 <sequenceFlow id="logFlow" sourceRef="progressLog" targetRef="logActivity"/>
 <serviceTask id="logActivity" name="Log Progress" activiti:class="com.example.ProgressLogger"/>
@@ -110,14 +110,13 @@ Log activity without canceling:
 Catch errors from activities:
 
 ```xml
-<serviceTask id="paymentTask" name="Process Payment" activiti:class="com.example.PaymentService">
-  
-  <!-- Error boundary event -->
-  <boundaryEvent id="paymentError" attachedToRef="paymentTask" cancelActivity="true">
-    <errorEventDefinition errorRef="PaymentError"/>
-  </boundaryEvent>
-  
-</serviceTask>
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<serviceTask id="paymentTask" name="Process Payment" activiti:class="com.example.PaymentService"/>
+
+<!-- Error boundary event -->
+<boundaryEvent id="paymentError" attachedToRef="paymentTask" cancelActivity="true">
+  <errorEventDefinition errorRef="PaymentError"/>
+</boundaryEvent>
 
 <sequenceFlow id="errorFlow" sourceRef="paymentError" targetRef="handleError"/>
 <userTask id="handleError" name="Handle Payment Error"/>
@@ -133,14 +132,13 @@ Catch errors from activities:
 Wait for external messages:
 
 ```xml
-<userTask id="reviewTask" name="Review Document" activiti:assignee="${reviewer}">
-  
-  <!-- Message boundary event for cancellation -->
-  <boundaryEvent id="cancelReview" attachedToRef="reviewTask" cancelActivity="true">
-    <messageEventDefinition messageRef="cancelMessage"/>
-  </boundaryEvent>
-  
-</userTask>
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<userTask id="reviewTask" name="Review Document" activiti:assignee="${reviewer}"/>
+
+<!-- Message boundary event for cancellation -->
+<boundaryEvent id="cancelReview" attachedToRef="reviewTask" cancelActivity="true">
+  <messageEventDefinition messageRef="cancelMessage"/>
+</boundaryEvent>
 
 <sequenceFlow id="cancelFlow" sourceRef="cancelReview" targetRef="skipReview"/>
 <endEvent id="skipReview"/>
@@ -162,14 +160,13 @@ runtimeService.messageEventReceived("cancelMessage", executionId);
 Respond to global signals:
 
 ```xml
-<serviceTask id="processingTask" name="Process Data" activiti:class="com.example.DataProcessor">
-  
-  <!-- Signal boundary event for emergency stop -->
-  <boundaryEvent id="emergencyStop" attachedToRef="processingTask" cancelActivity="true">
-    <signalEventDefinition signalRef="emergencySignal"/>
-  </boundaryEvent>
-  
-</serviceTask>
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<serviceTask id="processingTask" name="Process Data" activiti:class="com.example.DataProcessor"/>
+
+<!-- Signal boundary event for emergency stop -->
+<boundaryEvent id="emergencyStop" attachedToRef="processingTask" cancelActivity="true">
+  <signalEventDefinition signalRef="emergencySignal"/>
+</boundaryEvent>
 
 <sequenceFlow id="stopFlow" sourceRef="emergencyStop" targetRef="cleanupTask"/>
 <serviceTask id="cleanupTask" name="Emergency Cleanup" activiti:class="com.example.CleanupService"/>
@@ -185,51 +182,54 @@ Respond to global signals:
 Trigger compensation (undo):
 
 ```xml
-<serviceTask id="bookFlight" name="Book Flight" activiti:class="com.example.FlightBookingService">
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<serviceTask id="bookFlight" name="Book Flight" activiti:class="com.example.FlightBookingService"/>
 
-  <!-- Compensation boundary event -->
-  <boundaryEvent id="compensateBooking" attachedToRef="bookFlight" cancelActivity="false">
-    <compensateEventDefinition activityRef="bookFlight"/>
-  </boundaryEvent>
+<!-- Compensation boundary event (sibling of the activity) -->
+<boundaryEvent id="compensateBooking" attachedToRef="bookFlight" cancelActivity="false">
+  <compensateEventDefinition/>
+</boundaryEvent>
 
-</serviceTask>
+<!-- Association links the boundary event to the compensation handler -->
+<association id="compensateBookingAssoc" sourceRef="compensateBooking" targetRef="cancelFlight"/>
 
-<sequenceFlow id="compFlow" sourceRef="compensateBooking" targetRef="cancelFlight"/>
-<serviceTask id="cancelFlight" name="Cancel Flight Booking" activiti:class="com.example.FlightCancellationService"/>
+<!-- Compensation handler - isForCompensation="true" is required -->
+<serviceTask id="cancelFlight" name="Cancel Flight Booking" activiti:class="com.example.FlightCancellationService" isForCompensation="true"/>
 ```
+
+**How it works:** When `bookFlight` completes, the engine resolves the handler via the `<association>` and registers a compensation subscription for it. A later throw-compensation event (see [Compensation Events](./compensation-events.md)) executes `cancelFlight`. If the associated handler is missing or lacks `isForCompensation="true"`, the engine throws `Compensation activity could not be found (or it is missing 'isForCompensation="true"')` when the activity completes.
 
 ### 7. Multiple Boundary Events
 
 Attach multiple boundary events to one activity:
 
 ```xml
-<userTask id="criticalTask" name="Critical Operation" activiti:assignee="${operator}">
-  
-  <!-- Timer boundary for timeout -->
-  <boundaryEvent id="timeout" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT2H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-  <!-- Message boundary for cancellation -->
-  <boundaryEvent id="cancel" cancelActivity="true">
-    <messageEventDefinition messageRef="cancelMessage"/>
-  </boundaryEvent>
-  
-  <!-- Error boundary for exceptions -->
-  <boundaryEvent id="error" cancelActivity="true">
-    <errorEventDefinition errorRef="OperationError"/>
-  </boundaryEvent>
-  
-  <!-- Non-interrupting timer for logging -->
-  <boundaryEvent id="logProgress" cancelActivity="false">
-    <timerEventDefinition>
-      <timeDuration>PT30M</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
-</userTask>
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
+<userTask id="criticalTask" name="Critical Operation" activiti:assignee="${operator}"/>
+
+<!-- Timer boundary for timeout -->
+<boundaryEvent id="timeout" attachedToRef="criticalTask" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT2H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
+
+<!-- Message boundary for cancellation -->
+<boundaryEvent id="cancel" attachedToRef="criticalTask" cancelActivity="true">
+  <messageEventDefinition messageRef="cancelMessage"/>
+</boundaryEvent>
+
+<!-- Error boundary for exceptions -->
+<boundaryEvent id="error" attachedToRef="criticalTask" cancelActivity="true">
+  <errorEventDefinition errorRef="OperationError"/>
+</boundaryEvent>
+
+<!-- Non-interrupting timer for logging -->
+<boundaryEvent id="logProgress" attachedToRef="criticalTask" cancelActivity="false">
+  <timerEventDefinition>
+    <timeDuration>PT30M</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 **Behavior:**
@@ -244,6 +244,7 @@ Attach multiple boundary events to one activity:
 Boundary events attach to the multi-instance activity as a whole, not inside `multiInstanceLoopCharacteristics`:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="reviewTask" name="Review">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -266,7 +267,7 @@ Boundary events attach to the multi-instance activity as a whole, not inside `mu
 
 ### Nested Boundary Events
 
-Boundary events inside subprocesses must be siblings of the activity within the subprocess, not nested inside it:
+Boundary events inside subprocesses must be siblings of the activity within the subprocess, not nested inside it. A boundary event attached to the subprocess itself must be a sibling of the `<subProcess>` element:
 
 ```xml
 <subProcess id="subProcess1" name="Sub Process">
@@ -283,16 +284,16 @@ Boundary events inside subprocesses must be siblings of the activity within the 
   
   <endEvent id="subEnd"/>
   
-  <!-- Boundary event on subprocess itself -->
-  <boundaryEvent id="subProcessTimeout" attachedToRef="subProcess1" cancelActivity="true">
-    <timerEventDefinition>
-      <timeDuration>PT8H</timeDuration>
-    </timerEventDefinition>
-  </boundaryEvent>
-  
   <sequenceFlow id="subFlow1" sourceRef="subStart" targetRef="subTask"/>
   <sequenceFlow id="subFlow2" sourceRef="subTask" targetRef="subEnd"/>
 </subProcess>
+
+<!-- Boundary event on the subprocess itself - sibling of the subProcess element -->
+<boundaryEvent id="subProcessTimeout" attachedToRef="subProcess1" cancelActivity="true">
+  <timerEventDefinition>
+    <timeDuration>PT8H</timeDuration>
+  </timerEventDefinition>
+</boundaryEvent>
 ```
 
 ## Complete Examples
@@ -300,45 +301,43 @@ Boundary events inside subprocesses must be siblings of the activity within the 
 ### Example 1: Order Processing with Timeouts
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="Order Processing">
   
   <startEvent id="start"/>
   
-  <userTask id="receiveOrder" name="Receive Order" activiti:assignee="${orderClerk}">
-    
-    <!-- Timeout after 2 hours -->
-    <boundaryEvent id="receiveTimeout" cancelActivity="true">
-      <timerEventDefinition>
-        <timeDuration>PT2H</timeDuration>
-      </timerEventDefinition>
-    </boundaryEvent>
-  </userTask>
+  <userTask id="receiveOrder" name="Receive Order" activiti:assignee="${orderClerk}"/>
+  
+  <!-- Timeout after 2 hours -->
+  <boundaryEvent id="receiveTimeout" attachedToRef="receiveOrder" cancelActivity="true">
+    <timerEventDefinition>
+      <timeDuration>PT2H</timeDuration>
+    </timerEventDefinition>
+  </boundaryEvent>
   
   <userTask id="escalateReceive" name="Escalate Order Reception"/>
   
-  <serviceTask id="validateOrder" name="Validate Order" activiti:class="com.example.OrderValidator">
-    
-    <!-- Error boundary for validation errors -->
-    <boundaryEvent id="validationError" cancelActivity="true">
-      <errorEventDefinition errorRef="ValidationError"/>
-    </boundaryEvent>
-  </serviceTask>
+  <serviceTask id="validateOrder" name="Validate Order" activiti:class="com.example.OrderValidator"/>
+  
+  <!-- Error boundary for validation errors -->
+  <boundaryEvent id="validationError" attachedToRef="validateOrder" cancelActivity="true">
+    <errorEventDefinition errorRef="ValidationError"/>
+  </boundaryEvent>
   
   <userTask id="handleValidationError" name="Handle Validation Error"/>
   
-  <userTask id="approveOrder" name="Approve Order" activiti:assignee="${manager}">
-    
-    <!-- Multiple boundary events -->
-    <boundaryEvent id="approvalTimeout" cancelActivity="true">
-      <timerEventDefinition>
-        <timeDuration>PT24H</timeDuration>
-      </timerEventDefinition>
-    </boundaryEvent>
-    
-    <boundaryEvent id="approvalCancel" cancelActivity="true">
-      <messageEventDefinition messageRef="cancelApproval"/>
-    </boundaryEvent>
-  </userTask>
+  <userTask id="approveOrder" name="Approve Order" activiti:assignee="${manager}"/>
+  
+  <!-- Multiple boundary events on approveOrder -->
+  <boundaryEvent id="approvalTimeout" attachedToRef="approveOrder" cancelActivity="true">
+    <timerEventDefinition>
+      <timeDuration>PT24H</timeDuration>
+    </timerEventDefinition>
+  </boundaryEvent>
+  
+  <boundaryEvent id="approvalCancel" attachedToRef="approveOrder" cancelActivity="true">
+    <messageEventDefinition messageRef="cancelApproval"/>
+  </boundaryEvent>
   
   <userTask id="escalateApproval" name="Escalate Approval"/>
   
@@ -361,41 +360,37 @@ Boundary events inside subprocesses must be siblings of the activity within the 
 ### Example 2: Payment Processing with Compensation
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="paymentProcess" name="Payment Processing">
   
   <startEvent id="start"/>
   
   <serviceTask id="reserveFunds" name="Reserve Funds" 
-               activiti:class="com.example.FundsReservation">
-    
-    <boundaryEvent id="reservationError" cancelActivity="true">
-      <errorEventDefinition errorRef="ReservationError"/>
-    </boundaryEvent>
-  </serviceTask>
+               activiti:class="com.example.FundsReservation"/>
+  
+  <boundaryEvent id="reservationError" attachedToRef="reserveFunds" cancelActivity="true">
+    <errorEventDefinition errorRef="ReservationError"/>
+  </boundaryEvent>
   
   <serviceTask id="processPayment" name="Process Payment"
-               activiti:class="com.example.PaymentProcessor">
-    
-    <boundaryEvent id="paymentError" cancelActivity="true">
-      <errorEventDefinition errorRef="PaymentError"/>
-    </boundaryEvent>
-  </serviceTask>
+               activiti:class="com.example.PaymentProcessor"/>
+  
+  <boundaryEvent id="paymentError" attachedToRef="processPayment" cancelActivity="true">
+    <errorEventDefinition errorRef="PaymentError"/>
+  </boundaryEvent>
   
   <serviceTask id="confirmPayment" name="Confirm Payment" activiti:class="com.example.PaymentConfirmation"/>
   
-  <!-- Compensation event subprocess -->
-  <eventSubProcess id="compensationHandler">
-    <startEvent id="compStart">
-      <compensateEventDefinition activityRef="processPayment"/>
-    </startEvent>
-    
-    <serviceTask id="refundPayment" name="Refund Payment" activiti:class="com.example.PaymentRefund"/>
-    
-    <endEvent id="compEnd"/>
-    
-    <sequenceFlow id="compFlow1" sourceRef="compStart" targetRef="refundPayment"/>
-    <sequenceFlow id="compFlow2" sourceRef="refundPayment" targetRef="compEnd"/>
-  </eventSubProcess>
+  <!-- Compensation boundary event for processPayment -->
+  <boundaryEvent id="compensatePayment" attachedToRef="processPayment" cancelActivity="false">
+    <compensateEventDefinition/>
+  </boundaryEvent>
+  
+  <!-- Association links the boundary event to the compensation handler -->
+  <association id="compensatePaymentAssoc" sourceRef="compensatePayment" targetRef="refundPayment"/>
+  
+  <!-- Compensation handler - isForCompensation="true" is required -->
+  <serviceTask id="refundPayment" name="Refund Payment" activiti:class="com.example.PaymentRefund" isForCompensation="true"/>
   
   <endEvent id="end"/>
   
@@ -405,6 +400,8 @@ Boundary events inside subprocesses must be siblings of the activity within the 
   <sequenceFlow id="flow4" sourceRef="confirmPayment" targetRef="end"/>
 </process>
 ```
+
+**Note:** Compensation is **not** triggered via event sub-processes — the engine's `EventSubprocessValidator` only accepts `error`, `message`, or `signal` start event definitions on event subprocesses. The supported mechanism is a compensation boundary event + `<association>` + an `isForCompensation="true"` handler, triggered by a throw-compensation event. See [Compensation Events](./compensation-events.md).
 
 ## Runtime API
 

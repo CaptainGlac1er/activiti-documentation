@@ -49,8 +49,8 @@ For **async job retry** specifically (failed jobs that need to be retried after 
 spring:
   activiti:
     async-executor:
-  number-of-retries: 3            # max retries per failed job
-  retry-wait-time-in-millis: 500  # wait time between job retries
+      number-of-retries: 3            # max retries per failed job
+      retry-wait-time-in-millis: 500  # wait time between job retries
 ```
 
 These control the `AsyncExecutorProperties` which configure the async job executor's retry behavior — distinct from the `RetryInterceptor`'s optimistic-locking retry mechanism.
@@ -63,7 +63,7 @@ When running inside a JTA transaction manager, Activiti uses `JtaRetryIntercepto
 2. A retry within the same transaction would fail again
 3. The application must handle retry at a higher level (e.g., Spring `@Retryable`)
 
-`JtaRetryInterceptor` checks `transactionManager.getStatus() == Status.STATUS_NO_TRANSACTION`. If inside a transaction, it passes commands directly to the next interceptor without retry logic.
+`JtaRetryInterceptor` skips retry whenever `transactionManager.getStatus() != Status.STATUS_NO_TRANSACTION`. If inside a transaction, it passes commands directly to the next interceptor without retry logic.
 
 ## Which Operations Can Fail
 
@@ -127,9 +127,9 @@ The `AsyncExecutorProperties` class provides these relevant properties (prefix `
 spring:
   activiti:
     async-executor:
-  max-async-jobs-due-per-acquisition: 1  # lower = fewer conflicts (default: 1)
-  timer-lock-time-in-millis: 300000       # job lock duration, ms (default: 5 min)
-  async-job-lock-time-in-millis: 300000   # async job lock duration, ms (default: 5 min)
+      max-async-jobs-due-per-acquisition: 1  # lower = fewer conflicts (default: 1)
+      timer-lock-time-in-millis: 300000       # job lock duration, ms (default: 5 min)
+      async-job-lock-time-in-millis: 300000   # async job lock duration, ms (default: 5 min)
 ```
 
 Lowering `max-async-jobs-due-per-acquisition` reduces the number of jobs a single node tries to claim concurrently, which reduces optimistic locking conflicts at the cost of throughput. Setting it to 1 eliminates acquisition races but processes jobs one at a time per node.

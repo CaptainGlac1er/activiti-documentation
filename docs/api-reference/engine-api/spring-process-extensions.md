@@ -102,8 +102,10 @@ public class ProcessExtensionResourceReader implements ResourceReader<ProcessExt
 
 Implements `ResourceFinderDescriptor` for auto-deployment scanning. Configured via Spring properties:
 
-- `spring.activiti.process-definition-location-prefix` — default `classpath*:**/processes/`
-- `spring.activiti.process-definition-location-suffixes` — default `**.bpmn20.xml, **.bpmn`
+- `spring.activiti.process.extensions.dir` — default `NOT_DEFINED`; when not set, falls back to `spring.activiti.process-definition-location-prefix` (default `classpath*:**/processes/`)
+- `spring.activiti.process.extensions.suffix` — default `**-extensions.json` (a single suffix string)
+
+`spring.activiti.process-definition-location-suffixes` (the BPMN suffix list) is **not** used for extension scanning — `ProcessExtensionResourceReader` loads only files whose names end in `-extensions.json`.
 
 ```java
 public class ProcessExtensionResourceFinderDescriptor implements ResourceFinderDescriptor {
@@ -375,13 +377,12 @@ CachingProcessExtensionService cachingProcessExtensionService
 
 The repository bean is a `CacheableProcessExtensionRepository` wrapping a `ProcessExtensionRepositoryImpl`.
 
-### `ProcessExtensionResourceFinderDescriptorAutoConfiguration`
+### Descriptor Bean Registration
 
-Separate `@Configuration` that registers `ProcessExtensionResourceFinderDescriptor` for auto-deployment scanning.
+The descriptor bean is registered by the `@Bean` method `ProcessEngineAutoConfiguration#processExtensionResourceFinderDescriptor` (annotated `@ConditionalOnMissingBean`), which reads:
 
-Properties:
-- `spring.activiti.process-definition-location-prefix` — default `classpath*:**/processes/`
-- `spring.activiti.process-definition-location-suffixes` — default `**.bpmn20.xml, **.bpmn`
+- `spring.activiti.process.extensions.dir` — default `NOT_DEFINED`; when not set, falls back to `spring.activiti.process-definition-location-prefix`
+- `spring.activiti.process.extensions.suffix` — default `**-extensions.json`
 
 ---
 

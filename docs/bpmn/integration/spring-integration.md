@@ -423,12 +423,26 @@ public IntegrationFlow approvalFlow(ActivitiInboundGateway approvalGateway) {
         .get();
 }
 
-// Global error handler
+// Global error handler.
+// Note on Spring Integration's default error channel: the message payload
+// is usually the ORIGINAL (failing) message, not a MessagingException. The
+// failure cause is carried in the IntegrationMessageHeaderAccessor.CAUSE
+// header, or the payload is an ErrorMessage holding the exception.
 @Bean
 public IntegrationFlow errorHandler() {
     return IntegrationFlow.from("errorChannel")
         .handle((Message<?> msg) -> {
-            Throwable error = ((MessagingException) msg.getPayload()).getRootCause();
+            Object payload = msg.getPayload();
+            Throwable error;
+
+            if (payload instanceof ErrorMessage) {
+                error = ((ErrorMessage) payload).getThrowable();
+            } else {
+                IntegrationMessageHeaderAccessor accessor =
+                        new IntegrationMessageHeaderAccessor(msg.getHeaders());
+                error = accessor.getHeader(IntegrationMessageHeaderAccessor.CAUSE, Throwable.class);
+            }
+
             // Log or handle the error
             return null;
         })

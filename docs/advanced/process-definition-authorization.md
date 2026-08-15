@@ -92,35 +92,52 @@ graph TD
 
 ## Candidate Starter Events
 
-When candidate starters are added or removed, the engine publishes Spring events through `ProcessCandidateStartersEventProducer`. These enable **reactive authorization management** — for example, revoking access when a user changes departments.
+Candidate starter changes are observable in two different ways, depending on when they happen. These enable **reactive authorization management** — for example, revoking access when a user changes departments.
+
+1. **Application startup:** `ProcessCandidateStartersEventProducer` (a `SmartLifecycle` in the Spring Boot starter) scans the deployed process definitions in `doStart()` and publishes the plural Spring events `ProcessCandidateStarterUserAddedEvents` / `ProcessCandidateStarterGroupAddedEvents` — one batch containing all candidate starter links found.
+2. **Runtime:** adding or removing candidate starters fires the singular events `ProcessCandidateStarterUserAddedEvent`, `ProcessCandidateStarterUserRemovedEvent`, `ProcessCandidateStarterGroupAddedEvent`, `ProcessCandidateStarterGroupRemovedEvent`. These are **not** Spring events; they are delivered to typed listener beans implementing `ProcessRuntimeEventListener<E>`.
 
 ### Available Events
 
-| Event | Triggered When |
-|-------|---------------|
-| `ProcessCandidateStarterUserAddedEvent` | A user is authorized via `addCandidateStarterUser()` |
-| `ProcessCandidateStarterUserRemovedEvent` | A user's authorization is removed via `deleteCandidateStarterUser()` |
-| `ProcessCandidateStarterGroupAddedEvent` | A group is authorized via `addCandidateStarterGroup()` |
-| `ProcessCandidateStarterGroupRemovedEvent` | A group's authorization is removed via `deleteCandidateStarterGroup()` |
+| Event | Delivery | Triggered When |
+|-------|----------|----------------|
+| `ProcessCandidateStarterUserAddedEvents` | Spring event (`@EventListener`) | Application startup — batch of all user candidate starter links found on deployed definitions |
+| `ProcessCandidateStarterGroupAddedEvents` | Spring event (`@EventListener`) | Application startup — batch of all group candidate starter links found on deployed definitions |
+| `ProcessCandidateStarterUserAddedEvent` | Typed listener (`ProcessRuntimeEventListener<E>`) | A user is authorized via `repositoryService.addCandidateStarterUser()` (also notified for links found at startup) |
+| `ProcessCandidateStarterUserRemovedEvent` | Typed listener (`ProcessRuntimeEventListener<E>`) | A user's authorization is removed via `repositoryService.deleteCandidateStarterUser()` |
+| `ProcessCandidateStarterGroupAddedEvent` | Typed listener (`ProcessRuntimeEventListener<E>`) | A group is authorized via `repositoryService.addCandidateStarterGroup()` |
+| `ProcessCandidateStarterGroupRemovedEvent` | Typed listener (`ProcessRuntimeEventListener<E>`) | A group's authorization is removed via `repositoryService.deleteCandidateStarterGroup()` |
 
 ### Listening to Events
 
+The startup Spring events wrap the individual events — iterate them with `getEvents()`:
+
 ```java
 @Component
-public class AuthorizationEventListener {
+public class AuthorizationStartupListener {
 
     @EventListener
-    public void onUserAdded(ProcessCandidateStarterUserAddedEvent event) {
-        String userId = event.getEntity().getUserId();
-        String processDefId = event.getEntity().getProcessDefinitionId();
-        log.info("User {} authorized to start process definition {}", userId, processDefId);
+    public void onUserAdded(ProcessCandidateStarterUserAddedEvents events) {
+        for (ProcessCandidateStarterUserAddedEvent event : events.getEvents()) {
+            String userId = event.getEntity().getUserId();
+            String processDefId = event.getEntity().getProcessDefinitionId();
+            log.info("User {} authorized to start process definition {}", userId, processDefId);
 
-        // Example: audit the authorization change
-        auditService.logAuthorizationChange(userId, processDefId, "GRANT");
+            // Example: audit the authorization change
+            auditService.logAuthorizationChange(userId, processDefId, "GRANT");
+        }
     }
+}
+```
 
-    @EventListener
-    public void onUserRemoved(ProcessCandidateStarterUserRemovedEvent event) {
+Runtime changes are delivered to typed listener beans — one bean per event type:
+
+```java
+@Component
+public class AuthorizationRuntimeListener implements ProcessRuntimeEventListener<ProcessCandidateStarterUserRemovedEvent> {
+
+    @Override
+    public void onEvent(ProcessCandidateStarterUserRemovedEvent event) {
         String userId = event.getEntity().getUserId();
         String processDefId = event.getEntity().getProcessDefinitionId();
         // Example: notify the user their access was revoked
@@ -132,7 +149,6 @@ public class AuthorizationEventListener {
 ```
 
 The event's `getEntity()` returns a `ProcessCandidateStarterUser` with `getUserId()` and `getProcessDefinitionId()`. There is no `getProcessDefinition()` method on the event — you would need to query `RepositoryService` separately if you need the full `ProcessDefinition` object.
-```
 
 ### ProcessRuntime Authorization Filtering
 
@@ -144,7 +160,7 @@ When using the high-level `ProcessRuntime` API, candidate starters control which
 
 ### Persistence
 
-Candidate starter identity links are stored in `ACT_RU_IDENTITYLINK` with `TYPE_ = 'starter'` and a non-null `PROC_DEF_ID_`. They:
+Candidate starter identity links are stored in `ACT_RU_IDENTITYLINK` with `TYPE_ = 'candidate'` and a non-null `PROC_DEF_ID_`. They:
 
 - Persist across process instance execution
 - Are associated with the process **definition**, not the process instance

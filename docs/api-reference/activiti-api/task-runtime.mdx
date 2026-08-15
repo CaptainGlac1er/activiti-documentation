@@ -170,7 +170,7 @@ Task task(String taskId);
 - User must be assignee OR
 - User must be in candidate groups OR
 - User must be a candidate user OR
-- User must have admin role
+- User must be the task owner (no admin bypass in user runtime; admin access is via `TaskAdminRuntime`)
 
 **Example**:
 ```java
@@ -239,6 +239,7 @@ Page<Task> groupTasks = taskRuntime.tasks(
 Page<Task> processTasks = taskRuntime.tasks(
     Pageable.of(0, 20),
     TaskPayloadBuilder.tasksForProcess(processInstance)
+        .build()
 );
 ```
 
@@ -285,7 +286,7 @@ Task task = taskRuntime.create(
         .withDueDate(new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000))
         .withPriority(50)
         .withCandidateGroup("managers")
-        .withCandidateUser("backup.reviewer")
+        .withCandidateUsers("backup.reviewer")
         .withFormKey("review-form")
         .build()
 );
@@ -853,8 +854,8 @@ User can see task if:
 ├─ User is the assignee
 ├─ User is a candidate user
 ├─ User is in a candidate group
-├─ User has admin role
-└─ Task is explicitly shared with user
+└─ User is the task owner
+(No admin bypass in user runtime; admin access is via TaskAdminRuntime)
 ```
 
 ### Visibility Flow

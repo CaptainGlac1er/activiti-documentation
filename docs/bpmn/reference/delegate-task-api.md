@@ -131,7 +131,7 @@ public class TaskPropertyListener implements TaskListener {
         Date dueDate = task.getDueDate();
         task.setDueDate(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)); // +24h
 
-        // Priority (0-100, default 50)
+        // Priority (0-100, default 0)
         int priority = task.getPriority();
         task.setPriority(80); // High priority
 
@@ -765,7 +765,7 @@ if (autoAssign) {
 | `getTaskDefinitionKey()` | Get task definition key | Activity ID from BPMN |
 | `getCreateTime()` | Get creation time | - |
 | `getAssignee()` | Get assignee | Null if not claimed |
-| `setAssignee(String)` | Set assignee | Clears candidates |
+| `setAssignee(String)` | Set assignee | Candidates are NOT removed |
 | `getOwner()` | Get owner | - |
 | `setOwner(String)` | Set owner | - |
 | `addCandidateUser(String)` | Add candidate user | - |
@@ -773,7 +773,7 @@ if (autoAssign) {
 | `getCandidates()` | Get all identity links | Set of IdentityLink |
 | `getDueDate()` | Get due date | Can be null |
 | `setDueDate(Date)` | Set due date | - |
-| `getPriority()` | Get priority | int, 0-100, default 50 |
+| `getPriority()` | Get priority | int, 0-100, default 0 |
 | `setPriority(int)` | Set priority | - |
 | `getFormKey()` | Get form key | For task forms |
 | `setFormKey(String)` | Set form key | - |

@@ -336,25 +336,21 @@ public class TaskCompleteResponse {
 
 ### Event Listeners
 
-Implement event-driven architecture with Spring events:
+Implement an event-driven architecture with typed listener beans. Activiti's lifecycle events (`ProcessStartedEvent`, `TaskCompletedEvent`, `ProcessCompletedEvent`, `ProcessCancelledEvent`) are **not** Spring events — they are delivered only to beans that implement `ProcessRuntimeEventListener<E>` (process events) or `TaskRuntimeEventListener<E>` (task events) and are registered as Spring components:
 
 ```java
 @Component
 @Slf4j
-public class WorkflowEventListener {
-    
+public class ProcessStartedListener implements ProcessRuntimeEventListener<ProcessStartedEvent> {
+
     @Autowired
     private NotificationService notificationService;
 
-    @Autowired
-    private ProcessRuntime processRuntime;
-    
     /**
      * Handles process start events.
      */
-    @EventListener
-    @Async
-    public void onProcessStarted(ProcessStartedEvent event) {
+    @Override
+    public void onEvent(ProcessStartedEvent event) {
         ProcessInstance process = event.getEntity();
         log.info("Process started: ID={}, Name={}", process.getId(), process.getName());
         
@@ -363,13 +359,20 @@ public class WorkflowEventListener {
             String.format("Workflow '%s' has been initiated", process.getName())
         );
     }
-    
+}
+
+@Component
+@Slf4j
+public class TaskCompletedListener implements TaskRuntimeEventListener<TaskCompletedEvent> {
+
+    @Autowired
+    private NotificationService notificationService;
+
     /**
      * Handles task completion events.
      */
-    @EventListener
-    @Async
-    public void onTaskCompleted(TaskCompletedEvent event) {
+    @Override
+    public void onEvent(TaskCompletedEvent event) {
         Task task = event.getEntity();
         log.info("Task completed: ID={}, Name={}", task.getId(), task.getName());
         
@@ -378,17 +381,23 @@ public class WorkflowEventListener {
             String.format("Task '%s' has been completed", task.getName())
         );
     }
-    
+}
+
+@Component
+@Slf4j
+public class ProcessCompletedListener implements ProcessRuntimeEventListener<ProcessCompletedEvent> {
+
+    @Autowired
+    private NotificationService notificationService;
+
     /**
      * Handles process completion events.
      */
-    @EventListener
-    @Async
-    public void onProcessCompleted(ProcessCompletedEvent event) {
+    @Override
+    public void onEvent(ProcessCompletedEvent event) {
         ProcessInstance process = event.getEntity();
-        ProcessInstanceMeta meta = processRuntime.processInstanceMeta(process.getId());
-        log.info("Process completed: ID={}, ProcessDefinitionKey={}", 
-                  process.getId(), meta.getProcessDefinitionKey());
+        log.info("Process completed: ID={}, Name={}", 
+                  process.getId(), process.getName());
         
         notificationService.sendNotification(
             "Process Completed",
@@ -400,11 +409,27 @@ public class WorkflowEventListener {
         updateAnalytics(process);
     }
     
+    private void archiveProcessData(ProcessInstance process) {
+        // Archive implementation
+    }
+    
+    private void updateAnalytics(ProcessInstance process) {
+        // Analytics implementation
+    }
+}
+
+@Component
+@Slf4j
+public class ProcessCancelledListener implements ProcessRuntimeEventListener<ProcessCancelledEvent> {
+
+    @Autowired
+    private NotificationService notificationService;
+
     /**
      * Handles process cancellation events.
      */
-    @EventListener
-    public void onProcessCancelled(ProcessCancelledEvent event) {
+    @Override
+    public void onEvent(ProcessCancelledEvent event) {
         ProcessInstance process = event.getEntity();
         log.error("Process cancelled: ID={}, Cause={}", 
                   process.getId(), event.getCause());
@@ -413,14 +438,6 @@ public class WorkflowEventListener {
             "Process Cancelled",
             String.format("Workflow was cancelled: %s", event.getCause())
         );
-    }
-    
-    private void archiveProcessData(ProcessInstance process) {
-        // Archive implementation
-    }
-    
-    private void updateAnalytics(ProcessInstance process) {
-        // Analytics implementation
     }
 }
 ```

@@ -2,12 +2,12 @@
 sidebar_label: Event SubProcess
 slug: /bpmn/subprocesses/event-subprocess
 title: "Event SubProcess"
-description: "Complete guide to Event SubProcesses in Activiti - interrupting and non-interrupting event handling for exceptions and compensation."
+description: "Complete guide to Event SubProcesses in Activiti - interrupting and non-interrupting event handling for exceptions and external triggers."
 ---
 
 # Event SubProcess
 
-Event SubProcesses are **specialized subprocesses** that are triggered by events occurring within their scope. They're primarily used for **exception handling**, **compensation**, and **asynchronous event processing**.
+Event SubProcesses are **specialized subprocesses** that are triggered by events occurring within their scope. They're primarily used for **exception handling** and **asynchronous event processing** from external triggers.
 
 ## Overview
 
@@ -25,7 +25,7 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 
 **BPMN 2.0 Standard:** Fully Supported
 
-**Important:** The `EventSubProcess` class in Activiti extends `SubProcess` with no additional fields. The trigger type (error, message, timer, signal, compensation) is determined entirely by the start event definition **inside** the event subprocess, not by attributes on the `<eventSubProcess>` element itself. Similarly, interrupting vs non-interrupting behavior is controlled by the `isInterrupting` attribute on the **inner `<startEvent>`**, not on the event subprocess.
+**Important:** The `EventSubProcess` class in Activiti extends `SubProcess` with no additional fields. The trigger type (error, message, signal) is determined entirely by the start event definition **inside** the event subprocess, not by attributes on the `<eventSubProcess>` element itself. Similarly, interrupting vs non-interrupting behavior is controlled by the `isInterrupting` attribute on the **inner `<startEvent>`**, not on the event subprocess.
 
 ## Key Features
 
@@ -33,13 +33,13 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 
 | Type | Trigger (on start event) | Behavior | Use Case |
 |------|--------------------------|----------|----------|
-| **Interrupting** | Any event with `isInterrupting="true"` (default) on start event | Cancels parent activities | Exception handling |
-| **Non-Interrupting** | Any event with `isInterrupting="false"` on start event | Runs parallel to parent | Logging, notifications |
-| **Error** | `<errorEventDefinition errorRef="..."/>` | Catches errors | Error recovery |
+| **Interrupting** | Error, message, or signal with `isInterrupting="true"` (default) on start event | Cancels parent activities | Exception handling |
+| **Non-Interrupting** | Error, message, or signal with `isInterrupting="false"` on start event | Runs parallel to parent | Logging, notifications |
+| **Error** | `<errorEventDefinition errorRef="..."/>` or `errorCode="..."` | Catches errors | Error recovery |
 | **Message** | `<messageEventDefinition messageRef=""/>` | Waits for message | External triggers |
-| **Timer** | `<timerEventDefinition>` | Time-based trigger | Timeouts, delays |
 | **Signal** | `<signalEventDefinition signalRef=""/>` | Global broadcast | Cross-process communication |
-| **Compensation** | `<compensateEventDefinition activityRef=""/>` | Undo operations | Transaction rollback |
+
+> **Note:** Only `error`, `message`, and `signal` start event definitions are valid on an event subprocess — the engine's `EventSubprocessValidator` rejects any other trigger type. In particular, **timer** and **compensation** cannot start an event subprocess: for time-outs, use a [boundary timer event](../events/boundary-event.md) on the activity, and for undo operations, use the [compensation pattern](./transaction.md#2-transaction-with-compensation) (compensation boundary event + `isForCompensation="true"` handler).
 
 ## Configuration Options
 
@@ -48,35 +48,34 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 Cancels parent activities when triggered. By default, start events in event subprocesses are interrupting. Set `isInterrupting="true"` explicitly for clarity:
 
 ```xml
-<subProcess id="mainProcess" name="Main Process">
+<process id="errorDrivenProcess" name="Error-Driven Process">
   <startEvent id="start"/>
-  <userTask id="task1" name="Long Running Task"/>
+  <serviceTask id="task1" name="Risky Task" activiti:class="com.example.RiskyService"/>
   <endEvent id="end"/>
 
   <!-- Interrupting event subprocess (default behavior) -->
-  <eventSubProcess id="timeoutHandler">
-    <startEvent id="timerStart" isInterrupting="true">
-      <timerEventDefinition>
-        <timeDuration>PT5M</timeDuration>
-      </timerEventDefinition>
+  <eventSubProcess id="errorHandler">
+    <startEvent id="errorStart" isInterrupting="true">
+      <errorEventDefinition errorCode="APP001"/>
     </startEvent>
-    <userTask id="handleTimeout" name="Handle Timeout"/>
-    <endEvent id="timeoutEnd"/>
+    <userTask id="handleError" name="Handle Error"/>
+    <endEvent id="errorEnd"/>
 
-    <sequenceFlow id="timeoutFlow1" sourceRef="timerStart" targetRef="handleTimeout"/>
-    <sequenceFlow id="timeoutFlow2" sourceRef="handleTimeout" targetRef="timeoutEnd"/>
+    <sequenceFlow id="errorFlow1" sourceRef="errorStart" targetRef="handleError"/>
+    <sequenceFlow id="errorFlow2" sourceRef="handleError" targetRef="errorEnd"/>
   </eventSubProcess>
 
   <sequenceFlow id="flow1" sourceRef="start" targetRef="task1"/>
   <sequenceFlow id="flow2" sourceRef="task1" targetRef="end"/>
-</subProcess>
+</process>
 ```
 
 **Behavior:**
-- Timer starts when subprocess begins
-- After 5 minutes, event subprocess triggers
-- **Cancels** the "Long Running Task"
-- Executes timeout handling logic
+- When `task1` throws an error with `errorCode` `APP001`, the event subprocess triggers
+- **Cancels** the "Risky Task"
+- Executes the error handling logic
+
+> **Note:** Timer start events are **not supported** on event subprocesses (see the `EventSubprocessValidator` note above). If you need a timeout on a main-process activity, use a boundary timer event on that activity instead.
 
 ### 2. Non-Interrupting Event SubProcess
 
@@ -220,46 +219,11 @@ Responds to global signals:
 <signal id="EmergencyStop" name="Emergency Stop"/>
 ```
 
-### 6. Compensation Event SubProcess
+### 6. Compensation Event SubProcess (Not Supported)
 
-Handles compensation (undo) operations:
+An event subprocess started by a `<compensateEventDefinition>` is **not supported** — the `EventSubprocessValidator` accepts only `error`, `message`, and `signal` start event definitions, so a compensation-start event subprocess will fail validation.
 
-```xml
-<process id="compensationProcess" name="Process with Compensation">
-  <startEvent id="start"/>
-
-  <subProcess id="transactionalProcess" name="Transactional Process">
-    <startEvent id="subStart"/>
-
-    <serviceTask id="bookFlight" name="Book Flight" activiti:class="com.example.FlightBookingService"/>
-
-    <serviceTask id="bookHotel" name="Book Hotel" activiti:class="com.example.HotelBookingService"/>
-
-    <endEvent id="subEnd"/>
-
-    <!-- Compensation event subprocess -->
-    <eventSubProcess id="compensationHandler">
-      <startEvent id="compStart">
-        <compensateEventDefinition activityRef="bookHotel"/>
-      </startEvent>
-      <serviceTask id="cancelHotel" name="Cancel Hotel Booking" activiti:class="com.example.HotelCancellationService"/>
-      <endEvent id="compEnd"/>
-
-      <sequenceFlow id="compFlow1" sourceRef="compStart" targetRef="cancelHotel"/>
-      <sequenceFlow id="compFlow2" sourceRef="cancelHotel" targetRef="compEnd"/>
-    </eventSubProcess>
-
-    <sequenceFlow id="subFlow1" sourceRef="subStart" targetRef="bookFlight"/>
-    <sequenceFlow id="subFlow2" sourceRef="bookFlight" targetRef="bookHotel"/>
-    <sequenceFlow id="subFlow3" sourceRef="bookHotel" targetRef="subEnd"/>
-  </subProcess>
-
-  <endEvent id="end"/>
-
-  <sequenceFlow id="mainFlow1" sourceRef="start" targetRef="transactionalProcess"/>
-  <sequenceFlow id="mainFlow2" sourceRef="transactionalProcess" targetRef="end"/>
-</process>
-```
+Compensation (undo) operations are modeled differently in Activiti: a compensation boundary event attached to the activity or transaction being compensated, an `<association>` to the compensation handler, and `isForCompensation="true"` on the handler activity. See [Transaction — Transaction with Compensation](./transaction.md) for the canonical pattern.
 
 ## Complete Real-World Example
 
@@ -274,6 +238,9 @@ Handles compensation (undo) operations:
 
   <!-- Signal definition for system-wide emergency -->
   <signal id="systemEmergency" name="System Emergency"/>
+
+  <!-- Signal definition for order timeout (sent by an external scheduler) -->
+  <signal id="orderTimeoutSignal" name="Order Timeout"/>
 
   <!-- Error definition -->
   <error id="paymentError" name="Payment Error" errorCode="PAY001"/>
@@ -301,12 +268,10 @@ Handles compensation (undo) operations:
 
     <endEvent id="fulfillEnd"/>
 
-    <!-- Timer event subprocess for order timeout -->
+    <!-- Signal event subprocess for order timeout (external scheduler sends the signal) -->
     <eventSubProcess id="orderTimeout">
       <startEvent id="timeoutStart">
-        <timerEventDefinition>
-          <timeDuration>PT24H</timeDuration>
-        </timerEventDefinition>
+        <signalEventDefinition signalRef="orderTimeoutSignal"/>
       </startEvent>
       <serviceTask id="cancelTimeout" name="Cancel Timed Out Order" activiti:class="com.example.OrderCancellationService"/>
       <endEvent id="timeoutEnd"/>
@@ -390,20 +355,20 @@ runtimeService.signalEventReceived("systemEmergency");
 runtimeService.signalEventReceived("systemEmergency", Map.of("reason", "Maintenance"));
 ```
 
-### Triggering Timer Events
+### Date-Based Start Timers
 
 ```java
-// Timer events are automatic based on duration
-// But you can also use date-based timers
+// Process start timers fire automatically (duration- or cycle-based)
+// Date-based start timers use a variable holding the start date/time
 Map<String, Object> vars = Map.of(
-    "timeoutDate", ZonedDateTime.now().plusHours(2)
+    "startTime", ZonedDateTime.now().plusHours(2)
 );
 runtimeService.startProcessInstanceByKey("orderProcess", vars);
 ```
 
 ## Best Practices
 
-1. **Use Interrupting for Critical Events** - Errors, cancellations, timeouts
+1. **Use Interrupting for Critical Events** - Errors, cancellations, emergency stops
 2. **Use Non-Interrupting for Logging** - Audit trails, notifications
 3. **Keep Event SubProcesses Simple** - Single responsibility
 4. **Document Event Triggers** - Clear message/signal/error definitions

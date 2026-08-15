@@ -14,20 +14,24 @@ The **Scripting Engine** enables execution of **scripts in multiple languages** 
 ```xml
 <!-- Script task with JavaScript -->
 <scriptTask id="scriptTask" name="Calculate Total" scriptFormat="javascript">
-  total = quantity * price;
-  execution.setVariable('total', total);
+  <script><![CDATA[
+    total = quantity * price;
+    execution.setVariable('total', total);
+  ]]></script>
 </scriptTask>
 
 <!-- Script task with Groovy -->
 <scriptTask id="groovyTask" name="Process Data" scriptFormat="groovy">
-  def items = execution.getVariable('items') as List
-  def total = items.sum { it.price }
-  execution.setVariable('total', total)
+  <script><![CDATA[
+    def items = execution.getVariable('items') as List
+    def total = items.sum { it.price }
+    execution.setVariable('total', total)
+  ]]></script>
 </scriptTask>
 ```
 
 **BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Multiple script formats, field injection
+**Activiti Extensions:** Multiple script formats
 
 ## Supported Script Formats
 
@@ -47,42 +51,36 @@ The **Scripting Engine** enables execution of **scripts in multiple languages** 
 <!-- Inline script -->
 <scriptTask id="inlineScript" name="Inline Script" 
             scriptFormat="javascript">
-  // Script content here
-  var total = execution.getVariable('amount') * 1.1;
-  execution.setVariable('totalWithTax', total);
+  <script><![CDATA[
+    // Script content here
+    var total = execution.getVariable('amount') * 1.1;
+    execution.setVariable('totalWithTax', total);
+  ]]></script>
 </scriptTask>
 
-<!-- Script from field -->
-<scriptTask id="fieldScript" name="Field Script" 
+<!-- Groovy script, inline -->
+<scriptTask id="groovyScript" name="Groovy Script" 
             scriptFormat="groovy">
-  <extensionElements>
-    <activiti:field name="script">
-      <activiti:string>
-        def data = execution.getVariable('inputData')
-        def result = processData(data)
-        execution.setVariable('outputData', result)
-      </activiti:string>
-    </activiti:field>
-  </extensionElements>
+  <script><![CDATA[
+    def data = execution.getVariable('inputData')
+    def result = processData(data)
+    execution.setVariable('outputData', result)
+  ]]></script>
 </scriptTask>
 
-<!-- Script from resource -->
-<scriptTask id="resourceScript" name="Resource Script" 
-            scriptFormat="javascript">
-  <extensionElements>
-    <activiti:field name="scriptFormat" stringValue="javascript"/>
-    <activiti:field name="scriptResource" stringValue="classpath:scripts/calculate.js"/>
-  </extensionElements>
-</scriptTask>
-
-<!-- Script from classpath -->
+<!-- External script: load the script content at runtime -->
 <scriptTask id="classpathScript" name="Classpath Script" 
             scriptFormat="groovy">
-  <extensionElements>
-    <activiti:field name="scriptResource" stringValue="groovy/scripts/process.groovy"/>
-  </extensionElements>
+  <script><![CDATA[
+    def resource = this.class.classLoader.getResource('scripts/process.groovy')
+    def shell = new GroovyShell(this.class.classLoader)
+    shell.setVariable('execution', execution)
+    shell.evaluate(resource.text)
+  ]]></script>
 </scriptTask>
 ```
+
+> **Note:** `<activiti:field>` is **not** supported on ScriptTasks — the parser only handles field injection on Service Tasks, Send Tasks, and message event definitions. There is no `scriptResource` attribute either; if a script must be stored externally, load its content at runtime inside an inline script (as above), or move the logic into a Service Task with a `JavaDelegate`.
 
 ### Script Engine Configuration
 
@@ -90,15 +88,14 @@ The **Scripting Engine** enables execution of **scripts in multiple languages** 
 public class ScriptEngineConfig {
     
     @Bean
-    public ProcessEngineConfiguration processEngineConfiguration() {
-        ProcessEngineConfiguration config = 
-            ProcessEngineConfiguration.createStandaloneProcessEngineConfiguration();
+    public StandaloneProcessEngineConfiguration processEngineConfiguration() {
+        StandaloneProcessEngineConfiguration config = new StandaloneProcessEngineConfiguration();
         
-        // Register custom script engine
-        config.setScriptEngineFactory(new CustomScriptEngineFactory());
+        // Register a custom script engine (used via scriptFormat="custom")
+        config.getScriptingEngines().addScriptEngineFactory(new CustomScriptEngineFactory());
         
-        // Configure script factory
-        config.setScriptFactory(new ActivitiScriptFactory());
+        // Optionally customize how process variables are exposed to scripts
+        config.getScriptingEngines().setScriptBindingsFactory(new CustomScriptBindingsFactory());
         
         return config;
     }
@@ -112,27 +109,29 @@ public class ScriptEngineConfig {
 ```xml
 <scriptTask id="jsCalculation" name="JavaScript Calculation" 
             scriptFormat="javascript">
-  // Access execution context
-  var quantity = execution.getVariable('quantity');
-  var price = execution.getVariable('price');
-  
-  // Calculate total
-  var total = quantity * price;
-  
-  // Apply discount if applicable
-  var discount = execution.getVariable('discount') || 0;
-  var finalTotal = total * (1 - discount/100);
-  
-  // Set result
-  execution.setVariable('finalTotal', finalTotal);
-  execution.setVariable('calculationTime', new Date());
-  
-  // Conditional logic
-  if (finalTotal > 1000) {
-    execution.setVariable('requiresApproval', true);
-  } else {
-    execution.setVariable('requiresApproval', false);
-  }
+  <script><![CDATA[
+    // Access execution context
+    var quantity = execution.getVariable('quantity');
+    var price = execution.getVariable('price');
+    
+    // Calculate total
+    var total = quantity * price;
+    
+    // Apply discount if applicable
+    var discount = execution.getVariable('discount') || 0;
+    var finalTotal = total * (1 - discount/100);
+    
+    // Set result
+    execution.setVariable('finalTotal', finalTotal);
+    execution.setVariable('calculationTime', new Date());
+    
+    // Conditional logic
+    if (finalTotal > 1000) {
+      execution.setVariable('requiresApproval', true);
+    } else {
+      execution.setVariable('requiresApproval', false);
+    }
+  ]]></script>
 </scriptTask>
 ```
 
@@ -141,32 +140,34 @@ public class ScriptEngineConfig {
 ```xml
 <scriptTask id="groovyProcessing" name="Groovy Processing" 
             scriptFormat="groovy">
-  // Type inference
-  def items = execution.getVariable('items') as List
-  
-  // Collection operations
-  def total = items.sum { it.price }
-  def average = total / items.size()
-  def expensiveItems = items.findAll { it.price > 100 }
-  
-  // Set variables
-  execution.setVariable('total', total)
-  execution.setVariable('average', average)
-  execution.setVariable('expensiveItems', expensiveItems)
-  
-  // Complex object creation
-  def summary = [
-    itemCount: items.size(),
-    total: total,
-    average: average,
-    generatedAt: new Date()
-  ]
-  execution.setVariable('summary', summary)
-  
-  // Conditional with Elvis operator
-  def discount = execution.getVariable('discount') ?: 0
-  def finalTotal = total * (1 - discount / 100)
-  execution.setVariable('finalTotal', finalTotal)
+  <script><![CDATA[
+    // Type inference
+    def items = execution.getVariable('items') as List
+    
+    // Collection operations
+    def total = items.sum { it.price }
+    def average = total / items.size()
+    def expensiveItems = items.findAll { it.price > 100 }
+    
+    // Set variables
+    execution.setVariable('total', total)
+    execution.setVariable('average', average)
+    execution.setVariable('expensiveItems', expensiveItems)
+    
+    // Complex object creation
+    def summary = [
+      itemCount: items.size(),
+      total: total,
+      average: average,
+      generatedAt: new Date()
+    ]
+    execution.setVariable('summary', summary)
+    
+    // Conditional with Elvis operator
+    def discount = execution.getVariable('discount') ?: 0
+    def finalTotal = total * (1 - discount / 100)
+    execution.setVariable('finalTotal', finalTotal)
+  ]]></script>
 </scriptTask>
 ```
 
@@ -175,23 +176,25 @@ public class ScriptEngineConfig {
 ```xml
 <scriptTask id="javaScript" name="Java Script" 
             scriptFormat="java">
-  import java.util.*;
-  import java.math.*;
-  
-  // Type-safe Java code
-  BigDecimal quantity = (BigDecimal) execution.getVariable("quantity");
-  BigDecimal price = (BigDecimal) execution.getVariable("price");
-  
-  BigDecimal total = quantity.multiply(price);
-  
-  // Complex calculations
-  BigDecimal taxRate = new BigDecimal("0.08");
-  BigDecimal tax = total.multiply(taxRate);
-  BigDecimal finalTotal = total.add(tax);
-  
-  execution.setVariable("total", total);
-  execution.setVariable("tax", tax);
-  execution.setVariable("finalTotal", finalTotal);
+  <script><![CDATA[
+    import java.util.*;
+    import java.math.*;
+    
+    // Type-safe Java code
+    BigDecimal quantity = (BigDecimal) execution.getVariable("quantity");
+    BigDecimal price = (BigDecimal) execution.getVariable("price");
+    
+    BigDecimal total = quantity.multiply(price);
+    
+    // Complex calculations
+    BigDecimal taxRate = new BigDecimal("0.08");
+    BigDecimal tax = total.multiply(taxRate);
+    BigDecimal finalTotal = total.add(tax);
+    
+    execution.setVariable("total", total);
+    execution.setVariable("tax", tax);
+    execution.setVariable("finalTotal", finalTotal);
+  ]]></script>
 </scriptTask>
 ```
 
@@ -200,9 +203,11 @@ public class ScriptEngineConfig {
 ```xml
 <scriptTask id="juelScript" name="JUEL Script" 
             scriptFormat="juel">
-  ${execution.setVariable('total', quantity * price)}
-  ${execution.setVariable('tax', total * 0.08)}
-  ${execution.setVariable('finalTotal', total + tax)}
+  <script><![CDATA[
+    ${execution.setVariable('total', quantity * price)}
+    ${execution.setVariable('tax', total * 0.08)}
+    ${execution.setVariable('finalTotal', total + tax)}
+  ]]></script>
 </scriptTask>
 ```
 
@@ -213,28 +218,30 @@ public class ScriptEngineConfig {
 ```xml
 <scriptTask id="variableAccess" name="Variable Access" 
             scriptFormat="groovy">
-  // Get process variable
-  def orderId = execution.getVariable('orderId')
-  
-  // Get variable with default
-  def quantity = execution.getVariable('quantity', 1)
-  
-  // Check if variable exists
-  if (execution.hasVariable('discount')) {
-    def discount = execution.getVariable('discount')
-  }
-  
-  // Get all variables
-  def allVars = execution.getVariables()
-  
-  // Get variable names
-  def varNames = execution.getVariableNames()
-  
-  // Set variable
-  execution.setVariable('processed', true)
-  
-  // Remove variable
-  execution.removeVariable('temp')
+  <script><![CDATA[
+    // Get process variable
+    def orderId = execution.getVariable('orderId')
+    
+    // Get variable with default
+    def quantity = execution.getVariable('quantity', 1)
+    
+    // Check if variable exists
+    if (execution.hasVariable('discount')) {
+      def discount = execution.getVariable('discount')
+    }
+    
+    // Get all variables
+    def allVars = execution.getVariables()
+    
+    // Get variable names
+    def varNames = execution.getVariableNames()
+    
+    // Set variable
+    execution.setVariable('processed', true)
+    
+    // Remove variable
+    execution.removeVariable('temp')
+  ]]></script>
 </scriptTask>
 ```
 
@@ -243,35 +250,37 @@ public class ScriptEngineConfig {
 ```xml
 <scriptTask id="contextAccess" name="Context Access" 
             scriptFormat="groovy">
-  // Execution ID
-  def executionId = execution.id
-  
-  // Process instance ID
-  def processInstanceId = execution.processInstanceId
-  
-  // Process definition ID
-  def processDefinitionId = execution.processDefinitionId
-  
-  // Process definition key
-  def processDefinitionKey = execution.processDefinitionKey
-  
-  // Activity ID
-  def activityId = execution.activityId
-  
-  // Current user
-  def currentUser = execution.currentUserId
-  
-  // Process instance
-  def processInstance = execution.processInstance
-  
-  // Business key
-  def businessKey = processInstance.businessKey
-  
-  // Parent execution
-  def parent = execution.parent
-  
-  // Child executions
-  def children = execution.childExecutions
+  <script><![CDATA[
+    // Execution ID
+    def executionId = execution.id
+    
+    // Process instance ID
+    def processInstanceId = execution.processInstanceId
+    
+    // Process definition ID
+    def processDefinitionId = execution.processDefinitionId
+    
+    // Process definition key
+    def processDefinitionKey = execution.processDefinitionKey
+    
+    // Activity ID
+    def activityId = execution.activityId
+    
+    // Current user
+    def currentUser = execution.currentUserId
+    
+    // Process instance
+    def processInstance = execution.processInstance
+    
+    // Business key
+    def businessKey = processInstance.businessKey
+    
+    // Parent execution
+    def parent = execution.parent
+    
+    // Child executions
+    def children = execution.childExecutions
+  ]]></script>
 </scriptTask>
 ```
 
@@ -280,25 +289,27 @@ public class ScriptEngineConfig {
 ```xml
 <scriptTask id="taskVariables" name="Task Variables" 
             scriptFormat="groovy">
-  // Set task-local variable
-  execution.setVariableLocal('tempCalculation', 42)
-  
-  // Get task-local variable
-  def temp = execution.getVariableLocal('tempCalculation')
-  
-  // Check if task has local variable
-  if (execution.hasVariableLocal('tempCalculation')) {
-    // Use it
-  }
-  
-  // Get all local variable names
-  def localVarNames = execution.getVariableNamesLocal()
-  
-  // Get all local variables
-  def localVars = execution.getVariablesLocal()
-  
-  // Remove local variable
-  execution.removeVariableLocal('tempCalculation')
+  <script><![CDATA[
+    // Set task-local variable
+    execution.setVariableLocal('tempCalculation', 42)
+    
+    // Get task-local variable
+    def temp = execution.getVariableLocal('tempCalculation')
+    
+    // Check if task has local variable
+    if (execution.hasVariableLocal('tempCalculation')) {
+      // Use it
+    }
+    
+    // Get all local variable names
+    def localVarNames = execution.getVariableNamesLocal()
+    
+    // Get all local variables
+    def localVars = execution.getVariablesLocal()
+    
+    // Remove local variable
+    execution.removeVariableLocal('tempCalculation')
+  ]]></script>
 </scriptTask>
 ```
 
@@ -309,10 +320,14 @@ public class ScriptEngineConfig {
 ```xml
 <scriptTask id="classpathScript" name="Classpath Script" 
             scriptFormat="groovy">
-  <extensionElements>
-    <activiti:field name="scriptResource" 
-                    stringValue="classpath:scripts/orderProcessing.groovy"/>
-  </extensionElements>
+  <script><![CDATA[
+    // Activiti does not support script resources on scriptTask;
+    // load the script content from the classpath at runtime
+    def resource = this.class.classLoader.getResource('scripts/orderProcessing.groovy')
+    def shell = new GroovyShell(this.class.classLoader)
+    shell.setVariable('execution', execution)
+    shell.evaluate(resource.text)
+  ]]></script>
 </scriptTask>
 ```
 
@@ -344,43 +359,28 @@ processOrder(execution)
 
 ### Script from Database
 
-```java
-public class ScriptFromDatabase {
-    
-    @Autowired
-    private ScriptRepository scriptRepository;
-    
-    @Bean
-    public ProcessEngineConfiguration processEngineConfiguration() {
-        ProcessEngineConfiguration config = 
-            ProcessEngineConfiguration.createStandaloneProcessEngineConfiguration();
-        
-        // Custom script factory that loads from database
-        config.setScriptFactory(new DatabaseScriptFactory(scriptRepository));
-        
-        return config;
-    }
-}
+Since `scriptTask` has no script-resource support, the script content is loaded at runtime. A common approach is a `JavaDelegate` on a service task:
 
-public class DatabaseScriptFactory extends ActivitiScriptFactory {
+```java
+public class ScriptFromDatabaseDelegate implements JavaDelegate {
     
     private final ScriptRepository scriptRepository;
     
-    public DatabaseScriptFactory(ScriptRepository scriptRepository) {
+    public ScriptFromDatabaseDelegate(ScriptRepository scriptRepository) {
         this.scriptRepository = scriptRepository;
     }
     
     @Override
-    public Object getScript(DelegateExecution execution, String script, 
-                           String scriptFormat, String resource) {
-        // Load script from database
-        if (resource != null && resource.startsWith("db:")) {
-            String scriptName = resource.substring(3);
-            Script storedScript = scriptRepository.findByName(scriptName);
-            return storedScript.getContent();
-        }
+    public void execute(DelegateExecution execution) {
+        // Load the script content from the database
+        String scriptName = (String) execution.getVariable("scriptName");
+        Script storedScript = scriptRepository.findByName(scriptName);
         
-        return super.getScript(execution, script, scriptFormat, resource);
+        // Evaluate with the process context available as bindings
+        ScriptEngine engine = new ScriptEngineManager().getEngineByName("groovy");
+        Bindings bindings = new SimpleBindings();
+        bindings.put("execution", execution);
+        engine.eval(storedScript.getContent(), bindings);
     }
 }
 ```
@@ -389,12 +389,14 @@ public class DatabaseScriptFactory extends ActivitiScriptFactory {
 
 ```xml
 <scriptTask id="externalScript" name="External Script" 
-            scriptFormat="javascript">
-  <extensionElements>
-    <activiti:field name="script">
-      <activiti:expression>${scriptService.getScript('calculateTotal')}</activiti:expression>
-    </activiti:field>
-  </extensionElements>
+            scriptFormat="groovy">
+  <script><![CDATA[
+    // Fetch the script from the external service and evaluate it
+    def scriptText = new URL('https://scripts.example.com/calculateTotal').text
+    def shell = new GroovyShell()
+    shell.setVariable('execution', execution)
+    shell.evaluate(scriptText)
+  ]]></script>
 </scriptTask>
 ```
 
@@ -402,29 +404,119 @@ public class DatabaseScriptFactory extends ActivitiScriptFactory {
 
 ### Registering Custom Engine
 
+A custom engine is a standard JSR-223 `ScriptEngineFactory`/`ScriptEngine` pair, modeled on the engine's own `JuelScriptEngineFactory`/`JuelScriptEngine`:
+
 ```java
 public class CustomScriptEngineFactory implements ScriptEngineFactory {
-    
+
+    private static final String ENGINE_NAME = "custom";
+
     @Override
-    public ScriptEngine getScriptEngine(String type) {
-        switch (type) {
-            case "custom-js":
-                return new CustomJavaScriptEngine();
-            case "custom-groovy":
-                return new CustomGroovyEngine();
-            default:
-                return null;
+    public String getEngineName() {
+        return ENGINE_NAME;
+    }
+
+    @Override
+    public String getEngineVersion() {
+        return "1.0";
+    }
+
+    @Override
+    public List<String> getExtensions() {
+        return Collections.singletonList("custom");
+    }
+
+    @Override
+    public String getLanguageName() {
+        return "Custom";
+    }
+
+    @Override
+    public String getLanguageVersion() {
+        return "1.0";
+    }
+
+    @Override
+    public String getMethodCallSyntax(String obj, String method, String... arguments) {
+        throw new UnsupportedOperationException("Method getMethodCallSyntax is not supported");
+    }
+
+    @Override
+    public List<String> getMimeTypes() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getNames() {
+        return Collections.singletonList(ENGINE_NAME);
+    }
+
+    @Override
+    public String getOutputStatement(String toDisplay) {
+        return "println('" + toDisplay + "')";
+    }
+
+    @Override
+    public String getParameter(String key) {
+        if (ScriptEngine.NAME.equals(key)) {
+            return getLanguageName();
+        } else if (ScriptEngine.ENGINE.equals(key)) {
+            return getEngineName();
+        } else if (ScriptEngine.ENGINE_VERSION.equals(key)) {
+            return getEngineVersion();
+        } else if (ScriptEngine.LANGUAGE.equals(key)) {
+            return getLanguageName();
+        } else if (ScriptEngine.LANGUAGE_VERSION.equals(key)) {
+            return getLanguageVersion();
+        } else if ("THREADING".equals(key)) {
+            // Non-null value tells the engine the factory is thread-safe
+            return "MULTITHREADED";
         }
+        return null;
+    }
+
+    @Override
+    public String getProgram(String... statements) {
+        throw new UnsupportedOperationException("Method getProgram is not supported");
+    }
+
+    @Override
+    public ScriptEngine getScriptEngine() {
+        return new CustomScriptEngine(this);
     }
 }
+```
 
-public class CustomJavaScriptEngine implements ScriptEngine {
-    
+The engine itself extends `AbstractScriptEngine` (like `JuelScriptEngine`). It is invoked with a `ScriptContext` whose `ENGINE_SCOPE` bindings expose the process variables and the `execution` variable (`DelegateExecution`), so a custom engine accesses the process context through the `ScriptContext` bindings:
+
+```java
+public class CustomScriptEngine extends AbstractScriptEngine implements Compilable {
+
+    private final ScriptEngineFactory scriptEngineFactory;
+
+    public CustomScriptEngine(ScriptEngineFactory scriptEngineFactory) {
+        this.scriptEngineFactory = scriptEngineFactory;
+    }
+
     @Override
-    public Object eval(DelegateExecution execution, String script) {
-        // Custom JavaScript execution
-        // Could use Nashorn, GraalVM, or other JS engine
-        return javascriptEngine.eval(script);
+    public ScriptEngineFactory getFactory() {
+        return scriptEngineFactory;
+    }
+
+    @Override
+    public Object eval(String script, ScriptContext context) throws ScriptException {
+        // Process variables and "execution" are available as ENGINE_SCOPE bindings
+        Bindings bindings = context.getBindings(ScriptContext.ENGINE_SCOPE);
+        DelegateExecution execution = (DelegateExecution) bindings.get("execution");
+
+        // Custom script execution logic
+        return null;
+    }
+
+    @Override
+    public CompiledScript compile(String script) throws ScriptException {
+        // Implement compilation if the language supports it
+        throw new UnsupportedOperationException("Compilation not supported");
     }
 }
 ```
@@ -433,15 +525,24 @@ public class CustomJavaScriptEngine implements ScriptEngine {
 
 ```java
 @Bean
-public ProcessEngineConfiguration processEngineConfiguration() {
-    ProcessEngineConfiguration config = 
-        ProcessEngineConfiguration.createStandaloneProcessEngineConfiguration();
+public StandaloneProcessEngineConfiguration processEngineConfiguration() {
+    StandaloneProcessEngineConfiguration config = new StandaloneProcessEngineConfiguration();
     
-    // Register custom script engine factory
-    config.setScriptEngineFactory(new CustomScriptEngineFactory());
+    // Register the custom script engine factory
+    config.getScriptingEngines().addScriptEngineFactory(new CustomScriptEngineFactory());
     
     return config;
 }
+```
+
+Once registered, the engine is available under the name returned by `getEngineName()`:
+
+```xml
+<scriptTask id="customScript" name="Custom Script" scriptFormat="custom">
+  <script><![CDATA[
+    execution.setVariable('customResult', 42)
+  ]]></script>
+</scriptTask>
 ```
 
 ## Error Handling
@@ -451,21 +552,23 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 ```xml
 <scriptTask id="errorHandlingScript" name="Error Handling" 
             scriptFormat="groovy">
-  try {
-    // Risky operation
-    def result = riskyOperation()
-    execution.setVariable('result', result)
-  } catch (Exception e) {
-    // Set error variable
-    execution.setVariable('scriptError', e.message)
-    execution.setVariable('scriptErrorType', e.class.name)
-    
-    // Optionally rethrow to trigger boundary event
-    // throw e
-    
-    // Or set flag for error handling path
-    execution.setVariable('processingFailed', true)
-  }
+  <script><![CDATA[
+    try {
+      // Risky operation
+      def result = riskyOperation()
+      execution.setVariable('result', result)
+    } catch (Exception e) {
+      // Set error variable
+      execution.setVariable('scriptError', e.message)
+      execution.setVariable('scriptErrorType', e.class.name)
+      
+      // Optionally rethrow to trigger boundary event
+      // throw e
+      
+      // Or set flag for error handling path
+      execution.setVariable('processingFailed', true)
+    }
+  ]]></script>
 </scriptTask>
 ```
 
@@ -474,13 +577,15 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 ```xml
 <scriptTask id="scriptWithErrorBoundary" name="Script with Error" 
             scriptFormat="javascript">
-  var value = execution.getVariable('requiredValue');
-  
-  if (value == null) {
-    throw new Exception('Required value is missing');
-  }
-  
-  execution.setVariable('processedValue', value * 2);
+  <script><![CDATA[
+    var value = execution.getVariable('requiredValue');
+    
+    if (value == null) {
+      throw new Exception('Required value is missing');
+    }
+    
+    execution.setVariable('processedValue', value * 2);
+  ]]></script>
 </scriptTask>
 
 <boundaryEvent id="scriptError" attachedToRef="scriptWithErrorBoundary" 
@@ -501,34 +606,36 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 
 // GOOD: Efficient script
 <scriptTask id="efficientScript" scriptFormat="groovy">
-  def cachedValue = execution.getVariable('cachedData')
-  if (!cachedValue) {
-    cachedValue = expensiveComputation()
-    execution.setVariable('cachedData', cachedValue)
-  }
-  // Use cachedValue
+  <script><![CDATA[
+    def cachedValue = execution.getVariable('cachedData')
+    if (!cachedValue) {
+      cachedValue = expensiveComputation()
+      execution.setVariable('cachedData', cachedValue)
+    }
+    // Use cachedValue
+  ]]></script>
 </scriptTask>
 
 // BAD: Repeated expensive operations
 <scriptTask id="inefficientScript" scriptFormat="groovy">
-  // Computed every time
-  def value = expensiveComputation()
+  <script><![CDATA[
+    // Computed every time
+    def value = expensiveComputation()
+  ]]></script>
 </scriptTask>
 ```
 
 ### Script Compilation
 
-```java
-// Groovy scripts can be compiled for better performance
-// Configure Groovy shell to use compilation
+Groovy scripts can be compiled for better performance. The engine also caches resolved script engines per language:
 
+```java
 @Bean
-public ProcessEngineConfiguration processEngineConfiguration() {
-    ProcessEngineConfiguration config = 
-        ProcessEngineConfiguration.createStandaloneProcessEngineConfiguration();
+public StandaloneProcessEngineConfiguration processEngineConfiguration() {
+    StandaloneProcessEngineConfiguration config = new StandaloneProcessEngineConfiguration();
     
-    // Enable script compilation caching
-    config.setScriptFactory(new CachingScriptFactory());
+    // Script engines are cached per language by default; disable if needed
+    config.getScriptingEngines().setCacheScriptingEngines(true);
     
     return config;
 }
@@ -538,21 +645,31 @@ public ProcessEngineConfiguration processEngineConfiguration() {
 
 ### Script Sandboxing
 
+Content restrictions are easiest to enforce in a custom `ScriptEngine` — validate the script text inside `eval` before running it:
+
 ```java
-// Restrict script access to sensitive operations
-public class SecureScriptFactory extends ActivitiScriptFactory {
-    
-    @Override
-    public Object getScript(DelegateExecution execution, String script, 
-                           String scriptFormat, String resource) {
-        // Validate script content
-        if (containsDangerousOperations(script)) {
-            throw new SecurityException("Script contains dangerous operations");
-        }
-        
-        return super.getScript(execution, script, scriptFormat, resource);
+public class SecureGroovyScriptEngine extends AbstractScriptEngine {
+
+    private final GroovyShell shell;
+
+    public SecureGroovyScriptEngine() {
+        this.shell = new GroovyShell();
     }
-    
+
+    @Override
+    public Object eval(String script, ScriptContext context) throws ScriptException {
+        // Validate script content before running it
+        if (containsDangerousOperations(script)) {
+            throw new ScriptException("Script contains dangerous operations");
+        }
+
+        try {
+            return shell.evaluate(script, context.getBindings(ScriptContext.ENGINE_SCOPE));
+        } catch (Exception e) {
+            throw new ScriptException(e);
+        }
+    }
+
     private boolean containsDangerousOperations(String script) {
         // Check for dangerous patterns
         return script.contains("Runtime.getRuntime()") ||
@@ -567,18 +684,20 @@ public class SecureScriptFactory extends ActivitiScriptFactory {
 ```xml
 <scriptTask id="validatedScript" name="Validated Script" 
             scriptFormat="groovy">
-  // Validate input before use
-  def userInput = execution.getVariable('userInput')
-  
-  if (userInput == null || userInput.trim().isEmpty()) {
-    throw new Exception('Invalid input')
-  }
-  
-  // Sanitize input
-  def sanitized = userInput.replaceAll('[^a-zA-Z0-9]', '')
-  
-  // Use sanitized input
-  execution.setVariable('processedInput', sanitized)
+  <script><![CDATA[
+    // Validate input before use
+    def userInput = execution.getVariable('userInput')
+    
+    if (userInput == null || userInput.trim().isEmpty()) {
+      throw new Exception('Invalid input')
+    }
+    
+    // Sanitize input
+    def sanitized = userInput.replaceAll('[^a-zA-Z0-9]', '')
+    
+    // Use sanitized input
+    execution.setVariable('processedInput', sanitized)
+  ]]></script>
 </scriptTask>
 ```
 
@@ -594,79 +713,87 @@ public class SecureScriptFactory extends ActivitiScriptFactory {
   <!-- Validate order -->
   <scriptTask id="validateOrder" name="Validate Order" 
               scriptFormat="groovy">
-    def order = execution.getVariable('order')
-    
-    assert order != null : 'Order is required'
-    assert order.items != null : 'Order items required'
-    assert !order.items.isEmpty() : 'Order must have items'
-    assert order.customerId != null : 'Customer ID required'
-    
-    execution.setVariable('validationPassed', true)
+    <script><![CDATA[
+      def order = execution.getVariable('order')
+      
+      assert order != null : 'Order is required'
+      assert order.items != null : 'Order items required'
+      assert !order.items.isEmpty() : 'Order must have items'
+      assert order.customerId != null : 'Customer ID required'
+      
+      execution.setVariable('validationPassed', true)
+    ]]></script>
   </scriptTask>
   
   <!-- Calculate totals -->
   <scriptTask id="calculateTotals" name="Calculate Totals" 
               scriptFormat="javascript">
-    var items = execution.getVariable('items');
-    var subtotal = 0;
-    
-    for (var i = 0; i < items.length; i++) {
-      subtotal += items[i].price * items[i].quantity;
-    }
-    
-    var tax = subtotal * 0.08;
-    var total = subtotal + tax;
-    
-    execution.setVariable('subtotal', subtotal);
-    execution.setVariable('tax', tax);
-    execution.setVariable('total', total);
+    <script><![CDATA[
+      var items = execution.getVariable('items');
+      var subtotal = 0;
+      
+      for (var i = 0; i < items.length; i++) {
+        subtotal += items[i].price * items[i].quantity;
+      }
+      
+      var tax = subtotal * 0.08;
+      var total = subtotal + tax;
+      
+      execution.setVariable('subtotal', subtotal);
+      execution.setVariable('tax', tax);
+      execution.setVariable('total', total);
+    ]]></script>
   </scriptTask>
   
   <!-- Apply discounts -->
   <scriptTask id="applyDiscounts" name="Apply Discounts" 
               scriptFormat="groovy">
-    def total = execution.getVariable('total') as BigDecimal
-    def discountType = execution.getVariable('discountType')
-    
-    def discount = BigDecimal.ZERO
-    
-    switch (discountType) {
-        case 'VIP':
-            discount = total * new BigDecimal('0.1')
-            break
-        case 'PROMO':
-            discount = total * new BigDecimal('0.05')
-            break
-        case 'BULK':
-            def itemCount = execution.getVariable('itemCount') as int
-            if (itemCount > 10) {
-                discount = total * new BigDecimal('0.15')
-            }
-            break
-    }
-    
-    def finalTotal = total - discount
-    
-    execution.setVariable('discount', discount)
-    execution.setVariable('finalTotal', finalTotal)
+    <script><![CDATA[
+      def total = execution.getVariable('total') as BigDecimal
+      def discountType = execution.getVariable('discountType')
+      
+      def discount = BigDecimal.ZERO
+      
+      switch (discountType) {
+          case 'VIP':
+              discount = total * new BigDecimal('0.1')
+              break
+          case 'PROMO':
+              discount = total * new BigDecimal('0.05')
+              break
+          case 'BULK':
+              def itemCount = execution.getVariable('itemCount') as int
+              if (itemCount > 10) {
+                  discount = total * new BigDecimal('0.15')
+              }
+              break
+      }
+      
+      def finalTotal = total - discount
+      
+      execution.setVariable('discount', discount)
+      execution.setVariable('finalTotal', finalTotal)
+    ]]></script>
   </scriptTask>
   
   <!-- Generate order summary -->
   <scriptTask id="generateSummary" name="Generate Summary" 
               scriptFormat="groovy">
-    def summary = [
-        orderId: execution.getVariable('orderId'),
-        customerId: execution.getVariable('customerId'),
-        itemCount: execution.getVariable('itemCount'),
-        subtotal: execution.getVariable('subtotal'),
-        tax: execution.getVariable('tax'),
-        discount: execution.getVariable('discount'),
-        finalTotal: execution.getVariable('finalTotal'),
-        processedAt: new Date(),
-        processedBy: execution.currentUserId
-    ]
-    
-    execution.setVariable('orderSummary', summary)
+    <script><![CDATA[
+      def summary = [
+          orderId: execution.getVariable('orderId'),
+          customerId: execution.getVariable('customerId'),
+          itemCount: execution.getVariable('itemCount'),
+          subtotal: execution.getVariable('subtotal'),
+          tax: execution.getVariable('tax'),
+          discount: execution.getVariable('discount'),
+          finalTotal: execution.getVariable('finalTotal'),
+          processedAt: new Date(),
+          processedBy: execution.currentUserId
+      ]
+      
+      execution.setVariable('orderSummary', summary)
+    ]]></script>
   </scriptTask>
   
   <endEvent id="end"/>
@@ -685,31 +812,33 @@ public class SecureScriptFactory extends ActivitiScriptFactory {
 ```xml
 <scriptTask id="transformData" name="Transform Data" 
             scriptFormat="groovy">
-  // Get raw data
-  def rawData = execution.getVariable('rawData') as List
-  
-  // Transform to domain objects
-  def transformedData = rawData.collect { raw ->
-    [
-        id: raw['id'],
-        name: raw['name'].toUpperCase(),
-        email: raw['email'].toLowerCase().trim(),
-        age: raw['age'] as int,
-        createdAt: new Date(raw['created_at'] as long),
-        active: raw['status'] == 'ACTIVE'
-    ]
-  }
-  
-  // Filter active records
-  def activeRecords = transformedData.findAll { it.active }
-  
-  // Sort by creation date
-  activeRecords.sort { a, b -> b.createdAt.compareTo(a.createdAt) }
-  
-  // Set transformed data
-  execution.setVariable('transformedData', transformedData)
-  execution.setVariable('activeRecords', activeRecords)
-  execution.setVariable('recordCount', activeRecords.size())
+  <script><![CDATA[
+    // Get raw data
+    def rawData = execution.getVariable('rawData') as List
+    
+    // Transform to domain objects
+    def transformedData = rawData.collect { raw ->
+      [
+          id: raw['id'],
+          name: raw['name'].toUpperCase(),
+          email: raw['email'].toLowerCase().trim(),
+          age: raw['age'] as int,
+          createdAt: new Date(raw['created_at'] as long),
+          active: raw['status'] == 'ACTIVE'
+      ]
+    }
+    
+    // Filter active records
+    def activeRecords = transformedData.findAll { it.active }
+    
+    // Sort by creation date
+    activeRecords.sort { a, b -> b.createdAt.compareTo(a.createdAt) }
+    
+    // Set transformed data
+    execution.setVariable('transformedData', transformedData)
+    execution.setVariable('activeRecords', activeRecords)
+    execution.setVariable('recordCount', activeRecords.size())
+  ]]></script>
 </scriptTask>
 ```
 
@@ -720,12 +849,12 @@ public class SecureScriptFactory extends ActivitiScriptFactory {
 ```xml
 <!-- GOOD: Simple calculation in JavaScript -->
 <scriptTask scriptFormat="javascript">
-  total = quantity * price;
+  <script><![CDATA[total = quantity * price;]]></script>
 </scriptTask>
 
 <!-- GOOD: Complex logic in Groovy -->
 <scriptTask scriptFormat="groovy">
-  def result = complexProcessing(items)
+  <script><![CDATA[def result = complexProcessing(items)]]></script>
 </scriptTask>
 
 <!-- BAD: Complex Java code in JavaScript -->
@@ -736,16 +865,18 @@ public class SecureScriptFactory extends ActivitiScriptFactory {
 ```xml
 <!-- GOOD: Single responsibility -->
 <scriptTask id="calculateTax" name="Calculate Tax">
-  tax = total * taxRate;
+  <script><![CDATA[tax = total * taxRate;]]></script>
 </scriptTask>
 
 <scriptTask id="applyDiscount" name="Apply Discount">
-  discountedTotal = total - discount;
+  <script><![CDATA[discountedTotal = total - discount;]]></script>
 </scriptTask>
 
 <!-- BAD: Multiple responsibilities -->
 <scriptTask id="doEverything" name="Do Everything">
-  // Calculate, validate, transform, persist...
+  <script><![CDATA[
+    // Calculate, validate, transform, persist...
+  ]]></script>
 </scriptTask>
 ```
 
@@ -754,18 +885,20 @@ public class SecureScriptFactory extends ActivitiScriptFactory {
 ```xml
 <!-- GOOD: Error handling -->
 <scriptTask scriptFormat="groovy">
-  try {
-    def result = riskyOperation()
-    execution.setVariable('result', result)
-  } catch (Exception e) {
-    execution.setVariable('error', e.message)
-    execution.setVariable('success', false)
-  }
+  <script><![CDATA[
+    try {
+      def result = riskyOperation()
+      execution.setVariable('result', result)
+    } catch (Exception e) {
+      execution.setVariable('error', e.message)
+      execution.setVariable('success', false)
+    }
+  ]]></script>
 </scriptTask>
 
 <!-- BAD: No error handling -->
 <scriptTask scriptFormat="groovy">
-  def result = riskyOperation() // Can throw
+  <script><![CDATA[def result = riskyOperation() // Can throw]]></script>
 </scriptTask>
 ```
 
@@ -780,8 +913,10 @@ public class SecureScriptFactory extends ActivitiScriptFactory {
   Tax rate: 8%
 -->
 <scriptTask id="calculateTotal" name="Calculate Total">
-  tax = subtotal * 0.08;
-  total = subtotal + tax;
+  <script><![CDATA[
+    tax = subtotal * 0.08;
+    total = subtotal + tax;
+  ]]></script>
 </scriptTask>
 ```
 

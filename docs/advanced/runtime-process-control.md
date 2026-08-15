@@ -29,7 +29,7 @@ runtimeService.updateBusinessKey(
 
 ```java
 // Example: update business key after order number is assigned
-ProcessInstance pi = runtimeService.startProcessInstanceBuilder()
+ProcessInstance pi = runtimeService.createProcessInstanceBuilder()
     .processDefinitionKey("orderProcess")
     .businessKey("TEMP-" + System.currentTimeMillis())
     .start();

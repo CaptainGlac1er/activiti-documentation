@@ -316,7 +316,14 @@ spring:
 
 ### Process Extensions
 
-Process extension JSON files are discovered alongside process definitions using `process-definition-location-prefix` and `process-definition-location-suffixes`.
+Process extension JSON files are discovered by the `ProcessExtensionResourceFinderDescriptor` bean using dedicated properties:
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `spring.activiti.process.extensions.dir` | `NOT_DEFINED` — falls back to `spring.activiti.process-definition-location-prefix` | Location prefix for scanning process extension files |
+| `spring.activiti.process.extensions.suffix` | `**-extensions.json` | Single file-suffix string; only files ending in `-extensions.json` are loaded |
+
+`spring.activiti.process-definition-location-suffixes` (the BPMN suffix list) is **not** used for extension scanning.
 
 ---
 
@@ -839,7 +846,7 @@ spring:
 | Class | Prefix | Description |
 |-------|--------|-------------|
 | `ActivitiProperties` | `spring.activiti` | Core engine configuration: schema, history, deployment, mail, serialization, caching. |
-| `AsyncExecutorProperties` | `async-executor` | Async job executor: pool sizes, queue, retries, timeouts, acquisition settings. |
+| `AsyncExecutorProperties` | `spring.activiti.async-executor` | Async job executor: pool sizes, queue, retries, timeouts, acquisition settings. |
 
 ### Support Classes
 
