@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'Activiti API Documentation',
-  tagline: 'Powerful workflow and BPM engine API for modern applications',
+  title: 'Activiti',
+  tagline: 'Documentation for the Activiti workflow and BPM engine ecosystem',
   favicon: 'img/logo.svg',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -61,17 +61,24 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'Activiti API',
+      title: 'Activiti',
       logo: {
         alt: 'Activiti Logo',
         src: 'img/logo.svg',
       },
+      // One docSidebar item per docs module (see sidebars.ts).
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'activitiDocsSidebar',
+          sidebarId: 'activitiSidebar',
           position: 'left',
-          label: 'Documentation',
+          label: 'Activiti',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'cloudSidebar',
+          position: 'left',
+          label: 'Activiti Cloud',
         },
         {
           href: 'https://github.com/Activiti/Activiti',
@@ -96,7 +103,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.vsDark,
-      additionalLanguages: ['java', 'markup', 'bash', 'yaml', 'json', 'groovy', 'properties', 'sql', 'http'],
+      additionalLanguages: ['java', 'markup', 'bash', 'yaml', 'json', 'groovy', 'properties', 'sql', 'http', 'graphql'],
     },
   } satisfies Preset.ThemeConfig,
   plugins: [

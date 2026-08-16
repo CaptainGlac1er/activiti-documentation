@@ -2,16 +2,34 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 /**
  * Sidebar configuration for Activiti Documentation
+ *
+ * The docs site is organized into modules, each living in its own folder
+ * under `docs/` and exposed as its own sidebar (one `<module>Sidebar` per
+ * module). The root `docs/index.md` acts as the module hub landing page and
+ * is excluded from sidebars automatically.
+ *
+ * To add a new module (e.g. Activiti Cloud):
+ *   1. Create `docs/cloud/` and add its content
+ *   2. Add a `cloudSidebar` here referencing its doc ids (`cloud/...`)
+ *   3. Add a navbar `docSidebar` item for it in `docusaurus.config.ts`
+ *   4. Add a section for it in `docs/index.md`
+ *
+ * Per-module conventions:
  * - Organized around user journey: learn -> configure -> reference -> go deeper
  * - Maximum 3 levels of nesting
  * - Collapsible categories with sensible defaults
  */
 const sidebars: SidebarsConfig = {
-  activitiDocsSidebar: [
+  // ---------------------------------------------------------------------------
+  // Module: Activiti Cloud (microservices platform: runtime bundle, query,
+  // audit, messages, GraphQL, connectors, deployment)
+  // Content lives in docs/cloud/
+  // ---------------------------------------------------------------------------
+  cloudSidebar: [
     {
       type: 'doc',
-      id: 'index',
-      label: 'Documentation',
+      id: 'cloud/index',
+      label: 'Activiti Cloud',
       className: 'hero-quickstart',
     },
     {
@@ -19,19 +37,88 @@ const sidebars: SidebarsConfig = {
       collapsible: true,
       collapsed: false,
       label: 'Getting Started',
-      link: {type: 'doc', id: 'getting-started/overview'},
+      link: {type: 'doc', id: 'cloud/getting-started/overview'},
       items: [
-        'quickstart',
+        'cloud/getting-started/local-setup',
+        'cloud/getting-started/first-workflow',
+      ],
+    },
+    {
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'Architecture',
+      link: {type: 'doc', id: 'cloud/architecture/overview'},
+      items: [
+        'cloud/architecture/event-driven',
+        'cloud/architecture/identity',
+      ],
+    },
+    {
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'Services',
+      link: {type: 'generated-index', title: 'Services Overview'},
+      items: [
+        'cloud/services/runtime-bundle',
+        'cloud/services/query',
+        'cloud/services/audit',
+        'cloud/services/messages',
+        'cloud/services/notifications-graphql',
+      ],
+    },
+    {
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'Connectors',
+      link: {type: 'doc', id: 'cloud/connectors/overview'},
+      items: [
+        'cloud/connectors/inbound',
+        'cloud/connectors/outbound',
+      ],
+    },
+    {
+      type: 'doc',
+      id: 'cloud/deployment/reference',
+      label: 'Deployment Reference',
+    },
+    {
+      type: 'doc',
+      id: 'cloud/examples/end-to-end',
+      label: 'End-to-End Example',
+    },
+  ],
+  // ---------------------------------------------------------------------------
+  // Module: Activiti (engine API, BPMN reference, advanced topics)
+  // Content lives in docs/activiti/
+  // ---------------------------------------------------------------------------
+  activitiSidebar: [
+    {
+      type: 'doc',
+      id: 'activiti/index',
+      label: 'Activiti',
+      className: 'hero-quickstart',
+    },
+    {
+      type: 'category',
+      collapsible: true,
+      collapsed: false,
+      label: 'Getting Started',
+      link: {type: 'doc', id: 'activiti/getting-started/overview'},
+      items: [
+        'activiti/quickstart',
         {
           type: 'doc',
-          id: 'architecture/overview',
+          id: 'activiti/architecture/overview',
           label: 'Architecture Overview',
         },
       ],
     },
     {
       type: 'doc',
-      id: 'configuration',
+      id: 'activiti/configuration',
       label: 'Engine Configuration',
     },
     {
@@ -39,67 +126,67 @@ const sidebars: SidebarsConfig = {
       collapsible: true,
       collapsed: true,
       label: 'BPMN Reference',
-      link: {type: 'doc', id: 'bpmn/index'},
+      link: {type: 'doc', id: 'activiti/bpmn/index'},
       items: [
         {
           type: 'category',
           label: 'Tasks',
           link: {type: 'generated-index', title: 'Task Elements Overview'},
           items: [
-            'bpmn/elements/user-task',
-            'bpmn/elements/service-task',
-            'bpmn/elements/send-task',
-            'bpmn/elements/script-task',
-            'bpmn/elements/receive-task',
-            'bpmn/elements/business-rule-task',
-            'bpmn/elements/call-activity',
-            'bpmn/elements/manual-task',
-            'bpmn/elements/shell-task',
-            'bpmn/elements/sequence-flows',
-            'bpmn/elements/data-objects',
-            'bpmn/elements/data-grid',
-            'bpmn/elements/pools-lanes',
+            'activiti/bpmn/elements/user-task',
+            'activiti/bpmn/elements/service-task',
+            'activiti/bpmn/elements/send-task',
+            'activiti/bpmn/elements/script-task',
+            'activiti/bpmn/elements/receive-task',
+            'activiti/bpmn/elements/business-rule-task',
+            'activiti/bpmn/elements/call-activity',
+            'activiti/bpmn/elements/manual-task',
+            'activiti/bpmn/elements/shell-task',
+            'activiti/bpmn/elements/sequence-flows',
+            'activiti/bpmn/elements/data-objects',
+            'activiti/bpmn/elements/data-grid',
+            'activiti/bpmn/elements/pools-lanes',
           ],
         },
         {
           type: 'category',
           label: 'Events',
-          link: {type: 'doc', id: 'bpmn/events/index'},
+          link: {type: 'doc', id: 'activiti/bpmn/events/index'},
           items: [
-            'bpmn/events/start-event',
-            'bpmn/events/intermediate-events',
-            'bpmn/events/end-event',
-            'bpmn/events/boundary-event',
-            'bpmn/events/compensation-events',
-            'bpmn/events/link-events',
+            'activiti/bpmn/events/start-event',
+            'activiti/bpmn/events/intermediate-events',
+            'activiti/bpmn/events/end-event',
+            'activiti/bpmn/events/boundary-event',
+            'activiti/bpmn/events/compensation-events',
+            'activiti/bpmn/events/link-events',
           ],
         },
         {
           type: 'category',
           label: 'Gateways',
-          link: {type: 'doc', id: 'bpmn/gateways/index'},
+          link: {type: 'doc', id: 'activiti/bpmn/gateways/index'},
           items: [
-            'bpmn/gateways/exclusive-gateway',
-            'bpmn/gateways/parallel-gateway',
-            'bpmn/gateways/inclusive-gateway',
-            'bpmn/gateways/event-gateway',
-            'bpmn/gateways/complex-gateway',
+            'activiti/bpmn/gateways/exclusive-gateway',
+            'activiti/bpmn/gateways/parallel-gateway',
+            'activiti/bpmn/gateways/inclusive-gateway',
+            'activiti/bpmn/gateways/event-gateway',
+            'activiti/bpmn/gateways/complex-gateway',
           ],
         },
         {
           type: 'category',
           label: 'Subprocesses',
-          link: {type: 'doc', id: 'bpmn/subprocesses/index'},
+          link: {type: 'doc', id: 'activiti/bpmn/subprocesses/index'},
           items: [
-            'bpmn/subprocesses/regular-subprocess',
-            'bpmn/subprocesses/event-subprocess',
-            'bpmn/subprocesses/adhoc-subprocess',
-            'bpmn/subprocesses/transaction',
+            'activiti/bpmn/subprocesses/regular-subprocess',
+            'activiti/bpmn/subprocesses/event-subprocess',
+            'activiti/bpmn/subprocesses/adhoc-subprocess',
+            'activiti/bpmn/subprocesses/transaction',
           ],
         },
         {
           type: 'doc',
-          id: 'bpmn/common-features',
+          id: 'activiti/bpmn/common-features',
           label: 'Common Features',
         },
         {
@@ -107,28 +194,28 @@ const sidebars: SidebarsConfig = {
           label: 'Advanced BPMN',
           link: {type: 'generated-index', title: 'Advanced BPMN Overview'},
           items: [
-            'bpmn/reference/async-execution',
-            'bpmn/reference/multi-instance',
-            'bpmn/reference/task-listeners',
-            'bpmn/reference/execution-listeners',
-            'bpmn/reference/process-event-listeners',
-            'bpmn/reference/java-delegate',
-            'bpmn/reference/delegate-execution-api',
-            'bpmn/reference/delegate-task-api',
-            'bpmn/reference/variables',
-            'bpmn/reference/error-handling',
-            'bpmn/reference/process-extensions',
-            'bpmn/reference/business-calendars',
+            'activiti/bpmn/reference/async-execution',
+            'activiti/bpmn/reference/multi-instance',
+            'activiti/bpmn/reference/task-listeners',
+            'activiti/bpmn/reference/execution-listeners',
+            'activiti/bpmn/reference/process-event-listeners',
+            'activiti/bpmn/reference/java-delegate',
+            'activiti/bpmn/reference/delegate-execution-api',
+            'activiti/bpmn/reference/delegate-task-api',
+            'activiti/bpmn/reference/variables',
+            'activiti/bpmn/reference/error-handling',
+            'activiti/bpmn/reference/process-extensions',
+            'activiti/bpmn/reference/business-calendars',
           ],
         },
         {
           type: 'category',
           label: 'Integration',
-          link: {type: 'doc', id: 'bpmn/integration/index'},
+          link: {type: 'doc', id: 'activiti/bpmn/integration/index'},
           items: [
-            'bpmn/integration/connectors',
-            'bpmn/integration/spring-integration',
-            'bpmn/integration/jpa-process-variables',
+            'activiti/bpmn/integration/connectors',
+            'activiti/bpmn/integration/spring-integration',
+            'activiti/bpmn/integration/jpa-process-variables',
           ],
         },
       ],
@@ -138,19 +225,19 @@ const sidebars: SidebarsConfig = {
       collapsible: true,
       collapsed: true,
       label: 'Advanced Topics',
-      link: {type: 'doc', id: 'advanced/index'},
+      link: {type: 'doc', id: 'activiti/advanced/index'},
       items: [
         {
           type: 'category',
           label: 'Engine Events & Monitoring',
           link: {type: 'generated-index', title: 'Events and Monitoring Overview'},
           items: [
-            'advanced/engine-event-system',
-            'advanced/database-event-logging',
-            'advanced/historic-variable-updates',
-            'advanced/execution-debug-tree',
-            'advanced/token-lifecycle',
-            'advanced/event-subscription-querying',
+            'activiti/advanced/engine-event-system',
+            'activiti/advanced/database-event-logging',
+            'activiti/advanced/historic-variable-updates',
+            'activiti/advanced/execution-debug-tree',
+            'activiti/advanced/token-lifecycle',
+            'activiti/advanced/event-subscription-querying',
           ],
         },
         {
@@ -158,10 +245,10 @@ const sidebars: SidebarsConfig = {
           label: 'Process Lifecycle Control',
           link: {type: 'generated-index', title: 'Lifecycle Control Overview'},
           items: [
-            'advanced/process-instance-suspension',
-            'advanced/create-then-start',
-            'advanced/runtime-process-control',
-            'advanced/task-delegation',
+            'activiti/advanced/process-instance-suspension',
+            'activiti/advanced/create-then-start',
+            'activiti/advanced/runtime-process-control',
+            'activiti/advanced/task-delegation',
           ],
         },
         {
@@ -169,9 +256,9 @@ const sidebars: SidebarsConfig = {
           label: 'Deployment & Configuration',
           link: {type: 'generated-index', title: 'Deployment Overview'},
           items: [
-            'advanced/auto-deployment-modes',
-            'advanced/deployment-builder',
-            'advanced/model-api',
+            'activiti/advanced/auto-deployment-modes',
+            'activiti/advanced/deployment-builder',
+            'activiti/advanced/model-api',
           ],
         },
         {
@@ -179,9 +266,9 @@ const sidebars: SidebarsConfig = {
           label: 'Authorization & Security',
           link: {type: 'generated-index', title: 'Authorization Overview'},
           items: [
-            'advanced/process-definition-authorization',
-            'advanced/process-identity-links',
-            'advanced/security-policies',
+            'activiti/advanced/process-definition-authorization',
+            'activiti/advanced/process-identity-links',
+            'activiti/advanced/security-policies',
           ],
         },
         {
@@ -189,13 +276,13 @@ const sidebars: SidebarsConfig = {
           label: 'Operations & Administration',
           link: {type: 'generated-index', title: 'Operations Overview'},
           items: [
-            'advanced/database-schema',
-            'advanced/management-service',
-            'advanced/job-lifecycle',
-            'advanced/multi-tenancy',
-            'advanced/native-queries',
-            'advanced/optimistic-locking',
-            'advanced/history-cleanup',
+            'activiti/advanced/database-schema',
+            'activiti/advanced/management-service',
+            'activiti/advanced/job-lifecycle',
+            'activiti/advanced/multi-tenancy',
+            'activiti/advanced/native-queries',
+            'activiti/advanced/optimistic-locking',
+            'activiti/advanced/history-cleanup',
           ],
         },
         {
@@ -203,9 +290,9 @@ const sidebars: SidebarsConfig = {
           label: 'Engine Extensibility',
           link: {type: 'generated-index', title: 'Extensibility Overview'},
           items: [
-            'advanced/custom-parse-handlers',
-            'advanced/testing-infrastructure',
-            'advanced/custom-validators',
+            'activiti/advanced/custom-parse-handlers',
+            'activiti/advanced/testing-infrastructure',
+            'activiti/advanced/custom-validators',
           ],
         },
       ],
@@ -215,7 +302,7 @@ const sidebars: SidebarsConfig = {
       collapsible: true,
       collapsed: true,
       label: 'API Reference',
-      link: {type: 'doc', id: 'api-reference/overview'},
+      link: {type: 'doc', id: 'activiti/api-reference/overview'},
       items: [
         {
           type: 'category',
@@ -224,7 +311,7 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'autogenerated',
-              dirName: 'api-reference/activiti-api',
+              dirName: 'activiti/api-reference/activiti-api',
             },
           ],
         },
@@ -235,7 +322,7 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'autogenerated',
-              dirName: 'api-reference/core-common',
+              dirName: 'activiti/api-reference/core-common',
             },
           ],
         },
@@ -246,7 +333,7 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'autogenerated',
-              dirName: 'api-reference/engine-api',
+              dirName: 'activiti/api-reference/engine-api',
             },
           ],
         },
@@ -257,15 +344,15 @@ const sidebars: SidebarsConfig = {
       collapsible: true,
       collapsed: true,
       label: 'Best Practices & Patterns',
-      link: {type: 'doc', id: 'best-practices/index'},
+      link: {type: 'doc', id: 'activiti/best-practices/index'},
       items: [
-        'best-practices/guide',
-        'implementation-patterns',
+        'activiti/best-practices/guide',
+        'activiti/implementation-patterns',
       ],
     },
     {
       type: 'doc',
-      id: 'troubleshooting/overview',
+      id: 'activiti/troubleshooting/overview',
       label: 'Troubleshooting',
     },
     {
@@ -273,20 +360,20 @@ const sidebars: SidebarsConfig = {
       collapsible: true,
       collapsed: true,
       label: 'Examples',
-      link: {type: 'doc', id: 'examples/overview'},
+      link: {type: 'doc', id: 'activiti/examples/overview'},
       items: [
         {
           type: 'category',
           label: 'Order Management Workflow',
-          link: {type: 'doc', id: 'examples/order-management-workflow/summary'},
+          link: {type: 'doc', id: 'activiti/examples/order-management-workflow/summary'},
           items: [
-            'examples/order-management-workflow/main-process',
-            'examples/order-management-workflow/payment-process',
-            'examples/order-management-workflow/inventory-process',
-            'examples/order-management-workflow/shipping-process',
-            'examples/order-management-workflow/service-delegates',
-            'examples/order-management-workflow/process-extensions',
-            'examples/order-management-workflow/rest-api',
+            'activiti/examples/order-management-workflow/main-process',
+            'activiti/examples/order-management-workflow/payment-process',
+            'activiti/examples/order-management-workflow/inventory-process',
+            'activiti/examples/order-management-workflow/shipping-process',
+            'activiti/examples/order-management-workflow/service-delegates',
+            'activiti/examples/order-management-workflow/process-extensions',
+            'activiti/examples/order-management-workflow/rest-api',
           ],
         },
       ],

@@ -8,10 +8,21 @@ Docusaurus 3 documentation site for Activiti workflow/BPM engine. Docs live in `
 
 ## Docs Structure
 
-- `docs/` — all content; frontmatter includes `slug` for URL routing
-- `sidebars.ts` — navigation structure (edit here to add/reorder pages)
-- `docusaurus.config.ts` — site config; note `onBrokenLinks: 'warn'` (won't fail build)
+The site is organized into **modules** — each module is a top-level folder under `docs/` with its own sidebar.
+
+- `docs/` — module folders; frontmatter includes `slug` for URL routing (slugs are absolute, so moving files between folders does not change URLs)
+  - `docs/activiti/` — Activiti engine module (API, BPMN reference, advanced topics)
+  - `docs/index.md` — module hub landing page at `/docs/` (root index is auto-excluded from sidebars)
+- `sidebars.ts` — one sidebar per module, named `<module>Sidebar` (e.g. `activitiSidebar`); doc ids are prefixed with the module folder (e.g. `activiti/quickstart`)
+- `docusaurus.config.ts` — site config; one `docSidebar` navbar item per module; note `onBrokenLinks: 'warn'` (won't fail build)
 - `src/css/custom.scss` — custom styling (SASS plugin enabled)
+
+### Adding a new module (e.g. Activiti Cloud)
+
+1. Create `docs/<module>/` with its content
+2. Add a `<module>Sidebar` to `sidebars.ts` (doc ids prefixed `<module>/`)
+3. Add a `docSidebar` navbar item for it in `docusaurus.config.ts`
+4. Add a section for it in `docs/index.md`
 
 ## Doc Conventions
 
