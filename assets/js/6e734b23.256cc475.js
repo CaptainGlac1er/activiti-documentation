@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkactiviti_documentation=self.webpackChunkactiviti_documentation||[]).push([["1698"],{3736(t){t.exports=JSON.parse('{"metadata":{"permalink":"/activiti-documentation/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":0,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);
