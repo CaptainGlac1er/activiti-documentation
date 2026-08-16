@@ -35,7 +35,7 @@ The service itself does not execute workflow logic — it only decides *when* an
 | Producer | Runtime bundle engine (`MessageEventsDispatcher` in the runtime bundle `messages-events` module) | Message event payloads with `messageEventsOutput` binding → `messageEvents` destination (JSON). Emits `MESSAGE_WAITING`, `MESSAGE_SENT`, `MESSAGE_RECEIVED`, `START_MESSAGE_DEPLOYED`, `MESSAGE_SUBSCRIPTION_CANCELLED`. |
 | Producer | Connectors and external systems (via their own `messageEvents` producers) | Same event model; see [Connectors Overview](../connectors/overview.md) |
 | Consumer | The messages service itself | Subscribes with binding `messageConnectorInput` (destination `messageEvents`, consumer group `messages`) |
-| Consumer | Runtime bundle command endpoints (`CommandEndpoint`) | Receive `StartMessagePayload` / `ReceiveMessagePayload` on their `commandConsumer` input binding (destination `commandConsumer`, group = application name) and execute `StartMessageCmdExecutor` / `ReceiveMessageCmdExecutor` |
+| Consumer | Runtime bundle command endpoints (`CommandEndpoint`) | Receive `StartMessagePayload` / `ReceiveMessagePayload` on their `commandConsumer` input binding (destination `commandConsumer`, scoped by `activiti.cloud.application.name`; consumer group defaults to `spring.application.name`) and execute `StartMessageCmdExecutor` / `ReceiveMessageCmdExecutor` |
 
 The producer stamps every outgoing message with a `messageEventOutputDestination` header containing the destination of *its own* `commandConsumer` binding, so aggregated results are routed back to the correct application.
 

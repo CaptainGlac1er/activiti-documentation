@@ -80,6 +80,20 @@ const sidebars: SidebarsConfig = {
       ],
     },
     {
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'Extending',
+      link: {type: 'doc', id: 'cloud/extension/overview'},
+      items: [
+        'cloud/extension/custom-runtime-bundle',
+        'cloud/extension/deploying-processes',
+        'cloud/extension/custom-connectors',
+        'cloud/extension/multiple-bundles',
+        'cloud/extension/custom-read-models',
+      ],
+    },
+    {
       type: 'doc',
       id: 'cloud/deployment/reference',
       label: 'Deployment Reference',

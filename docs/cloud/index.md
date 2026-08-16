@@ -102,6 +102,17 @@ flowchart LR
 | [Inbound Connectors](./connectors/inbound.md) | Start or advance processes from external events |
 | [Outbound Connectors](./connectors/outbound.md) | Call external APIs from within a process |
 
+### Extending
+
+| Guide | Description |
+|-------|-------------|
+| [Extending Overview](./extension/overview.md) | The extension map: what's built-in vs. what you build |
+| [Custom Runtime Bundle](./extension/custom-runtime-bundle.md) | Build your own runtime bundle application from the starter |
+| [Deploying Processes at Runtime](./extension/deploying-processes.md) | BPMN editor integration: the deploy + sync mechanism and a custom deploy endpoint |
+| [Custom Connectors](./extension/custom-connectors.md) | Build a connector application end-to-end |
+| [Multiple Runtime Bundles](./extension/multiple-bundles.md) | App vs. service identity; sharing one query/audit across bundles |
+| [Custom Event Consumers](./extension/custom-read-models.md) | Consume `engineEvents` from your own services; reuse the query modules |
+
 ### Deployment & Examples
 
 | Guide | Description |
@@ -113,7 +124,7 @@ flowchart LR
 
 Activiti Cloud shares the engine with the standalone [Activiti](/docs/activiti) edition, so the [BPMN Reference](/docs/bpmn/index) and engine concepts apply to both. The differences:
 
-- **Processes are packaged with the runtime bundle** — BPMN files on the classpath under `processes/` are deployed when the service starts; there is no REST deployment endpoint.
+- **Processes are packaged with the runtime bundle** — BPMN files on the classpath under `processes/` are deployed when the service starts; there is no REST deployment endpoint, but you can add one in a custom bundle to deploy from a BPMN editor at runtime. See [Deploying Processes at Runtime](./extension/deploying-processes.md).
 - **Write and read are separated** — you call the runtime bundle to change state and the query service to read it, with short, bounded lag between them.
 - **Integration is broker-based** — external systems connect through connector applications, not direct service calls.
 

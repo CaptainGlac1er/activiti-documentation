@@ -36,4 +36,5 @@ Documentation for [Activiti Cloud](https://github.com/Activiti/activiti-cloud) �
 - [Architecture](/docs/cloud/architecture/overview) — service topology, event-driven design, and identity
 - [Services](/docs/cloud/services/runtime-bundle) — runtime bundle, query, audit, messages, and GraphQL
 - [Connectors](/docs/cloud/connectors/overview) — integrate external systems inbound and outbound
+- [Extending](/docs/cloud/extension/overview) — custom bundles, runtime deployment from a BPMN editor, and custom consumers
 - [Deployment Reference](/docs/cloud/deployment/reference) — Helm deployment, naming, and environment variables
