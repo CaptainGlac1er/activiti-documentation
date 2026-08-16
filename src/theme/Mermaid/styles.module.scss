@@ -1,0 +1,90 @@
+.wrapper {
+  position: relative;
+  margin: 1.5rem 0;
+  cursor: zoom-in;
+}
+
+.wrapper :global(.docusaurus-mermaid-container) {
+  margin: 0;
+}
+
+.zoomButton {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--ifm-table-border-color);
+  border-radius: var(--ifm-global-radius);
+  background-color: var(--ifm-background-surface-color);
+  color: var(--ifm-font-color-base);
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.zoomButton:hover,
+.zoomButton:focus-visible {
+  opacity: 1;
+  background-color: var(--ifm-color-emphasis-300);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem 2rem;
+  box-sizing: border-box;
+  background-color: var(--ifm-background-color);
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--ifm-table-border-color);
+  border-radius: 50%;
+  background-color: var(--ifm-background-surface-color);
+  color: var(--ifm-font-color-base);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.closeButton:hover,
+.closeButton:focus-visible {
+  background-color: var(--ifm-color-emphasis-300);
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  cursor: zoom-out;
+}
+
+.content > svg {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+[data-theme='dark'] .content > svg {
+  filter: invert(0.85) hue-rotate(180deg);
+}
