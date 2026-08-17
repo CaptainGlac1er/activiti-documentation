@@ -33,23 +33,24 @@ The runtime bundle converts every engine audit event into a **`CloudRuntimeEvent
 | `messageId` | Id of the message carrying the event; events produced by one engine transaction share it. |
 | `sequenceNumber` | Position of the event inside that transaction's aggregation. |
 
-Events are **aggregated per engine transaction**: when the command context closes, all events fired in that transaction are collected, ordered by `sequenceNumber`, and published as one or more JSON arrays (`application/json`) on the `auditProducer` channel. The `EventChunker` splits large aggregations using `activiti.cloud.runtime-bundle.events.chunk-size` (default `100` events per chunk) and, if enabled by `activiti.cloud.runtime-bundle.events.chunk-size-in-bytes-close-listener` (default `0`, disabled), a size limit in bytes.
+Events are **aggregated per engine transaction**: when the command context closes, all events fired in that transaction are collected, ordered by `sequenceNumber`, and published as a JSON array (`application/json`) on the `auditProducer` channel. By default (`activiti.cloud.runtime-bundle.events-properties.chunk-size-in-bytes-close-listener=0`) the whole transaction is one array; when that property is set above `0`, the `EventChunker` splits the aggregation into chunks of at most that many bytes. (A separate count-based `events-properties.chunk-size`, default `100`, applies only to chunking the definition list in `PROCESS_DEPLOYED` events.)
 
 ### Message headers
 
-Messages carry routing and filtering headers defined in `CloudRuntimeEventsMessageHeaders`:
+Messages carry routing and filtering headers (constants in `CloudRuntimeEventMessageHeaders` and `ExecutionContextMessageHeaders`):
 
 | Header | Content |
 |--------|---------|
-| `routingKey` | Event routing key. |
+| `eventType` | Event type name (per event). |
 | `messagePayloadType` | Payload type discriminator. |
-| `processInstanceId`, `parentProcessInstanceId` | The affected process instances. |
-| `processDefinitionId`, `processDefinitionKey`, `processDefinitionVersion`, `processDefinitionName` | Definition coordinates. |
-| `processName` | Process instance name. |
-| `businessKey` | Business key of the process instance. |
-| `deploymentId`, `deploymentName` | Deployment the definition came from. |
-| `parentProcessInstanceName` | Name of the parent instance. |
-| `rootProcessInstanceId` | Used as the partition key in partitioned mode (see below). |
+| `processInstanceId`, `parentProcessInstanceId` | The affected process instances (per event). |
+| `processDefinitionKey`, `processDefinitionVersion` | Definition coordinates (per event). |
+| `businessKey` | Business key of the process instance (per event). |
+| `rootProcessInstanceId` | Root instance; used as the partition key in partitioned mode (see below). |
+| `rootProcessName`, `rootBusinessKey`, `rootProcessDefinitionId`, `rootProcessDefinitionKey`, `rootProcessDefinitionVersion`, `rootProcessDefinitionName` | Coordinates of the root process instance and definition (per message). |
+| `deploymentId`, `deploymentName`, `deploymentVersion` | Deployment the definition came from. |
+| `parentProcessInstanceId`, `parentProcessInstanceName` | The parent instance, for subprocesses. |
+| `routingKey` | Event routing key, set by the partitioned producer. |
 
 ### Event types
 
@@ -67,7 +68,7 @@ The `CloudRuntimeEventType` enum (`org.activiti.cloud.api.events`) has 45 values
 | Integration | `INTEGRATION_REQUESTED`, `INTEGRATION_RESULT_RECEIVED`, `INTEGRATION_ERROR_RECEIVED`, `ERROR_RECEIVED` |
 | Application | `APPLICATION_DEPLOYED`, `APPLICATION_ROLLBACK` |
 
-Consumers filter on `eventType` plus the headers above. The notifications-graphql service exposes the same enum to GraphQL subscriptions.
+Consumers filter on `eventType` plus the headers above. The notifications-graphql service exposes its own `EngineEventType` GraphQL enum with 40 of these 45 values — `PROCESS_DELETED`, `ERROR_RECEIVED`, `START_MESSAGE_DEPLOYED`, `APPLICATION_DEPLOYED`, and `APPLICATION_ROLLBACK` have no subscription counterpart.
 
 ## Destinations (Topics)
 
@@ -75,7 +76,7 @@ Consumers filter on `eventType` plus the headers above. The notifications-graphq
 
 Destination names on the broker are derived from Spring Cloud Stream binding names by `ActivitiMessagingDestinationTransformer`:
 
-```
+```text
 destination = prefix + separator + name [+ separator + scope]
 ```
 
@@ -166,7 +167,7 @@ Consequences:
 
 **Consumer failures.** Messaging error handling is delegated to Spring Cloud Stream error handlers. The platform exposes `spring.cloud.stream.default.error-handler-definition` and, for the function router, `activiti.cloud.messaging.function-router.error-handler-definition` (which defaults to whatever the former resolves to, usually unset). There is no built-in dead-letter queue in the platform: what happens to a poison message (an event that keeps failing) depends on the error handler you configure — log-and-continue, retry, or rethrow (which blocks the partition and surfaces as a consumer outage). Plan for idempotent consumers plus a handler that logs and moves on, and alert on consumer lag.
 
-**Function router.** The runtime bundle can route consumer bindings through a function router (`activiti.cloud.messaging.function-router.enabled`, default `false` in the runtime bundle starter). It retries failed function invocations with `activiti.cloud.messaging.function-router.max-retries` (default `3`) at `retry-interval` (default `10ms`), under consumer group `activiti.cloud.messaging.function-router.group` (default `function-router`).
+**Function router.** The runtime bundle can route consumer bindings through a function router (`activiti.cloud.messaging.function-router.enabled`, default `false` in the runtime bundle starter). It retries failed function invocations with `activiti.cloud.messaging.function-router.max-retries` (default `3`) at `retry-interval` (default `10ms`), under consumer group `activiti.cloud.messaging.function-router.group` — the runtime bundle starter sets this to `${spring.application.name}`; the Java-level fallback is `function-router`.
 
 **Connector failures.** The connector starter configures `spring.cloud.stream.default.error-handler-definition=integrationRequestErrorChannelListener`. A failed `IntegrationRequest` is converted into an `IntegrationError` and published to the runtime bundle's `integrationError` destination. The runtime bundle then emits an `INTEGRATION_ERROR_RECEIVED` event and drives BPMN error handling (error boundary events, error end events). Connectors can also retry at the binding level: `@ConnectorBinding(retry = n, retryDelay = s)` on the connector class, with platform defaults `activiti.connector.retry.default.max` (default `-1`, no retry) and `activiti.connector.retry.default.delay` (default `0` seconds).
 
@@ -192,7 +193,7 @@ sequenceDiagram
     MQ-->>Q: deliver to group query
     MQ-->>A: deliver to group audit
     MQ-->>G: deliver to graphQLEngineEventsConsumerSource
-    Q->>Q: upsert read model (idempotent by event id)
+    Q->>Q: upsert read model (keyed by entity id)
     A->>A: append audit entry with actor
     G-->>C: push EngineEvent via GraphQL subscription
     C->>Q: GET /v1/process-instances/{id}

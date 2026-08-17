@@ -179,9 +179,23 @@ spring.rabbitmq.host=${ACT_RABBITMQ_HOST:localhost}
 activiti.cloud.application.name=default-app
 ```
 
-The handler reads the inbound variables, calls the HR REST API, and returns an `IntegrationResult` with the outbound variables (see `IntegrationResultBuilder`):
+The handler reads the inbound variables, calls the HR REST API, and returns an `IntegrationResult` with the outbound variables (see `IntegrationResultBuilder`). `HrConnectorChannels` is the standard channels interface for the `hr-connector` binding (an `@InputBinding` constant, as in [Outbound Connectors](../connectors/outbound.md)):
 
 ```java
+import java.util.HashMap;
+import java.util.Map;
+import org.activiti.api.process.model.IntegrationContext;
+import org.activiti.cloud.api.process.model.IntegrationRequest;
+import org.activiti.cloud.common.messaging.functional.ConnectorBinding;
+import org.activiti.cloud.common.messaging.functional.ConsumerConnector;
+import org.activiti.cloud.connectors.starter.channels.IntegrationResultSender;
+import org.activiti.cloud.connectors.starter.configuration.ConnectorProperties;
+import org.activiti.cloud.connectors.starter.model.IntegrationResultBuilder;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.messaging.Message;
+
 @ConnectorBinding(input = HrConnectorChannels.HR_CONNECTOR, connectorType = "hrSystem.updateLeaveStatus")
 @Component
 public class HrConnector implements ConsumerConnector<IntegrationRequest> {
@@ -225,7 +239,7 @@ The `IntegrationRequest` the connector receives contains the integration context
 
 ## Step by step
 
-Assume the runtime bundle, the HR connector, the query service, the audit service, and the broker are running (see [Local Development Setup](../getting-started/local-setup.md)). In the request examples below, `RB`, `QUERY`, and `AUDIT` are the base URLs of the runtime bundle, the query service, and the audit service. Each service exposes its API at its own root with no extra context path, so the base paths are `/v1` (and `/admin/v1` for admin operations). Locally, all services are usually reached through the same port-forwarded ingress with a different `Host` header per service; in other environments each service has its own host. Replace `<token>` with an OAuth2 bearer token.
+Assume the runtime bundle, the HR connector, the query service, the audit service, and the broker are running (see [Local Development Setup](../getting-started/local-setup.md)). In the request examples below, `RB`, `QUERY`, and `AUDIT` are the base URLs of the runtime bundle, the query service, and the audit service: `http://gateway-{ns}.{domain}/rb`, `http://gateway-{ns}.{domain}/query`, and `http://gateway-{ns}.{domain}/audit`. All services are served from the **same gateway host** and distinguished only by path prefix (`/rb`, `/query`, `/audit`) — the same `Host` header works for every service, locally and in deployed environments. Replace `<token>` with an OAuth2 bearer token.
 
 ### Step 1: Deploy the process definition
 
@@ -245,32 +259,38 @@ There is no deploy REST endpoint — confirm the deployment by listing definitio
 ```http
 GET RB/v1/process-definitions HTTP/1.1
 Authorization: Bearer <token>
+Accept: application/json
 ```
 
 ```json
 {
-  "_embedded": {
-    "process-definitions": [
+  "list": {
+    "entries": [
       {
-        "id": "leaveRequestProcess_1",
-        "name": "Employee Leave Request",
-        "key": "leaveRequestProcess",
-        "version": 1,
-        "formKey": null,
-        "category": "http://activiti.org/process",
-        "appName": "default-app",
-        "serviceName": "rb",
-        "_links": {
-          "self": { "href": "http://localhost:8080/v1/process-definitions/leaveRequestProcess_1" }
+        "entry": {
+          "id": "leaveRequestProcess:1:9f2c1a6e-4b8d-4e7a-9c1f-3d5e6f7a8b9c",
+          "name": "Employee Leave Request",
+          "key": "leaveRequestProcess",
+          "version": 1,
+          "formKey": null,
+          "category": "http://activiti.org/bpmn",
+          "appName": "default-app",
+          "serviceName": "rb"
         }
       }
-    ]
-  },
-  "page": { "size": 10, "totalElements": 1, "totalPages": 1, "number": 0 }
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 100,
+      "count": 1,
+      "hasMoreItems": false,
+      "totalItems": 1
+    }
+  }
 }
 ```
 
-You can confirm the connector definition is registered with `GET RB/v1/connector-definitions/hrSystemId`.
+The definition `id` is `key:version:uuid` (the engine uses strong UUIDs by default), and `category` is the BPMN `targetNamespace` declared in the model above. You can confirm the connector definition is registered with `GET RB/v1/connector-definitions/hrSystemId`.
 
 ### Step 2: Start the process instance
 
@@ -293,16 +313,15 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "a1b2c3d4-0000-4000-8000-000000000001",
-  "name": "Leave request for jdoe",
-  "initiator": "jdoe",
-  "businessKey": "LEAVE-2026-0042",
-  "status": "RUNNING",
-  "processDefinitionKey": "leaveRequestProcess",
-  "processDefinitionVersion": 1,
-  "_links": {
-    "self": { "href": "http://localhost:8080/v1/process-instances/a1b2c3d4-0000-4000-8000-000000000001" },
-    "variables": { "href": "http://localhost:8080/v1/process-instances/a1b2c3d4-0000-4000-8000-000000000001/variables" }
+  "entry": {
+    "id": "a1b2c3d4-0000-4000-8000-000000000001",
+    "name": "Leave request for jdoe",
+    "initiator": "jdoe",
+    "businessKey": "LEAVE-2026-0042",
+    "status": "RUNNING",
+    "processDefinitionId": "leaveRequestProcess:1:9f2c1a6e-4b8d-4e7a-9c1f-3d5e6f7a8b9c",
+    "processDefinitionKey": "leaveRequestProcess",
+    "processDefinitionVersion": 1
   }
 }
 ```
@@ -320,24 +339,27 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "_embedded": {
-    "tasks": [
+  "list": {
+    "entries": [
       {
-        "id": "d4e5f6a7-0000-4000-8000-000000000002",
-        "name": "Approve leave request",
-        "status": "CREATED",
-        "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
-        "taskDefinitionKey": "approvalTask",
-        "candidateGroups": [ "managers" ],
-        "_links": {
-          "self": { "href": "http://localhost:8080/v1/tasks/d4e5f6a7-0000-4000-8000-000000000002" },
-          "claim": { "href": "http://localhost:8080/v1/tasks/d4e5f6a7-0000-4000-8000-000000000002/claim" },
-          "complete": { "href": "http://localhost:8080/v1/tasks/d4e5f6a7-0000-4000-8000-000000000002/complete" }
+        "entry": {
+          "id": "d4e5f6a7-0000-4000-8000-000000000002",
+          "name": "Approve leave request",
+          "status": "CREATED",
+          "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
+          "taskDefinitionKey": "approvalTask",
+          "candidateGroups": [ "managers" ]
         }
       }
-    ]
-  },
-  "page": { "size": 10, "totalElements": 1, "totalPages": 1, "number": 0 }
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 100,
+      "count": 1,
+      "hasMoreItems": false,
+      "totalItems": 1
+    }
+  }
 }
 ```
 
@@ -355,13 +377,12 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "d4e5f6a7-0000-4000-8000-000000000002",
-  "name": "Approve leave request",
-  "status": "COMPLETED",
-  "completedBy": "manager1",
-  "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
-  "_links": {
-    "self": { "href": "http://localhost:8080/v1/tasks/d4e5f6a7-0000-4000-8000-000000000002" }
+  "entry": {
+    "id": "d4e5f6a7-0000-4000-8000-000000000002",
+    "name": "Approve leave request",
+    "status": "COMPLETED",
+    "completedBy": "manager1",
+    "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001"
   }
 }
 ```
@@ -383,9 +404,9 @@ The `IntegrationRequest` payload:
   "integrationContext": {
     "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
     "rootProcessInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
-    "executionId": "e9f8a7b6-0000-4000-8000-000000000003",
-    "processDefinitionId": "leaveRequestProcess_1",
-    "processDefinitionKey": "leaveRequestProcess",
+      "executionId": "e9f8a7b6-0000-4000-8000-000000000003",
+      "processDefinitionId": "leaveRequestProcess:1:9f2c1a6e-4b8d-4e7a-9c1f-3d5e6f7a8b9c",
+      "processDefinitionKey": "leaveRequestProcess",
     "processDefinitionVersion": 1,
     "businessKey": "LEAVE-2026-0042",
     "connectorType": "hrSystem.updateLeaveStatus",
@@ -416,16 +437,15 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "id": "a1b2c3d4-0000-4000-8000-000000000001",
-  "name": "Leave request for jdoe",
-  "processDefinitionKey": "leaveRequestProcess",
-  "businessKey": "LEAVE-2026-0042",
-  "status": "COMPLETED",
-  "initiator": "jdoe",
-  "startDate": "2026-08-15T10:15:30.000+00:00",
-  "completedDate": "2026-08-15T11:04:02.000+00:00",
-  "_links": {
-    "self": { "href": "/v1/process-instances/a1b2c3d4-0000-4000-8000-000000000001" }
+  "entry": {
+    "id": "a1b2c3d4-0000-4000-8000-000000000001",
+    "name": "Leave request for jdoe",
+    "processDefinitionKey": "leaveRequestProcess",
+    "businessKey": "LEAVE-2026-0042",
+    "status": "COMPLETED",
+    "initiator": "jdoe",
+    "startDate": "2026-08-15T10:15:30.000+00:00",
+    "completedDate": "2026-08-15T11:04:02.000+00:00"
   }
 }
 ```
@@ -439,66 +459,84 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "_embedded": {
-    "variables": [
-      { "name": "employeeId",  "type": "java.lang.String",       "value": "jdoe" },
-      { "name": "leaveStart",  "type": "java.lang.String",       "value": "2026-08-24" },
-      { "name": "leaveDays",   "type": "java.math.BigDecimal",   "value": 5 },
-      { "name": "approved",    "type": "java.lang.Boolean",      "value": true },
-      { "name": "hrReference", "type": "java.lang.String",       "value": "HR-jdoe" }
-    ]
-  },
-  "page": { "size": 10, "totalElements": 5, "totalPages": 1, "number": 0 }
+  "list": {
+    "entries": [
+      { "entry": { "name": "employeeId",  "type": "string",  "value": { "value": "jdoe" } } },
+      { "entry": { "name": "leaveStart",  "type": "string",  "value": { "value": "2026-08-24" } } },
+      { "entry": { "name": "leaveDays",   "type": "integer", "value": { "value": 5 } } },
+      { "entry": { "name": "approved",    "type": "boolean", "value": { "value": true } } },
+      { "entry": { "name": "hrReference", "type": "string",  "value": { "value": "HR-jdoe" } } }
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 100,
+      "count": 5,
+      "hasMoreItems": false,
+      "totalItems": 5
+    }
+  }
 }
 ```
 
-(`type` is the engine's variable type name; the `integer`-typed `leaveDays` is stored as `java.math.BigDecimal`.)
+(`type` is the engine's lowercase variable type name — `string`, `integer`, `boolean`, and so on — and the query service stores it verbatim from the event.)
 
 The query endpoints also accept QueryDSL-style predicate parameters (for example `?status=COMPLETED&processDefinitionKey=leaveRequestProcess`) for search and reporting. See the [Query Service](../services/query.md) page for the full read API.
 
 ### Step 6: Check the audit trail
 
-The audit service keeps an immutable, actor-attributed log of every event. Search it (the `search` parameter is free text over the event, and the time window is optional):
+The audit service keeps an immutable, actor-attributed log of every event. Search it with a field-expression filter (see [The `search` filter expression](../services/audit.md#the-search-filter-expression); the time window is optional):
 
 ```http
-GET AUDIT/v1/events?search=LEAVE-2026-0042 HTTP/1.1
+GET AUDIT/v1/events?search=businessKey:LEAVE-2026-0042, HTTP/1.1
 Authorization: Bearer <token>
 ```
 
 ```json
 {
-  "_embedded": {
-    "events": [
+  "list": {
+    "entries": [
       {
-        "id": "evt-0001",
-        "timestamp": 1786788930000,
-        "eventType": "PROCESS_STARTED",
-        "entityId": "a1b2c3d4-0000-4000-8000-000000000001",
-        "actor": "jdoe",
-        "appName": "default-app",
-        "serviceName": "rb"
+        "entry": {
+          "id": "evt-0001",
+          "timestamp": 1786788930000,
+          "eventType": "PROCESS_STARTED",
+          "entityId": "a1b2c3d4-0000-4000-8000-000000000001",
+          "actor": "jdoe",
+          "appName": "default-app",
+          "serviceName": "rb"
+        }
       },
       {
-        "id": "evt-0002",
-        "timestamp": 1786791732000,
-        "eventType": "TASK_COMPLETED",
-        "entityId": "d4e5f6a7-0000-4000-8000-000000000002",
-        "actor": "manager1",
-        "appName": "default-app",
-        "serviceName": "rb"
+        "entry": {
+          "id": "evt-0002",
+          "timestamp": 1786791732000,
+          "eventType": "TASK_COMPLETED",
+          "entityId": "d4e5f6a7-0000-4000-8000-000000000002",
+          "actor": "manager1",
+          "appName": "default-app",
+          "serviceName": "rb"
+        }
       },
       {
-        "id": "evt-0003",
-        "timestamp": 1786791842000,
-        "eventType": "INTEGRATION_RESULT_RECEIVED",
-        "entityId": "e9f8a7b6-0000-4000-8000-000000000003",
-        "actor": "service_user",
-        "appName": "default-app",
-        "serviceName": "rb"
+        "entry": {
+          "id": "evt-0003",
+          "timestamp": 1786791842000,
+          "eventType": "INTEGRATION_RESULT_RECEIVED",
+          "entityId": "e9f8a7b6-0000-4000-8000-000000000003",
+          "actor": "service_user",
+          "appName": "default-app",
+          "serviceName": "rb"
+        }
       }
-    ]
-  },
-  "page": { "size": 10, "totalElements": 3, "totalPages": 1, "number": 0 }
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 100,
+      "count": 3,
+      "hasMoreItems": false,
+      "totalItems": 3
+    }
+  }
 }
 ```
 
@@ -541,7 +579,7 @@ sequenceDiagram
 
     Emp->>Q: GET /v1/process-instances/{id}
     Q-->>Emp: COMPLETED + variables (eventually consistent)
-    Emp->>A: GET /v1/events?search=LEAVE-2026-0042
+    Emp->>A: GET /v1/events?search=businessKey:LEAVE-2026-0042,
     A-->>Emp: actor-attributed audit trail
 ```
 

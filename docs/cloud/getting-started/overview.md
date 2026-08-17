@@ -26,7 +26,7 @@ The standalone Activiti engine (covered in the [Activiti module](/docs/getting-s
 | Scaling | Scale the whole application | Scale each service independently |
 | Consistency of reads | Strongly consistent (same JVM and database) | Eventually consistent read side (events flow through the broker) |
 
-The split between writing and reading process state is the central architectural idea. The runtime bundle is the only service that mutates process state. Every time the engine does something (a process starts, a task is created or completed, a variable changes), it publishes an event to the broker. The query service, the audit service, and the messages service consume those events and maintain their own stores. This CQRS-style write/read separation keeps the write side fast and lets the read side scale and be optimized for reporting.
+The split between writing and reading process state is the central architectural idea. The runtime bundle is the only service that mutates process state. Every time the engine does something (a process starts, a task is created or completed, a variable changes), it publishes an event to the broker. The query service and the audit service consume that event stream and maintain their own stores, while the messages service consumes message events to correlate them with waiting processes. This CQRS-style write/read separation keeps the write side fast and lets the read side scale and be optimized for reporting.
 
 ## Key concepts
 
@@ -35,7 +35,7 @@ The split between writing and reading process state is the central architectural
 | Runtime bundle | The service that hosts the Activiti engine. It executes your BPMN processes, exposes the write-side REST API (gateway prefix `/rb`), and is the service you extend with your own process definitions, Java service tasks, and connectors. |
 | Query service | Read-side service for process instances, tasks, process definitions, and variables. It consumes runtime events and exposes the query REST API (gateway prefix `/query`). Results are eventually consistent. |
 | Audit service | Stores the full, immutable event history of the platform and exposes it through a REST API (gateway prefix `/audit`). Use it to answer "what happened and when" questions. |
-| Messages service | Manages subscriptions that turn process events into user-facing notifications and messages. |
+| Messages service | The messaging backbone for BPMN message events. It correlates `messageEvents` between runtime bundles and connectors (consuming `messageEvents` and routing on `commandConsumer`), so a process can wait for and be resumed by an externally sent message. |
 | Connectors | Components that bridge processes and external systems (for example, calling a REST API from a service task). Connector definitions ship with the runtime bundle; the connector service executes the integrations. |
 | Identity adapter | Synchronizes users and groups from Keycloak into the platform and exposes identity management endpoints (gateway prefix `/identity-adapter-service`). |
 | Messaging broker | The event backbone. Every inter-service communication goes through RabbitMQ or Kafka topics/exchanges. The Helm chart deploys the broker for you; you choose which one at install time. |

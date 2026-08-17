@@ -297,7 +297,7 @@ The inbound path has no retry loop of its own; delivery is at-least-once and the
 | Message without a `messageEventType` header | The messages service filter diverts it to the `discardChannel` (logged at DEBUG); nothing is processed |
 | Duplicate message event | The idempotent receiver interceptor (keyed on `messageEventId`) discards the duplicate; the event is processed once |
 | No matching subscription yet | The message is buffered in the message group store under its correlation id until the subscription event arrives; groups can be expired by the messages service `group-timeout` setting |
-| Correlated but no waiting/deployed target at execution time | The runtime bundle logs a warning (no instance waiting for that message) and the command is not applied |
+| Correlated but no waiting/deployed target at execution time | The runtime bundle throws an `ActivitiObjectNotFoundException` (start: "no subscription to message with name … found"; catch: "Message subscription name … with correlation key … not found"); the error propagates through the `commandConsumer` function to the binder's error channel |
 | Transient failure | Broker redelivery plus the messages service dedup means the event is retried by the transport, not by an application-level retry policy |
 
 Design inbound connectors for **idempotency**: the same order event can legitimately arrive twice. Derive the `messageEventId` from the external event identity where possible so duplicates are deduplicated, and make the effect of starting the process safe to repeat (for example, a unique `businessKey` check in the process itself).

@@ -92,6 +92,7 @@ Definitions are loaded at startup by `ConnectorDefinitionService` from `activiti
 
 ```http
 GET /v1/connector-definitions
+Accept: application/hal+json
 ```
 
 ```json
@@ -109,7 +110,7 @@ GET /v1/connector-definitions
 }
 ```
 
-A 200 response after deploying the runtime bundle confirms the definition is registered.
+This endpoint returns a Spring HATEOAS `CollectionModel`, so the `_embedded` shape above is for `Accept: application/hal+json`. A 200 response after deploying the runtime bundle confirms the definition is registered.
 
 ### Connector application
 

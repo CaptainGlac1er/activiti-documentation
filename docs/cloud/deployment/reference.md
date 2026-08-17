@@ -20,7 +20,7 @@ flowchart TD
     S --> V[Ensure local-values.yaml<br/>working image tags]
     C --> H[make install → helm upgrade --install<br/>activiti-cloud-full-example chart]
     V --> H
-    H --> K[Kubernetes namespace pr-env-*<br/>runtime-bundle, query, connector,<br/>identity-adapter, Keycloak, Liquibase]
+    H --> K[Kubernetes namespace pr-env-*<br/>runtime-bundle, query, audit, connector,<br/>identity-adapter, Keycloak, Liquibase]
     K --> P[Post-install: patch Keycloak URL/realm<br/>into deployments + client secret]
     P --> G[Gateway hosts: gateway-ns.* / identity-ns.*]
 ```
@@ -28,7 +28,7 @@ flowchart TD
 Key facts about the Helm step (from the `Makefile`):
 
 - Chart: `activiti-cloud-full-example` inside the cloned full-chart repository (checked out to `.git/activiti-cloud-full-chart`).
-- Broker and topology are selected with Helm `--values` files: `rabbitmq-values.yaml` or `kafka-values.yaml`, plus `true/false-values.yaml` (partitioning) and `default/override-values.yaml` (destinations).
+- Broker and topology are selected with Helm `--values` files: `rabbitmq-values.yaml` or `kafka-values.yaml`, plus `partitioned-values.yaml` / `non-partitioned-values.yaml` (partitioning) and `default-destinations-values.yaml` / `override-destinations-values.yaml` (destinations). The install script picks the partitioned/destinations variants from the `MESSAGING_PARTITIONED` and `MESSAGING_DESTINATIONS` choices.
 - Fixed `--set` flags: `global.application.name=default-app`, `global.keycloak.clientSecret=<uuid>`, `global.gateway.http=false`, `global.gateway.domain=${GLOBAL_GATEWAY_DOMAIN}`.
 - Safety flags: `--atomic --wait --timeout 8m --create-namespace`.
 - `make clone-chart` requires a `GITHUB_TOKEN` environment variable.
@@ -39,6 +39,7 @@ Key facts about the Helm step (from the `Makefile`):
 |-----------|-----------------|-------|------|
 | Runtime Bundle | `{ns}-runtime-bundle` | `docker.io/activiti/example-runtime-bundle:{version}` | Write side; hosts the engine and the primary REST API |
 | Query Service | `{ns}-activiti-cloud-query` | `docker.io/activiti/activiti-cloud-query:{version}` | Read-side query model and REST API |
+| Audit Service | (chart-managed) | (chart-managed; `local-values.yaml` does not pin it) | Append-only, immutable event log and REST API (`/audit/v1`, `/audit/admin/v1`) |
 | Connector | `{ns}-activiti-cloud-connector` | `docker.io/activiti/example-cloud-connector:{version}` | Reference connector application |
 | Identity Adapter | `{ns}-activiti-cloud-identity-adapter` | `docker.io/activiti/activiti-cloud-identity-adapter:{version}` | Bridges external identity providers to Keycloak |
 | Keycloak | (chart-managed) | chart-managed | Realm, clients, and token issuing |
@@ -50,7 +51,7 @@ Key facts about the Helm step (from the `Makefile`):
 
 The namespace (`PREVIEW_NAME`) is derived from the installation parameters:
 
-```
+```text
 pr-{environment-name}-{broker:0:6}-{p|n}-{d|o}
 ```
 
@@ -123,7 +124,7 @@ The install script creates this file automatically when missing (via `resolve-do
 
 After the Helm release is ready, `local-install.sh` configures identity:
 
-1. Patches the `activiti-keycloak-client` secret with the generated client secret.
+1. Patches the `activiti-keycloak-client` secret with the Keycloak client secret you supplied (the `KEYCLOAK_CLIENT_SECRET` environment variable or the interactive prompt) — for the existing `activiti-keycloak` client in the `alfresco` realm. This is distinct from the `global.keycloak.clientSecret` UUID the Helm install generates.
 2. Patches each of the four service deployments with `ACT_KEYCLOAK_URL` and `ACT_KEYCLOAK_REALM` environment variables.
 3. Rolls out the identity adapter to pick up the new configuration.
 
@@ -137,7 +138,7 @@ Services expose `/v1/...` (user) and `/admin/v1/...` (admin) APIs. When reached 
 |---------|---------------|--------------------|
 | Runtime Bundle | `/rb` | `/v1`, `/admin/v1` |
 | Query | `/query` | `/v1`, `/admin/v1` |
-| Audit | `/audit` | `/v1` |
+| Audit | `/audit` | `/v1`, `/admin/v1` |
 
 For example, listing process instances through the gateway is `GET http://gateway-{ns}.{domain}/query/v1/process-instances`. Endpoint details are documented in [Runtime Bundle Service](../services/runtime-bundle.md) and [Query Service](../services/query.md).
 

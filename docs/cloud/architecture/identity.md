@@ -28,14 +28,14 @@ The service then:
    - `spring.security.oauth2.resourceserver.jwt.issuer-uri` = `{keycloak.auth-server-url}/realms/{keycloak.realm}`
    - `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` = `{keycloak.auth-server-url}/realms/{keycloak.realm}/protocol/openid-connect/certs`
    - Token expiry and "not before" checks allow a clock-skew offset from `authorization.validation.offset` (default `0`).
-2. Converts the `Jwt` to a principal. The **principal name is the `preferred_username` claim** (`keycloak.principal-attribute` is defined with the same default for compatibility).
+2. Converts the `Jwt` to a principal. The **principal name is the `preferred_username` claim** (read by `KeycloakJwtAdapter`; the `keycloak.principal-attribute` property, default `preferred-username`, is a legacy compatibility property that does not drive name resolution).
 3. Extracts roles and groups with a `JwtAdapter`:
    - `KeycloakJwtAdapter` (default): roles from the `realm_access.roles` claim, groups from the `groups` claim, scopes from `scope`.
    - `KeycloakResourceJwtAdapter` (when `keycloak.use-resource-role-mappings=true`): roles and permissions from the `resource_access.{keycloak.resource}` claim — i.e. client (resource) role mappings in Keycloak instead of realm roles.
 
-:::note
+<Note>
 A missing token does not fail by itself: with the default configuration and no URL authorization constraints, requests pass through as anonymous (see [Authorization](#authorization)). An *invalid* token is rejected with `401`. The runtime bundle also ships `activiti-cloud-services-identity-basic` with a `BasicAuthenticationProvider` for environments that run without full security.
-:::
+</Note>
 
 ## How Identity Reaches Process Instances and the Audit Trail
 
@@ -135,8 +135,10 @@ The platform's code paths (user/group lookup for candidate users, the identity R
 
 - It is a small Spring Boot application annotated with `@EnableIdentityManagementRestAPI`, which enables `IdentityManagementController` — a REST API for user and group search:
   - `GET /v1/users` (parameters `search`, `role`, `group`, `type`, `application`, `hideDeactivatedUser`)
+  - `GET /v1/users/{id}`
   - `GET /v1/groups` (parameters `search`, `role`, `application`)
-  - `POST /v1/permissions/{application}`
+  - `GET /v1/permissions/{application}` (parameter `role`)
+  - `POST /v1/permissions/{application}` (body: a list of security request entries)
   (base path configurable via `activiti.cloud.services.identity.url`, default `/v1`).
 - Backed by the Keycloak common modules, it authenticates to the Keycloak **admin API** (`{keycloak.auth-server-url}/admin/realms/{keycloak.realm}/`) with client credentials and translates Keycloak users, groups, and role mappings into the platform's `User`/`Group` models (`KeycloakUserGroupManager`).
 - It is configured with the same properties as every service:

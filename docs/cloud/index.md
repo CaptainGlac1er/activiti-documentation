@@ -51,8 +51,8 @@ flowchart LR
         E2[Payment API]
     end
 
-    A -->|REST / GraphQL| RB
-    A -->|REST / GraphQL| Q
+    A -->|REST| RB
+    A -->|REST| Q
     A -->|GraphQL| G
     U --> Q
     RB -->|events| T

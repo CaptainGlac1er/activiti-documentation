@@ -88,14 +88,14 @@ Example envelope:
 ```json
 {
   "list": {
-    "entries": [ { "entry": { "...": "entity fields" } } ]
-  },
-  "pagination": {
-    "skipCount": 0,
-    "maxItems": 20,
-    "count": 1,
-    "hasMoreItems": false,
-    "totalItems": 1
+    "entries": [ { "entry": { "...": "entity fields" } } ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 20,
+      "count": 1,
+      "hasMoreItems": false,
+      "totalItems": 1
+    }
   }
 }
 ```
@@ -207,20 +207,20 @@ Accept: application/json
           "parentId": null,
           "rootProcessInstanceId": "1693287654321",
           "appName": "hr-app",
-          "appVersion": "1.0.0",
+          "appVersion": "1",
           "serviceName": "runtime-bundle",
           "serviceFullName": "org.activiti.cloud:hr-app",
           "serviceVersion": "1.0.0"
         }
       }
-    ]
-  },
-  "pagination": {
-    "skipCount": 0,
-    "maxItems": 20,
-    "count": 1,
-    "hasMoreItems": false,
-    "totalItems": 1
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 20,
+      "count": 1,
+      "hasMoreItems": false,
+      "totalItems": 1
+    }
   }
 }
 ```
@@ -240,7 +240,7 @@ Accept: application/json
         "entry": {
           "id": 1001,
           "name": "approved",
-          "type": "Boolean",
+          "type": "boolean",
           "value": { "value": true },
           "processInstanceId": "1693287654321",
           "executionId": null,
@@ -254,7 +254,7 @@ Accept: application/json
         "entry": {
           "id": 1002,
           "name": "employeeId",
-          "type": "String",
+          "type": "string",
           "value": { "value": "EMP-1042" },
           "processInstanceId": "1693287654321",
           "executionId": null,
@@ -264,14 +264,14 @@ Accept: application/json
           "taskId": null
         }
       }
-    ]
-  },
-  "pagination": {
-    "skipCount": 0,
-    "maxItems": 20,
-    "count": 2,
-    "hasMoreItems": false,
-    "totalItems": 2
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 20,
+      "count": 2,
+      "hasMoreItems": false,
+      "totalItems": 2
+    }
   }
 }
 ```

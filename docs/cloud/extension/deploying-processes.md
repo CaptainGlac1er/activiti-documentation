@@ -46,7 +46,7 @@ sequenceDiagram
 ```
 
 1. The starter's `SmartLifecycle` producers run: `ProcessDeployedEventProducer` queries definitions **with `.latestVersion()`** (latest version per key), loads each model via `repositoryService.getProcessModel(...)`, and publishes a `ProcessDeployedEvents` Spring application event; `ApplicationDeployedEventProducer` and `StartMessageDeployedEventProducer` publish their analogues.
-2. The bundle's `CloudProcessDeployedProducer` (a `@EventListener`) wraps each event in a `CloudProcessDeployedEventImpl` (`eventType` = `PROCESS_DEPLOYED`, the model XML as `processModelContent`), appends the bundle coordinates, chunks the list by `activiti.cloud.runtime-bundle.events.chunk-size` (default `100`), and sends the chunks through the `auditProducer` binding to the **`engineEvents`** destination.
+2. The bundle's `CloudProcessDeployedProducer` (a `@EventListener`) wraps each event in a `CloudProcessDeployedEventImpl` (`eventType` = `PROCESS_DEPLOYED`, the model XML as `processModelContent`), appends the bundle coordinates, chunks the list by `activiti.cloud.runtime-bundle.events-properties.chunk-size` (default `100`), and sends the chunks through the `auditProducer` binding to the **`engineEvents`** destination.
 3. The query service's `ProcessDeployedEventHandler` `merge`s a `ProcessDefinitionEntity` and a `ProcessModelEntity` keyed by the definition id (idempotent, rebuildable); the audit service appends the events.
 
 Every `PROCESS_DEPLOYED` event travels this same pipeline, whether it originates from a startup producer or from the runtime sync below.
@@ -212,11 +212,13 @@ public class ProcessDeployController {
     private static String extractProcessKey(byte[] bpmnXml) {
         Document document;
         try {
-            document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(bpmnXml);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true); // BPMN elements are namespace-qualified (bpmn:definitions, ...)
+            document = factory.newDocumentBuilder().parse(bpmnXml);
         } catch (IOException | SAXException e) {
             throw new IllegalArgumentException("Could not parse BPMN document: " + e.getMessage(), e);
         }
-        if (!"definitions".equals(document.getDocumentElement().getTagName())) {
+        if (!"definitions".equals(document.getDocumentElement().getLocalName())) {
             throw new IllegalArgumentException("Body is not a BPMN 2.0 <definitions> document");
         }
         NodeList processes = document.getElementsByTagNameNS(BPMN_MODEL_NAMESPACE, "process");
@@ -281,21 +283,26 @@ Accept: application/json
 
 ```json
 {
-  "_embedded": {
-    "process-definitions": [
+  "list": {
+    "entries": [
       {
-        "id": "orderProcess:2:6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
-        "name": "Order fulfillment",
-        "key": "orderProcess",
-        "version": 2,
-        "appVersion": "0.0.1",
-        "_links": {
-          "self": { "href": "http://localhost:8080/v1/process-definitions/orderProcess:2:6a1b2c3d" }
+        "entry": {
+          "id": "orderProcess:2:6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+          "name": "Order fulfillment",
+          "key": "orderProcess",
+          "version": 2,
+          "appVersion": null
         }
       }
-    ]
-  },
-  "page": { "size": 10, "totalElements": 1, "totalPages": 1, "number": 0 }
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 100,
+      "count": 1,
+      "hasMoreItems": false,
+      "totalItems": 1
+    }
+  }
 }
 ```
 

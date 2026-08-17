@@ -8,7 +8,7 @@ description: "The big picture of Activiti Cloud: its services, the event backbon
 
 # Architecture Overview
 
-Activiti Cloud is a microservices, event-driven workflow platform built on the Activiti engine. Version 9.0.0 targets Java 25 and Spring Boot 3.5.7. Every service is an independent Spring Boot application that talks to the others exclusively through a message broker (RabbitMQ or Kafka) via Spring Cloud Stream. There are no synchronous service-to-service calls in the data path: commands go to the write side, and the read side rebuilds its state by consuming the event stream.
+Activiti Cloud is a microservices, event-driven workflow platform built on the Activiti engine. Version 9.0.0 targets Java 25 and Spring Boot 3.5.7. Every service is an independent Spring Boot application that talks to the others exclusively through a message broker (RabbitMQ or Kafka — `activiti.cloud.messaging.broker` also accepts `aws`) via Spring Cloud Stream. There are no synchronous service-to-service calls in the data path: commands go to the write side, and the read side rebuilds its state by consuming the event stream.
 
 ## System Context
 
@@ -52,7 +52,7 @@ The single most important architectural decision in Activiti Cloud is that the s
 - **Loose coupling** — The runtime bundle never knows who is watching. Adding a new consumer (a report service, a data lake, your own consumer) only requires subscribing to the `engineEvents` destination; nothing in the runtime bundle changes.
 - **Independent scaling** — Each consumer scales on its own. Read-heavy workloads scale the query service without touching process execution, and a burst of deployments does not slow down task completion.
 - **CQRS-style separation** — The runtime bundle owns the write model (the engine database). The query service and the audit service own independent read models that they project from the same event stream. Each model is shaped for its own queries rather than forcing one schema to serve execution, search, and compliance.
-- **Resilience** — A slow or failing read-side service cannot block process execution. Events are published after the engine transaction commits and persisted by the broker, so a consumer can restart and catch up.
+- **Resilience** — A slow or failing read-side service cannot block process execution. Events are published inside the engine transaction (transactional RabbitMQ producer or Kafka transactions) and become visible in the broker only once the commit succeeds, so a consumer can restart and catch up.
 
 The trade-off is **eventual consistency** between what the runtime bundle did and what the query service reports. See [Event-Driven Design](./event-driven.md) for the delivery guarantees and practical consequences.
 
@@ -119,7 +119,7 @@ The reference deployment is Kubernetes with Helm:
 | connectors | Your processes call external systems from service tasks and you want those calls to be separate, independently scalable applications. |
 | identity-adapter | You use the platform's identity REST API (user/group lookup) against a Keycloak realm. |
 
-A full deployment is the assumption of the acceptance tests and of the local development scripts in the `activiti-cloud` repository.
+The acceptance tests assume a full deployment (the audit service is reachable through the gateway after a local install). The local development scripts in the `activiti-cloud` repository build local images for the four example apps — runtime-bundle, query, connector, and identity-adapter — and patch those deployments.
 
 ### Example Service Configuration
 
@@ -148,7 +148,7 @@ activiti:
       partitioned: false
       destination-separator: _
     runtime-bundle:
-      events:
+      events-properties:
         chunk-size: 100
 ```
 

@@ -14,7 +14,7 @@ This page covers how to build such a consumer: the modules you depend on, a mini
 
 ## Why build a custom consumer
 
-The [query service](../services/query.md) is the reference read model: it projects the event stream into normalized, indexed relational tables and serves a general-purpose REST API. Its upstream README states the intent explicitly — the reference implementation is "our reference implementation, but we encourage you to modify and adapt to suit your domain specific needs".
+The [query service](../services/query.md) is the reference read model: it projects the event stream into normalized, indexed relational tables and serves a general-purpose REST API. The example query application's README states the intent explicitly — it is a reference implementation, and you are encouraged to modify and adapt it to suit your domain-specific needs.
 
 Build your own consumer when you need:
 
@@ -33,7 +33,7 @@ A consumer needs three things:
 |------------|----------------------------------------|------------------|
 | Event payload POJOs | `activiti-cloud-api-*` | The `CloudRuntimeEvent` interface, the per-domain event interfaces (`CloudProcessStartedEvent`, `CloudTaskCreatedEvent`, ...) and the entity payloads (`CloudProcessInstance`, `CloudTask`, `CloudVariableInstance`). The `-impl` artifacts auto-configure JSON deserialization (below). |
 | Messaging | `activiti-cloud-service-messaging-starter` | Spring Cloud Stream with the RabbitMQ **and** Kafka binders, plus the platform's functional-binding machinery: the `@FunctionBinding` / `@InputBinding` / `@OutputBinding` annotations, the `FunctionBindingConfiguration` that wires consumer functions to channels, destination auto-configuration, and the `ActivitiMessagingDestinationTransformer`. |
-| Broker | RabbitMQ (default) or Kafka | The `engineEvents` exchange/topic the runtime bundle publishes to. The starter ships both binders; `activiti.cloud.messaging.broker` selects the binder. |
+| Broker | RabbitMQ (default), Kafka, or AWS | The `engineEvents` exchange/topic the runtime bundle publishes to. `activiti.cloud.messaging.broker` selects the binder (`rabbitmq`, `kafka`, or `aws`); the starter ships the Rabbit and Kafka binders, the AWS binder is not included. |
 
 JSON deserialization is the part that usually surprises newcomers. A message is a JSON array of events, yet the consumer binds to `Consumer<List<CloudRuntimeEvent<?, ?>>>` — an interface type. It works because:
 

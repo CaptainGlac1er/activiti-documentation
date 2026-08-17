@@ -25,7 +25,7 @@ It configures the cluster connection, validates the Keycloak client secret, ensu
 | `kubectl` | Yes | Cluster access and verification |
 | `helm` (v3+) | Yes | Chart deployment |
 | `yq` | Yes | YAML processing of image overrides |
-| `python3` | Yes | Version parsing in the Makefile |
+| `python` | No | Fallback version parsing in the Makefile (only used if no `VERSION` file is present; the install script always writes one) |
 | `git` | Yes | Cloning the full Helm chart |
 | `rancher` CLI | Optional | Generating the kubectl config from a Rancher-managed cluster |
 | Node.js and npm | Optional | Running the Playwright acceptance tests |
@@ -201,16 +201,17 @@ If the file is missing, the script creates it by running `scripts/resolve-docker
 `make install` (invoked by the script) resolves the release version from the `VERSION` file, clones the `activiti-cloud-full-chart` repository, and then runs, inside `charts/activiti-cloud-full-example`:
 
 ```bash
+helm dep up
 helm upgrade ${PREVIEW_NAME} . \
   --install \
   --set global.application.name=default-app \
-  --set global.keycloak.clientSecret=$(uuidgen) \
+  --set global.keycloak.clientSecret=$(shell uuidgen) \
   --set global.gateway.http=false \
   --set global.gateway.domain=${GLOBAL_GATEWAY_DOMAIN} \
   --values ${MESSAGING_BROKER}-values.yaml \
   --values ${MESSAGING_PARTITIONED}-values.yaml \
   --values ${MESSAGING_DESTINATIONS}-values.yaml \
-  --values local-values.yaml \
+  --values ${LOCAL_VALUES_FILE} \
   --namespace ${PREVIEW_NAME} \
   --create-namespace \
   --atomic \
@@ -218,7 +219,7 @@ helm upgrade ${PREVIEW_NAME} . \
   --timeout 8m
 ```
 
-The three messaging values files select the broker type, the partitioned variant, and the destinations variant; `--atomic` rolls back automatically if the install fails.
+The three messaging values files select the broker type, the partitioned variant, and the destinations variant. The last `--values` is the (conditional) local image-override file — the install script passes the repo's `local-values.yaml` as an absolute path; the Makefile only adds it when `LOCAL_VALUES_FILE` is set. `--atomic` rolls back automatically if the install fails.
 
 ## Local access
 

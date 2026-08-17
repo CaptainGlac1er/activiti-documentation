@@ -14,20 +14,20 @@ The audit service records the complete runtime event stream of every process as 
 
 The audit service subscribes to the same `engineEvents` destination as the [query service](./query.md) and converts every incoming runtime event into an audit entry. Unlike the query model, it does not project state into denormalized tables: it stores each event verbatim as an immutable row, so the log is a faithful, time-ordered record of everything the engine did.
 
-Every event type is recorded, grouped here by domain:
+The recorded event types, grouped by domain:
 
 | Category | Event types |
 |---|---|
 | Process | `PROCESS_STARTED`, `PROCESS_CREATED`, `PROCESS_COMPLETED`, `PROCESS_CANCELLED`, `PROCESS_RESUMED`, `PROCESS_SUSPENDED`, `PROCESS_UPDATED`, `PROCESS_DELETED`, `PROCESS_DEPLOYED` |
-| Tasks | `TASK_CREATED`, `TASK_ASSIGNED`, `TASK_ACTIVATED`, `TASK_COMPLETED`, `TASK_CANCELLED`, `TASK_SUSPENDED`, `TASK_UPDATED`, `TASK_CANDIDATE_USER_ADDED`, `TASK_CANDIDATE_USER_REMOVED`, `TASK_CANDIDATE_GROUP_ADDED`, `TASK_CANDIDATE_GROUP_REMOVED` |
+| Tasks | `TASK_CREATED`, `TASK_ASSIGNED`, `TASK_COMPLETED`, `TASK_CANCELLED`, `TASK_SUSPENDED`, `TASK_UPDATED`, `TASK_CANDIDATE_USER_ADDED`, `TASK_CANDIDATE_USER_REMOVED`, `TASK_CANDIDATE_GROUP_ADDED`, `TASK_CANDIDATE_GROUP_REMOVED` |
 | BPMN | `ACTIVITY_STARTED`, `ACTIVITY_COMPLETED`, `ACTIVITY_CANCELLED`, `SEQUENCE_FLOW_TAKEN` |
 | Variables | `VARIABLE_CREATED`, `VARIABLE_UPDATED`, `VARIABLE_DELETED` |
 | Integration | `INTEGRATION_REQUESTED`, `INTEGRATION_RESULT_RECEIVED`, `INTEGRATION_ERROR_RECEIVED` |
 | Messages | `MESSAGE_RECEIVED`, `MESSAGE_SENT`, `MESSAGE_WAITING`, `MESSAGE_SUBSCRIPTION_CANCELLED` |
 | Timers | `TIMER_SCHEDULED`, `TIMER_FIRED`, `TIMER_EXECUTED`, `TIMER_FAILED`, `TIMER_CANCELLED`, `TIMER_RETRIES_DECREMENTED` |
-| Signals, errors, incidents, applications | `SIGNAL_RECEIVED`, `ERROR_RECEIVED`, `INCIDENT_CREATED`, `APPLICATION_DEPLOYED`, `APPLICATION_ROLLBACK`, `START_MESSAGE_DEPLOYED` |
+| Signals, errors, incidents, applications | `SIGNAL_RECEIVED`, `ERROR_RECEIVED`, `INCIDENT_CREATED`, `APPLICATION_DEPLOYED`, `APPLICATION_ROLLBACK` |
 
-Each event type has a dedicated converter that maps the event to a subclass of the audit entity. Event types without a converter are logged and skipped, so unknown event types never break the stream.
+Each event type has a dedicated converter that maps the event to a subclass of the audit entity. Event types without a converter are logged and skipped, so unknown event types never break the stream. Two emitted event types have no converter and are skipped (logged, not stored): `TASK_ACTIVATED` and `START_MESSAGE_DEPLOYED`.
 
 Typical reasons to run the audit service:
 
@@ -141,7 +141,7 @@ Accept: application/json
             "status": "RUNNING"
           },
           "appName": "hr-app",
-          "appVersion": "1.0.0",
+          "appVersion": "1",
           "serviceName": "runtime-bundle",
           "serviceFullName": "org.activiti.cloud:hr-app",
           "serviceType": "runtime",
@@ -150,14 +150,14 @@ Accept: application/json
           "messageId": "8f14e45f-ceea-4b1a-9d6d-2f0e5c1b7a33"
         }
       }
-    ]
-  },
-  "pagination": {
-    "skipCount": 0,
-    "maxItems": 10,
-    "count": 2,
-    "hasMoreItems": false,
-    "totalItems": 2
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 10,
+      "count": 2,
+      "hasMoreItems": false,
+      "totalItems": 2
+    }
   }
 }
 ```

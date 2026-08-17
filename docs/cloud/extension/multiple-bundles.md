@@ -183,7 +183,7 @@ The read side keeps all applications' data together and lets you slice it with t
 - **Audit service** — the `search` filter expression supports the `appName` field:
 
   ```http
-  GET /v1/events?search=appName: app-a&eventTimeFrom=2026-08-01T00:00:00Z HTTP/1.1
+  GET /v1/events?search=appName:app-a,&eventTimeFrom=2026-08-01T00:00:00Z HTTP/1.1
   ```
 
   See [Audit Service](../services/audit.md#the-search-filter-expression) for the full syntax.

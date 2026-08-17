@@ -53,8 +53,8 @@ flowchart LR
 
 ### Base URL, formats, authentication
 
-- All endpoints are relative to the service root. The standard API is under **`/v1/`** and the administration API under **`/admin/v1/`** (the `server.servlet.context-path` property, default `/`, is prepended if you set one).
-- Responses are HATEOAS: `application/hal+json` and `application/json` are both produced. Entity payloads include `_links` with `self` and the related resources.
+- All endpoints are relative to the service root. The standard API is under **`/v1/`** and the administration API under **`/admin/v1/`** (if you set `server.servlet.context-path`, it is prepended).
+- Responses come in two shapes depending on `Accept`: `application/json` (the default) returns the Alfresco-style envelope — a single entity wrapped in `{"entry": ...}`, and collections as `{"list": {"entries": [...], "pagination": {...}}}` (see the [response examples below](#request-and-response-examples)); `application/hal+json` returns HATEOAS responses with `_links`.
 - Requests require an OAuth2 bearer token (JWT). By default the runtime bundle authorizes `/v1/*` for the `ACTIVITI_USER` role and `/admin/*` for the `ACTIVITI_ADMIN` role through `authorizations.security-constraints` (see [Configuration](#security)). The JWT carries the user id, groups, and roles the engine uses for visibility filtering.
 
 ### Standard vs admin endpoints
@@ -80,7 +80,7 @@ In short: use `/v1` for your application's normal user-driven traffic and `/admi
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/v1/process-definitions` | List definitions visible to the current user. Query params: `include` (comma-separated: `variables`, `constant-values` — adds `variableDefinitions` and `constantValues` to each entry), `page`, `size`, `sort`. Returns a paged HAL collection of extended `CloudProcessDefinition`. |
+| GET | `/v1/process-definitions` | List definitions visible to the current user. Query params: `include` (comma-separated: `variables`, `constant-values` — adds `variableDefinitions` and `constantValues` to each entry), `page`, `size`, `sort`. Returns a paged collection of extended `CloudProcessDefinition` entries. |
 | GET | `/v1/process-definitions/{id}` | Fetch one definition by id or key. |
 | GET | `/v1/process-definitions/{id}/model` | Fetch the model with content negotiation: `application/xml` returns the BPMN 2.0 XML, `application/json` returns the BPMN JSON interchange format, `image/svg+xml` returns the rendered diagram. |
 | GET | `/v1/process-definitions/{id}/static-values` | Static variable values declared for the start event (from the process extensions). |
@@ -153,8 +153,8 @@ Under `/admin/v1/tasks` — `GET` (list all), `GET /{taskId}`, `PUT /{taskId}`, 
 | PUT | `/v1/process-instances/{processInstanceId}/variables` | Create or update instance variables. Body: `SetProcessVariablesPayload` — `variables` map. 200 on success. |
 | DELETE | `/admin/v1/process-instances/{processInstanceId}/variables` | Remove instance variables (admin only). Body: `RemoveProcessVariablesPayload` — `variableNames` (list). |
 | GET | `/v1/tasks/{taskId}/variables` | List task-local variables. |
-| POST | `/v1/tasks/{taskId}/variables` | Create task variables. Body: `CreateTaskVariablePayload` — `variables` map. |
-| PUT | `/v1/tasks/{taskId}/variables/{variableName}` | Update a task variable. Body: `UpdateTaskVariablePayload` — `variableValue`. |
+| POST | `/v1/tasks/{taskId}/variables` | Create a task variable. Body: `CreateTaskVariablePayload` — one variable: `name` and `value`. |
+| PUT | `/v1/tasks/{taskId}/variables/{variableName}` | Update a task variable. Body: `UpdateTaskVariablePayload` — `value` (the variable name is taken from the path). |
 | GET | `/admin/v1/tasks/{taskId}/variables` | List task variables (admin). |
 | POST | `/admin/v1/tasks/{taskId}/variables` | Create task variables (admin). |
 | PUT | `/admin/v1/tasks/{taskId}/variables/{variableName}` | Update a task variable (admin). |
@@ -195,7 +195,7 @@ Errors are returned as JSON `ActivitiErrorMessage` payloads: not-found situation
 
 ### Deploying a process definition
 
-The runtime bundle has **no REST endpoint for deployment**. Process definitions are packaged into the application and auto-deployed by the engine when the service starts (the `spring.activiti.check-process-definitions` flag, default `true`, validates them; a process that fails validation prevents startup unless you disable the check or set `spring.activiti.deployment-mode`). A typical application layout:
+The runtime bundle has **no REST endpoint for deployment**. Process definitions are packaged into the application and auto-deployed by the engine when the service starts. The starter sets `spring.activiti.deployment-mode=never-fail`, which validates each model and **skips** the ones that fail validation (logging an error) instead of failing startup, so a partially invalid package still boots. A typical application layout:
 
 ```text
 src/main/resources/
@@ -218,34 +218,38 @@ Accept: application/json
 
 ```json
 {
-  "_embedded": {
-    "process-definitions": [
+  "list": {
+    "entries": [
       {
-        "id": "LeaveRequestProcess_1",
-        "name": "Employee Leave Request",
-        "key": "leaveRequestProcess",
-        "description": null,
-        "version": 1,
-        "formKey": null,
-        "category": "http://activiti.org/process",
-        "appName": "default-app",
-        "serviceName": "rb",
-        "serviceFullName": "rb",
-        "serviceType": "runtime-bundle",
-        "serviceVersion": null,
-        "appVersion": "0.0.1",
-        "_links": {
-          "self": { "href": "http://localhost:8080/v1/process-definitions/LeaveRequestProcess_1" }
+        "entry": {
+          "id": "leaveRequestProcess:1:9f2c1a6e-4b8d-4e7a-9c1f-3d5e6f7a8b9c",
+          "name": "Employee Leave Request",
+          "key": "leaveRequestProcess",
+          "description": null,
+          "version": 1,
+          "formKey": null,
+          "category": "http://activiti.org/bpmn",
+          "appName": "default-app",
+          "serviceName": "rb",
+          "serviceFullName": "rb",
+          "serviceType": "runtime-bundle",
+          "serviceVersion": null,
+          "appVersion": null
         }
       }
-    ]
-  },
-  "page": { "size": 10, "totalElements": 1, "totalPages": 1, "number": 0 },
-  "_links": {
-    "self": { "href": "http://localhost:8080/v1/process-definitions?page=0&size=10" }
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 100,
+      "count": 1,
+      "hasMoreItems": false,
+      "totalItems": 1
+    }
   }
 }
 ```
+
+(`id` is `key:version:uuid` with the default `use-strong-uuids=true`; `category` is the BPMN `targetNamespace`; `appVersion` is null for a plain auto-deployment.)
 
 Use `?include=variables,constant-values` to also return `variableDefinitions` and `constantValues` per definition. Fetch the deployed model with `GET /v1/process-definitions/{id}/model` (send `Accept: application/xml` for the BPMN XML, `application/json` for the JSON interchange, `image/svg+xml` for the diagram).
 
@@ -270,29 +274,25 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "a1b2c3d4-0000-4000-8000-000000000001",
-  "name": "Leave request for jdoe",
-  "startDate": "2026-08-15T10:15:30.000+00:00",
-  "completedDate": null,
-  "initiator": "jdoe",
-  "businessKey": "LEAVE-2026-0042",
-  "status": "RUNNING",
-  "processDefinitionId": "LeaveRequestProcess_1",
-  "processDefinitionKey": "leaveRequestProcess",
-  "parentId": null,
-  "processDefinitionVersion": 1,
-  "processDefinitionName": "Employee Leave Request",
-  "appName": "default-app",
-  "serviceName": "rb",
-  "serviceFullName": "rb",
-  "serviceType": "runtime-bundle",
-  "serviceVersion": null,
-  "appVersion": "0.0.1",
-  "_links": {
-    "processInstances": { "href": "http://localhost:8080/v1/process-instances" },
-    "self": { "href": "http://localhost:8080/v1/process-instances/a1b2c3d4-0000-4000-8000-000000000001" },
-    "variables": { "href": "http://localhost:8080/v1/process-instances/a1b2c3d4-0000-4000-8000-000000000001/variables" },
-    "home": { "href": "http://localhost:8080/v1" }
+  "entry": {
+    "id": "a1b2c3d4-0000-4000-8000-000000000001",
+    "name": "Leave request for jdoe",
+    "startDate": "2026-08-15T10:15:30.000+00:00",
+    "completedDate": null,
+    "initiator": "jdoe",
+    "businessKey": "LEAVE-2026-0042",
+    "status": "RUNNING",
+    "processDefinitionId": "leaveRequestProcess:1:9f2c1a6e-4b8d-4e7a-9c1f-3d5e6f7a8b9c",
+    "processDefinitionKey": "leaveRequestProcess",
+    "parentId": null,
+    "processDefinitionVersion": 1,
+    "processDefinitionName": "Employee Leave Request",
+    "appName": "default-app",
+    "serviceName": "rb",
+    "serviceFullName": "rb",
+    "serviceType": "runtime-bundle",
+    "serviceVersion": null,
+    "appVersion": null
   }
 }
 ```
@@ -314,39 +314,37 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "_embedded": {
-    "tasks": [
+  "list": {
+    "entries": [
       {
-        "id": "d4e5f6a7-0000-4000-8000-000000000002",
-        "name": "Approve leave request",
-        "description": null,
-        "createdDate": "2026-08-15T10:15:30.000+00:00",
-        "claimedDate": null,
-        "dueDate": null,
-        "priority": 50,
-        "status": "CREATED",
-        "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
-        "processDefinitionId": "LeaveRequestProcess_1",
-        "processDefinitionVersion": 1,
-        "businessKey": "LEAVE-2026-0042",
-        "taskDefinitionKey": "approvalTask",
-        "candidateUsers": [],
-        "candidateGroups": [ "managers" ],
-        "appName": "default-app",
-        "serviceName": "rb",
-        "_links": {
-          "self": { "href": "http://localhost:8080/v1/tasks/d4e5f6a7-0000-4000-8000-000000000002" },
-          "claim": { "href": "http://localhost:8080/v1/tasks/d4e5f6a7-0000-4000-8000-000000000002/claim" },
-          "complete": { "href": "http://localhost:8080/v1/tasks/d4e5f6a7-0000-4000-8000-000000000002/complete" },
-          "processInstance": { "href": "http://localhost:8080/v1/process-instances/a1b2c3d4-0000-4000-8000-000000000001" },
-          "home": { "href": "http://localhost:8080/v1" }
+        "entry": {
+          "id": "d4e5f6a7-0000-4000-8000-000000000002",
+          "name": "Approve leave request",
+          "description": null,
+          "createdDate": "2026-08-15T10:15:30.000+00:00",
+          "claimedDate": null,
+          "dueDate": null,
+          "priority": 50,
+          "status": "CREATED",
+          "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
+          "processDefinitionId": "leaveRequestProcess:1:9f2c1a6e-4b8d-4e7a-9c1f-3d5e6f7a8b9c",
+          "processDefinitionVersion": 1,
+          "businessKey": "LEAVE-2026-0042",
+          "taskDefinitionKey": "approvalTask",
+          "candidateUsers": [],
+          "candidateGroups": [ "managers" ],
+          "appName": "default-app",
+          "serviceName": "rb"
         }
       }
-    ]
-  },
-  "page": { "size": 10, "totalElements": 1, "totalPages": 1, "number": 0 },
-  "_links": {
-    "self": { "href": "http://localhost:8080/v1/process-instances/a1b2c3d4-0000-4000-8000-000000000001/tasks" }
+    ],
+    "pagination": {
+      "skipCount": 0,
+      "maxItems": 100,
+      "count": 1,
+      "hasMoreItems": false,
+      "totalItems": 1
+    }
   }
 }
 ```
@@ -368,18 +366,15 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "d4e5f6a7-0000-4000-8000-000000000002",
-  "name": "Approve leave request",
-  "status": "COMPLETED",
-  "completedDate": "2026-08-15T11:02:12.000+00:00",
-  "completedBy": "manager1",
-  "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
-  "taskDefinitionKey": "approvalTask",
-  "candidateGroups": [ "managers" ],
-  "_links": {
-    "self": { "href": "http://localhost:8080/v1/tasks/d4e5f6a7-0000-4000-8000-000000000002" },
-    "processInstance": { "href": "http://localhost:8080/v1/process-instances/a1b2c3d4-0000-4000-8000-000000000001" },
-    "home": { "href": "http://localhost:8080/v1" }
+  "entry": {
+    "id": "d4e5f6a7-0000-4000-8000-000000000002",
+    "name": "Approve leave request",
+    "status": "COMPLETED",
+    "completedDate": "2026-08-15T11:02:12.000+00:00",
+    "completedBy": "manager1",
+    "processInstanceId": "a1b2c3d4-0000-4000-8000-000000000001",
+    "taskDefinitionKey": "approvalTask",
+    "candidateGroups": [ "managers" ]
   }
 }
 ```
@@ -434,14 +429,14 @@ Engine behavior is configured with the standard `spring.activiti` properties of 
 
 | Property | Default | Meaning |
 |----------|---------|---------|
-| `spring.activiti.check-process-definitions` | `true` | Validate BPMN at deployment; invalid processes fail startup. |
-| `spring.activiti.deployment-mode` | `default` | Auto-deployment strategy for the `processes/` resources. |
+| `spring.activiti.check-process-definitions` | `true` | Validate BPMN at deployment (with the default `never-fail` deployment mode, invalid models are logged and skipped rather than failing startup). |
+| `spring.activiti.deployment-mode` | `never-fail` (starter default; the bare engine default is `default`) | Auto-deployment strategy for the `processes/` resources (`default`, `never-fail`, `single-resource`, `resource-parent-folder`, `fail-on-no-process`). |
 | `spring.activiti.process-definition-location-prefix` | `classpath*:**/processes/` | Where BPMN models are looked up. |
 | `spring.activiti.process-definition-location-suffixes` | `**.bpmn20.xml`, `**.bpmn` | File suffixes accepted as process definitions. |
 | `spring.activiti.deployment-name` | `SpringAutoDeployment` | Deployment name used for auto-deployments. |
 | `spring.activiti.use-strong-uuids` | `true` | Use `SecureRandom`-based UUIDs. |
 | `spring.activiti.copy-variables-to-local-for-tasks` | `true` | Copy process variables into task local scope at task creation. |
-| `spring.activiti.serialize-pojo-in-variables-to-json` | `true` | Serialize POJO variables to JSON. |
+| `spring.activiti.serialize-pojos-in-variables-to-json` | `true` | Serialize POJO variables to JSON. |
 | `spring.activiti.history-level` | `NONE` | Engine history level. |
 | `spring.activiti.async-executor-activate` | `true` | Activate the engine's async executor (jobs may be moved to the message-based executor). |
 | `spring.activiti.async-executor.core-pool-size` / `max-pool-size` | `2` / `10` | Async executor thread pool sizing. |
@@ -459,9 +454,9 @@ Engine behavior is configured with the standard `spring.activiti` properties of 
 
 | Property | Default | Meaning |
 |----------|---------|---------|
-| `activiti.cloud.runtime-bundle.events.integration-audit-events-enabled` | `true` | Publish `INTEGRATION_REQUESTED` / `INTEGRATION_RESULT_RECEIVED` / `INTEGRATION_ERROR_RECEIVED` audit events (ephemeral variables are redacted). |
-| `activiti.cloud.runtime-bundle.events.chunk-size` | `100` | Max events per `engineEvents` message chunk. |
-| `activiti.cloud.runtime-bundle.events.chunk-size-in-bytes-close-listener` | `0` (disabled) | Additionally cap chunks by size in bytes. |
+| `activiti.cloud.runtime-bundle.events-properties.integration-audit-events-enabled` | `true` | Publish `INTEGRATION_REQUESTED` / `INTEGRATION_RESULT_RECEIVED` / `INTEGRATION_ERROR_RECEIVED` audit events (ephemeral variables are redacted). |
+| `activiti.cloud.runtime-bundle.events-properties.chunk-size` | `100` | Max process definitions per `PROCESS_DEPLOYED` event chunk. |
+| `activiti.cloud.runtime-bundle.events-properties.chunk-size-in-bytes-close-listener` | `0` (disabled) | When greater than `0`, split the per-transaction `engineEvents` array into chunks no larger than this many bytes (otherwise all events of one transaction are published as a single array). |
 
 ### Connectors
 
@@ -540,7 +535,7 @@ sequenceDiagram
 
 ## Troubleshooting and notes
 
-- **Service starts but no processes appear.** Confirm the BPMN files are under a `processes/` directory on the classpath (the default prefix is `classpath*:**/processes/`) and that they match one of the default suffixes (`**.bpmn20.xml`, `**.bpmn`). Check the startup log for validation errors; with `spring.activiti.check-process-definitions=true` (default) an invalid model fails the whole startup, so a partially working service usually means the model was never packaged, not that it was skipped.
+- **Service starts but no processes appear.** Confirm the BPMN files are under a `processes/` directory on the classpath (the default prefix is `classpath*:**/processes/`) and that they match one of the default suffixes (`**.bpmn20.xml`, `**.bpmn`). With the default `never-fail` deployment mode an invalid model is skipped at startup with an error log ("wasn't included in the deployment since it is invalid") — so a partially working service usually means the model was packaged but failed validation; check the startup log for that message.
 - **`403` on `/v1/...` calls.** The caller's token lacks the role mapped to the `/v1/*` pattern (default `ACTIVITI_USER`), or the engine's security policies (`activiti.security.policies`) hide the resource from the user. The `403` on a definition you can see elsewhere almost always means the user is not an authorized starter/viewer for that key — fix the policy or use an admin token on `/admin/v1`.
 - **`403` on `/admin/v1/...`.** The token must carry `ACTIVITI_ADMIN` (or `APPLICATION_MANAGER`, which the engine admin runtimes accept).
 - **Instance stuck at a service task.** The runtime bundle published the `IntegrationRequest` but the connector has not answered. Verify a connector service is running and subscribed to the destination matching the service task `implementation` (by default the implementation string itself), and check the broker for messages on `integrationResult`/`integrationError` with the runtime bundle's application group. `INTEGRATION_REQUESTED` / `INTEGRATION_ERROR_RECEIVED` events in the audit service tell you whether the request left the runtime bundle and whether an error came back. To retry a stuck task, call `POST /admin/v1/executions/{executionId}/replay/service-task`.

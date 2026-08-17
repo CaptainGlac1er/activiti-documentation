@@ -150,6 +150,8 @@ The service task references the connector action through its standard BPMN `impl
 </serviceTask>
 ```
 
+(`flowIn` and `flowOut` are the surrounding sequence flows of the full process.)
+
 `implementation` is the connector type: the broker destination the bundle publishes to, the `connectorType` header value, and the value your binding must list. The connector definition JSON (contract of actions and variables) is packaged with the runtime bundle, not with the connector app — its schema is documented in [Outbound Connectors](../connectors/outbound.md#connector-definition).
 
 ### 2. The input channel
@@ -306,7 +308,7 @@ activiti.cloud.messaging.function-router.group=${spring.application.name}
 | Key | Effect |
 |-----|--------|
 | `spring.application.name` | Consumer group and the connector's `service-name`; one group per application |
-| `activiti.cloud.application.name` | Must match the application name of the runtime bundle(s) you serve — the bundle stamps it into the request, and the reply's `appName` must match it |
+| `activiti.cloud.application.name` | Set to the application name of the runtime bundle(s) you serve, so the connector and the bundle agree on the application. The bundle stamps the request's `appName`; the reply's `appName` is stamped from the connector's own value of this property |
 | `bindings.payment-connector.destination` | Comma-separated connector types the binding subscribes to; add more actions here (the reference connector lists eight in one binding) |
 | `bindings.payment-connector.group` | Consumer group; `${spring.application.name}` gives one queue per app |
 | `rabbit.bindings...queue-name-group-only` | All listed destinations share a single queue named after the group (RabbitMQ) |
@@ -359,11 +361,11 @@ There is no automatic retry for an external HTTP failure and no built-in circuit
 </boundaryEvent>
 ```
 
-`<error>` is a child of the root `<definitions>` element and a sibling of `<process>`, like `<message>`.
+The boundary event attaches to the `processPaymentTask` service task from Step 1, and `flowDeclined` continues to the rejected branch of the full process. `<error>` is a child of the root `<definitions>` element and a sibling of `<process>`, like `<message>`.
 
 ## Testing a connector
 
-The reference application tests its connectors two ways: unit-style tests against Spring Cloud Stream's **test binder** (in-memory channels, no broker), and integration tests against a real RabbitMQ via Testcontainers (`spring-cloud-stream-binder-rabbit-test-support` in test scope). The test-binder pattern:
+The reference application tests its connectors two ways: unit-style tests against Spring Cloud Stream's **test binder** (in-memory channels, no broker), and integration tests against a real RabbitMQ via Testcontainers (`testcontainers-rabbitmq` plus `spring-boot-testcontainers` in test scope). The test-binder pattern:
 
 ```java
 package org.example.payment;
@@ -373,8 +375,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.activiti.api.runtime.model.impl.IntegrationContextImpl;
+import org.activiti.cloud.api.process.model.impl.IntegrationErrorImpl;
 import org.activiti.cloud.api.process.model.impl.IntegrationRequestImpl;
-import org.activiti.cloud.api.process.model.impl.IntegrationResultImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -399,7 +401,7 @@ class PaymentProcessorTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void shouldReplyWithIntegrationResult() throws Exception {
+    void shouldPublishIntegrationErrorWhenGatewayIsUnreachable() throws Exception {
         IntegrationContextImpl context = new IntegrationContextImpl();
         context.setProcessInstanceId("10");
         context.addInBoundVariables(Map.of("orderId", "ORD-1", "amount", "100", "currency", "EUR"));
@@ -415,19 +417,24 @@ class PaymentProcessorTest {
 
         input.send(message, "payments.processPayment");
 
-        Message<?> result = output.receive(10_000, "integrationResult_my-bundle");
-        assertThat(result).isNotNull();
-        IntegrationResultImpl integrationResult = objectMapper.readValue(
-            (byte[]) result.getPayload(),
-            IntegrationResultImpl.class
+        // No payment gateway is running in the test, so accept() throws a
+        // ResourceAccessException (not caught by the RestClientResponseException
+        // handler); the starter's default error handler turns it into an
+        // IntegrationError on the resolved error destination.
+        Message<?> error = output.receive(10_000, "integrationError_my-bundle");
+        assertThat(error).isNotNull();
+        IntegrationErrorImpl integrationError = objectMapper.readValue(
+            (byte[]) error.getPayload(),
+            IntegrationErrorImpl.class
         );
-        assertThat(integrationResult.getIntegrationContext().getOutBoundVariables())
-            .containsKeys("paymentId", "status");
+        assertThat(integrationError.getErrorClassName()).contains("Exception");
     }
 }
 ```
 
-The test builds an `IntegrationRequest` the way the bundle does and publishes it to the destination the binding subscribes to — `payments.processPayment`, here; the test binder routes it to the app's `payment-connector` consumer binding, exactly as the broker queue would. The `connectorType` header is the one the `@ConnectorBinding` filter matches, and the reply is read from the output destination named after the resolved result destination (`integrationResult` + `_` + `serviceFullName`). The full end-to-end acceptance scenario — bundle, broker, and connector together — is what the platform's own example tests run; for local acceptance tests of your own processes, see [Local Development Setup](../getting-started/local-setup.md).
+The test builds an `IntegrationRequest` the way the bundle does and publishes it to the destination the binding subscribes to — `payments.processPayment`, here; the test binder routes it to the app's `payment-connector` consumer binding, exactly as the broker queue would. The `connectorType` header is the one the `@ConnectorBinding` filter matches, and the reply is read from the output destination named after the resolved result destination (`integrationResult` + `_` + `serviceFullName`) or error destination (`integrationError` + `_` + `serviceFullName`).
+
+Note the offline test asserts the **error** path: the `PaymentProcessor` happy path makes a real HTTP call to the gateway, which is not reachable in a test-binder test, so the starter's default error handler converts the resulting exception into an `IntegrationError` (this is exactly the pattern the reference `TestBpmnErrorConnectorIT` uses). To assert the happy `IntegrationResult` path in isolation you must stub the HTTP layer (a test `RestClient` bean or WireMock returning a canned body); the platform's own example tests cover the full happy path with the bundle, broker, and connector running together. For local acceptance tests of your own processes, see [Local Development Setup](../getting-started/local-setup.md).
 
 ## Deploying the connector
 
