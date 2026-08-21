@@ -46,7 +46,7 @@ The split between writing and reading process state is the central architectural
 ```mermaid
 flowchart LR
     C[Client applications]
-    KC[Keycloak<br/>realm: alfresco]
+    KC[Keycloak<br/>realm: activiti (default)]
 
     C -->|HTTPS| G[API Gateway]
     KC -.->|token validation| G
@@ -82,8 +82,9 @@ Clients do not call services directly. Every HTTP request goes to the API gatewa
 | `/query/v1/...` | Query service | Read-side queries for process instances, tasks, definitions, and variables |
 | `/audit/v1/...` | Audit service | Event history queries |
 | `/identity-adapter-service/v1/...` | Identity adapter | User and group search and management |
+| `/notifications/...` | Notifications GraphQL | GraphQL query endpoint (`/graphql`) and WebSocket subscriptions (`/v2/ws/graphql`) |
 
-Authentication uses Keycloak bearer tokens from the `alfresco` realm. Role-based access control is applied per path: the `ACTIVITI_USER` role covers the `/v1/*` endpoints and `ACTIVITI_ADMIN` covers the `/admin/*` endpoints.
+Authentication uses Keycloak bearer tokens from the configured realm (`keycloak.realm`, env var `ACT_KEYCLOAK_REALM`; source default `activiti` — the local install script defaults it to `alfresco`). Role-based access control is applied per path: the `ACTIVITI_USER` role covers the `/v1/*` endpoints and `ACTIVITI_ADMIN` covers the `/admin/*` endpoints.
 
 Three flows illustrate how the pieces interact. Starting a process instance: the client POSTs to `/rb/v1/process-instances`, the runtime bundle hands the payload to the engine, and the engine publishes process and task events to the broker. Completing a user task: the client POSTs to `/rb/v1/tasks/{taskId}/complete`, the engine completes the task and, if that was the last pending activity, the process instance, and the corresponding completion events flow through the broker. Reading state: the query and audit services update their stores from those broker events, so a read a moment after a write reflects the committed state, but a read immediately after a write can still see the previous one.
 
@@ -112,7 +113,7 @@ If you are still evaluating, the [Local Development Setup](local-setup.md) page 
 - **Kubernetes tooling**: `kubectl`, `helm` (v3+), `yq`, and `python3` are required by the local installation script; see [Local Development Setup](local-setup.md) for the full list.
 - **A reachable Kubernetes cluster** for the deployment, or a local cluster (kind or minikube).
 - **A messaging broker**: RabbitMQ or Kafka. The Helm chart deploys the broker as part of the stack; you select the type with a single flag.
-- **Keycloak** for identity. The stack expects a Keycloak instance with the `alfresco` realm and an `activiti-keycloak` client; the local install script configures the platform to match it.
+- **Keycloak** for identity. The stack expects a Keycloak instance with a realm (configurable via `keycloak.realm` / env var `ACT_KEYCLOAK_REALM`, source default `activiti`) and an `activiti-keycloak` client; the local install script defaults the realm to `alfresco` and configures the platform to match it.
 - **Node.js and npm** (optional), to run the Playwright acceptance tests against your local stack.
 
 ## What you'll find in this module

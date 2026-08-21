@@ -10,7 +10,7 @@ description: "Make external calls from BPMN service tasks through connector appl
 
 **Module:** `activiti-cloud-connectors` (Activiti Cloud 9.0.0, Spring Boot 3.5.7)
 
-An **outbound connector** is a connector application that executes an external call on behalf of a BPMN service task. The service task carries a reference like `implementation="Payment Gateway.approvePayment"`; the runtime bundle publishes an `IntegrationRequest` to the broker when it reaches the task and suspends the execution; the connector consumes the request, calls the external system, and publishes an `IntegrationResult` (or `IntegrationError`) back; the runtime bundle resumes the execution with the connector's output variables.
+An **outbound connector** is a connector application that executes an external call on behalf of a BPMN service task. The service task carries a reference like `implementation="paymentGateway.approvePayment"`; the runtime bundle publishes an `IntegrationRequest` to the broker when it reaches the task and suspends the execution; the connector consumes the request, calls the external system, and publishes an `IntegrationResult` (or `IntegrationError`) back; the runtime bundle resumes the execution with the connector's output variables.
 
 ## How an outbound connector works
 
@@ -23,7 +23,7 @@ sequenceDiagram
     participant C as Payment connector app
     participant PAY as Payment gateway API
 
-    P->>RB: implementation="Payment Gateway.approvePayment"
+    P->>RB: implementation="paymentGateway.approvePayment"
     RB->>RB: store integration context (executionId, flowNodeId)
     Note over RB: task suspended (WAIT_FOR_TRIGGER)
     RB->>MQ: IntegrationRequest (binding named after the implementation)
@@ -57,7 +57,7 @@ The definition is the JSON contract documented in [Connector definition anatomy]
 ```json
 {
   "id": "paymentGatewayConnectorId",
-  "name": "Payment Gateway",
+  "name": "paymentGateway",
   "description": "APS Connector that calls the payment gateway REST API",
   "actions": {
     "approvePaymentActionId": {
@@ -101,7 +101,7 @@ Accept: application/hal+json
     "connectorDefinitions": [
       {
         "id": "paymentGatewayConnectorId",
-        "name": "Payment Gateway",
+        "name": "paymentGateway",
         "description": "APS Connector that calls the payment gateway REST API",
         "actions": { "approvePaymentActionId": { "name": "approvePayment" } }
       }
@@ -123,7 +123,7 @@ server.port=8080
 activiti.cloud.application.name=default-app
 
 # one input binding; the destination lists the connector types it serves
-spring.cloud.stream.bindings.payment-connector.destination=Payment Gateway.approvePayment
+spring.cloud.stream.bindings.payment-connector.destination=paymentGateway.approvePayment
 spring.cloud.stream.bindings.payment-connector.group=${spring.application.name}
 spring.cloud.stream.bindings.payment-connector.contentType=application/json
 
@@ -163,7 +163,7 @@ import org.springframework.stereotype.Component;
 @ConnectorBinding(
     input = PaymentConnectorChannels.PAYMENT_CONNECTOR,
     condition = "",
-    connectorType = "Payment Gateway.approvePayment"
+    connectorType = "paymentGateway.approvePayment"
 )
 @Component
 public class PaymentGatewayConnector implements ConsumerConnector<IntegrationRequest> {
@@ -261,7 +261,7 @@ The fragment shows the service task and the error path; `flowIn` and `flowOut` a
 
 ```xml
 <process id="orderFulfillment" name="Order Fulfillment" isExecutable="true">
-  <serviceTask id="approvePaymentTask" name="Approve payment" implementation="Payment Gateway.approvePayment">
+  <serviceTask id="approvePaymentTask" name="Approve payment" implementation="paymentGateway.approvePayment">
     <incoming>flowIn</incoming>
     <outgoing>flowOut</outgoing>
   </serviceTask>
@@ -307,7 +307,7 @@ import org.springframework.web.client.RestClientResponseException;
 @ConnectorBinding(
     input = PaymentConnectorChannels.PAYMENT_CONNECTOR,
     condition = "",
-    connectorType = "Payment Gateway.approvePayment"
+    connectorType = "paymentGateway.approvePayment"
 )
 @Component
 public class PaymentGatewayConnector implements ConsumerConnector<IntegrationRequest> {

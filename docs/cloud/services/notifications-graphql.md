@@ -243,6 +243,8 @@ Not available. This service exposes no mutation operations; state changes go thr
 | `spring.activiti.cloud.services.graphql.graphiql.enabled` | `true` | Enable the GraphiQL UI controllers |
 | `keycloak.cors` | `true` | Enable the CORS mapping for browser clients (all origins; GET/POST/PUT/DELETE/OPTIONS) |
 
+In a deployed platform (behind the gateway), the service is reached at `${gateway}/notifications/graphql` and `${gateway}/notifications/v2/ws/graphql`.
+
 ### Subscription schema
 
 Prefix `org.activiti.cloud.services.notifications.graphql.subscriptions` (`GraphQLSubscriptionSchemaProperties`):

@@ -33,9 +33,9 @@ The service then:
    - `KeycloakJwtAdapter` (default): roles from the `realm_access.roles` claim, groups from the `groups` claim, scopes from `scope`.
    - `KeycloakResourceJwtAdapter` (when `keycloak.use-resource-role-mappings=true`): roles and permissions from the `resource_access.{keycloak.resource}` claim — i.e. client (resource) role mappings in Keycloak instead of realm roles.
 
-<Note>
+:::note
 A missing token does not fail by itself: with the default configuration and no URL authorization constraints, requests pass through as anonymous (see [Authorization](#authorization)). An *invalid* token is rejected with `401`. The runtime bundle also ships `activiti-cloud-services-identity-basic` with a `BasicAuthenticationProvider` for environments that run without full security.
-</Note>
+:::
 
 ## How Identity Reaches Process Instances and the Audit Trail
 

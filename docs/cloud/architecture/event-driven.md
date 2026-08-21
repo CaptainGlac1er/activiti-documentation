@@ -68,6 +68,15 @@ The `CloudRuntimeEventType` enum (`org.activiti.cloud.api.events`) has 45 values
 | Integration | `INTEGRATION_REQUESTED`, `INTEGRATION_RESULT_RECEIVED`, `INTEGRATION_ERROR_RECEIVED`, `ERROR_RECEIVED` |
 | Application | `APPLICATION_DEPLOYED`, `APPLICATION_ROLLBACK` |
 
+In addition to the `CloudRuntimeEventType` values above, the same `engineEvents` destination also carries these wire event types:
+
+| Group | Types |
+|-------|-------|
+| Process candidate starters | `PROCESS_CANDIDATE_STARTER_USER_ADDED`, `PROCESS_CANDIDATE_STARTER_USER_REMOVED`, `PROCESS_CANDIDATE_STARTER_GROUP_ADDED`, `PROCESS_CANDIDATE_STARTER_GROUP_REMOVED` |
+| Incidents | `INCIDENT_CREATED` |
+
+The four process candidate starter types are emitted by the runtime bundle's candidate starter producers (`CloudProcessCandidateStarterUserAddedProducer`, `CloudProcessCandidateStarterGroupAddedProducer`) on the `auditProducer` channel. `INCIDENT_CREATED` is published by the runtime bundle's `IncidentService` on the `auditProducerIncidents` binding (default destination `engineEvents`) and consumed by the audit service's `IncidentCreatedEventConverter`.
+
 Consumers filter on `eventType` plus the headers above. The notifications-graphql service exposes its own `EngineEventType` GraphQL enum with 40 of these 45 values — `PROCESS_DELETED`, `ERROR_RECEIVED`, `START_MESSAGE_DEPLOYED`, `APPLICATION_DEPLOYED`, and `APPLICATION_ROLLBACK` have no subscription counterpart.
 
 ## Destinations (Topics)

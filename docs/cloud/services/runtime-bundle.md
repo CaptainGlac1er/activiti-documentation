@@ -396,12 +396,12 @@ The tables below list the properties a runtime bundle deployment is typically co
 
 ### Datasource
 
-The engine uses Spring Boot's datasource auto-configuration; the starter ships the H2 driver, so with no configuration the service runs on an in-memory H2 database. Point `spring.datasource.url` (and friends) at PostgreSQL for real deployments; the example applications run against PostgreSQL via Testcontainers.
+The engine uses Spring Boot's datasource auto-configuration, but the starter does **not** ship a database driver (H2 is declared `test`-scope in the starter and engine poms), so a JDBC datasource must be configured explicitly — the example applications run against PostgreSQL (driver on the classpath, Testcontainers in their integration tests).
 
 | Property | Default | Meaning |
 |----------|---------|---------|
-| `spring.datasource.url` | H2 in-memory (driver on classpath) | JDBC URL of the engine database. |
-| `spring.datasource.username` / `spring.datasource.password` | H2 defaults | Credentials. |
+| `spring.datasource.url` | none — configure a JDBC datasource | JDBC URL of the engine database. |
+| `spring.datasource.username` / `spring.datasource.password` | — (no default) | Credentials for the JDBC datasource. |
 | `spring.activiti.database-schema-update` | `true` | Create/update the engine schema at startup (`true`, `false`, `drop-create`). |
 | `spring.activiti.database-schema` | *(empty)* | Schema name for the engine tables. |
 
@@ -470,7 +470,7 @@ The runtime bundle converts each engine audit event into a `CloudRuntimeEvent` a
 
 | Group | Event types |
 |-------|-----------|
-| Deployment | `PROCESS_DEPLOYED`, `APPLICATION_DEPLOYED` |
+| Deployment | `PROCESS_DEPLOYED`, `APPLICATION_DEPLOYED`, `APPLICATION_ROLLBACK` |
 | Instance lifecycle | `PROCESS_CREATED`, `PROCESS_STARTED`, `PROCESS_SUSPENDED`, `PROCESS_RESUMED`, `PROCESS_COMPLETED`, `PROCESS_CANCELLED`, `PROCESS_UPDATED`, `PROCESS_DELETED` |
 | Activities | `ACTIVITY_STARTED`, `ACTIVITY_COMPLETED`, `ACTIVITY_CANCELLED`, `SEQUENCE_FLOW_TAKEN` |
 | Tasks | `TASK_CREATED`, `TASK_ACTIVATED`, `TASK_ASSIGNED`, `TASK_COMPLETED`, `TASK_CANCELLED`, `TASK_SUSPENDED`, `TASK_UPDATED`, `TASK_CANDIDATE_USER_ADDED`, `TASK_CANDIDATE_USER_REMOVED`, `TASK_CANDIDATE_GROUP_ADDED`, `TASK_CANDIDATE_GROUP_REMOVED` |

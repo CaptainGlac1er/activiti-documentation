@@ -32,7 +32,7 @@ export GATEWAY="http://gateway-pr-my-env-rabbit-n-d.activiti.envalfresco.com:808
 
 ## Step 1: Get a token
 
-Request a token from the Keycloak token endpoint with the password grant. The realm is `alfresco` and the client is `alfresco`:
+Request a token from the Keycloak token endpoint with the password grant. The realm is `alfresco` and the client is `activiti-keycloak`:
 
 ```bash
 export TOKEN=$(curl -s -X POST \
@@ -40,7 +40,7 @@ export TOKEN=$(curl -s -X POST \
   --data-urlencode "username=testuser" \
   --data-urlencode "password=<password>" \
   --data-urlencode "grant_type=password" \
-  --data-urlencode "client_id=alfresco" \
+  --data-urlencode "client_id=activiti-keycloak" \
   | jq -r .access_token)
 ```
 

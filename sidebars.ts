@@ -52,6 +52,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'cloud/architecture/event-driven',
         'cloud/architecture/identity',
+        'cloud/architecture/security-policies',
       ],
     },
     {

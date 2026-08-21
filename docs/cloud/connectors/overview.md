@@ -32,7 +32,7 @@ An inbound connector consumes an event from an external system (a topic, a queue
 
 ### Outbound: service task, external call
 
-An outbound connector is referenced by a service task's `implementation` attribute, e.g. `implementation="Payment Gateway.approvePayment"`. When the engine reaches the task, the runtime bundle publishes an `IntegrationRequest` to a broker destination named after the connector action; the connector application consumes it, performs the external call, and publishes an `IntegrationResult` (or `IntegrationError` on failure) back to the runtime bundle, which resumes the waiting execution with the connector's output variables. Full details and a worked example: [Outbound Connectors](outbound.md).
+An outbound connector is referenced by a service task's `implementation` attribute, e.g. `implementation="paymentGateway.approvePayment"`. When the engine reaches the task, the runtime bundle publishes an `IntegrationRequest` to a broker destination named after the connector action; the connector application consumes it, performs the external call, and publishes an `IntegrationResult` (or `IntegrationError` on failure) back to the runtime bundle, which resumes the waiting execution with the connector's output variables. Full details and a worked example: [Outbound Connectors](outbound.md).
 
 ## Where connectors fit the platform
 
@@ -95,7 +95,7 @@ The model classes are `org.activiti.core.common.model.connector.ConnectorDefinit
 ```json
 {
   "id": "paymentGatewayConnectorId",
-  "name": "Payment Gateway",
+  "name": "paymentGateway",
   "description": "APS Connector that calls the payment gateway REST API",
   "actions": {
     "approvePaymentActionId": {

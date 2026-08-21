@@ -250,6 +250,10 @@ Content-Type: application/xml
                   id="defs_orderProcess" targetNamespace="http://example.com/order">
   <bpmn:process id="orderProcess" name="Order fulfillment" isExecutable="true">
     <bpmn:startEvent id="start" name="Order received"/>
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="approveOrder"/>
+    <bpmn:userTask id="approveOrder" name="Approve order"/>
+    <bpmn:sequenceFlow id="flow2" sourceRef="approveOrder" targetRef="end"/>
+    <bpmn:endEvent id="end" name="Order fulfilled"/>
   </bpmn:process>
 </bpmn:definitions>
 ```

@@ -116,6 +116,8 @@ The mechanism, verified in `activiti-cloud-services-subscriptions`:
 3. Every bundle's `signalConsumer` binding (destination `signalEvent`, consumer group defaulting to `spring.application.name`, overridable via `ACT_RB_SIGNAL_CONSUMER_GROUP`) delivers the payload to `BroadcastSignalEventHandler`, which calls `runtimeService.signalEventReceived(name)` (or with variables) against **its own** engine.
 4. Each engine wakes only the event subscriptions it actually has for that signal name — a bundle with no waiting signal catch for it simply no-ops.
 
+Because a broadcast can land while the receiving bundle's own engine transaction is still in flight, `BroadcastSignalEventHandler` is `@Retryable` on `ActivitiOptimisticLockingException`, retrying with `activiti.cloud.subscription.retry.max-attempts` attempts (default `3`) and a backoff delay of `activiti.cloud.subscription.retry.backoff.delay` (default `0`).
+
 ```mermaid
 sequenceDiagram
     autonumber

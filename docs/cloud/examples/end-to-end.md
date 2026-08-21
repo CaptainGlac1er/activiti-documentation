@@ -164,7 +164,7 @@ A connector is a separate Spring Boot service that subscribes to the broker dest
 }
 ```
 
-The service task references the action by **name** as `hrSystem.updateLeaveStatus`. The connector `name` must not contain a `.` and must be unique.
+The service task references the action by **name** as `hrSystem.updateLeaveStatus`; that `name.action` string is the `connectorType` the connector subscribes to, and it doubles as the broker destination and binding name. The connector `name` must be non-empty, must not contain a `.`, and must be unique across all definitions — the platform validates these constraints at startup.
 
 ### Connector service binding and implementation
 
@@ -186,6 +186,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.activiti.api.process.model.IntegrationContext;
 import org.activiti.cloud.api.process.model.IntegrationRequest;
+import org.activiti.cloud.api.process.model.IntegrationResult;
 import org.activiti.cloud.common.messaging.functional.ConnectorBinding;
 import org.activiti.cloud.common.messaging.functional.ConsumerConnector;
 import org.activiti.cloud.connectors.starter.channels.IntegrationResultSender;

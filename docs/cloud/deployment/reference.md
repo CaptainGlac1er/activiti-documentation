@@ -139,6 +139,8 @@ Services expose `/v1/...` (user) and `/admin/v1/...` (admin) APIs. When reached 
 | Runtime Bundle | `/rb` | `/v1`, `/admin/v1` |
 | Query | `/query` | `/v1`, `/admin/v1` |
 | Audit | `/audit` | `/v1`, `/admin/v1` |
+| Notifications GraphQL | `/notifications` | `/graphql`, `/v2/ws/graphql` |
+| Identity Adapter | `/identity-adapter-service` | `/v1` |
 
 For example, listing process instances through the gateway is `GET http://gateway-{ns}.{domain}/query/v1/process-instances`. Endpoint details are documented in [Runtime Bundle Service](../services/runtime-bundle.md) and [Query Service](../services/query.md).
 

@@ -191,10 +191,16 @@ public class OrderEventsConnector {
                 "orderCreated", null, orderId, Map.copyOf(order)
             );
 
+            // the platform's own producer (RuntimeBundleInfoMessageBuilderAppender)
+            // also carries service-attribution headers, so manual publishers
+            // should include them for full event metadata
             Message<MessageEventPayload> message = MessageBuilder
                 .withPayload(payload)
                 .setHeader("appName", appName)
+                .setHeader("serviceName", appName)
+                .setHeader("serviceFullName", appName)
                 .setHeader("messageEventName", payload.getName())
+                .setHeader("messageEventCorrelationKey", payload.getCorrelationKey())
                 .setHeader("messageEventBusinessKey", payload.getBusinessKey())
                 .setHeader("messageEventType", "MESSAGE_SENT")
                 .setHeader("messageEventId", payload.getId())
