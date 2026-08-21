@@ -75,6 +75,7 @@ flowchart LR
 | [Overview](./getting-started/overview.md) | What Activiti Cloud is, key concepts, and when to choose it over the standalone engine |
 | [Local Development Setup](./getting-started/local-setup.md) | Deploy the full stack to Kubernetes locally in one command |
 | [Your First Workflow](./getting-started/first-workflow.md) | Deploy a process, start an instance, and complete a task via HTTP |
+| [Standalone Engine vs. Cloud](./getting-started/standalone-vs-cloud.md) | Decision guide and migration map between the two editions |
 
 ### Architecture
 
@@ -93,6 +94,7 @@ flowchart LR
 | [Audit Service](./services/audit.md) | Compliance-grade activity log and its API |
 | [Messages Service](./services/messages.md) | The messaging backbone between connectors and consumers |
 | [Notifications GraphQL Service](./services/notifications-graphql.md) | GraphQL API with live event subscriptions |
+| [Identity Adapter Service](./services/identity-adapter.md) | The identity bridge: user, group, and permission lookup against Keycloak |
 
 ### Connectors
 
@@ -101,6 +103,7 @@ flowchart LR
 | [Connectors Overview](./connectors/overview.md) | The integration boundary: concepts and connector definition anatomy |
 | [Inbound Connectors](./connectors/inbound.md) | Start or advance processes from external events |
 | [Outbound Connectors](./connectors/outbound.md) | Call external APIs from within a process |
+| [Connector API Reference](./connectors/api-reference.md) | The connector framework API: bindings, request/result builders, error handling |
 
 ### Extending
 
@@ -112,6 +115,21 @@ flowchart LR
 | [Custom Connectors](./extension/custom-connectors.md) | Build a connector application end-to-end |
 | [Multiple Runtime Bundles](./extension/multiple-bundles.md) | App vs. service identity; sharing one query/audit across bundles |
 | [Custom Event Consumers](./extension/custom-read-models.md) | Consume `engineEvents` from your own services; reuse the query modules |
+
+### Operations
+
+| Guide | Description |
+|-------|-------------|
+| [Application Deployment & Rollback](./operations/applications.md) | Versioned applications: deploy mechanics, rollback, and the application read model |
+| [Monitoring & Observability](./operations/monitoring.md) | Actuator endpoints, health, tracing, and what to watch in a deployed platform |
+
+### API Reference
+
+| Guide | Description |
+|-------|-------------|
+| [Cloud API Reference](./api-reference/overview.md) | The wire contracts: services, base paths, wire formats, and payload map |
+| [Process & Task Payloads](./api-reference/process-and-task-payloads.md) | Every runtime-bundle REST payload with field-level reference |
+| [Connector & Message Payloads](./api-reference/connector-and-message-payloads.md) | The broker contracts: integration requests/results, message events, runtime events |
 
 ### Deployment & Examples
 
@@ -128,7 +146,7 @@ Activiti Cloud shares the engine with the standalone [Activiti](/docs/activiti) 
 - **Write and read are separated** — you call the runtime bundle to change state and the query service to read it, with short, bounded lag between them.
 - **Integration is broker-based** — external systems connect through connector applications, not direct service calls.
 
-For BPMN element details, see the [BPMN Reference](/docs/bpmn/index) in the Activiti module.
+For the full decision guide and a migration map, see [Standalone Engine vs. Cloud](./getting-started/standalone-vs-cloud.md). For BPMN element details, see the [BPMN Reference](/docs/bpmn/index) in the Activiti module.
 
 ## Additional Resources
 

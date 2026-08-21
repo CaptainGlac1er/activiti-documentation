@@ -90,6 +90,17 @@ The install tooling reads these variables:
 
 Runtime configuration of the services themselves uses Spring Boot properties with `ACT_` environment variable prefixes — for example `ACT_MESSAGING_BROKER`, `ACT_QUERY_CONSUMER_DEST`, `ACT_KEYCLOAK_URL`, `ACT_KEYCLOAK_REALM`. See the configuration tables in [Runtime Bundle Service](../services/runtime-bundle.md), [Query Service](../services/query.md), and [Identity & Security](../architecture/identity.md).
 
+## Kafka
+
+The application layer is broker-agnostic: all services publish and consume through Spring Cloud Stream, and `activiti.cloud.messaging.broker` (default `rabbitmq`) selects the binder — `kafka` sets `spring.cloud.stream.default-binder=kafka`. For local and preview installs the broker is chosen with `MESSAGING_BROKER=rabbitmq|kafka` (validated by `local-install.sh`, default `rabbitmq`), which `make install` applies as `--values $(MESSAGING_BROKER)-values.yaml`.
+
+| Flag | Values file applied | What it changes |
+|------|---------------------|-----------------|
+| `MESSAGING_BROKER` | `rabbitmq-values.yaml` / `kafka-values.yaml` | Which broker the chart deploys and the services configure against |
+| `MESSAGING_PARTITIONED` | `partitioned-values.yaml` / `non-partitioned-values.yaml` | Partitioned (ordering-preserving) production and consumption |
+
+The values files live in the example chart of the external `activiti-cloud-full-chart` repository (the same repository the chart itself is cloned from — see above), not in this repository. The Kafka topology itself (topics, partition counts, consumer group mapping) is therefore defined there and is not documented here. The partitioned choice also changes the generated namespace, for example `pr-my-env-kafka-p-d` — see [Namespace Naming](#namespace-naming).
+
 ## Image Versioning
 
 Service images are published to Docker Hub as `docker.io/activiti/{module}:{version}`. `make docker/{module}` builds and pushes an image for a module.

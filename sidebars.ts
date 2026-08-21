@@ -41,6 +41,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'cloud/getting-started/local-setup',
         'cloud/getting-started/first-workflow',
+        'cloud/getting-started/standalone-vs-cloud',
       ],
     },
     {
@@ -67,6 +68,7 @@ const sidebars: SidebarsConfig = {
         'cloud/services/audit',
         'cloud/services/messages',
         'cloud/services/notifications-graphql',
+        'cloud/services/identity-adapter',
       ],
     },
     {
@@ -78,6 +80,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'cloud/connectors/inbound',
         'cloud/connectors/outbound',
+        'cloud/connectors/api-reference',
       ],
     },
     {
@@ -92,6 +95,28 @@ const sidebars: SidebarsConfig = {
         'cloud/extension/custom-connectors',
         'cloud/extension/multiple-bundles',
         'cloud/extension/custom-read-models',
+      ],
+    },
+    {
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'Operations',
+      link: {type: 'generated-index', title: 'Operations Overview'},
+      items: [
+        'cloud/operations/applications',
+        'cloud/operations/monitoring',
+      ],
+    },
+    {
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'API Reference',
+      link: {type: 'doc', id: 'cloud/api-reference/overview'},
+      items: [
+        'cloud/api-reference/process-and-task-payloads',
+        'cloud/api-reference/connector-and-message-payloads',
       ],
     },
     {
