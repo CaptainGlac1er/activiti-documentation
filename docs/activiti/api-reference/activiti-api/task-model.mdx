@@ -860,35 +860,12 @@ UpdateTaskPayload
 
 ## Task Assignment Flow
 
-```
-┌─────────────────┐
-│ Task Created    │
-│ (CREATED)       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Candidate Users │
-│ & Groups Set    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ User Claims     │
-│ (ASSIGNED)      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Task Work       │
-│ In Progress     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Task Completed  │
-│ (COMPLETED)     │
-└─────────────────┘
+```mermaid
+flowchart TD
+    A["Task Created (CREATED)"] --> B["Candidate Users & Groups Set"]
+    B --> C["User Claims (ASSIGNED)"]
+    C --> D["Task Work In Progress"]
+    D --> E["Task Completed (COMPLETED)"]
 ```
 
 ---

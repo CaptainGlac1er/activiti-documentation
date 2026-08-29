@@ -234,57 +234,47 @@ A **Job** represents asynchronous work:
 
 ## Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Application Layer                        │
-│              (Your Business Logic)                          │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                      Service Layer                          │
-│  ┌────────────┬────────────┬──────────┬────────┬─────────┐ │
-│  │ Repository │   Runtime  │   Task   │ History│ Management│ │
-│  │  Service   │   Service  │  Service │ Service│ Service │ │
-│  └────────────┴────────────┴──────────┴────────┴─────────┘ │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                    Engine Core                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              ProcessEngineConfiguration              │  │
-│  │  - Configuration management                          │  │
-│  │  - Service initialization                            │  │
-│  │  - Lifecycle management                              │  │
-│  └────────────────────┬─────────────────────────────────┘  │
-│                       │                                     │
-│  ┌────────────────────▼─────────────────────────────────┐  │
-│  │                    ProcessEngine                      │  │
-│  │  - Central coordinator                               │  │
-│  │  - Service provider                                  │  │
-│  └────────────────────┬─────────────────────────────────┘  │
-│                       │                                     │
-│        ┌──────────────┼──────────────┐                      │
-│        │              │              │                      │
-│        ▼              ▼              ▼                      │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐                 │
-│  │  Command │  │   BPMN   │  │   Job    │                 │
-│  │  Manager │  │ Executor │  │ Executor │                 │
-│  └──────────┘  └──────────┘  └──────────┘                 │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                   Persistence Layer                         │
-│  ┌────────────┬────────────┬──────────┬──────────────────┐  │
-│  │  Entity   │  History   │   Job    │  Event           │  │
-│  │  Manager  │  Manager   │  Manager │  Dispatcher      │  │
-│  └────────────┴────────────┴──────────┴──────────────────┘  │
-│                              │                              │
-│                              ▼                              │
-│                    ┌─────────────────┐                     │
-│                    │   Database      │                     │
-│                    │  (JPA/MyBatis)  │                     │
-│                    └─────────────────┘                     │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph App["Application Layer"]
+        APP["Your Business Logic"]
+    end
+
+    subgraph Svc["Service Layer"]
+        RS["Repository Service"]
+        RT["Runtime Service"]
+        TS["Task Service"]
+        HS["History Service"]
+        MS["Management Service"]
+    end
+
+    subgraph Core["Engine Core"]
+        PEC["ProcessEngineConfiguration<br/>- Configuration management<br/>- Service initialization<br/>- Lifecycle management"]
+        PE["ProcessEngine<br/>- Central coordinator<br/>- Service provider"]
+        CM["Command Manager"]
+        BPE["BPMN Executor"]
+        JE["Job Executor"]
+        PEC --> PE
+        PE --> CM
+        PE --> BPE
+        PE --> JE
+    end
+
+    subgraph Pers["Persistence Layer"]
+        EM["Entity Manager"]
+        HM["History Manager"]
+        JM["Job Manager"]
+        ED["Event Dispatcher"]
+        DB["Database (JPA/MyBatis)"]
+        EM --> DB
+        HM --> DB
+        JM --> DB
+        ED --> DB
+    end
+
+    App --> Svc
+    Svc --> Core
+    Core --> Pers
 ```
 
 ---

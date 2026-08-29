@@ -65,27 +65,11 @@ The **activiti-project-model** module provides the data model for Activiti proje
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Project Model                             │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              ProjectManifest                         │   │
-│  │         (Project Metadata Model)                     │   │
-│  │                                                      │   │
-│  │  Identity:                                          │   │
-│  │  - id: String                                       │   │
-│  │  - name: String                                     │   │
-│  │  - description: String                              │   │
-│  │  - version: String                                  │   │
-│  │                                                      │   │
-│  │  Authorship:                                        │   │
-│  │  - createdBy: String                                │   │
-│  │  - creationDate: String                             │   │
-│  │  - lastModifiedBy: String                           │   │
-│  │  - lastModifiedDate: String                         │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph PM["Project Model"]
+        PMF["ProjectManifest<br/>(Project Metadata Model)<br/>Identity:<br/>- id: String<br/>- name: String<br/>- description: String<br/>- version: String<br/>Authorship:<br/>- createdBy: String<br/>- creationDate: String<br/>- lastModifiedBy: String<br/>- lastModifiedDate: String"]
+    end
 ```
 
 ### Data Model

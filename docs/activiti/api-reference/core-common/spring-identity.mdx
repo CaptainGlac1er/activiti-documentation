@@ -72,45 +72,34 @@ The **activiti-spring-identity** module provides Spring Security integration for
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Activiti Application                      │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              UserGroupManager                       │   │
-│  │         (Activiti API Interface)                    │   │
-│  │  - getUserGroups(username)                          │   │
-│  │  - getUserRoles(username)                           │   │
-│  │  - getGroups()                                      │   │
-│  │  - getUsers()                                       │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ implemented by                      │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │        ActivitiUserGroupManagerImpl                 │   │
-│  │                                                      │   │
-│  │  Delegates to Spring Security UserDetailsService    │   │
-│  │  Extracts GROUP_ and ROLE_ authorities             │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ uses                                │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │         UserDetailsService                           │   │
-│  │        (Spring Security Interface)                   │   │
-│  │  - loadUserByUsername(username)                      │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ implemented by                      │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │    ExtendedInMemoryUserDetailsManager               │   │
-│  │   (In-memory store for testing/development)         │   │
-│  │  - getUsers()                                        │   │
-│  │  - getGroups()                                       │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+classDiagram
+    direction TD
+    class UserGroupManager {
+        <<interface>>
+        Activiti API Interface
+        +getUserGroups(username)
+        +getUserRoles(username)
+        +getGroups()
+        +getUsers()
+    }
+    class ActivitiUserGroupManagerImpl {
+        Delegates to Spring Security UserDetailsService
+        Extracts GROUP_ and ROLE_ authorities
+    }
+    class UserDetailsService {
+        <<interface>>
+        Spring Security Interface
+        +loadUserByUsername(username)
+    }
+    class ExtendedInMemoryUserDetailsManager {
+        In-memory store for testing/development
+        +getUsers()
+        +getGroups()
+    }
+    UserGroupManager <|-- ActivitiUserGroupManagerImpl : implemented by
+    ActivitiUserGroupManagerImpl --> UserDetailsService : uses
+    UserDetailsService <|-- ExtendedInMemoryUserDetailsManager : implemented by
 ```
 
 ### Authority Mapping
@@ -126,40 +115,19 @@ GROUP_FINANCE                        →    Group: "FINANCE"
 
 ### Flow Diagram
 
-```
-User Login
-    │
-    ▼
-┌─────────────────────────────┐
-│  Spring Security            │
-│  Authentication              │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  UserDetailsService          │
-│  loadUserByUsername()        │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  UserDetails with            │
-│  GrantedAuthorities          │
-│  - ROLE_ADMIN                │
-│  - GROUP_HR                  │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  ActivitiUserGroupManager   │
-│  getUserGroups(username)     │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  Extract GROUP_ authorities │
-│  → ["HR"]                   │
-└─────────────────────────────┘
+```mermaid
+flowchart TD
+    UL["User Login"]
+    SSA["Spring Security Authentication"]
+    UDS["UserDetailsService<br/>loadUserByUsername()"]
+    UD["UserDetails with GrantedAuthorities<br/>- ROLE_ADMIN<br/>- GROUP_HR"]
+    UGM["ActivitiUserGroupManager<br/>getUserGroups(username)"]
+    EX["Extract GROUP_ authorities<br/>→ [#quot;HR#quot;]"]
+    UL --> SSA
+    SSA --> UDS
+    UDS --> UD
+    UD --> UGM
+    UGM --> EX
 ```
 
 ---

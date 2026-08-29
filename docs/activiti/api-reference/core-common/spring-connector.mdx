@@ -70,83 +70,32 @@ The **activiti-spring-connector** module provides Spring integration for Activit
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│              Connector Management                            │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │        ConnectorDefinitionService                   │   │
-│  │                                                      │   │
-│  │  Responsibilities:                                  │   │
-│  │  - Load connector JSON files                        │   │
-│  │  - Parse ConnectorDefinition objects                │   │
-│  │  - Validate connector definitions                   │   │
-│  │  - Ensure unique names                              │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│           ┌───────────┼───────────┐                         │
-│           │           │           │                         │
-│           ▼           ▼           ▼                         │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐       │
-│  │ Resource    │ │ Jackson     │ │ Validation      │       │
-│  │ Pattern     │ │ ObjectMapper│ │ Logic           │       │
-│  │ Resolver    │ │             │ │                 │       │
-│  └─────────────┘ └─────────────┘ └─────────────────┘       │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           ConnectorDefinition                        │   │
-│  │  (From activiti-connector-model)                    │   │
-│  │  - id, name, description                             │   │
-│  │  - actions (map of ActionDefinition)                │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph CM["Connector Management"]
+        CDS["ConnectorDefinitionService<br/>Responsibilities:<br/>- Load connector JSON files<br/>- Parse ConnectorDefinition objects<br/>- Validate connector definitions<br/>- Ensure unique names"]
+        RPR["Resource Pattern Resolver"]
+        JO["Jackson ObjectMapper"]
+        VL["Validation Logic"]
+        CD["ConnectorDefinition<br/>(From activiti-connector-model)<br/>- id, name, description<br/>- actions (map of ActionDefinition)"]
+        CDS --> RPR
+        CDS --> JO
+        CDS --> VL
+    end
 ```
 
 ### Loading Flow
 
-```
-Application Startup
-    │
-    ▼
-┌─────────────────────────────┐
-│  ConnectorAutoConfiguration │
-│  Creates service bean        │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  ConnectorDefinitionService │
-│  get() method                │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  ResourcePatternResolver    │
-│  Find *.json files           │
-│  in connector root           │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  For each JSON file:        │
-│  - Read InputStream         │
-│  - Parse with ObjectMapper  │
-│  - Create ConnectorDef      │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  Validate connectors        │
-│  - Check names not null     │
-│  - No dots in names         │
-│  - Unique names             │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  Return list of             │
-│  ConnectorDefinitions        │
-└─────────────────────────────┘
+```mermaid
+flowchart TD
+    AS["Application Startup"]
+    CAC["ConnectorAutoConfiguration<br/>Creates service bean"]
+    CDS["ConnectorDefinitionService<br/>get() method"]
+    RPR["ResourcePatternResolver<br/>Find *.json files<br/>in connector root"]
+    EACH["For each JSON file:<br/>- Read InputStream<br/>- Parse with ObjectMapper<br/>- Create ConnectorDef"]
+    VAL["Validate connectors<br/>- Check names not null<br/>- No dots in names<br/>- Unique names"]
+    RET["Return list of<br/>ConnectorDefinitions"]
+    AS --> CAC --> CDS --> RPR --> EACH --> VAL --> RET
 ```
 
 ---

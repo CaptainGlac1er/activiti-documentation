@@ -843,25 +843,11 @@ User can see task if:
 
 ### Visibility Flow
 
-```
-┌─────────────┐
-│  Query Task │
-└──────┬──────┘
-       │
-       ▼
-┌──────────────────┐
-│ Check Visibility │
-│  Rules           │
-└──────┬───────────┘
-       │
-   ┌───┴───┐
-   │       │
-  YES     NO
-   │       │
-   ▼       ▼
-┌─────┐ ┌──────────┐
-│Task │ │NotFound  │
-└─────┘ └──────────┘
+```mermaid
+flowchart TD
+    A["Query Task"] --> B["Check Visibility Rules"]
+    B -->|YES| C["Task"]
+    B -->|NO| D["NotFound"]
 ```
 
 ---

@@ -136,33 +136,27 @@ The **activiti-core-test** module provides a comprehensive testing framework for
 
 ### Layer Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Test Code                               │
-│              (Your JUnit Tests)                             │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                  Operations API                             │
-│  (ProcessOperations.start(payload),                         │
-│   TaskOperations.claim(payload))                            │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                  Assertion Wrappers                         │
-│  (ProcessInstanceAssertions, TaskAssertions, SignalAssertions)│
-│                                                             │
-│  expectFields(matchers...)  → ProcessResultMatcher /        │
-│                                 TaskResultMatcher            │
-│  expectEvents(matchers...)  → OperationScopeMatcher          │
-│  expect(matchers...)        → ProcessTaskMatcher             │
-│  andReturn()                → underlying domain object       │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                  Local Runtime                              │
-│  (ProcessRuntime, TaskRuntime, EventSource, TaskSource)     │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph TestCode["Test Code"]
+        TC["Your JUnit Tests"]
+    end
+
+    subgraph Operations["Operations API"]
+        OA["ProcessOperations.start(payload),<br>TaskOperations.claim(payload)"]
+    end
+
+    subgraph Assertions["Assertion Wrappers<br>(ProcessInstanceAssertions, TaskAssertions, SignalAssertions)"]
+        AW["expectFields(matchers...) → ProcessResultMatcher / TaskResultMatcher<br>expectEvents(matchers...) → OperationScopeMatcher<br>expect(matchers...) → ProcessTaskMatcher<br>andReturn() → underlying domain object"]
+    end
+
+    subgraph Runtime["Local Runtime"]
+        LR["ProcessRuntime, TaskRuntime, EventSource, TaskSource"]
+    end
+
+    TestCode --> Operations
+    Operations --> Assertions
+    Assertions --> Runtime
 ```
 
 ### Assertion Flow

@@ -173,17 +173,11 @@ public interface RuntimeEvent<ENTITY_TYPE, EVENT_TYPE extends Enum<?>>
 - **Serializable**: Events can be transmitted across boundaries
 
 **Event Flow**:
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Action     │────►│  Event       │────►│  Listener   │
-│             │     │  Created     │     │             │
-└─────────────┘     └──────────────┘     └─────────────┘
-                         │
-                         ▼
-                   ┌──────────────┐
-                   │  Context     │
-                   │  Data        │
-                   └──────────────┘
+```mermaid
+flowchart TD
+    A["Action"] --> B["Event Created"]
+    B --> C["Listener"]
+    B --> D["Context Data"]
 ```
 
 ### VariableEvent Interface
@@ -248,23 +242,14 @@ public interface VariableInstance {
 - **Context-Aware**: Knows its parent process/task
 
 **Variable Scope**:
-```
-┌─────────────────────────────────┐
-│      Process Instance           │
-│  ┌───────────────────────────┐  │
-│  │  Process Variables        │  │
-│  │  - isTaskVariable() = false│  │
-│  └───────────────────────────┘  │
-│                                  │
-│  ┌───────────────────────────┐  │
-│  │         Task              │  │
-│  │  ┌─────────────────────┐  │  │
-│  │  │  Task Variables     │  │  │
-│  │  │  - isTaskVariable() │  │  │
-│  │  │    = true           │  │  │
-│  │  └─────────────────────┘  │  │
-│  └───────────────────────────┘  │
-└─────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph PI["Process Instance"]
+        PV["Process Variables<br/>- isTaskVariable() = false"]
+        subgraph T["Task"]
+            TV["Task Variables<br/>- isTaskVariable() = true"]
+        end
+    end
 ```
 
 ### ApplicationElement Interface

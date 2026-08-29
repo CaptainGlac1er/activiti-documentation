@@ -73,65 +73,38 @@ The **activiti-expression-language** module provides Expression Language (EL) su
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Expression Language                       │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              ActivitiElContext                       │   │
-│  │         (Jakarta EL Context Implementation)          │   │
-│  │                                                      │   │
-│  │  - ELResolver: Property resolution                  │   │
-│  │  - FunctionMapper: Custom functions                 │   │
-│  │  - VariableMapper: Variable access                  │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│           ┌───────────┼───────────┐                         │
-│           │           │           │                         │
-│           ▼           ▼           ▼                         │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐       │
-│  │ ELResolver  │ │ Function    │ │ Variable        │       │
-│  │             │ │ Mapper      │ │ Mapper          │       │
-│  │ Property    │ │ Activiti    │ │ Activiti        │       │
-│  │ access      │ │ functions   │ │ variables       │       │
-│  └─────────────┘ └─────────────┘ └─────────────────┘       │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph EL["Expression Language"]
+        AEC["ActivitiElContext<br/>(Jakarta EL Context Implementation)<br/>- ELResolver: Property resolution<br/>- FunctionMapper: Custom functions<br/>- VariableMapper: Variable access"]
+        ELR["ELResolver<br/>Property access"]
+        FM["Function Mapper<br/>Activiti functions"]
+        VM["Variable Mapper<br/>Activiti variables"]
+        AEC --> ELR
+        AEC --> FM
+        AEC --> VM
+    end
 ```
 
 ### Expression Evaluation Flow
 
-```
-BPMN Expression
-    │
-    ▼
-"${order.totalAmount > 1000}"
-    │
-    ▼
-┌─────────────────────────────┐
-│  ExpressionFactory          │
-│  getExpression()            │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  ActivitiElContext          │
-│  evaluate()                 │
-└──────────┬──────────────────┘
-           │
-           ├──────────┬──────────┐
-           │          │          │
-           ▼          ▼          ▼
-    ┌────────┐  ┌────────┐  ┌──────────┐
-    │Variable│  │Function│  │Property  │
-    │Mapper  │  │Mapper  │  │Resolver  │
-    └────────┘  └────────┘  └──────────┘
-           │          │          │
-           └──────────┼──────────┘
-                      │
-                      ▼
-             ┌────────────────┐
-             │  Result: true  │
-             └────────────────┘
+```mermaid
+flowchart TD
+    BE["BPMN Expression"]
+    EXPR["${order.totalAmount &gt; 1000}"]
+    EF["ExpressionFactory<br/>getExpression()"]
+    AEC["ActivitiElContext<br/>evaluate()"]
+    VM["Variable Mapper"]
+    FM["Function Mapper"]
+    PR["Property Resolver"]
+    RES["Result: true"]
+    BE --> EXPR --> EF --> AEC
+    AEC --> VM
+    AEC --> FM
+    AEC --> PR
+    VM --> RES
+    FM --> RES
+    PR --> RES
 ```
 
 ---

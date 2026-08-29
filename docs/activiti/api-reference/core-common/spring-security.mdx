@@ -83,89 +83,51 @@ The **activiti-spring-security** module provides comprehensive Spring Security i
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Spring Security                           │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           SecurityContextHolder                      │   │
-│  │         (Spring Security Context)                    │   │
-│  │  - Authentication                                    │   │
-│  │  - Principal                                         │   │
-│  │  - Authorities                                       │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ accessed by                        │
-│                       ▼                                     │
-└─────────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Activiti Spring Security                       │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │      LocalSpringSecurityManager                     │   │
-│  │     (Activiti Security Manager Implementation)      │   │
-│  │                                                      │   │
-│  │  Delegates to providers for:                        │   │
-│  │  - Principal identity                               │   │
-│  │  - Principal groups                                 │   │
-│  │  - Principal roles                                  │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│           ┌───────────┼───────────┐                         │
-│           │           │           │                         │
-│           ▼           ▼           ▼                         │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐       │
-│  │ Identity    │ │ Groups      │ │ Roles           │       │
-│  │ Provider    │ │ Provider    │ │ Provider        │       │
-│  │             │ │             │ │                 │       │
-│  │ Extracts    │ │ Extracts    │ │ Extracts        │       │
-│  │ username    │ │ GROUP_      │ │ ROLE_           │       │
-│  │             │ │ authorities │ │ authorities     │       │
-│  └─────────────┘ └─────────────┘ └─────────────────┘       │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           Authorities Mapping                        │   │
-│  │                                                      │   │
-│  │  GrantedAuthoritiesResolver                         │   │
-│  │      ↓                                               │   │
-│  │  GrantedAuthoritiesGroupsMapper                     │   │
-│  │  GrantedAuthoritiesRolesMapper                      │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph SS["Spring Security"]
+        SCH["SecurityContextHolder<br/>(Spring Security Context)<br/>- Authentication<br/>- Principal<br/>- Authorities"]
+    end
+    subgraph ASS["Activiti Spring Security"]
+        LSSM["LocalSpringSecurityManager<br/>(Activiti Security Manager Implementation)<br/>Delegates to providers for:<br/>- Principal identity<br/>- Principal groups<br/>- Principal roles"]
+        IP["Identity Provider<br/>Extracts username"]
+        GP["Groups Provider<br/>Extracts GROUP_ authorities"]
+        RP["Roles Provider<br/>Extracts ROLE_ authorities"]
+        subgraph AM["Authorities Mapping"]
+            GAR["GrantedAuthoritiesResolver"]
+            GAM["GrantedAuthoritiesGroupsMapper"]
+            RAM["GrantedAuthoritiesRolesMapper"]
+            GAR --> GAM
+            GAR --> RAM
+        end
+        LSSM --> IP
+        LSSM --> GP
+        LSSM --> RP
+    end
+    SCH -->|"accessed by"| LSSM
 ```
 
 ### Security Flow
 
-```
-User Authentication
-    │
-    ▼
-┌─────────────────────────────┐
-│  Spring Security            │
-│  Authentication              │
-│  - Principal: User           │
-│  - Authorities: [ROLE_*,     │
-│                  GROUP_*]    │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  LocalSpringSecurityManager │
-│  getAuthenticatedUserId()   │
-└──────────┬──────────────────┘
-           │
-           ├──────────────────┬──────────────────┐
-           │                  │                  │
-           ▼                  ▼                  ▼
-    ┌────────────┐    ┌────────────┐    ┌────────────┐
-    │ Identity   │    │ Groups     │    │ Roles      │
-    │ Provider   │    │ Provider   │    │ Provider   │
-    └────────────┘    └────────────┘    └────────────┘
-           │                  │                  │
-           ▼                  ▼                  ▼
-        "john"         ["HR","IT"]        ["USER","ADMIN"]
+```mermaid
+flowchart TD
+    UA["User Authentication"]
+    SSA["Spring Security Authentication<br/>- Principal: User<br/>- Authorities: [ROLE_*, GROUP_*]"]
+    LSSM["LocalSpringSecurityManager<br/>getAuthenticatedUserId()"]
+    IP["Identity Provider"]
+    GP["Groups Provider"]
+    RP["Roles Provider"]
+    IDRES["#quot;john#quot;"]
+    GPRES["[#quot;HR#quot;, #quot;IT#quot;]"]
+    RPRES["[#quot;USER#quot;, #quot;ADMIN#quot;]"]
+    UA --> SSA
+    SSA --> LSSM
+    LSSM --> IP
+    LSSM --> GP
+    LSSM --> RP
+    IP --> IDRES
+    GP --> GPRES
+    RP --> RPRES
 ```
 
 ---

@@ -41,82 +41,49 @@ The Activiti Engine is built on a layered architecture that separates concerns a
 ### High-Level Architecture
 
 ```mermaid
-flowchart TD
-    subgraph App["Application Layer"]
-        AppCode["Your Business Application\n- Service layer\n- Controllers\n- Integration code"]
+%%{init: {"flowchart": {"rankSpacing": 35, "nodeSpacing": 15}}}%%
+flowchart TB
+    AppCode["Your Business Application\nService layer · Controllers · Integration code"]
+
+    PEImpl["ProcessEngineImpl\nService provider · Lifecycle · Global registry"]
+
+    subgraph Services["Engine API Layer (all services extend ServiceImpl)"]
+        Repo["RepositoryService\nDeployments · Definitions · Models"]
+        Runtime["RuntimeService\nInstances · Variables · Correlation"]
+        Task["TaskService\nUser tasks · Claim · Complete"]
+        History["HistoryService\nQueries · Audit · Cleanup"]
+        Mgmt["ManagementService\nJobs · DB metadata · Custom SQL"]
+        Dynamic["DynamicBpmnService\nRuntime BPMN changes"]
     end
 
-    subgraph PE["ProcessEngine"]
-        PEImpl["ProcessEngineImpl\n- Service provider\n- Lifecycle management\n- Global registry"]
-    end
-
-    subgraph Services["Engine API Layer\n(all services extend ServiceImpl)"]
-        direction LR
-        Repo["RepositoryService\n- Deployments\n- Process definitions\n- Model queries"]
-        Runtime["RuntimeService\n- Process instance execution\n- Variable management\n- Process correlation"]
-        Task["TaskService\n- User task management\n- Claim/complete tasks\n- Task variables"]
-        History["HistoryService\n- Historical queries\n- Audit data\n- Cleanup operations"]
-        Mgmt["ManagementService\n- Job management\n- Database metadata\n- Custom SQL"]
-        Dynamic["DynamicBpmnService\n- Runtime BPMN changes"]
-    end
-
-    subgraph CmdLayer["Command Execution Layer"]
-        CmdExec["CommandExecutor\n- LogInterceptor\n- TransactionInterceptor\n- CommandContextInterceptor\n- TransactionContextInterceptor\n- CommandInvoker"]
-    end
+    CmdExec["CommandExecutor (interceptor chain)\nLog → Tx → CommandContext → TxContext → Invoker"]
 
     subgraph Core["Engine Core Layer"]
-        subgraph ContextLayer["Context (Thread-Local)"]
-            Ctx["Context\n- ThreadLocal stacks\n- CommandContext per-thread\n- ProcessEngineConfiguration per-thread"]
-        end
-
-        Context["CommandContext\n- Entity manager delegation\n- Session management\n- Agenda access"]
-
-        subgraph Managers["Managers"]
-            EntityMgrs["Entity Managers\n- ExecutionEntityManager\n- TaskEntityManager\n- VariableInstanceEntityManager"]
-            HistoryMgr["HistoryManager\n- History recording"]
-            EventDisp["ActivitiEventDispatcher\n- Event dispatching\n- Listener management"]
-        end
-
-        BPMN["BPMN Execution\n- ActivityBehavior pattern\n- BpmnParse\n- ProcessInstanceHelper"]
-        Agenda["Agenda\n- Planned operation queue\n- ActivitiEngineAgenda"]
-        AsyncExec["AsyncExecutor\n- Async job processing\n- Timer management\n- Job handlers"]
+        CmdCtx["CommandContext (thread-local Context)\nManager delegation · Sessions · Agenda"]
+        EntityMgrs["Entity Managers\nExecution · Task · VariableInstance"]
+        HistoryMgr["HistoryManager\nHistory recording"]
+        EventDisp["ActivitiEventDispatcher\nEvent dispatch · Listeners"]
+        BPMN["BPMN Execution\nActivityBehavior · BpmnParse"]
+        Agenda["Agenda\nPlanned operation queue"]
+        AsyncExec["AsyncExecutor\nAsync jobs · Timers"]
     end
 
     subgraph Persistence["Persistence Layer"]
-        Sessions["Sessions\n- DbSqlSession\n- EntityCache\n- IdentityMgmtSession"]
-        DataMgrs["Data Managers\n- MybatisTaskDataManager\n- MybatisExecutionDataManager\n- MybatisVariableInstanceDataManager"]
-        MyBatis["MyBatis SqlSessionFactory\n- SQL mapping\n- Result mapping"]
+        Sessions["Sessions\nDbSqlSession · EntityCache · IdentityMgmt"]
+        DataMgrs["Data Managers (MyBatis mappers)\nExecution · Task · VariableInstance"]
+        MyBatis["MyBatis SqlSessionFactory\nSQL mapping"]
         DS["DataSource / JDBC"]
-        DB["Database\n(PostgreSQL, MySQL, etc.)"]
+        DB[("Database\nPostgreSQL · MySQL · etc.")]
     end
 
     AppCode --> PEImpl
-    PEImpl --> Repo
-    PEImpl --> Runtime
-    PEImpl --> Task
-    PEImpl --> History
-    PEImpl --> Mgmt
-    PEImpl --> Dynamic
-
-    Repo --- CmdExec
-    Runtime --- CmdExec
-    Task --- CmdExec
-    History --- CmdExec
-    Mgmt --- CmdExec
-    Dynamic --- CmdExec
-
-    CmdExec --> Ctx
-    Ctx --> Context
-    Context --> EntityMgrs
-    Context --> HistoryMgr
-    Context --> EventDisp
-    Context --> BPMN
-    Context --> Agenda
-    Agenda --> BPMN
-    BPMN --> Agenda
+    PEImpl --> Repo & Runtime & Task & History & Mgmt & Dynamic
+    Repo & Runtime & Task & History & Mgmt & Dynamic --> CmdExec
+    CmdExec --> CmdCtx
+    CmdCtx --> EntityMgrs & HistoryMgr & EventDisp & Agenda
+    BPMN <--> Agenda
     BPMN --> AsyncExec
-
-    Context --> Sessions
+    EntityMgrs --> Sessions
     Sessions --> DataMgrs
     DataMgrs --> MyBatis
     MyBatis --> DS

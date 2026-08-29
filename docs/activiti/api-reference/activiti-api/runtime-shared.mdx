@@ -97,17 +97,11 @@ public interface SecurityManager {
    - Empty list for anonymous users
 
 **Security Flow**:
-```
-┌─────────────┐     ┌──────────────────┐     ┌──────────────┐
-│  Request    │────►│ SecurityManager  │────►│  Principal   │
-│             │     │                  │     │  Providers   │
-└─────────────┘     └──────────────────┘     └──────────────┘
-                          │
-                          ▼
-                   ┌──────────────────┐
-                   │  Authorization   │
-                   │  Decision        │
-                   └──────────────────┘
+```mermaid
+flowchart TD
+    A["Request"] --> B["SecurityManager"]
+    B --> C["Principal Providers"]
+    B --> D["Authorization Decision"]
 ```
 
 ### AbstractSecurityManager

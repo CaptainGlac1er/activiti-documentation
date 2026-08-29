@@ -70,43 +70,34 @@ The **activiti-connector-model** module provides the data model for defining con
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Connector Model                          │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              ConnectorDefinition                     │   │
-│  │  - id: String                                        │   │
-│  │  - name: String                                      │   │
-│  │  - description: String                               │   │
-│  │  - actions: Map<String, ActionDefinition>           │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ contains                            │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │               ActionDefinition                       │   │
-│  │  - id: String                                        │   │
-│  │  - name: String                                      │   │
-│  │  - description: String                               │   │
-│  │  - inputs: List<VariableDefinition>                 │   │
-│  │  - outputs: List<VariableDefinition>                │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ has                                 │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │             VariableDefinition                       │   │
-│  │  - id: String                                        │   │
-│  │  - name: String                                      │   │
-│  │  - description: String                               │   │
-│  │  - type: String                                      │   │
-│  │  - required: boolean                                 │   │
-│  │  - display: Boolean                                  │   │
-│  │  - displayName: String                               │   │
-│  │  - analytics: boolean                                │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+classDiagram
+    direction TD
+    class ConnectorDefinition {
+        +String id
+        +String name
+        +String description
+        +Map~String, ActionDefinition~ actions
+    }
+    class ActionDefinition {
+        +String id
+        +String name
+        +String description
+        +List~VariableDefinition~ inputs
+        +List~VariableDefinition~ outputs
+    }
+    class VariableDefinition {
+        +String id
+        +String name
+        +String description
+        +String type
+        +boolean required
+        +Boolean display
+        +String displayName
+        +boolean analytics
+    }
+    ConnectorDefinition --> ActionDefinition : contains
+    ActionDefinition --> VariableDefinition : has
 ```
 
 ### Model Relationships

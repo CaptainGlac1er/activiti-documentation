@@ -85,96 +85,38 @@ The **activiti-juel-jakarta** module provides a Jakarta Expression Language (JUE
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   JUEL Implementation                        │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │          ExpressionFactoryImpl                       │   │
-│  │        (Jakarta ExpressionFactory)                   │   │
-│  │                                                      │   │
-│  │  - createValueExpression()                          │   │
-│  │  - createMethodExpression()                         │   │
-│  │  - Expression caching                               │   │
-│  │  - Profile configuration                            │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ uses                                │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              TreeBuilder                             │   │
-│  │         (Expression Parser)                          │   │
-│  │                                                      │   │
-│  │  - Parse expression string                          │   │
-│  │  - Build AST tree                                   │   │
-│  │  - Support method invocations                       │   │
-│  │  - Support varargs                                  │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ creates                             │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                 AST Tree                             │   │
-│  │                                                      │   │
-│  │  AstBinary (operators)                              │   │
-│  │  AstFunction (functions)                            │   │
-│  │  AstMethod (method calls)                           │   │
-│  │  AstProperty (property access)                      │   │
-│  │  AstIdentifier (variables)                          │   │
-│  │  AstLiteral (literals)                              │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ evaluated by                        │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │          TreeValueExpression                         │   │
-│  │        (Expression Evaluation)                       │   │
-│  │                                                      │   │
-│  │  - getValue(ELContext)                              │   │
-│  │  - setValue(ELContext, Object)                      │   │
-│  │  - Type conversion                                  │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph JUEL["JUEL Implementation"]
+        EFI["ExpressionFactoryImpl<br/>(Jakarta ExpressionFactory)<br/>- createValueExpression()<br/>- createMethodExpression()<br/>- Expression caching<br/>- Profile configuration"]
+        TB["TreeBuilder<br/>(Expression Parser)<br/>- Parse expression string<br/>- Build AST tree<br/>- Support method invocations<br/>- Support varargs"]
+        subgraph AST["AST Tree"]
+            AB["AstBinary (operators)"]
+            AF["AstFunction (functions)"]
+            AM["AstMethod (method calls)"]
+            AP["AstProperty (property access)"]
+            AI["AstIdentifier (variables)"]
+            AL["AstLiteral (literals)"]
+        end
+        TVE["TreeValueExpression<br/>(Expression Evaluation)<br/>- getValue(ELContext)<br/>- setValue(ELContext, Object)<br/>- Type conversion"]
+        EFI -->|uses| TB
+        TB -->|creates| AST
+        AST -->|evaluated by| TVE
+    end
 ```
 
 ### Expression Evaluation Flow
 
-```
-Expression String
-    │
-    ▼
-"${order.totalAmount > 1000}"
-    │
-    ▼
-┌─────────────────────────────┐
-│  ExpressionFactoryImpl      │
-│  createValueExpression()    │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  TreeBuilder                │
-│  Parse expression           │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  AST Tree                   │
-│  AstBinary(>               │
-│    AstProperty(totalAmount)│
-│    AstNumber(1000)         │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  TreeValueExpression        │
-│  Evaluate tree              │
-└──────────┬──────────────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│  Result: true/false         │
-└─────────────────────────────┘
+```mermaid
+flowchart TD
+    ES["Expression String"]
+    EXPR["${order.totalAmount &gt; 1000}"]
+    EFI["ExpressionFactoryImpl<br/>createValueExpression()"]
+    TB["TreeBuilder<br/>Parse expression"]
+    AST["AST Tree<br/>AstBinary(&gt;)<br/>AstProperty(totalAmount)<br/>AstNumber(1000)"]
+    TVE["TreeValueExpression<br/>Evaluate tree"]
+    RES["Result: true/false"]
+    ES --> EXPR --> EFI --> TB --> AST --> TVE --> RES
 ```
 
 ---

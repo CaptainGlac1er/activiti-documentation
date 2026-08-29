@@ -86,108 +86,81 @@ The **activiti-spring-security-policies** module provides fine-grained security 
 
 ### Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│              Security Policy Management                      │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           SecurityPoliciesManager                    │   │
-│  │         (Policy Management Interface)                │   │
-│  │  - canRead(key, serviceName)                         │   │
-│  │  - canWrite(key, serviceName)                        │   │
-│  │  - canRead(key)                                      │   │
-│  │  - canWrite(key)                                     │   │
-│  │  - arePoliciesDefined()                              │   │
-│  │  - getAllowedKeys(SecurityPolicyAccess...)           │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ extended by                         │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │      ProcessSecurityPoliciesManager                 │   │
-│  │     (Process-Specific Policies)                     │   │
-│  │  - restrictProcessDefQuery(SecurityPolicyAccess)    │   │
-│  │  - restrictProcessInstQuery(SecurityPolicyAccess)   │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│                       │ implemented by                      │
-│                       ▼                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │   ProcessSecurityPoliciesManagerImpl               │   │
-│  │   extends BaseSecurityPoliciesManagerImpl          │   │
-│  │                                                      │   │
-│  │  Uses RestrictionAppliers to enforce policies      │   │
-│  │  on GetProcessDefinitionsPayload and              │   │
-│  │  GetProcessInstancesPayload                       │   │
-│  └────────────────────┬────────────────────────────────┘   │
-│                       │                                     │
-│           ┌───────────┴───────────┐                         │
-│           ▼                       ▼                         │
-│  ┌─────────────────────────┐ ┌─────────────────────────┐   │
-│  │ SecurityPoliciesProcess │ │ SecurityPoliciesProcess │   │
-│  │ DefinitionRestriction   │ │ InstanceRestriction     │   │
-│  │ Applier                 │ │ Applier                 │   │
-│  │                         │ │                         │   │
-│  │ implements              │ │ implements              │   │
-│  │ RestrictionApplier<T>   │ │ RestrictionApplier<T>   │   │
-│  └─────────────────────────┘ └─────────────────────────┘   │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              SecurityPolicy                         │   │
-│  │  - name: String                                     │   │
-│  │  - groups: List<String>                             │   │
-│  │  - users: List<String>                              │   │
-│  │  - serviceName: String                              │   │
-│  │  - access: SecurityPolicyAccess                     │   │
-│  │  - keys: List<String>                               │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+classDiagram
+    direction TD
+    class SecurityPoliciesManager {
+        <<interface>>
+        Policy Management Interface
+        +canRead(key, serviceName)
+        +canWrite(key, serviceName)
+        +canRead(key)
+        +canWrite(key)
+        +arePoliciesDefined()
+        +getAllowedKeys(SecurityPolicyAccess...)
+    }
+    class ProcessSecurityPoliciesManager {
+        Process-Specific Policies
+        +restrictProcessDefQuery(SecurityPolicyAccess)
+        +restrictProcessInstQuery(SecurityPolicyAccess)
+    }
+    class BaseSecurityPoliciesManagerImpl {
+        <<abstract>>
+    }
+    class ProcessSecurityPoliciesManagerImpl {
+        Uses RestrictionAppliers to enforce policies
+        on GetProcessDefinitionsPayload and
+        GetProcessInstancesPayload
+    }
+    class RestrictionApplier~T~ {
+        <<interface>>
+    }
+    class SecurityPoliciesProcessDefinitionRestrictionApplier {
+        implements RestrictionApplier~T~
+    }
+    class SecurityPoliciesProcessInstanceRestrictionApplier {
+        implements RestrictionApplier~T~
+    }
+    class SecurityPolicy {
+        +String name
+        +List~String~ groups
+        +List~String~ users
+        +String serviceName
+        +SecurityPolicyAccess access
+        +List~String~ keys
+    }
+    SecurityPoliciesManager <|-- ProcessSecurityPoliciesManager : extended by
+    ProcessSecurityPoliciesManager <|-- ProcessSecurityPoliciesManagerImpl : implemented by
+    BaseSecurityPoliciesManagerImpl <|-- ProcessSecurityPoliciesManagerImpl : extends
+    ProcessSecurityPoliciesManagerImpl --> SecurityPoliciesProcessDefinitionRestrictionApplier : uses
+    ProcessSecurityPoliciesManagerImpl --> SecurityPoliciesProcessInstanceRestrictionApplier : uses
+    RestrictionApplier~T~ <|.. SecurityPoliciesProcessDefinitionRestrictionApplier : implements
+    RestrictionApplier~T~ <|.. SecurityPoliciesProcessInstanceRestrictionApplier : implements
 ```
 
 ### Policy Enforcement Flow
 
-```
-Process Query
-    │
-    ▼
-┌─────────────────────────────┐
-│  ProcessSecurityPolicies    │
-│  Manager                    │
-└──────────┬──────────────────┘
-            │
-            ▼
-┌─────────────────────────────┐
-│  restrictProcessDefQuery    │
-│  or                         │
-│  restrictProcessInstQuery   │
-│  (SecurityPolicyAccess)     │
-└──────────┬──────────────────┘
-            │
-            ▼
-┌─────────────────────────────┐
-│  Are policies defined?      │
-│  - No → allowAll()          │
-│  - Yes → evaluate           │
-└──────────┬──────────────────┘
-            │
-            ▼
-┌─────────────────────────────┐
-│  getAllowedKeys()           │
-│  - Check user in policy     │
-│  - Check groups in policy   │
-│  - Match access level       │
-│  - Collect allowed keys     │
-└──────────┬──────────────────┘
-            │
-            ├───────────┬───────────┐
-            │           │           │
-            ▼           ▼           ▼
-        Wildcard      Keys        No keys
-        found         found       match
-            │           │           │
-            ▼           ▼           ▼
-       allowAll()  restrictTo   denyAll()
-                  (keys)
+```mermaid
+flowchart TD
+    PQ["Process Query"]
+    PSM["ProcessSecurityPoliciesManager"]
+    RQ["restrictProcessDefQuery<br/>or<br/>restrictProcessInstQuery<br/>(SecurityPolicyAccess)"]
+    PD{"Are policies defined?"}
+    EVAL["evaluate"]
+    GAK["getAllowedKeys()<br/>- Check user in policy<br/>- Check groups in policy<br/>- Match access level<br/>- Collect allowed keys"]
+    A1["allowAll()"]
+    A2["allowAll()"]
+    RK["restrictTo(keys)"]
+    DA["denyAll()"]
+    PQ --> PSM
+    PSM --> RQ
+    RQ --> PD
+    PD -->|No| A1
+    PD -->|Yes| EVAL
+    EVAL --> GAK
+    GAK -->|Wildcard found| A2
+    GAK -->|Keys found| RK
+    GAK -->|No keys match| DA
 ```
 
 ---
@@ -530,18 +503,23 @@ Each applier implements `SecurityPoliciesRestrictionApplier<T>` and produces a q
 
 ### Decision Flow in `restrictQuery()`
 
-```
-restrictQuery(applier, access)
-    │
-    ├─ arePoliciesDefined() == false ──────────────► applier.allowAll()
-    │
-    ├─ keys = definitionKeysAllowedForApplicationPolicy(access)
-    │   │
-    │   ├─ keys contains wildcard (*) ─────────────► applier.allowAll()
-    │   ├─ keys not empty ─────────────────────────► applier.restrictToKeys(keys)
-    │   └─ keys empty AND policies exist ──────────► applier.denyAll()
-    │
-    └─ policies list is empty ─────────────────────► applier.allowAll()
+```mermaid
+flowchart TD
+    RQ["restrictQuery(applier, access)"]
+    B1["arePoliciesDefined() == false"]
+    B2["keys = definitionKeysAllowedForApplicationPolicy(access)"]
+    B3["policies list is empty"]
+    RQ --> B1
+    RQ --> B2
+    RQ --> B3
+    B1 --> A1["applier.allowAll()"]
+    B2 --> B2a["keys contains wildcard (*)"]
+    B2 --> B2b["keys not empty"]
+    B2 --> B2c["keys empty AND policies exist"]
+    B2a --> A2["applier.allowAll()"]
+    B2b --> A3["applier.restrictToKeys(keys)"]
+    B2c --> A4["applier.denyAll()"]
+    B3 --> A5["applier.allowAll()"]
 ```
 
 ---

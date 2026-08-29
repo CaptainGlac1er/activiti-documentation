@@ -85,7 +85,10 @@ function Mermaid(props: Props) {
             role="dialog"
             aria-modal="true"
             aria-label="Diagram in fullscreen view"
-            onClick={close}
+            onClick={(event) => {
+              event.stopPropagation();
+              close();
+            }}
           >
             <button
               ref={closeButtonRef}
