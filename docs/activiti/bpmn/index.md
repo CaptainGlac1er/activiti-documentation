@@ -172,14 +172,20 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 
 | Feature | User Task | Service Task | Script Task | Gateway | Event |
 |---------|-----------|--------------|-------------|---------|-------|
-| Async Execution | | | | ❌ | (catch) |
-| Multi-Instance | | | | ❌ | ❌ |
-| Boundary Events | | | | ❌ | ❌ |
-| Execution Listeners | | | | | |
-| Skip Expression | | | | ❌ | ❌ |
-| Field Injection | ❌ | | ❌ | ❌ | ❌ |
-| Form Integration | | ❌ | ❌ | ❌ | ❌ |
-| Retry Configuration | ❌ | | | ❌ | ❌ |
+| Async Execution | ✅ | ✅ | ✅ | ❌ | ✅ (catch) |
+| Multi-Instance | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Boundary Events | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Execution Listeners | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Skip Expression | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Field Injection | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Form Integration | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Retry Configuration | ❌ | ✅ | ❌ | ❌ | ❌ |
+
+**Notes:**
+
+- ✅ = supported, ❌ = not supported.
+- `activiti:skipExpression` is only valid on `serviceTask` and `userTask` elements.
+- `activiti:failedJobRetryTimeCycle` is documented for async service tasks (see [Async Execution](./reference/async-execution.md)); it applies to activities that run as async jobs.
 
 ---
 
@@ -615,6 +621,7 @@ Define variables, mappings, and constants separately from BPMN:
 
 ## Next Steps
 
+- Browse all capabilities in the [Feature Catalog](../features/index.md)
 - Start with [User Tasks](./elements/user-task.md) for human interactions
 - Explore [Service Tasks](./elements/service-task.md) for automation
 - Learn about [Gateways](./gateways/index) for process branching

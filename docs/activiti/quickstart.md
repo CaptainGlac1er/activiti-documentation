@@ -704,6 +704,7 @@ Continue your learning journey with these resources:
 
 | Topic | Resource | Description |
 |-------|----------|-------------|
+| **Process Features** | [Feature Catalog](./features/index.md) | Explore async execution, multi-instance, listeners, error handling, and more |
 | **BPMN Fundamentals** | [BPMN Documentation](./bpmn/elements/user-task.md) | Learn BPMN 2.0 notation and elements |
 | **Event Handling** | [Implementation Patterns](./implementation-patterns.md#event-handling-patterns) | Master event-driven architecture |
 | **Security** | [Security Best Practices](./best-practices/guide.md#security-best-practices) | Implement authentication and authorization |

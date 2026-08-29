@@ -22,9 +22,10 @@ Documentation for the [Activiti](https://github.com/Activiti/Activiti) workflow 
 
 - **[Getting started with Activiti](/docs/activiti)** — overview, quick start, and architecture
 - [Quick Start Guide](/docs/quickstart) — deploy your first workflow in minutes
+- [Feature Catalog](/docs/features) — everything you can use and implement: async execution, multi-instance, listeners, error handling, security, and more
 - [API Reference](/docs/api-reference) — Activiti API, Core Common, and Engine API
-- [BPMN Reference](/docs/bpmn/index) — elements, events, gateways, and advanced features
-- [Advanced Topics](/docs/advanced/topics) — events, lifecycle control, operations, and extensibility
+- [BPMN Element Reference](/docs/bpmn/index) — elements, events, and gateways
+- [Runtime Capabilities](/docs/advanced/topics) — events and monitoring, lifecycle control, and authorization
 - [Best Practices](/docs/best-practices) — guidelines for building reliable workflows
 - [Troubleshooting](/docs/troubleshooting/overview) — common issues and resolutions
 

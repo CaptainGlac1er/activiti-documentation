@@ -115,7 +115,6 @@ function Mermaid(props: Props) {
             </button>
             <div
               className={styles.content}
-              onClick={(event) => event.stopPropagation()}
               // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{__html: diagramHtml}}
             />

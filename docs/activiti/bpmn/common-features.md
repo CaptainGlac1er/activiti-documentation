@@ -262,14 +262,20 @@ public class MyDelegate implements JavaDelegate {
 
 | Feature | User Task | Service Task | Script Task | Gateway | Event | SubProcess |
 |---------|-----------|--------------|-------------|---------|-------|------------|
-| Multi-Instance | | | | ❌ | ❌ | |
-| Execution Listeners | | | | | | |
+| Multi-Instance | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Execution Listeners | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Task Listeners | (see [Task Listeners](./reference/task-listeners.md)) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Async Execution | | | | | | |
-| Boundary Events | | | | ❌ | ❌ | |
-| Skip Expression | | | | ❌ | ❌ | |
-| Field Injection | ❌ | | ❌ | ❌ | ❌ | ❌ |
-| Extension Elements | | | | | | |
+| Async Execution | ✅ | ✅ | ✅ | ❌ | ✅ (catch) | ✅ |
+| Boundary Events | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Skip Expression | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Field Injection | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Extension Elements | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**Notes:**
+
+- ✅ = supported, ❌ = not supported.
+- `activiti:skipExpression` is only valid on `serviceTask` and `userTask` elements.
+- `activiti:failedJobRetryTimeCycle` applies to activities that run as async jobs (see [Async Execution](./reference/async-execution.md)).
 
 ## Complete Example
 
