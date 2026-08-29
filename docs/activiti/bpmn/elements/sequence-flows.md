@@ -256,6 +256,7 @@ A default flow specifies the sequence flow to take when no condition expressions
   <!-- Connect remaining flows -->
   <sequenceFlow id="flow1" sourceRef="start" targetRef="validateOrder"/>
   <sequenceFlow id="flow2" sourceRef="validateOrder" targetRef="validationCheck"/>
+  <sequenceFlow id="flow2b" sourceRef="checkInventory" targetRef="inventoryCheck"/>
   <sequenceFlow id="flow3" sourceRef="processPayment" targetRef="end"/>
   <sequenceFlow id="flow4" sourceRef="backorder" targetRef="end"/>
   <sequenceFlow id="flow5" sourceRef="rejectOrder" targetRef="end"/>

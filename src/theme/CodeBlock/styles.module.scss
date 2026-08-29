@@ -1,0 +1,136 @@
+.wrapper {
+  position: relative;
+}
+
+.bpmnButton {
+  position: absolute;
+  top: 0.4rem;
+  right: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--ifm-table-border-color);
+  border-radius: var(--ifm-global-radius);
+  background-color: var(--prism-background-color);
+  color: var(--prism-color);
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.bpmnButton:hover,
+.bpmnButton:focus-visible {
+  opacity: 1;
+  background-color: var(--ifm-color-emphasis-300);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem 2rem;
+  box-sizing: border-box;
+  background-color: var(--ifm-background-color);
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--ifm-table-border-color);
+  border-radius: 50%;
+  background-color: var(--ifm-background-surface-color);
+  color: var(--ifm-font-color-base);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  z-index: 1;
+}
+
+.closeButton:hover,
+.closeButton:focus-visible {
+  background-color: var(--ifm-color-emphasis-300);
+}
+
+.content {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: var(--ifm-global-radius);
+  box-shadow: var(--ifm-global-shadow-lw);
+  overflow: hidden;
+}
+
+.viewer {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.toolbar {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  column-gap: 0.25rem;
+}
+
+.toolButton {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  background-color: var(--ifm-background-surface-color);
+  color: var(--ifm-color-emphasis-800);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.toolButton:hover,
+.toolButton:focus-visible {
+  background-color: var(--ifm-color-emphasis-200);
+}
+
+.status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: #b91c1c;
+}
