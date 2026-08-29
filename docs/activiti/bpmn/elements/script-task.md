@@ -275,12 +275,18 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 ### Example 5: Multi-Language Script
 
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="jsCalc"/>
+
 <!-- JavaScript for simple calculations -->
 <scriptTask id="jsCalc" 
             scriptFormat="javascript"
             activiti:resultVariable="sum">
   <script><![CDATA[result = a + b + c;]]></script>
 </scriptTask>
+
+<sequenceFlow id="flow2" sourceRef="jsCalc" targetRef="groovyProcess"/>
 
 <!-- Groovy for complex object manipulation -->
 <scriptTask id="groovyProcess" 
@@ -292,6 +298,10 @@ Boundary events must be **siblings** of the script task (not nested inside it):
     execution.setVariable('processedItems', sorted)
   ]]></script>
 </scriptTask>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow3" sourceRef="groovyProcess" targetRef="end"/>
 ```
 
 > **Note:** `activiti:scriptFormat="java"` and `activiti:scriptFormat="beanshell"` are **not supported** by default. Java code should use Service Tasks with `activiti:class` instead. BeanShell requires additional setup and is not included by default.

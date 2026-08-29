@@ -386,6 +386,10 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 ### Example 3: Batch Processing with Retry
 
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="batchProcess"/>
+
 <serviceTask id="batchProcess" name="Process Batch" activiti:class="com.example.BatchProcessor" activiti:async="true">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -410,6 +414,10 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 <boundaryEvent id="processError" attachedToRef="batchProcess" cancelActivity="true">
   <errorEventDefinition errorRef="BatchError"/>
 </boundaryEvent>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow2" sourceRef="batchProcess" targetRef="end"/>
 ```
 
 ### Example 4: Multi-Instance SubProcess

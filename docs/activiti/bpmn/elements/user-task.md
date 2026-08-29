@@ -472,6 +472,10 @@ Define form fields:
 ### Example 3: Delegatable Task with Boundary Event
 
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="managerTask"/>
+
 <userTask id="managerTask" name="Manager Delegation">
   <extensionElements>
     <activiti:taskListener event="create" class="com.example.DelegationListener"/>
@@ -483,6 +487,10 @@ Define form fields:
     <timeDuration>PT24H</timeDuration>
   </timerEventDefinition>
 </boundaryEvent>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow2" sourceRef="managerTask" targetRef="end"/>
 ```
 
 ## Runtime API Usage

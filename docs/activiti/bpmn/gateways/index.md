@@ -194,6 +194,10 @@ Gateways work seamlessly with multi-instance activities:
 
 <!-- Wait for selected paths to complete -->
 <inclusiveGateway id="notificationJoin" name="Notifications Complete"/>
+
+<sequenceFlow id="emailReturn" sourceRef="sendEmail" targetRef="notificationJoin"/>
+<sequenceFlow id="smsReturn" sourceRef="sendSMS" targetRef="notificationJoin"/>
+<sequenceFlow id="pushReturn" sourceRef="sendPush" targetRef="notificationJoin"/>
 ```
 
 ### Example 4: Event-Based Gateway for Asynchronous Decisions

@@ -570,8 +570,14 @@ public class OrderProcessingDelegate implements JavaDelegate {
 
 **BPMN:**
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="entry" sourceRef="start" targetRef="processOrder"/>
+
 <serviceTask id="processOrder" name="Process Order" 
              activiti:class="com.example.OrderProcessingDelegate"/>
+
+<sequenceFlow id="toGateway" sourceRef="processOrder" targetRef="canProceed"/>
 
 <exclusiveGateway id="canProceed"/>
 
@@ -582,6 +588,14 @@ public class OrderProcessingDelegate implements JavaDelegate {
 <sequenceFlow id="failed" sourceRef="canProceed" targetRef="handleFailure">
   <conditionExpression>${canProceed == false}</conditionExpression>
 </sequenceFlow>
+
+<serviceTask id="shipOrder" name="Ship Order" activiti:class="com.example.ShipOrderDelegate"/>
+<serviceTask id="handleFailure" name="Handle Failure" activiti:class="com.example.FailureHandler"/>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="shipDone" sourceRef="shipOrder" targetRef="end"/>
+<sequenceFlow id="failDone" sourceRef="handleFailure" targetRef="end"/>
 ```
 
 ### Example 2: Data Enrichment Delegate

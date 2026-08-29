@@ -152,8 +152,16 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Example 1: Order Processing Pipeline
 
 ```xml
+<startEvent id="start" name="Start Order Processing"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="orderProcessingSplit"/>
+
 <!-- Split order processing into parallel tasks -->
-<parallelGateway id="orderProcessingSplit" name="Start Order Processing"/>
+<parallelGateway id="orderProcessingSplit"/>
+
+<sequenceFlow id="flow2" sourceRef="orderProcessingSplit" targetRef="validateOrder"/>
+<sequenceFlow id="flow3" sourceRef="orderProcessingSplit" targetRef="checkInventory"/>
+<sequenceFlow id="flow4" sourceRef="orderProcessingSplit" targetRef="processPayment"/>
 
 <!-- Validate order -->
 <serviceTask id="validateOrder" 
@@ -176,16 +184,32 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <!-- Wait for all validations -->
 <parallelGateway id="orderProcessingJoin" name="All Validations Complete"/>
 
+<sequenceFlow id="flow5" sourceRef="validateOrder" targetRef="orderProcessingJoin"/>
+<sequenceFlow id="flow6" sourceRef="checkInventory" targetRef="orderProcessingJoin"/>
+<sequenceFlow id="flow7" sourceRef="processPayment" targetRef="orderProcessingJoin"/>
+
 <!-- Continue with fulfillment -->
-<sequenceFlow id="toFulfillment" 
-              sourceRef="orderProcessingJoin" 
-              targetRef="fulfillOrder"/>
+<serviceTask id="fulfillOrder" name="Fulfill Order" activiti:class="com.example.OrderFulfillment"/>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow8" sourceRef="orderProcessingJoin" targetRef="fulfillOrder"/>
+<sequenceFlow id="flow9" sourceRef="fulfillOrder" targetRef="end"/>
 ```
 
 ### Example 2: Notification Fan-Out
 
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="notificationSplit"/>
+
 <parallelGateway id="notificationSplit" name="Send Notifications"/>
+
+<sequenceFlow id="flow2" sourceRef="notificationSplit" targetRef="sendEmail"/>
+<sequenceFlow id="flow3" sourceRef="notificationSplit" targetRef="sendSMS"/>
+<sequenceFlow id="flow4" sourceRef="notificationSplit" targetRef="sendPush"/>
+<sequenceFlow id="flow5" sourceRef="notificationSplit" targetRef="callWebhook"/>
 
 <!-- Email notification -->
 <serviceTask id="sendEmail" 
@@ -212,13 +236,30 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
              activiti:async="true"/>
 
 <parallelGateway id="notificationJoin" name="All Notifications Sent"/>
+
+<sequenceFlow id="flow6" sourceRef="sendEmail" targetRef="notificationJoin"/>
+<sequenceFlow id="flow7" sourceRef="sendSMS" targetRef="notificationJoin"/>
+<sequenceFlow id="flow8" sourceRef="sendPush" targetRef="notificationJoin"/>
+<sequenceFlow id="flow9" sourceRef="callWebhook" targetRef="notificationJoin"/>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow10" sourceRef="notificationJoin" targetRef="end"/>
 ```
 
 ### Example 3: Data Aggregation
 
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="dataFetchSplit"/>
+
 <!-- Fetch data from multiple sources in parallel -->
 <parallelGateway id="dataFetchSplit" name="Fetch Data"/>
+
+<sequenceFlow id="flow2" sourceRef="dataFetchSplit" targetRef="fetchFromDB"/>
+<sequenceFlow id="flow3" sourceRef="dataFetchSplit" targetRef="fetchFromAPI"/>
+<sequenceFlow id="flow4" sourceRef="dataFetchSplit" targetRef="fetchFromCache"/>
 
 <serviceTask id="fetchFromDB"
               name="Fetch from Database"
@@ -253,12 +294,30 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
     <activiti:expression>${dataSources}</activiti:expression>
   </activiti:field>
 </serviceTask>
+
+<sequenceFlow id="flow5" sourceRef="fetchFromDB" targetRef="dataFetchJoin"/>
+<sequenceFlow id="flow6" sourceRef="fetchFromAPI" targetRef="dataFetchJoin"/>
+<sequenceFlow id="flow7" sourceRef="fetchFromCache" targetRef="dataFetchJoin"/>
+
+<sequenceFlow id="flow8" sourceRef="dataFetchJoin" targetRef="aggregateData"/>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow9" sourceRef="aggregateData" targetRef="end"/>
 ```
 
 ### Example 4: Parallel Approvals
 
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="approvalSplit"/>
+
 <parallelGateway id="approvalSplit" name="Request Approvals"/>
+
+<sequenceFlow id="flow2" sourceRef="approvalSplit" targetRef="managerApproval"/>
+<sequenceFlow id="flow3" sourceRef="approvalSplit" targetRef="financeApproval"/>
+<sequenceFlow id="flow4" sourceRef="approvalSplit" targetRef="legalApproval"/>
 
 <!-- Department manager approval -->
 <userTask id="managerApproval" 
@@ -278,6 +337,14 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 
 <!-- Wait for all approvals -->
 <parallelGateway id="approvalJoin" name="All Approvals Received"/>
+
+<sequenceFlow id="flow5" sourceRef="managerApproval" targetRef="approvalJoin"/>
+<sequenceFlow id="flow6" sourceRef="financeApproval" targetRef="approvalJoin"/>
+<sequenceFlow id="flow7" sourceRef="legalApproval" targetRef="approvalJoin"/>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow8" sourceRef="approvalJoin" targetRef="end"/>
 ```
 
 ## Runtime API Usage

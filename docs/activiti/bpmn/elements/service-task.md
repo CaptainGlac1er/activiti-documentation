@@ -890,6 +890,10 @@ Handle exceptions (boundary events are siblings, not children):
 
 **BPMN:**
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="processPayment"/>
+
 <serviceTask id="processPayment" 
              name="Process Payment"
              implementation="paymentProcessor"
@@ -906,6 +910,10 @@ Handle exceptions (boundary events are siblings, not children):
     <timeDuration>PT60S</timeDuration>
   </timerEventDefinition>
 </boundaryEvent>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow2" sourceRef="processPayment" targetRef="end"/>
 ```
 
 **Java Implementation (Connector):**
@@ -962,15 +970,23 @@ In the delegate above, `maxRetries` is available as a process variable (e.g., fo
 
 **BPMN:**
 ```xml
+<startEvent id="start"/>
+
+<sequenceFlow id="flow1" sourceRef="start" targetRef="validateOrder"/>
+
 <!-- Service 1: Validate Order -->
 <serviceTask id="validateOrder" 
              name="Validate Order"
              implementation="orderValidator"/>
 
+<sequenceFlow id="flow2" sourceRef="validateOrder" targetRef="checkInventory"/>
+
 <!-- Service 2: Check Inventory -->
 <serviceTask id="checkInventory" 
              name="Check Inventory"
              implementation="inventoryService"/>
+
+<sequenceFlow id="flow3" sourceRef="checkInventory" targetRef="reserveStock"/>
 
 <!-- Service 3: Reserve Stock -->
 <serviceTask id="reserveStock" 
@@ -978,10 +994,16 @@ In the delegate above, `maxRetries` is available as a process variable (e.g., fo
              implementation="inventoryService"
              activiti:async="true"/>
 
+<sequenceFlow id="flow4" sourceRef="reserveStock" targetRef="sendConfirmation"/>
+
 <!-- Service 4: Send Confirmation (Using Custom Email Connector) -->
 <serviceTask id="sendConfirmation" 
              name="Send Confirmation"
              implementation="emailConnector"/>
+
+<endEvent id="end"/>
+
+<sequenceFlow id="flow5" sourceRef="sendConfirmation" targetRef="end"/>
 ```
 
 **Java Implementation for Email Connector:**

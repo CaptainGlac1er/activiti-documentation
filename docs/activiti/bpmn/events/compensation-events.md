@@ -426,6 +426,13 @@ There is no compensation end event element in Activiti — a `compensateEventDef
   <sequenceFlow id="success" sourceRef="finalValidation" targetRef="confirmSaga">
     <conditionExpression>${success}</conditionExpression>
   </sequenceFlow>
+
+  <!-- Main chain -->
+  <sequenceFlow id="chain1" sourceRef="start" targetRef="createOrder"/>
+  <sequenceFlow id="chain2" sourceRef="createOrder" targetRef="reserveInventory"/>
+  <sequenceFlow id="chain3" sourceRef="reserveInventory" targetRef="processPayment"/>
+  <sequenceFlow id="chain4" sourceRef="processPayment" targetRef="arrangeDelivery"/>
+  <sequenceFlow id="chain5" sourceRef="arrangeDelivery" targetRef="finalValidation"/>
   
   <!-- Failure - throw compensation for all completed steps (activityRef omitted = broadcast within scope) -->
   <sequenceFlow id="invalid" sourceRef="finalValidation" targetRef="compensatePaymentEvent">
