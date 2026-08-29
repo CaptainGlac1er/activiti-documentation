@@ -603,6 +603,8 @@ public class EmailConnector implements Connector {
 
 ### 5. Web Service Implementation
 
+> **Note:** The underlying `WSService` and `WSOperation` classes are `@Deprecated` in the engine — web-service integrations are expected to move to the Connector interface or external components. For new development, prefer a custom [Connector](../integration/connectors.md) bean or a Java delegate.
+
 A Service Task can call a web service using the standard BPMN `implementation` attribute set to `##WebService`, combined with an `operationRef` that points to a declared operation:
 
 ```xml

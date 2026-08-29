@@ -1022,6 +1022,8 @@ config.setCachingAndArtifactsManager(new CustomCachingAndArtifactsManager());
 
 ### Web Services
 
+> **Note:** The `SyncWebServiceClientFactory` and `SyncWebServiceClient` interfaces are `@Deprecated` in the engine. Future web-service integrations are expected to use the Connector interface or external components instead.
+
 ```java
 // Set WS sync factory class name
 config.setWsSyncFactoryClassName("com.example.CustomWSSyncFactory");

@@ -819,6 +819,8 @@ Similar to `NeverFailAutoDeploymentStrategy`, but throws an `ActivitiException` 
 
 ### SpringAsyncExecutor
 
+> **Note:** The rejected-jobs handling below references `SpringRejectedJobsHandler`, which is `@Deprecated` — see the note in the [SpringRejectedJobsHandler](#springrejectedjobshandler) section above.
+
 The `SpringAsyncExecutor` delegates job execution to a Spring `TaskExecutor`, allowing integration with managed thread pools in application servers.
 
 ```java

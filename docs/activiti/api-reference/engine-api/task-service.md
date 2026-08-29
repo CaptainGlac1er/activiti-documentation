@@ -472,25 +472,7 @@ public class TaskDelegationService {
 
 ## Comments and Attachments
 
-### Adding Comments
-
-```java
-// Add comment to task
-taskService.addComment(taskId, executionId, "Review completed successfully");
-
-// Add comment with type
-taskService.addComment(taskId, executionId, "feedback", "Needs more information");
-```
-
-### Querying Comments
-
-```java
-// Get all comments for task
-List<Comment> comments = taskService.getTaskComments(taskId);
-
-// Get all comments for process instance
-List<Comment> processComments = taskService.getProcessInstanceComments(processInstanceId);
-```
+> **Note:** Both the `Comment` and `Attachment` interfaces (and their `CommentEntity`/`AttachmentEntity` implementations) are `@Deprecated` in the engine. The source marks them as "going to be removed in future iterations" because comments and attachments don't belong to the Process/Task Runtime. The legacy event feed (`getTaskEvents`/`getEvent`) is served from the same `ACT_HI_COMMENT` table, and attachment rows live in `ACT_HI_ATTACHMENT` (with content in `ACT_GE_BYTEARRAY`). Treat comments, attachments, and events as legacy mechanisms — prefer variables, history queries, or event subscriptions for new applications.
 
 ### Attachments
 
@@ -727,7 +709,11 @@ List<Comment> getCommentsByType(String type);
 void deleteComment(String commentId);
 void deleteComments(String taskId, String processInstanceId);
 
-// Attachments
+// Task Events (legacy, see "Task Events" section above)
+List<Event> getTaskEvents(String taskId);
+Event getEvent(String eventId);
+
+// Attachments (Attachment is @Deprecated — see note above)
 Attachment createAttachment(String attachmentType, String taskId, String processInstanceId, String attachmentName, String attachmentDescription, InputStream content);
 Attachment createAttachment(String attachmentType, String taskId, String processInstanceId, String attachmentName, String attachmentDescription, String url);
 Attachment getAttachment(String attachmentId);
@@ -1044,6 +1030,8 @@ taskService.addCandidateUser(taskId, "jane.doe");
 ```
 
 ### 4. Add Comments on Changes
+
+> **Note:** The `Comment` API is `@Deprecated` in the engine (see [Comments and Attachments](#comments-and-attachments)). In legacy applications, adding a comment on state changes is still a useful audit pattern; in new applications prefer recording the change via variables or engine events.
 
 ```java
 // GOOD

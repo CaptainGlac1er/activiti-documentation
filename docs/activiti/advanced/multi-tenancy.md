@@ -170,7 +170,7 @@ try {
 
 - **Runtime tenant registration**: Tenants can be added after the engine boots via `config.registerTenant(tenantId, dataSource)`, which creates the schema, initializes the async executor, and runs post-processing for that tenant.
 
-**Deprecated:** The `MultiSchemaMultiTenantProcessEngineConfiguration`, `TenantInfoHolder`, and `TenantAwareDataSource` are marked `@Deprecated` and will be removed in a future version of Activiti.
+**Deprecated:** The entire multi-schema mechanism — `MultiSchemaMultiTenantProcessEngineConfiguration`, `TenantInfoHolder`, `TenantAwareDataSource`, and `ExecuteSchemaOperationCommand` — is marked `@Deprecated` in the engine ("multi-tenant code will be removed in future version of Activiti and Activiti Cloud") and will be removed in a future version of Activiti. This also applies to Level 3 below, which builds on the same `TenantAwareDataSource` routing.
 
 ### Level 3: Separate Database Per Tenant
 
@@ -184,6 +184,8 @@ config.registerTenant("tenant-b", createDataSource("jdbc:postgresql://db-b/activ
 The engine architecture is identical to Level 2 — the `TenantAwareDataSource` simply routes to a different database server rather than a different schema on the same server.
 
 ## Async Executor Strategies
+
+> **Note:** These strategies only apply to the deprecated multi-schema mechanism described above (`MultiSchemaMultiTenantProcessEngineConfiguration`). They share its deprecation status.
 
 When using `MultiSchemaMultiTenantProcessEngineConfiguration`, the async job executor must be tenant-aware. Two implementations are available:
 
@@ -388,6 +390,8 @@ runtimeService.startProcessInstanceByKeyAndTenantId(
 
 ## Tenant Info Holder Implementation
 
+> **Note:** `TenantInfoHolder` is `@Deprecated` and part of the multi-schema mechanism that is scheduled for removal.
+
 A `TenantInfoHolder` implementation typically uses `ThreadLocal` to store the current tenant ID. The `DummyTenantInfoHolder` from the test suite demonstrates the pattern:
 
 ```java
@@ -458,6 +462,8 @@ public DeploymentBuilder tenantDeployment() {
 
 ### Multi-Schema Configuration in Spring Boot
 
+> **Note:** `MultiSchemaMultiTenantProcessEngineConfiguration` and `TenantInfoHolder` are `@Deprecated` — see the deprecation note in the Level 2 section above.
+
 To use `MultiSchemaMultiTenantProcessEngineConfiguration`, define it as a `@Bean`:
 
 ```java
@@ -488,7 +494,7 @@ public ProcessEngineConfiguration processEngineConfiguration(
 | Feature | Shared Schema | Separate Schemas | Separate Databases |
 |---|---|---|---|
 | Data isolation | Tenant ID column | Schema boundary | Database boundary |
-| Configuration | Default | MultiSchemaMultiTenantConfig | MultiSchemaMultiTenantConfig |
+| Configuration | Default | MultiSchemaMultiTenantConfig (deprecated) | MultiSchemaMultiTenantConfig (deprecated) |
 | ID generation | DbIdGenerator (default) | StrongUuidGenerator (required) | StrongUuidGenerator (required) |
 | Tenant-aware queries | Yes (tenantId filter) | Yes (TenantInfoHolder context) | Yes (TenantInfoHolder context) |
 | Per-tenant async executors | No | Yes | Yes |
@@ -500,6 +506,8 @@ public ProcessEngineConfiguration processEngineConfiguration(
 ## Best Practices
 
 ### Always Clear Tenant Context
+
+> **Note:** Applies to the deprecated `TenantInfoHolder` mechanism (see the deprecation note in the Level 2 section above).
 
 When using `TenantInfoHolder`, always clear the tenant ID after operations to prevent cross-tenant data leaks:
 

@@ -66,6 +66,8 @@ config.setMailServerDefaultFrom("noreply@example.com");
 
 ### Web Service Send Task
 
+> **Note:** The underlying `WSService`/`WSOperation` implementation is `@Deprecated` in the engine. For new development, prefer a Service Task with a custom [Connector](../integration/connectors.md) bean or Java delegate.
+
 The `##WebService` implementation is specified via the `implementation` attribute (BPMN 2.0 standard):
 
 ```xml

@@ -205,8 +205,8 @@ Valid values (mapped to engine types):
 
 | `entityType` value | Event entity |
 |--------------------|--------------|
-| `attachment` | `org.activiti.engine.task.Attachment` |
-| `comment` | `org.activiti.engine.task.Comment` |
+| `attachment` | `org.activiti.engine.task.Attachment` *(deprecated)* |
+| `comment` | `org.activiti.engine.task.Comment` *(deprecated)* |
 | `execution` | `org.activiti.engine.runtime.Execution` |
 | `identity-link` | `org.activiti.engine.task.IdentityLink` |
 | `job` | `org.activiti.engine.runtime.Job` |
