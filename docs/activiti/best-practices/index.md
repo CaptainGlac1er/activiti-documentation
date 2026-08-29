@@ -39,6 +39,11 @@ This section covers proven patterns, architectural guidance, and best practices 
 - [ ] Create health checks and metrics
 - [ ] Add distributed tracing
 - [ ] Use structured logging
+- [ ] Mark non-persisted variables as ephemeral (8.8.0+)
+- [ ] Bound the deployment cache if deploying many definitions (8.7.0+)
+- [ ] Use link events for non-adjacent navigation (8.7.0+)
+- [ ] Keep multi-instance expressions state-independent (8.8.0+)
+- [ ] Re-validate catch-all error boundary flows after upgrading (8.8.0+)
 
 ## Next Steps
 

@@ -13,6 +13,8 @@ This comprehensive guide provides proven patterns and recommendations for buildi
 
 > **Note:** This is community-contributed documentation and is not officially maintained by the Activiti team. For official documentation, please refer to the Activiti project repositories.
 
+> **Version note:** This guide targets **Activiti 9.0.0** (Java 25, Spring Boot 3.5.x). Recommendations that depend on a specific release are called out inline (for example "(8.8.0+)"). If you are running an older version, skip items whose version requirement you do not meet yet.
+
 ## Table of Contents
 
 - [Architecture & Design](#architecture--design)
@@ -133,11 +135,10 @@ flowchart TD
         Order["Order Context"]
         Payment["Payment Context"]
         Shipping["Shipping Context"]
-        
-        subgraph Orchestrating["Orchestrating Process<br>(Order Fulfillment)"]
-        end
     end
-    
+
+    Orchestrating["Orchestrating Process (Order Fulfillment)"]
+
     Order --> Orchestrating
     Payment --> Orchestrating
     Shipping --> Orchestrating
@@ -238,12 +239,16 @@ Page<Task> allTasks = taskRuntime.tasks(Pageable.of(0, Integer.MAX_VALUE));
 **DO:** Configure async for long-running tasks
 
 ```xml
-<!-- BPMN Configuration -->
-<serviceTask id="externalCall"
-             name="Call External API"
-             activiti:async="true"
-             activiti:class="com.example.ExternalApiCaller">
-</serviceTask>
+<bpmn:process id="externalCallProcess"
+              xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+              xmlns:activiti="http://activiti.org/bpmn">
+
+  <bpmn:serviceTask id="externalCall"
+                    name="Call External API"
+                    activiti:async="true"
+                    activiti:class="com.example.ExternalApiCaller"/>
+
+</bpmn:process>
 ```
 
 **DO:** Implement async event listeners
@@ -266,6 +271,8 @@ public class AsyncEventListener implements ProcessRuntimeEventListener<ProcessCo
     }
 }
 ```
+
+**Note:** Listeners run in the caller's thread and event delivery can fire more than once on retries. Keep listeners fast and make them idempotent (for example, track already-processed event ids with `event.getId()`).
 
 ### 3. Implement Caching Strategy
 
@@ -340,6 +347,27 @@ processRuntime.setVariables(
 );
 ```
 
+**DO (8.8.0+):** Mark variables as **ephemeral** in the process extension JSON when they participate in execution but should not be persisted to the event store (high-churn intermediate values, data you do not want in the event/audit pipeline). Ephemeral variable events still fire, but carry an empty value and report `isEphemeralVariable()` as `true` so consumers can skip persisting them. Task variables are exempt from the ephemeral check.
+
+```json
+{
+  "id": "orderProcess",
+  "extensions": {
+    "orderProcess": {
+      "properties": {
+        "scratch-id": {
+          "id": "scratch-id",
+          "name": "scratch",
+          "type": "string",
+          "required": false,
+          "ephemeral": true
+        }
+      }
+    }
+  }
+}
+```
+
 ### 5. Batch Operations
 
 **DO:** Use batch operations when available
@@ -350,11 +378,10 @@ public class BatchTaskService {
     
     public void assignTasksToUser(List<String> taskIds, String assignee) {
         // Batch assignment instead of individual calls
+        AssignTasksPayloadBuilder payload = TaskPayloadBuilder.assignMultiple();
+        taskIds.forEach(payload::withTaskId);
         taskAdminRuntime.assignMultiple(
-            TaskPayloadBuilder.assignMultiple()
-                .withTaskIds(taskIds)
-                .withAssignee(assignee)
-                .build()
+            payload.withAssignee(assignee).build()
         );
     }
 }
@@ -383,6 +410,17 @@ spring:
 CREATE INDEX idx_task_assignee ON ACT_RU_TASK(ASSIGNEE_);
 CREATE INDEX idx_task_process_instance ON ACT_RU_TASK(PROC_INST_ID_);
 CREATE INDEX idx_process_instance_status ON ACT_RU_EXECUTION(PROC_INST_ID_, SUSPENDED_);
+```
+
+### 7. Bound the Deployment Cache (8.7.0+)
+
+**DO:** Limit the in-memory process definition and extension model caches if you deploy many process definitions (8.7.0 and later). Without a limit, the caches grow unbounded for long-running engines.
+
+```yaml
+# application.yml
+spring:
+  activiti:
+    process-definition-cache-limit: 100
 ```
 
 ---
@@ -516,7 +554,7 @@ public class ProcessController {
         // Start process logic
     }
     
-    @PreAuthorize("hasRole('ADMIN') or #taskId == authentication.principal.taskId")
+    @PreAuthorize("hasRole('ADMIN') or @taskSecurity.isOwner(#taskId, authentication.name)")
     @PutMapping("/tasks/{taskId}/complete")
     public ResponseEntity<Task> completeTask(@PathVariable String taskId) {
         // Complete task logic
@@ -780,14 +818,10 @@ class ProcessIntegrationTest {
 **DO:** Test API contracts
 
 ```java
-@ExtendWith(SpringCloudContractVerifierExtension.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ProcessControllerContractTest {
-    
-    @Value("${contracts.test.location}")
-    private String testLocation;
-    
+
     @Test
-    @Verify
     void shouldReturnProcessInstance() {
         ContractVerifier.verify(new MakeRequest()
             .GET("/api/process/instance-123")
@@ -805,17 +839,18 @@ class ProcessControllerContractTest {
 ```java
 @SpringBootTest
 class ProcessPerformanceTest {
-    
+
     @Autowired
     private ProcessRuntime processRuntime;
-    
+
     @Test
-    @RepeatedIfExceptionsTest(repeats = 100)
     void shouldHandleConcurrentProcessStarts() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(10);
-        ExecutorService executor = Executors.newFixedThreadPool(10);
-        
-        for (int i = 0; i < 10; i++) {
+        int threads = 10;
+        CountDownLatch latch = new CountDownLatch(threads);
+        AtomicInteger started = new AtomicInteger();
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        for (int i = 0; i < threads; i++) {
             executor.submit(() -> {
                 try {
                     processRuntime.start(
@@ -823,14 +858,16 @@ class ProcessPerformanceTest {
                             .withProcessDefinitionKey("testProcess")
                             .build()
                     );
+                    started.incrementAndGet();
                 } finally {
                     latch.countDown();
                 }
             });
         }
-        
-        latch.await(30, TimeUnit.SECONDS);
+
+        assertTrue(latch.await(30, TimeUnit.SECONDS));
         executor.shutdown();
+        assertEquals(threads, started.get());
     }
 }
 ```
@@ -934,11 +971,6 @@ public class TracingProcessListener implements ProcessEventListener<ProcessStart
             span.finish();
         }
     }
-    
-    @Override
-    public ProcessEvents getEventType() {
-        return ProcessEvents.PROCESS_STARTED;
-    }
 }
 ```
 
@@ -955,6 +987,8 @@ public class LoggingService {
     public void startProcess(String processKey, Map<String, Object> variables) {
         MDC.put("processKey", processKey);
         MDC.put("userId", SecurityContextHolder.getContext().getAuthentication().getName());
+        // (8.8.0+) Correlate call-activity children back to the initiating instance:
+        // MDC.put("rootProcessInstanceId", process.getRootProcessInstanceId());
         
         try {
             log.info("Starting process", () -> new HashMap<String, Object>() {{
@@ -1104,16 +1138,22 @@ flowchart TD
 **DO:** Implement proper error handling
 
 ```xml
-<sequenceFlow sourceRef="task1" targetRef="errorBoundary"/>
-<bpmn:errorEvent id="errorBoundary" 
-                 cancelActivity="true">
-    <bpmn:error errorRef="error1"/>
-</bpmn:errorEvent>
-<sequenceFlow sourceRef="errorBoundary" targetRef="errorHandler"/>
-<bpmn:task id="errorHandler" name="Handle Error">
-    <!-- Error recovery logic -->
-</bpmn:task>
+<bpmn:error id="PaymentError" name="Payment Error" errorCode="PAY001"/>
+
+<bpmn:serviceTask id="paymentTask" name="Process Payment"/>
+
+<bpmn:boundaryEvent id="errorBoundary"
+                    attachedToRef="paymentTask"
+                    cancelActivity="true">
+  <bpmn:errorEventDefinition bpmn:errorRef="PaymentError"/>
+</bpmn:boundaryEvent>
+
+<bpmn:sequenceFlow id="errorFlow" sourceRef="errorBoundary" targetRef="errorHandler"/>
+
+<bpmn:serviceTask id="errorHandler" name="Handle Error"/>
 ```
+
+**Note (8.8.0+):** Since 8.8.0, catch-all error boundary events (empty `errorRef`) are only used after all specific error boundaries are exhausted. If your process combines specific and catch-all boundaries, re-validate your error flows when upgrading.
 
 ### 3. Parallel Processing Pattern
 
@@ -1146,6 +1186,28 @@ flowchart TD
     AA --> End
 ```
 
+### 5. Link Events for Non-Adjacent Navigation (8.7.0+)
+
+**DO (8.7.0 and later):** Use link events to jump to a non-adjacent part of the same process (for example, sending a case back to rework) instead of drawing long crossing sequence flows. Note that the `source`/`target` values reference the **id of the opposing `linkEventDefinition`**, not the event id.
+
+```xml
+<bpmn:intermediateThrowEvent id="reworkTrigger" name="Send back to rework">
+  <bpmn:linkEventDefinition id="reworkLink">
+    <bpmn:target>reworkCatch</bpmn:target>
+  </bpmn:linkEventDefinition>
+</bpmn:intermediateThrowEvent>
+
+<bpmn:intermediateCatchEvent id="reworkStage" name="Rework">
+  <bpmn:linkEventDefinition id="reworkCatch">
+    <bpmn:source>reworkLink</bpmn:source>
+  </bpmn:linkEventDefinition>
+</bpmn:intermediateCatchEvent>
+```
+
+### 6. State-Independent Multi-Instance Expressions (8.8.0+)
+
+**DO (8.8.0 and later):** Keep `collection` and `loopCardinality` expressions state-independent. Since 8.8.0 they are evaluated **only when the multi-instance tasks are created** (not again when a task is closed). If your expressions read mutable state (for example, a list that grows while tasks are completed), the number of loop instances will change after upgrading. Restructure the data flow so the collection is fixed before the loop starts.
+
 ---
 
 ## Summary Checklist
@@ -1162,6 +1224,8 @@ flowchart TD
 - [ ] Add caching where appropriate
 - [ ] Store references, not large objects
 - [ ] Use batch operations
+- [ ] Mark non-persisted variables as ephemeral (8.8.0+)
+- [ ] Bound the deployment cache if deploying many definitions (8.7.0+)
 
 ### Security
 - [ ] Implement least privilege
@@ -1193,6 +1257,11 @@ flowchart TD
 - [ ] Use descriptive names
 - [ ] Document complex logic
 - [ ] Review BPMN designs
+
+### Version-Specific (newer releases)
+- [ ] Use link events for non-adjacent navigation (8.7.0+)
+- [ ] Keep multi-instance expressions state-independent (8.8.0+)
+- [ ] Re-validate catch-all error boundary flows after upgrading (8.8.0+)
 
 ---
 
