@@ -1,13 +1,4 @@
-import React, {
-  Suspense,
-  useCallback,
-  useEffect,
-  isValidElement,
-  lazy,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import React, {Suspense, lazy, useState} from 'react';
 import OriginalCodeBlock from '@theme-original/CodeBlock';
 import type {Props} from '@theme/CodeBlock';
 import {isBpmnXml} from './bpmnLayout';
@@ -15,43 +6,39 @@ import styles from './styles.module.scss';
 
 const BpmnDiagram = lazy(() => import('./BpmnDiagram'));
 
-function maybeStringifyChildren(children: ReactNode): string {
+function maybeStringifyChildren(children: React.ReactNode): string {
   const array = React.Children.toArray(children);
-  if (array.some((el) => isValidElement(el))) {
+  if (array.some((el) => React.isValidElement(el))) {
     return '';
   }
   return array.join('');
 }
 
-export default function CodeBlock(props: Props): ReactNode {
-  const [isOpen, setIsOpen] = useState(false);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
+export default function CodeBlock(props: Props): React.ReactNode {
+  const [showDiagram, setShowDiagram] = useState(false);
 
   const code = maybeStringifyChildren(props.children);
   const isBpmn = isBpmnXml(props.language, code);
 
-  const close = useCallback(() => {
-    setIsOpen(false);
-  }, []);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        close();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeButtonRef.current?.focus();
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen, close]);
+  if (isBpmn && showDiagram) {
+    return (
+      <div className={styles.diagramPanel}>
+        <div className={styles.diagramHeader}>
+          <span className={styles.diagramTitle}>BPMN diagram</span>
+          <button
+            type="button"
+            className={styles.toggleButton}
+            onClick={() => setShowDiagram(false)}
+          >
+            View code
+          </button>
+        </div>
+        <Suspense fallback={<div className={styles.status}>Rendering diagram…</div>}>
+          <BpmnDiagram xml={code} />
+        </Suspense>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrapper}>
@@ -62,7 +49,7 @@ export default function CodeBlock(props: Props): ReactNode {
           className={styles.bpmnButton}
           title="View BPMN diagram"
           aria-label="View BPMN diagram"
-          onClick={() => setIsOpen(true)}
+          onClick={() => setShowDiagram(true)}
         >
           <svg
             width="14"
@@ -82,50 +69,6 @@ export default function CodeBlock(props: Props): ReactNode {
             <path d="M15 8.5V14.5" />
           </svg>
         </button>
-      )}
-      {isOpen && (
-        <div
-          className={styles.overlay}
-          role="dialog"
-          aria-modal="true"
-          aria-label="BPMN diagram"
-          onClick={close}
-        >
-          <button
-            ref={closeButtonRef}
-            type="button"
-            className={styles.closeButton}
-            title="Close (Esc)"
-            aria-label="Close BPMN diagram"
-            onClick={(event) => {
-              event.stopPropagation();
-              close();
-            }}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-          <div
-            className={styles.content}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Suspense fallback={<div className={styles.status}>Loading diagram…</div>}>
-              <BpmnDiagram xml={code} />
-            </Suspense>
-          </div>
-        </div>
       )}
     </div>
   );

@@ -27,51 +27,52 @@
   background-color: var(--ifm-color-emphasis-300);
 }
 
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem 2rem;
-  box-sizing: border-box;
-  background-color: var(--ifm-background-color);
-}
-
-.closeButton {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid var(--ifm-table-border-color);
-  border-radius: 50%;
-  background-color: var(--ifm-background-surface-color);
-  color: var(--ifm-font-color-base);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-  z-index: 1;
-}
-
-.closeButton:hover,
-.closeButton:focus-visible {
-  background-color: var(--ifm-color-emphasis-300);
-}
-
-.content {
+.diagramPanel {
   position: relative;
   display: flex;
+  flex-direction: column;
   width: 100%;
-  height: 100%;
+  height: 480px;
   background-color: #ffffff;
   border-radius: var(--ifm-global-radius);
   box-shadow: var(--ifm-global-shadow-lw);
   overflow: hidden;
+}
+
+.diagramHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--ifm-table-border-color);
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.diagramTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+.toggleButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  background-color: var(--ifm-background-surface-color);
+  color: var(--ifm-color-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.toggleButton:hover,
+.toggleButton:focus-visible {
+  background-color: var(--ifm-color-emphasis-200);
 }
 
 .viewer {

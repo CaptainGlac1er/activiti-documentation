@@ -91,8 +91,8 @@ export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
       {error && (
         <div className={styles.error} role="alert">
           <span>
-            Could not render this BPMN diagram: {error}. The source XML is shown
-            in the code block below.
+            Could not render this BPMN diagram: {error}. Use the “View code”
+            button above to inspect the source XML.
           </span>
         </div>
       )}
