@@ -189,6 +189,10 @@ System.out.println("Version: " + definition.getVersion());
 
 #### Query Process Definitions
 
+:::info[Added in 8.8.0]
+`GetProcessDefinitionsPayload` supports multiple process definition IDs in a single call, and a new API retrieves the latest versions of process definitions. The process definition query can also include non-user-startable processes (previously only user-startable ones were returned by default).
+:::
+
 ```java
 Page<ProcessDefinition> processDefinitions(Pageable pageable);
 Page<ProcessDefinition> processDefinitions(Pageable pageable, GetProcessDefinitionsPayload payload);

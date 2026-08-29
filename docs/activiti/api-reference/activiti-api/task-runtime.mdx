@@ -108,6 +108,10 @@ public interface TaskRuntime {
 
 **File**: `TaskAdminRuntime.java`
 
+:::info[Added in 8.7.0]
+The admin-only query `lastCreatedTaskByProcessInstanceIdAndTaskDefinitionKey(String, String)` was added to `TaskAdminRuntime` in version 8.7.0.
+:::
+
 ```java
 public interface TaskAdminRuntime {
     // Task Query
@@ -115,7 +119,7 @@ public interface TaskAdminRuntime {
     Page<Task> tasks(Pageable pageable);
     Page<Task> tasks(Pageable pageable, GetTasksPayload payload);
 
-    // Admin-only query
+    // Admin-only query (Added in 8.7.0)
     Task lastCreatedTaskByProcessInstanceIdAndTaskDefinitionKey(
         String processInstanceId, String taskDefinitionKey);
 

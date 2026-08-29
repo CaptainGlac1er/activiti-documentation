@@ -115,6 +115,40 @@ execution.setTransientVariable("myVar", "temporary");
 - Useful for intermediate calculations
 - Better performance for temporary data
 
+### Ephemeral Variables
+
+:::info[Added in 8.8.0]
+Ephemeral variables are declared in the process extension JSON via the `ephemeral` property. Unlike transient variables (which are an API-level concept), ephemeral variables are a **process-extensions-level** concept: they participate in execution like normal variables but are **not written to the event store**. The event producer sends an empty value for them, update events null out the previous value, and the query service API exposes the `ephemeral` flag so consumers can filter them out. Task variables are exempt from the ephemeral check, and the property also applies to connector variables.
+:::
+
+```json
+{
+  "id": "orderProcess",
+  "extensions": {
+    "orderProcess": {
+      "properties": {
+        "scratch-id": {
+          "id": "scratch-id",
+          "name": "scratch",
+          "type": "string",
+          "required": false,
+          "ephemeral": true
+        }
+      }
+    }
+  }
+}
+```
+
+Variable events for ephemeral variables still fire, but the payload carries an empty value, and `VariableCreatedEvent`, `VariableUpdatedEvent`, and `VariableDeletedEvent` report `isEphemeralVariable()` as `true` so consumers can skip persisting them.
+
+**Characteristics:**
+- Participate in process execution like regular variables
+- Not persisted to the event store (empty value in events)
+- `isEphemeralVariable()` returns `true` on variable events
+- Task variables are always exempt
+- Declared in the [process extension JSON](./process-extensions.md), not the API
+
 ### JPA Entity Variables
 
 JPA entities can be stored directly as process variables, storing only the entity's class name and primary key rather than the serialized object. The entity is fetched fresh from the database on each access.

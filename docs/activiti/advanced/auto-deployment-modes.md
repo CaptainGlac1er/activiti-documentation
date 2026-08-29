@@ -79,6 +79,31 @@ Similar to `never-fail` but **throws an exception** if zero valid processes are 
 
 **Use when:** Processes are mandatory — the application should fail fast if none are available.
 
+### `none` (No Auto-Deployment)
+
+:::info[Added in 8.8.0]
+The `none` deployment mode was added in version 8.8.0. It disables automatic deployment entirely — no BPMN resources are auto-deployed at startup.
+:::
+
+No resources are deployed automatically. You must deploy processes explicitly via the `RepositoryService` or the `ProcessRuntime` API.
+
+**Use when:** You manage deployments entirely through an external system or API and do not want the engine to auto-deploy classpath resources.
+
+### Disabling Start Event Subscriptions from Previous Deployments
+
+:::info[Added in 8.8.0]
+The `spring.activiti.disable-existing-start-event-subscriptions` property (default: `false`) was added in version 8.8.0. When set to `true`, deploying a new version of a process definition disables the start event subscriptions of the previous version, preventing accidental triggering of superseded versions.
+:::
+
+```yaml
+# application.yml
+spring:
+  activiti:
+    disable-existing-start-event-subscriptions: true
+```
+
+> **Note:** This is an opt-in behavior (off by default). Enable it when deploying a new version of a process should immediately stop the old version from reacting to start events.
+
 ## Mode Comparison
 
 | Mode | Deployment Count | Invalid Resources | Version Control |
@@ -88,6 +113,7 @@ Similar to `never-fail` but **throws an exception** if zero valid processes are 
 | `resource-parent-folder` | 1 per folder | Fails startup | Per folder |
 | `never-fail` | 1 (if valid exist) | Skipped + logged | All-or-nothing |
 | `fail-on-no-process` | 1 (if valid exist) | Skipped + logged | All-or-nothing |
+| `none` *(8.8.0+)* | 0 | N/A | N/A |
 
 ```mermaid
 graph TD
@@ -218,10 +244,4 @@ The deployment mode then groups these discovered resources into deployments acco
 ## Related Documentation
 
 - [Configuration](../configuration.md) — Engine configuration overview
-- [Advanced Deployment Builder](../advanced/deployment-builder.md) — Manual deployment API
-
-
-## Related Documentation
-
-- [Configuration](../configuration.md) — Engine configuration overview
-- [Advanced Deployment Builder](../advanced/deployment-builder.md) — Manual deployment API
+- [Advanced Deployment Builder](./deployment-builder.md) — Manual deployment API

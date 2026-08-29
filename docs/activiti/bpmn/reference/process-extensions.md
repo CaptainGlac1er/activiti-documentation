@@ -94,10 +94,13 @@ Properties define **process-level variables** with their types, default values, 
     "name": "<variable-name>",
     "type": "<data-type>",
     "required": <true|false>,
-    "value": <default-value>
+    "value": <default-value>,
+    "ephemeral": <true|false>
   }
 }
 ```
+
+The `ephemeral` property is optional and defaults to `false`.
 
 ### Supported Data Types
 
@@ -106,7 +109,7 @@ Properties define **process-level variables** with their types, default values, 
 | `string` | `String` | Text value | `"Hello World"` |
 | `integer` | `Integer` | Whole number | `42` |
 | `boolean` | `Boolean` | True/False | `true` |
-| `bigdecimal` | `BigDecimal` | Decimal number (for currency) | `19.99` |
+| `bigdecimal` | `BigDecimal` | Decimal number (for currency) *(Added in 8.3.0)* | `19.99` |
 | `json` | `Map/List` | JSON object/array | `{"key": "value"}` |
 | `array` | `List` | Array of values | `[1, 2, 3]` |
 | `date` | `Date` | Date value | `"2024-01-15"` |
@@ -144,6 +147,10 @@ public Map<String, VariableType> variableTypeMap(ObjectMapper objectMapper,
 - [`DateVariableType`](https://github.com/Activiti/Activiti/tree/main/activiti-core/activiti-spring-process-extensions/src/main/java/org/activiti/spring/process/variable/types/DateVariableType.java) - For date/time values
 
 ### Date Handling
+
+:::info[Added in 8.4.0]
+`DateFormatterProvider` gained support for Java 8 date/time types (`LocalDate`, `LocalDateTime`, `ZonedDateTime`) in version 8.4.0. In 8.7.0 the set of accepted date/time formats was further widened.
+:::
 
 `date` and `datetime` property default values are parsed with the shared `DateFormatterProvider` (`DateVariableType.parseFromValue`):
 
@@ -214,6 +221,35 @@ public Map<String, VariableType> variableTypeMap(ObjectMapper objectMapper,
 - **Value:** Default value (can be omitted for non-required variables)
 - **Type Safety:** Engine validates variable types at runtime
 
+### Ephemeral Variables
+
+:::info[Added in 8.8.0]
+The `ephemeral` property on variable definitions was introduced in version 8.8.0.
+:::
+
+An ephemeral variable participates in execution like any other variable but is **not written to the event store**: the event producer sends an empty value for it, update events null out the previous value, and the query service API exposes the `ephemeral` flag so clients can filter it out. Task variables are exempt from the ephemeral check, and the property also applies to connector variables.
+
+```json
+{
+  "id": "orderProcess",
+  "extensions": {
+    "orderProcess": {
+      "properties": {
+        "scratch": {
+          "id": "scratch-id",
+          "name": "scratch",
+          "type": "string",
+          "required": false,
+          "ephemeral": true
+        }
+      }
+    }
+  }
+}
+```
+
+**Use when:** a variable is needed during execution but should not be persisted through the event/audit pipeline — for example, high-churn intermediate values. Variable events still fire, but the payload carries an empty value, and `VariableCreatedEvent`, `VariableUpdatedEvent`, and `VariableDeletedEvent` report `isEphemeralVariable()` as `true` so consumers can skip persisting them.
+
 ---
 
 ## Mappings (Variable Transformation)
@@ -266,7 +302,7 @@ This is by design: an unmapped process variable is not lost — it simply remain
 |------|-------------|----------|
 | `VARIABLE` | Map from another variable (literal variable name, looked up flat) | Transfer process variable to task |
 | `VALUE` | Constant literal value, or an EL expression (`${...}`) resolved at runtime | Provide fixed value or expression-resolved value |
-| `JSONPATCH` | Update JSON object fields | Modify specific properties |
+| `JSONPATCH` | Update JSON object fields *(Added in 8.7.0; array support and path variable interpolation added in 8.8.0)* | Modify specific properties |
 
 ### Example 1: Basic Input/Output Mapping
 
@@ -1050,6 +1086,10 @@ Map variables for multi-instance tasks:
 Collection wiring for multi-instance loops (`activiti:collection`, `activiti:outputDataItem`) belongs in the BPMN diagram, not in the extensions file — a `Mapping` only has `type` and `value` fields.
 
 ### 4. JSON Patch Operations
+
+:::info[Added in 8.7.0]
+JSON Patch variable mapping was introduced in version 8.7.0. Version 8.8.0 extended it with support for arrays (including inner empty arrays), variables inside the patch `path` field, and replacing array elements.
+:::
 
 Supported JSON Patch operations:
 

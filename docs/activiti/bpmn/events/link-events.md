@@ -7,6 +7,10 @@ description: "Complete guide to Link Events in Activiti - creating internal proc
 
 # Link Events
 
+:::info[Added in 8.7.0]
+BPMN link events (throw and catch) are supported as of version 8.7.0. Earlier versions of Activiti do not support `<linkEventDefinition>`.
+:::
+
 Link Events allow you to **create jumps within a process** without drawing sequence flows. They consist of a **Link Throw Event** (source) and a **Link Catch Event** (destination), enabling cleaner diagrams for complex workflows with multiple entry/exit points.
 
 ## Overview

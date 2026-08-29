@@ -156,6 +156,10 @@ public class TypedVariableDelegate implements JavaDelegate {
 
 ### Process Instance Identification
 
+:::info[Added in 8.1.0]
+`getRootProcessInstanceId()` and `getEngineServices()` were added to `DelegateExecution` in version 8.1.0.
+:::
+
 DelegateExecution provides process instance identification directly. For full process instance details (name, start date, version), query via the RuntimeService:
 
 ```java

@@ -174,6 +174,7 @@ public interface ProcessInstance extends ApplicationElement {
     String getParentId();
     Integer getProcessDefinitionVersion();
     String getProcessDefinitionName();
+    String getRootProcessInstanceId();
 }
 ```
 
@@ -205,6 +206,7 @@ CREATED → RUNNING → SUSPENDED ↔ RUNNING → COMPLETED
 
 4. **Hierarchy**
    - `parentId`: Parent process instance (for sub-processes)
+   - `rootProcessInstanceId`: Root process instance ID in a call-activity hierarchy *(Added in 8.8.0)*
 
 **Usage Example**:
 ```java
@@ -863,12 +865,18 @@ Page<ProcessInstance> instances = processRuntime.processInstances(
 
 ### GetProcessDefinitionsPayload
 
+:::info[Added in 8.8.0]
+Multiple process definition IDs and a `latestVersionOnly` option were added to `GetProcessDefinitionsPayload` in version 8.8.0, enabling batch lookups and filtering for the latest version of each process.
+:::
+
 **File**: `GetProcessDefinitionsPayload.java`
 
 ```java
 public class GetProcessDefinitionsPayload implements Payload {
-    private String processDefinitionId;
+    private String id;
+    private Set<String> processDefinitionIds;
     private Set<String> processDefinitionKeys;
+    private boolean latestVersionOnly;
 }
 ```
 

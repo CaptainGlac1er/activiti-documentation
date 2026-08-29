@@ -413,6 +413,10 @@ List<HistoricProcessInstance> instances = historyService
 
 ### Group Involvement
 
+:::info[Added in 8.1.0]
+The `involvedGroupsIn()` query method was added in version 8.1.0 (backported from ACTIVITI-1291).
+:::
+
 ```java
 // Process instances involving specific groups
 List<HistoricProcessInstance> instances = historyService

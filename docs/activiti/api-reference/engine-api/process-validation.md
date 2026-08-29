@@ -243,8 +243,8 @@ public class ValidationError {
 | `activityId` | `String` | ID of the flow element that triggered the error |
 | `activityName` | `String` | Name of the flow element that triggered the error |
 | `isWarning` | `boolean` | `true` for warnings, `false` for errors |
-| `key` | `String` | The original `Problems` constant used to look up the message |
-| `params` | `Map<String, String>` | Key-value pairs for `{{paramName}}` substitution in messages |
+| `key` | `String` | The original `Problems` constant used to look up the message *(Added in 8.7.0)* |
+| `params` | `Map<String, String>` | Key-value pairs for `{{paramName}}` substitution in messages *(Added in 8.7.0)* |
 
 `toString()` produces output like:
 

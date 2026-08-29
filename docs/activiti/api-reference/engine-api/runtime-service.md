@@ -901,6 +901,10 @@ NativeExecutionQuery createNativeExecutionQuery();
 
 ### ProcessInstanceQuery
 
+:::info[Added in 8.1.0]
+The `involvedGroupsIn(List<String>)` filter was added to `ProcessInstanceQuery` (and `HistoricProcessInstanceQuery`) in version 8.1.0.
+:::
+
 ```java
 ProcessInstanceQuery createProcessInstanceQuery();
 
@@ -916,6 +920,9 @@ ProcessInstanceQuery createProcessInstanceQuery();
 .processInstanceWithoutTenantId()
 .active()
 .suspended()
+
+// Added in 8.1.0
+.involvedGroupsIn(List<String> groups)
 
 // Ordering
 .orderByProcessInstanceId()

@@ -18,7 +18,13 @@ Welcome to Activiti. This section covers everything you need to go from zero to 
 
 ## Prerequisites
 
-- **Java 11+** (17+ recommended)
+:::info[Added in 9.0.0]
+Activiti 9.0.0 requires **Java 25**. Versions 8.2.0 through 8.8.0 require Java 21; versions 8.0.0 and 8.1.x require Java 17.
+:::
+
+- **Java 25** (9.0.0 and later)
+- **Java 21** (8.2.0 – 8.8.0)
+- **Java 17** (8.0.0 – 8.1.x)
 - **Maven 3.6+** or **Gradle 7+**
 - Basic familiarity with Java and Spring Boot
 

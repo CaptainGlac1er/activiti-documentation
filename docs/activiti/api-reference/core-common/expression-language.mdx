@@ -260,6 +260,29 @@ public class MyService {
 
 ---
 
+### Custom Expression Factory (SPI)
+
+:::info[Added in 9.0.0]
+The engine's internal `ExpressionManager` now resolves its `ExpressionFactory` through the standard `jakarta.el.ExpressionFactory.newInstance()` SPI instead of instantiating `ExpressionFactoryImpl` directly. This means you can replace the default JUEL implementation with a custom EL engine by providing a `META-INF/services/jakarta.el.ExpressionFactory` entry on the classpath — no engine modifications required. Default behavior is unchanged.
+:::
+
+To supply a custom implementation, register it via the Java ServiceLoader mechanism:
+
+```java
+// META-INF/services/jakarta.el.ExpressionFactory
+// (one line, the fully-qualified class name of your factory)
+com.example.MyCustomExpressionFactory
+```
+
+```java
+public class MyCustomExpressionFactory extends jakarta.el.ExpressionFactory {
+    // Override createValueExpression, createMethodExpression, etc.
+    // as needed for your EL implementation.
+}
+```
+
+The engine picks up the factory automatically at startup. No configuration property or Spring bean is needed — the standard `ServiceLoader` lookup in `ExpressionFactory.newInstance()` finds it.
+
 ### JuelExpressionResolver
 
 **Purpose:** Default implementation of `ExpressionResolver` using JUEL (Jakarta EL).

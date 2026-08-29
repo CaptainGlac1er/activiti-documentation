@@ -22,6 +22,10 @@ Script Tasks allow you to **execute scripts** in various programming languages d
 
 ## Supported Script Formats
 
+:::info[Added in 8.3.0]
+The Nashorn JavaScript engine is now bundled in the core, so `scriptFormat="javascript"` works out of the box without an additional script-engine dependency.
+:::
+
 > **Note:** Script formats are resolved via JSR-223 `ScriptEngineManager`. Only languages with registered script engines will work. Common options include `javascript` (via Nashorn or GraalVM) and `groovy` (if Groovy is on the classpath).
 
 ### 1. JavaScript (Nashorn/GraalVM)

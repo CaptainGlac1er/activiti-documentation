@@ -435,6 +435,10 @@ config.setHistoryManager(new CustomHistoryManager());
 
 ### Cache Configuration
 
+:::info[Added in 8.7.0]
+The `spring.activiti.process-definition-cache-limit` property was introduced in version 8.7.0. It allows you to cap the in-memory process definition cache to prevent unbounded growth in long-running engines. This property is opt-in — when unset, the cache has no limit (previous behavior).
+:::
+
 > **Note:** Cache settings (`setProcessDefinitionCacheLimit`) are configured via **Spring Boot properties** using `ActivitiProperties`. These methods exist on `ProcessEngineConfigurationImpl` but **not** on the abstract `ProcessEngineConfiguration` class. In Spring Boot, use `spring.activiti.process-definition-cache-limit` or inject `ActivitiProperties` instead.
 
 **Spring Boot YAML (`application.yml`):**
