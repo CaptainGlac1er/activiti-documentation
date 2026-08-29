@@ -425,6 +425,7 @@ const sidebars: SidebarsConfig = {
       label: 'Changelog',
       link: {type: 'doc', id: 'activiti/changelog/index'},
       items: [
+        'activiti/changelog/next',
         'activiti/changelog/v9-0-0',
         'activiti/changelog/v8-8-0',
         'activiti/changelog/v8-7-0',
