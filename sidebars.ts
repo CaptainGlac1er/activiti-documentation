@@ -418,6 +418,28 @@ const sidebars: SidebarsConfig = {
         },
       ],
     },
+    {
+      type: 'category',
+      collapsible: true,
+      collapsed: true,
+      label: 'Changelog',
+      link: {type: 'doc', id: 'activiti/changelog/index'},
+      items: [
+        'activiti/changelog/v9-0-0',
+        'activiti/changelog/v8-8-0',
+        'activiti/changelog/v8-7-0',
+        'activiti/changelog/v8-6-0',
+        'activiti/changelog/v8-5-0',
+        'activiti/changelog/v8-4-0',
+        'activiti/changelog/v8-3-2',
+        'activiti/changelog/v8-3-1',
+        'activiti/changelog/v8-3-0',
+        'activiti/changelog/v8-2-0',
+        'activiti/changelog/v8-1-2',
+        'activiti/changelog/v8-1-1',
+        'activiti/changelog/v8-1-0',
+      ],
+    },
   ],
 };
 

@@ -258,6 +258,7 @@ To help us assist you faster, please prepare:
 | [Implementation Patterns](./implementation-patterns.md) | Architectural guidance | Complete |
 | [Examples](./examples/overview.md) | Complete working examples | Complete |
 | [Troubleshooting](./troubleshooting/overview) | Issue resolution guide | Complete |
+| [Changelog](./changelog/index.md) | Release notes for versions 8.1.0 through 9.0.0 | Complete |
 
 ---
 
@@ -270,6 +271,7 @@ To help us assist you faster, please prepare:
 - **Best Practices:** [Production Guidelines](./best-practices/guide.md)
 - **Examples:** [Working Examples](./examples/overview.md)
 - **Troubleshooting:** [Issue Resolution](./troubleshooting/overview)
+- **Changelog:** [Release Notes](./changelog/index.md)
 
 ---
 
