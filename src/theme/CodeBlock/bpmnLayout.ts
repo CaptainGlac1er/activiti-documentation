@@ -195,18 +195,37 @@ function firstChildWithLocalName(
   return null;
 }
 
+interface ScopeModel {
+  nodes: FlowNodeInfo[];
+  flows: FlowRef[];
+}
+
 /**
- * Collect flow nodes and sequence flows from a process tree. Sub-process
- * interiors are treated as leaves (flattening them would break their shapes).
+ * Collect flow nodes and sequence flows from a process tree. Each sub-process
+ * (including ad-hoc sub-processes and transactions) interior is collected as
+ * its own scope so it can be auto-laid-out and rendered nested inside the
+ * sub-process shape; the sub-process element itself only takes part in its
+ * parent scope.
  */
-function collectModel(root: Element): {nodes: FlowNodeInfo[]; flows: FlowRef[]} {
+function collectModel(root: Element): {
+  nodes: FlowNodeInfo[];
+  flows: FlowRef[];
+  /** Interior contents of every sub-process, keyed by sub-process id. */
+  subs: Map<string, ScopeModel>;
+  /** Model element of every sub-process, keyed by sub-process id. */
+  subEls: Map<string, Element>;
+  /** Node of every sub-process in its parent scope, keyed by id. */
+  subNodes: Map<string, FlowNodeInfo>;
+} {
   const nodes: FlowNodeInfo[] = [];
   const flows: FlowRef[] = [];
+  const subs = new Map<string, ScopeModel>();
+  const subEls = new Map<string, Element>();
+  const subNodes = new Map<string, FlowNodeInfo>();
+  const scopeStack: ScopeModel[] = [{nodes, flows}];
 
-  const visit = (el: Element, inSubprocess: boolean): void => {
-    if (inSubprocess) {
-      return;
-    }
+  const visit = (el: Element): void => {
+    const scope = scopeStack[scopeStack.length - 1];
     const tag = el.localName;
     if (
       EVENT_TAGS.has(tag) ||
@@ -218,31 +237,55 @@ function collectModel(root: Element): {nodes: FlowNodeInfo[]; flows: FlowRef[]} 
       tag === 'participant'
     ) {
       const id = getAttr(el, 'id');
-      if (id && !nodes.some((node) => node.id === id)) {
+      if (id && !scope.nodes.some((node) => node.id === id)) {
         const name = getAttr(el, 'name') ?? '';
         const size =
           tag === 'participant'
             ? {width: 400, height: 300, isSubprocess: false}
             : nodeSizeFor(tag, name);
-        const attachedTo = getAttr(el, 'attachedToRef');
-        nodes.push({id, ...size, attachedTo: attachedTo ?? undefined});
+        const attachedTo = getAttr(el, 'attachedTo');
+        const node: FlowNodeInfo = {
+          id,
+          ...size,
+          attachedTo: attachedTo ?? undefined,
+        };
+        scope.nodes.push(node);
+        if (SUBPROCESS_TAGS.has(tag)) {
+          subs.set(id, {nodes: [], flows: []});
+          subEls.set(id, el);
+          subNodes.set(id, node);
+        }
+      }
+      if (SUBPROCESS_TAGS.has(tag)) {
+        // Only the element that registered the sub-process scope gets its
+        // interior collected (unnamed or duplicate ids stay closed — there
+        // is no DI anchor for their interior).
+        const sub =
+          id && subEls.get(id) === el ? subs.get(id) : undefined;
+        if (sub) {
+          scopeStack.push(sub);
+          for (const child of Array.from(el.children)) {
+            visit(child);
+          }
+          scopeStack.pop();
+        }
+        return;
       }
     } else if (tag === 'sequenceFlow') {
       const id = getAttr(el, 'id');
       const source = getAttr(el, 'sourceRef');
       const target = getAttr(el, 'targetRef');
       if (id && source && target) {
-        flows.push({id, source, target});
+        scope.flows.push({id, source, target});
       }
     }
-    const descendsIntoSubprocess = inSubprocess || SUBPROCESS_TAGS.has(tag);
     for (const child of Array.from(el.children)) {
-      visit(child, descendsIntoSubprocess);
+      visit(child);
     }
   };
 
-  visit(root, false);
-  return {nodes, flows};
+  visit(root);
+  return {nodes, flows, subs, subEls, subNodes};
 }
 
 export interface ActivitiProperty {
@@ -549,39 +592,270 @@ function routeClear(
   return true;
 }
 
-function buildDiagramXml(
-  processId: string,
+const BOUNDARY_SIZE = 36;
+
+/**
+ * Lay out one scope (the process, or a sub-process interior): run the ELK
+ * layout, snap boundary events onto their host's bottom edge, and re-route
+ * flows touching a boundary event as orthogonal polylines (bpmn-js does not
+ * snap connection endpoints to shape borders, so the route drops down from
+ * the boundary event, crosses a corridor below the shapes, and enters the
+ * target's bottom border).
+ */
+async function layoutScope(
   nodes: FlowNodeInfo[],
   flows: FlowRef[],
-  {positions, edgePoints}: LayoutResult,
-): string {
+): Promise<LayoutResult> {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const hostedIds = new Set(
+    nodes
+      .filter((node) => node.attachedTo && nodeById.has(node.attachedTo))
+      .map((node) => node.id),
+  );
+
+  const layout = await autoLayout(nodes, flows, hostedIds);
+
+  const byHost = new Map<string, FlowNodeInfo[]>();
+  for (const node of nodes) {
+    if (!hostedIds.has(node.id) || !node.attachedTo) {
+      continue;
+    }
+    const list = byHost.get(node.attachedTo);
+    if (list) {
+      list.push(node);
+    } else {
+      byHost.set(node.attachedTo, [node]);
+    }
+  }
+  for (const [hostId, list] of byHost) {
+    const hostPos = layout.positions.get(hostId);
+    const hostNode = nodeById.get(hostId);
+    if (!hostPos || !hostNode) {
+      continue;
+    }
+    list.forEach((node, index) => {
+      layout.positions.set(node.id, {
+        x:
+          hostPos.x +
+          hostNode.width / 2 -
+          BOUNDARY_SIZE / 2 +
+          (index - (list.length - 1) / 2) * BOUNDARY_SIZE,
+        y: hostPos.y + hostNode.height - BOUNDARY_SIZE / 2,
+      });
+    });
+  }
+
+  const shapeRects: BoxRect[] = [];
+  for (const node of nodes) {
+    const pos = layout.positions.get(node.id);
+    if (pos) {
+      shapeRects.push({
+        id: node.id,
+        x: pos.x,
+        y: pos.y,
+        w: node.width,
+        h: node.height,
+      });
+    }
+  }
+
+  const routeBoundaryFlow = (
+    srcId: string,
+    tgtId: string,
+  ): ElkPoint[] | null => {
+    const srcNode = nodeById.get(srcId);
+    const tgtNode = nodeById.get(tgtId);
+    const srcPos = layout.positions.get(srcId);
+    const tgtPos = layout.positions.get(tgtId);
+    if (!srcNode || !tgtNode || !srcPos || !tgtPos) {
+      return null;
+    }
+    if (hostedIds.has(srcId)) {
+      const host = srcNode.attachedTo
+        ? nodeById.get(srcNode.attachedTo)
+        : undefined;
+      const hostPos = srcNode.attachedTo
+        ? layout.positions.get(srcNode.attachedTo)
+        : undefined;
+      if (!host || !hostPos) {
+        return null;
+      }
+      const bx = srcPos.x + srcNode.width / 2;
+      const by = srcPos.y + srcNode.height / 2;
+      const tcx = tgtPos.x + tgtNode.width / 2;
+      const tcy = tgtPos.y + tgtNode.height / 2;
+      const targetBelow = tgtPos.y >= hostPos.y + host.height;
+      // Side border of the target facing the boundary event.
+      const entryX = tcx < bx ? tgtPos.x + tgtNode.width : tgtPos.x;
+      const candidates: ElkPoint[][] = [];
+      if (targetBelow) {
+        // 1. Straight drop into the target's top border.
+        if (bx >= tgtPos.x && bx <= tgtPos.x + tgtNode.width) {
+          candidates.push([
+            {x: bx, y: by},
+            {x: bx, y: tgtPos.y},
+          ]);
+        }
+        // 2. Drop to the target's center line, across to its side border.
+        candidates.push([
+          {x: bx, y: by},
+          {x: bx, y: tcy},
+          {x: entryX, y: tcy},
+        ]);
+        // 3. Across at the host's bottom edge, down into the top border.
+        candidates.push([
+          {x: bx, y: by},
+          {x: tcx, y: by},
+          {x: tcx, y: tgtPos.y},
+        ]);
+      } else {
+        // 1. Straight up into the target's bottom border.
+        if (bx >= tgtPos.x && bx <= tgtPos.x + tgtNode.width) {
+          candidates.push([
+            {x: bx, y: by},
+            {x: bx, y: tgtPos.y + tgtNode.height},
+          ]);
+        }
+        // 2. Vertical to the target's center line, across to its side border.
+        candidates.push([
+          {x: bx, y: by},
+          {x: bx, y: tcy},
+          {x: entryX, y: tcy},
+        ]);
+        // 3. Across at the host's bottom edge, up into the bottom border.
+        candidates.push([
+          {x: bx, y: by},
+          {x: tcx, y: by},
+          {x: tcx, y: tgtPos.y + tgtNode.height},
+        ]);
+      }
+      // The line starts at the boundary (on the host's edge) and may pass
+      // under the host's border; never cross any other shape.
+      const excluded = new Set<string>([srcId, tgtId]);
+      if (srcNode.attachedTo) {
+        excluded.add(srcNode.attachedTo);
+        for (const n of nodes) {
+          if (n.attachedTo === srcNode.attachedTo) {
+            excluded.add(n.id);
+          }
+        }
+      }
+      for (const candidate of candidates) {
+        if (routeClear(candidate, shapeRects, excluded)) {
+          return candidate;
+        }
+      }
+      // Fallback: corridor below every shape.
+      const corridorY =
+        Math.max(hostPos.y + host.height, tgtPos.y + tgtNode.height) + 40;
+      return [
+        {x: bx, y: by},
+        {x: bx, y: corridorY},
+        {x: tcx, y: corridorY},
+        {x: tcx, y: tgtPos.y + tgtNode.height},
+      ];
+    }
+    // Hosted element is the flow's target (rare): straight line into it.
+    const tx = tgtPos.x + tgtNode.width / 2;
+    const ty = tgtPos.y + tgtNode.height / 2;
+    const scx = srcPos.x + srcNode.width / 2;
+    const scy = srcPos.y + srcNode.height / 2;
+    return [
+      borderPoint({x: tx, y: ty}, {x: scx, y: scy}, srcNode, srcPos),
+      {x: tx, y: ty},
+    ];
+  };
+  for (const flow of flows) {
+    const touchesHosted =
+      hostedIds.has(flow.source) || hostedIds.has(flow.target);
+    if (!touchesHosted) {
+      continue;
+    }
+    const points = routeBoundaryFlow(flow.source, flow.target);
+    if (points && points.length >= 2) {
+      layout.edgePoints.set(flow.id, points);
+    }
+  }
+
+  return layout;
+}
+
+interface DiagramScope {
+  nodes: FlowNodeInfo[];
+  flows: FlowRef[];
+  layout: LayoutResult;
+  /** Nested sub-process scopes, keyed by sub-process id. */
+  subs: Map<string, DiagramScope>;
+}
+
+/**
+ * Emit the plane's DI content. Every shape and edge — including sub-process
+ * interiors — is a direct child of the BPMNPlane: bpmn-moddle rejects DI
+ * shapes nested inside other DI shapes ("unrecognized element").
+ *
+ * Crucially, diagram-js renders every shape at its raw dc:Bounds in the
+ * single plane coordinate system — the `djs-children` grouping created for
+ * nested elements carries no parent offset. Sub-process interiors are
+ * therefore emitted as ABSOLUTE plane coordinates: each interior layout
+ * (computed in the sub-process's local corner space) is shifted by the
+ * sub-process's own absolute position, recursively for nested sub-processes.
+ */
+function planeContent(scope: DiagramScope): string {
+  const shapes: string[] = [];
+  const edges: string[] = [];
+  const walk = (s: DiagramScope, ox: number, oy: number): void => {
+    for (const node of s.nodes) {
+      const pos = s.layout.positions.get(node.id);
+      if (!pos) {
+        continue;
+      }
+      const ax = ox + pos.x;
+      const ay = oy + pos.y;
+      const sub = node.isSubprocess ? s.subs.get(node.id) : undefined;
+      const hasInterior = !!sub && sub.nodes.length > 0;
+      const expanded =
+        node.isSubprocess && hasInterior ? ' isExpanded="true"' : '';
+      shapes.push(
+        `    <bpmndi:BPMNShape id="BPMNShape_${node.id}" bpmnElement="${node.id}"${expanded}>\n` +
+        `      <dc:Bounds x="${Math.round(ax)}" y="${Math.round(ay)}" width="${node.width}" height="${node.height}"/>\n` +
+        '    </bpmndi:BPMNShape>',
+      );
+      if (sub) {
+        walk(sub, ax, ay);
+      }
+    }
+    for (const flow of s.flows) {
+      const points = s.layout.edgePoints.get(flow.id);
+      if (!points || points.length < 2) {
+        continue;
+      }
+      edges.push(
+        `    <bpmndi:BPMNEdge id="BPMNEdge_${flow.id}" bpmnElement="${flow.id}">\n` +
+        points
+          .map(
+            (point) =>
+              `      <di:waypoint x="${Math.round(ox + point.x)}" y="${Math.round(oy + point.y)}"/>`,
+          )
+          .join('\n') +
+        '\n    </bpmndi:BPMNEdge>',
+      );
+    }
+  };
+  walk(scope, 0, 0);
+  let xml = '';
+  if (shapes.length > 0) {
+    xml += shapes.join('\n') + '\n';
+  }
+  if (edges.length > 0) {
+    xml += edges.join('\n') + '\n';
+  }
+  return xml;
+}
+
+function buildDiagramXml(processId: string, scope: DiagramScope): string {
   let xml = '<bpmndi:BPMNDiagram id="BPMNDiagram_1">\n';
   xml += `  <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${processId}">\n`;
-
-  for (const node of nodes) {
-    const pos = positions.get(node.id);
-    if (!pos) {
-      continue;
-    }
-    const expanded = node.isSubprocess ? ' isExpanded="true"' : '';
-    xml +=
-      `    <bpmndi:BPMNShape id="BPMNShape_${node.id}" bpmnElement="${node.id}"${expanded}>\n` +
-      `      <dc:Bounds x="${Math.round(pos.x)}" y="${Math.round(pos.y)}" width="${node.width}" height="${node.height}"/>\n` +
-      '    </bpmndi:BPMNShape>\n';
-  }
-
-  for (const flow of flows) {
-    const points = edgePoints.get(flow.id);
-    if (!points || points.length < 2) {
-      continue;
-    }
-    xml += `    <bpmndi:BPMNEdge id="BPMNEdge_${flow.id}" bpmnElement="${flow.id}">\n`;
-    for (const point of points) {
-      xml += `      <di:waypoint x="${Math.round(point.x)}" y="${Math.round(point.y)}"/>\n`;
-    }
-    xml += '    </bpmndi:BPMNEdge>\n';
-  }
-
+  xml += planeContent(scope);
   xml += '  </bpmndi:BPMNPlane>\n';
   xml += '</bpmndi:BPMNDiagram>';
   return xml;
@@ -814,7 +1088,7 @@ export async function toRenderableBpmn(rawXml: string): Promise<string> {
     fixElementNesting(child, doc, parsed.processEl);
   }
 
-  const {nodes, flows} = collectModel(parsed.processEl);
+  const {nodes, flows, subs, subEls, subNodes} = collectModel(parsed.processEl);
 
   // Sequence flows may reference elements that are not part of the fragment
   // (docs often show a flow on its own). Synthesize placeholder tasks for
@@ -834,189 +1108,118 @@ export async function toRenderableBpmn(rawXml: string): Promise<string> {
   if (nodes.length === 0) {
     throw new Error('No renderable BPMN elements found');
   }
-  if (nodes.length > MAX_AUTO_LAYOUT_NODES) {
+  const totalNodeCount =
+    nodes.length +
+    [...subs.values()].reduce((sum, scope) => sum + scope.nodes.length, 0);
+  if (totalNodeCount > MAX_AUTO_LAYOUT_NODES) {
     throw new Error(
-      `Too many elements to auto-layout (${nodes.length} > ${MAX_AUTO_LAYOUT_NODES})`,
+      `Too many elements to auto-layout (${totalNodeCount} > ${MAX_AUTO_LAYOUT_NODES})`,
     );
   }
 
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const hostedIds = new Set(
-    nodes
-      .filter((node) => node.attachedTo && nodeById.has(node.attachedTo))
-      .map((node) => node.id),
-  );
-
-  const layout = await autoLayout(nodes, flows, hostedIds);
-
-  // Snap hosted elements (boundary events) onto their host's bottom edge so
-  // bpmn-js renders them attached (it draws them at their DI coordinates).
-  const BOUNDARY_SIZE = 36;
-  const byHost = new Map<string, FlowNodeInfo[]>();
-  for (const node of nodes) {
-    if (!hostedIds.has(node.id) || !node.attachedTo) {
-      continue;
-    }
-    const list = byHost.get(node.attachedTo);
-    if (list) {
-      list.push(node);
-    } else {
-      byHost.set(node.attachedTo, [node]);
+  // Lay out every sub-process interior first (innermost first) so each
+  // sub-process can be scaled to hold its contents before its parent scope
+  // — and finally the top-level process — is laid out.
+  const subLayouts = new Map<
+    string,
+    {layout: LayoutResult; placeholders: string[]}
+  >();
+  const allKnownIds = new Set(knownIds);
+  for (const scope of subs.values()) {
+    for (const node of scope.nodes) {
+      allKnownIds.add(node.id);
     }
   }
-  for (const [hostId, list] of byHost) {
-    const hostPos = layout.positions.get(hostId);
-    const hostNode = nodeById.get(hostId);
-    if (!hostPos || !hostNode) {
-      continue;
+  const layoutSub = async (id: string): Promise<void> => {
+    const scope = subs.get(id);
+    if (!scope || subLayouts.has(id)) {
+      return;
     }
-    list.forEach((node, index) => {
-      layout.positions.set(node.id, {
-        x:
-          hostPos.x +
-          hostNode.width / 2 -
-          BOUNDARY_SIZE / 2 +
-          (index - (list.length - 1) / 2) * BOUNDARY_SIZE,
-        y: hostPos.y + hostNode.height - BOUNDARY_SIZE / 2,
-      });
-    });
-  }
-
-  // Re-route edges that touch a hosted element as orthogonal polylines.
-  // bpmn-js does not snap connection endpoints to shape borders, so the
-  // route drops down from the boundary event, crosses a corridor below the
-  // shapes, and enters the target's bottom border.
-  const shapeRects: BoxRect[] = [];
-  for (const node of nodes) {
-    const pos = layout.positions.get(node.id);
-    if (pos) {
-      shapeRects.push({
-        id: node.id,
-        x: pos.x,
-        y: pos.y,
-        w: node.width,
-        h: node.height,
-      });
-    }
-  }
-
-  const routeBoundaryFlow = (
-    srcId: string,
-    tgtId: string,
-  ): ElkPoint[] | null => {
-    const srcNode = nodeById.get(srcId);
-    const tgtNode = nodeById.get(tgtId);
-    const srcPos = layout.positions.get(srcId);
-    const tgtPos = layout.positions.get(tgtId);
-    if (!srcNode || !tgtNode || !srcPos || !tgtPos) {
-      return null;
-    }
-    if (hostedIds.has(srcId)) {
-      const host = srcNode.attachedTo
-        ? nodeById.get(srcNode.attachedTo)
-        : undefined;
-      const hostPos = srcNode.attachedTo
-        ? layout.positions.get(srcNode.attachedTo)
-        : undefined;
-      if (!host || !hostPos) {
-        return null;
+    for (const node of scope.nodes) {
+      if (node.isSubprocess) {
+        await layoutSub(node.id);
       }
-      const bx = srcPos.x + srcNode.width / 2;
-      const by = srcPos.y + srcNode.height / 2;
-      const tcx = tgtPos.x + tgtNode.width / 2;
-      const tcy = tgtPos.y + tgtNode.height / 2;
-      const targetBelow = tgtPos.y >= hostPos.y + host.height;
-      // Side border of the target facing the boundary event.
-      const entryX = tcx < bx ? tgtPos.x + tgtNode.width : tgtPos.x;
-      const candidates: ElkPoint[][] = [];
-      if (targetBelow) {
-        // 1. Straight drop into the target's top border.
-        if (bx >= tgtPos.x && bx <= tgtPos.x + tgtNode.width) {
-          candidates.push([
-            {x: bx, y: by},
-            {x: bx, y: tgtPos.y},
-          ]);
-        }
-        // 2. Drop to the target's center line, across to its side border.
-        candidates.push([
-          {x: bx, y: by},
-          {x: bx, y: tcy},
-          {x: entryX, y: tcy},
-        ]);
-        // 3. Across at the host's bottom edge, down into the top border.
-        candidates.push([
-          {x: bx, y: by},
-          {x: tcx, y: by},
-          {x: tcx, y: tgtPos.y},
-        ]);
-      } else {
-        // 1. Straight up into the target's bottom border.
-        if (bx >= tgtPos.x && bx <= tgtPos.x + tgtNode.width) {
-          candidates.push([
-            {x: bx, y: by},
-            {x: bx, y: tgtPos.y + tgtNode.height},
-          ]);
-        }
-        // 2. Vertical to the target's center line, across to its side border.
-        candidates.push([
-          {x: bx, y: by},
-          {x: bx, y: tcy},
-          {x: entryX, y: tcy},
-        ]);
-        // 3. Across at the host's bottom edge, up into the bottom border.
-        candidates.push([
-          {x: bx, y: by},
-          {x: tcx, y: by},
-          {x: tcx, y: tgtPos.y + tgtNode.height},
-        ]);
-      }
-      // The line starts at the boundary (on the host's edge) and may pass
-      // under the host's border; never cross any other shape.
-      const excluded = new Set<string>([srcId, tgtId]);
-      if (srcNode.attachedTo) {
-        excluded.add(srcNode.attachedTo);
-        for (const n of nodes) {
-          if (n.attachedTo === srcNode.attachedTo) {
-            excluded.add(n.id);
-          }
+    }
+    // Interior flows may reference elements that are not part of the
+    // fragment (docs often show a flow on its own). Synthesize placeholder
+    // tasks for missing endpoints, same as for the top level.
+    const placeholders: string[] = [];
+    for (const flow of scope.flows) {
+      for (const ref of [flow.source, flow.target]) {
+        if (!allKnownIds.has(ref)) {
+          allKnownIds.add(ref);
+          placeholders.push(ref);
+          scope.nodes.push({
+            id: ref,
+            width: 100,
+            height: 80,
+            isSubprocess: false,
+          });
         }
       }
-      for (const candidate of candidates) {
-        if (routeClear(candidate, shapeRects, excluded)) {
-          return candidate;
-        }
-      }
-      // Fallback: corridor below every shape.
-      const corridorY =
-        Math.max(hostPos.y + host.height, tgtPos.y + tgtNode.height) + 40;
-      return [
-        {x: bx, y: by},
-        {x: bx, y: corridorY},
-        {x: tcx, y: corridorY},
-        {x: tcx, y: tgtPos.y + tgtNode.height},
-      ];
     }
-    // Hosted element is the flow's target (rare): straight line into it.
-    const tx = tgtPos.x + tgtNode.width / 2;
-    const ty = tgtPos.y + tgtNode.height / 2;
-    const scx = srcPos.x + srcNode.width / 2;
-    const scy = srcPos.y + srcNode.height / 2;
-    return [
-      borderPoint({x: tx, y: ty}, {x: scx, y: scy}, srcNode, srcPos),
-      {x: tx, y: ty},
-    ];
+    const layout =
+      scope.nodes.length > 0
+        ? await layoutScope(scope.nodes, scope.flows)
+        : {positions: new Map<string, ElkPoint>(), edgePoints: new Map<string, ElkPoint[]>()};
+    // Shift the interior so its content starts at the padding (the top
+    // padding leaves room for the sub-process label), then scale the
+    // sub-process to hold everything, keeping 250x140 as a minimum.
+    const subNode = subNodes.get(id);
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const node of scope.nodes) {
+      const pos = layout.positions.get(node.id);
+      if (!pos) {
+        continue;
+      }
+      minX = Math.min(minX, pos.x);
+      minY = Math.min(minY, pos.y);
+      maxX = Math.max(maxX, pos.x + node.width);
+      maxY = Math.max(maxY, pos.y + node.height);
+    }
+    for (const points of layout.edgePoints.values()) {
+      for (const point of points) {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+      }
+    }
+    if (subNode && Number.isFinite(minX)) {
+      const PAD_LEFT = 24;
+      const PAD_RIGHT = 24;
+      const PAD_TOP = 36;
+      const PAD_BOTTOM = 24;
+      const dx = PAD_LEFT - minX;
+      const dy = PAD_TOP - minY;
+      for (const [nodeId, pos] of layout.positions) {
+        layout.positions.set(nodeId, {x: pos.x + dx, y: pos.y + dy});
+      }
+      for (const [flowId, points] of layout.edgePoints) {
+        layout.edgePoints.set(
+          flowId,
+          points.map((point) => ({x: point.x + dx, y: point.y + dy})),
+        );
+      }
+      subNode.width = Math.max(
+        250,
+        Math.round(maxX - minX + PAD_LEFT + PAD_RIGHT),
+      );
+      subNode.height = Math.max(
+        140,
+        Math.round(maxY - minY + PAD_TOP + PAD_BOTTOM),
+      );
+    }
+    subLayouts.set(id, {layout, placeholders});
   };
-  for (const flow of flows) {
-    const touchesHosted =
-      hostedIds.has(flow.source) || hostedIds.has(flow.target);
-    if (!touchesHosted) {
-      continue;
-    }
-    const points = routeBoundaryFlow(flow.source, flow.target);
-    if (points && points.length >= 2) {
-      layout.edgePoints.set(flow.id, points);
-    }
+  for (const id of subs.keys()) {
+    await layoutSub(id);
   }
+
+  const layout = await layoutScope(nodes, flows);
 
   let processId: string;
   if (parsed.mode === 'fragment') {
@@ -1040,10 +1243,42 @@ export async function toRenderableBpmn(rawXml: string): Promise<string> {
     processId = getAttr(parsed.processEl, 'id') ?? FALLBACK_PROCESS_ID;
   }
 
-  const diagramXml = buildDiagramXml(processId, nodes, flows, layout);
+  const buildScope = (
+    scopeModel: ScopeModel,
+    layoutResult: LayoutResult,
+  ): DiagramScope => {
+    const subScopes = new Map<string, DiagramScope>();
+    for (const node of scopeModel.nodes) {
+      if (!node.isSubprocess) {
+        continue;
+      }
+      const subModel = subs.get(node.id);
+      const subResult = subLayouts.get(node.id);
+      if (subModel && subResult) {
+        subScopes.set(node.id, buildScope(subModel, subResult.layout));
+      }
+    }
+    return {
+      nodes: scopeModel.nodes,
+      flows: scopeModel.flows,
+      layout: layoutResult,
+      subs: subScopes,
+    };
+  };
 
-  // Placeholder tasks join the document as real elements, inside the process
-  // the plane references.
+  const diagramXml = buildDiagramXml(
+    processId,
+    buildScope({nodes, flows}, layout),
+  );
+
+  // Placeholder tasks join the document as real elements, inside the
+  // container (process or sub-process) that owns the flow referencing them.
+  const insertPlaceholder = (target: Element, id: string): void => {
+    const task = doc.createElementNS(BPMN_MODEL_NS, 'task');
+    task.setAttribute('id', id);
+    task.setAttribute('name', id);
+    target.appendChild(task);
+  };
   const innerProcess =
     parsed.mode === 'fragment'
       ? Array.from(parsed.processEl.children).find((c) => c.localName === 'process') ??
@@ -1051,10 +1286,16 @@ export async function toRenderableBpmn(rawXml: string): Promise<string> {
       : null;
   const placeholderTarget = innerProcess ?? parsed.processEl;
   for (const id of placeholderIds) {
-    const task = doc.createElementNS(BPMN_MODEL_NS, 'task');
-    task.setAttribute('id', id);
-    task.setAttribute('name', id);
-    placeholderTarget.appendChild(task);
+    insertPlaceholder(placeholderTarget, id);
+  }
+  for (const [subId, result] of subLayouts) {
+    const target = subEls.get(subId);
+    if (!target) {
+      continue;
+    }
+    for (const id of result.placeholders) {
+      insertPlaceholder(target, id);
+    }
   }
 
   switch (parsed.mode) {
