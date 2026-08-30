@@ -13,7 +13,7 @@ This section contains fully working examples that demonstrate common Activiti wo
 
 | Example | Description | Files |
 |---------|-------------|-------|
-| [Order Management Workflow](./order-management-workflow/summary.md) | End-to-end order processing with payment, inventory, and shipping sub-processes | 8 files |
+| [Order Management Workflow](./order-management-workflow/summary.md) | End-to-end order processing with payment, inventory, and shipping sub-processes | 9 files |
 
 ## How to Use These Examples
 

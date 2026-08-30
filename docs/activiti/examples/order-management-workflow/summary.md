@@ -244,9 +244,10 @@ Continue with the detailed process documentation:
 2. [Payment Sub-Process](payment-process.md) - Payment handling with retries
 3. [Inventory Sub-Process](inventory-process.md) - Stock management
 4. [Shipping Sub-Process](shipping-process.md) - Delivery options
-5. [Service Delegates](service-delegates.md) - Java implementation details
-6. [Process Extensions](process-extensions.md) - Variable mappings
-7. [REST API](rest-api.md) - HTTP integration
+5. [Complete BPMN Files](bpmn-files.md) - Full ready-to-deploy XML for all four processes
+6. [Service Delegates](service-delegates.md) - Java implementation details
+7. [Process Extensions](process-extensions.md) - Variable mappings
+8. [REST API](rest-api.md) - HTTP integration
 
 ## Running the Example
 

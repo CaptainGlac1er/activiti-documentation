@@ -135,3 +135,70 @@
   text-align: center;
   color: #b91c1c;
 }
+
+/* ============================================
+    BPMN PROPERTY INDICATORS (dot + tooltip)
+    ============================================ */
+
+.propsDot {
+  fill: var(--ifm-color-primary);
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.canvas {
+  :global(.djs-element-props-hover) {
+    cursor: help;
+  }
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 10;
+  max-width: 320px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--ifm-table-border-color);
+  border-radius: var(--ifm-global-radius);
+  background-color: var(--ifm-background-surface-color);
+  box-shadow: var(--ifm-global-shadow-md);
+  pointer-events: none;
+  transform: translate(14px, 14px);
+}
+
+.tooltipFlip {
+  transform: translate(calc(-100% - 14px), 14px);
+}
+
+.tooltipTitle {
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+.tooltipList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tooltipList li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.tooltipLabel {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+}
+
+.tooltipValue {
+  font-family: var(--ifm-font-monospace);
+  font-size: 0.72rem;
+  color: var(--ifm-color-emphasis-800);
+  overflow-wrap: anywhere;
+}

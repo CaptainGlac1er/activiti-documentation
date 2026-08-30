@@ -1,5 +1,5 @@
-import Elk from 'elkjs/lib/elk.bundled';
-import type {ElkEdgeSection, ElkNode, ElkPoint} from 'elkjs/lib/elk.bundled';
+import Elk from 'elkjs/lib/elk.bundled.js';
+import type {ElkEdgeSection, ElkNode, ElkPoint} from 'elkjs/lib/elk.bundled.js';
 
 const BPMN_MODEL_NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
 const BPMN_DI_NS = 'http://www.omg.org/spec/BPMN/20100524/DI';
@@ -123,6 +123,7 @@ interface FlowNodeInfo {
   width: number;
   height: number;
   isSubprocess: boolean;
+  attachedTo?: string;
 }
 
 interface FlowRef {
@@ -223,7 +224,8 @@ function collectModel(root: Element): {nodes: FlowNodeInfo[]; flows: FlowRef[]} 
           tag === 'participant'
             ? {width: 400, height: 300, isSubprocess: false}
             : nodeSizeFor(tag, name);
-        nodes.push({id, ...size});
+        const attachedTo = getAttr(el, 'attachedToRef');
+        nodes.push({id, ...size, attachedTo: attachedTo ?? undefined});
       }
     } else if (tag === 'sequenceFlow') {
       const id = getAttr(el, 'id');
@@ -243,12 +245,173 @@ function collectModel(root: Element): {nodes: FlowNodeInfo[]; flows: FlowRef[]} 
   return {nodes, flows};
 }
 
+export interface ActivitiProperty {
+  /** Short property name, e.g. `class` or `executionListener`. */
+  label: string;
+  /** Attribute value, or a short summary of a child element's attributes. */
+  value: string | null;
+}
+
+/** Flow elements that can carry extension properties (or conditions). */
+const PROPERTY_HOST_TAGS = new Set<string>([
+  ...EVENT_TAGS,
+  ...GATEWAY_TAGS,
+  ...SUBPROCESS_TAGS,
+  ...TASK_TAGS,
+  ...DATA_TAGS,
+  'sequenceFlow',
+  'textAnnotation',
+  'participant',
+]);
+
+/** Child-element attributes worth surfacing in the property tooltip. */
+const PROPERTY_DETAIL_KEYS = [
+  'event',
+  'class',
+  'expression',
+  'delegateExpression',
+  'element',
+  'scriptFormat',
+  'id',
+  'type',
+  'name',
+];
+
+/**
+ * Activiti extension attributes the docs also write without the `activiti:`
+ * prefix (modern connector style, e.g. `implementation="beanName"` or
+ * `skipExpression` on sequence flows). Bare standard BPMN attributes must
+ * NOT be matched, so this stays an explicit allowlist.
+ */
+const UNPREFIXED_ACTIVITI_ATTRS = new Set([
+  'implementation',
+  'operationRef',
+  'skipExpression',
+]);
+
+function shortName(full: string): string {
+  const idx = full.lastIndexOf(':');
+  return idx === -1 ? full : full.slice(idx + 1);
+}
+
+function isActivitiNode(el: Element): boolean {
+  return (
+    el.namespaceURI === ACTIVITI_NS ||
+    (el.namespaceURI === null && el.localName.startsWith('activiti:'))
+  );
+}
+
+function attrValue(el: Element, name: string): string | null {
+  for (const attr of Array.from(el.attributes)) {
+    if (shortName(attr.name) === name) {
+      return attr.value;
+    }
+  }
+  return null;
+}
+
+/**
+ * Map flow-element id to the properties that matter in the docs: `activiti:`
+ * namespace attributes and extension child elements (including those nested
+ * in `<extensionElements>`) plus `<conditionExpression>` on sequence flows.
+ * Used by the diagram viewer to mark elements that carry configuration.
+ */
+export function extractActivitiProperties(
+  xml: string,
+): Map<string, ActivitiProperty[]> {
+  const result = new Map<string, ActivitiProperty[]>();
+  let doc: Document;
+  try {
+    doc = parseXml(xml);
+  } catch {
+    // Docs fragments often use the `activiti:` (or `bpmn:`) prefix without
+    // declaring the namespace — invalid as written, but the renderer wraps
+    // such fragments to make them valid. Retry with the same wrapper.
+    const stripped = xml.replace(/^\s*<\?xml[^?]*\?>/, '');
+    try {
+      doc = parseXml(wrapFragment(stripped));
+    } catch {
+      return result;
+    }
+  }
+
+  for (const el of Array.from(doc.getElementsByTagName('*'))) {
+    if (!PROPERTY_HOST_TAGS.has(el.localName)) {
+      continue;
+    }
+    const id = getAttr(el, 'id');
+    if (!id) {
+      continue;
+    }
+
+    const props: ActivitiProperty[] = [];
+    for (const attr of Array.from(el.attributes)) {
+      const isActiviti =
+        attr.namespaceURI === ACTIVITI_NS ||
+        (attr.namespaceURI === null &&
+          (attr.name.startsWith('activiti:') ||
+            UNPREFIXED_ACTIVITI_ATTRS.has(attr.name)));
+      if (!isActiviti) {
+        continue;
+      }
+      props.push({label: shortName(attr.name), value: attr.value || null});
+    }
+
+    const hosts: Element[] = [el];
+    const extensionElements = Array.from(el.children).find(
+      (child) => child.localName === 'extensionElements',
+    );
+    if (extensionElements) {
+      hosts.push(extensionElements);
+    }
+    for (const host of hosts) {
+      for (const child of Array.from(host.children)) {
+        // Standard BPMN condition expressions on sequence flows count too.
+        const isCondition = child.localName === 'conditionExpression';
+        if (!isActivitiNode(child) && !isCondition) {
+          continue;
+        }
+        const details: string[] = [];
+        for (const key of PROPERTY_DETAIL_KEYS) {
+          const value = attrValue(child, key);
+          if (value) {
+            details.push(`${key}="${value}"`);
+          }
+        }
+        if (isCondition) {
+          const text = (child.textContent ?? '').trim();
+          if (text) {
+            details.push(text);
+          }
+        }
+        props.push({
+          label: shortName(child.localName),
+          value: details.length > 0 ? details.join(' ') : null,
+        });
+      }
+    }
+
+    if (props.length > 0) {
+      result.set(id, props);
+    }
+  }
+
+  return result;
+}
+
 /**
  * Run the ELK layered layout once; returns node positions and edge waypoints
- * from the same consistent layout result.
+ * from the same consistent layout result. Hosted elements (boundary events
+ * with a resolvable attachedToRef) are excluded — they are snapped to their
+ * host's edge by the caller afterwards.
  */
-async function autoLayout(nodes: FlowNodeInfo[], flows: FlowRef[]): Promise<LayoutResult> {
-  const nodeIds = new Set(nodes.map((node) => node.id));
+async function autoLayout(
+  nodes: FlowNodeInfo[],
+  flows: FlowRef[],
+  hostedIds: Set<string>,
+): Promise<LayoutResult> {
+  const graphNodes = nodes.filter((node) => !hostedIds.has(node.id));
+  const nodeIds = new Set(graphNodes.map((node) => node.id));
   const validFlows = flows.filter(
     (flow) => nodeIds.has(flow.source) && nodeIds.has(flow.target),
   );
@@ -263,7 +426,7 @@ async function autoLayout(nodes: FlowNodeInfo[], flows: FlowRef[]): Promise<Layo
       'elk.layered.spacing.edgeNodeBetweenLayers': '40',
       'elk.layered.crossingMinimization.strategy': 'SWAP',
     },
-    children: nodes.map((node) => ({
+    children: graphNodes.map((node) => ({
       id: node.id,
       width: node.width,
       height: node.height,
@@ -298,6 +461,92 @@ async function autoLayout(nodes: FlowNodeInfo[], flows: FlowRef[]): Promise<Layo
   }
 
   return {positions, edgePoints};
+}
+
+/**
+ * Point where the line from `from` to `to` exits the bounding box of `node`
+ * (positioned at `pos`), used as a connection endpoint so arrowheads land on
+ * shape borders.
+ */
+function borderPoint(
+  from: ElkPoint,
+  to: ElkPoint,
+  node: FlowNodeInfo,
+  pos: ElkPoint,
+): ElkPoint {
+  const cx = pos.x + node.width / 2;
+  const cy = pos.y + node.height / 2;
+  const dx = from.x - cx;
+  const dy = from.y - cy;
+  if (dx === 0 && dy === 0) {
+    return {x: cx, y: cy};
+  }
+  const scaleX = dx !== 0 ? node.width / 2 / Math.abs(dx) : Number.POSITIVE_INFINITY;
+  const scaleY = dy !== 0 ? node.height / 2 / Math.abs(dy) : Number.POSITIVE_INFINITY;
+  const scale = Math.min(scaleX, scaleY);
+  return {x: cx + dx * scale, y: cy + dy * scale};
+}
+
+interface BoxRect {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Does an axis-aligned segment pass through the interior of `r`?
+ * Touching a shape's border is acceptable.
+ */
+function segHitsRect(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  r: BoxRect,
+): boolean {
+  if (Math.abs(x1 - x2) < 0.01) {
+    if (x1 <= r.x || x1 >= r.x + r.w) {
+      return false;
+    }
+    const lo = Math.min(y1, y2);
+    const hi = Math.max(y1, y2);
+    return hi > r.y + 1 && lo < r.y + r.h - 1;
+  }
+  if (Math.abs(y1 - y2) < 0.01) {
+    if (y1 <= r.y || y1 >= r.y + r.h) {
+      return false;
+    }
+    const lo = Math.min(x1, x2);
+    const hi = Math.max(x1, x2);
+    return hi > r.x + 1 && lo < r.x + r.w - 1;
+  }
+  return false;
+}
+
+/**
+ * True when no segment of the polyline passes through the interior of any
+ * shape except the excluded ones.
+ */
+function routeClear(
+  points: ElkPoint[],
+  rects: BoxRect[],
+  excluded: ReadonlySet<string>,
+): boolean {
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const a = points[i];
+    const b = points[i + 1];
+    for (const r of rects) {
+      if (excluded.has(r.id)) {
+        continue;
+      }
+      if (segHitsRect(a.x, a.y, b.x, b.y, r)) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 function buildDiagramXml(
@@ -591,7 +840,183 @@ export async function toRenderableBpmn(rawXml: string): Promise<string> {
     );
   }
 
-  const layout = await autoLayout(nodes, flows);
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const hostedIds = new Set(
+    nodes
+      .filter((node) => node.attachedTo && nodeById.has(node.attachedTo))
+      .map((node) => node.id),
+  );
+
+  const layout = await autoLayout(nodes, flows, hostedIds);
+
+  // Snap hosted elements (boundary events) onto their host's bottom edge so
+  // bpmn-js renders them attached (it draws them at their DI coordinates).
+  const BOUNDARY_SIZE = 36;
+  const byHost = new Map<string, FlowNodeInfo[]>();
+  for (const node of nodes) {
+    if (!hostedIds.has(node.id) || !node.attachedTo) {
+      continue;
+    }
+    const list = byHost.get(node.attachedTo);
+    if (list) {
+      list.push(node);
+    } else {
+      byHost.set(node.attachedTo, [node]);
+    }
+  }
+  for (const [hostId, list] of byHost) {
+    const hostPos = layout.positions.get(hostId);
+    const hostNode = nodeById.get(hostId);
+    if (!hostPos || !hostNode) {
+      continue;
+    }
+    list.forEach((node, index) => {
+      layout.positions.set(node.id, {
+        x:
+          hostPos.x +
+          hostNode.width / 2 -
+          BOUNDARY_SIZE / 2 +
+          (index - (list.length - 1) / 2) * BOUNDARY_SIZE,
+        y: hostPos.y + hostNode.height - BOUNDARY_SIZE / 2,
+      });
+    });
+  }
+
+  // Re-route edges that touch a hosted element as orthogonal polylines.
+  // bpmn-js does not snap connection endpoints to shape borders, so the
+  // route drops down from the boundary event, crosses a corridor below the
+  // shapes, and enters the target's bottom border.
+  const shapeRects: BoxRect[] = [];
+  for (const node of nodes) {
+    const pos = layout.positions.get(node.id);
+    if (pos) {
+      shapeRects.push({
+        id: node.id,
+        x: pos.x,
+        y: pos.y,
+        w: node.width,
+        h: node.height,
+      });
+    }
+  }
+
+  const routeBoundaryFlow = (
+    srcId: string,
+    tgtId: string,
+  ): ElkPoint[] | null => {
+    const srcNode = nodeById.get(srcId);
+    const tgtNode = nodeById.get(tgtId);
+    const srcPos = layout.positions.get(srcId);
+    const tgtPos = layout.positions.get(tgtId);
+    if (!srcNode || !tgtNode || !srcPos || !tgtPos) {
+      return null;
+    }
+    if (hostedIds.has(srcId)) {
+      const host = srcNode.attachedTo
+        ? nodeById.get(srcNode.attachedTo)
+        : undefined;
+      const hostPos = srcNode.attachedTo
+        ? layout.positions.get(srcNode.attachedTo)
+        : undefined;
+      if (!host || !hostPos) {
+        return null;
+      }
+      const bx = srcPos.x + srcNode.width / 2;
+      const by = srcPos.y + srcNode.height / 2;
+      const tcx = tgtPos.x + tgtNode.width / 2;
+      const tcy = tgtPos.y + tgtNode.height / 2;
+      const targetBelow = tgtPos.y >= hostPos.y + host.height;
+      // Side border of the target facing the boundary event.
+      const entryX = tcx < bx ? tgtPos.x + tgtNode.width : tgtPos.x;
+      const candidates: ElkPoint[][] = [];
+      if (targetBelow) {
+        // 1. Straight drop into the target's top border.
+        if (bx >= tgtPos.x && bx <= tgtPos.x + tgtNode.width) {
+          candidates.push([
+            {x: bx, y: by},
+            {x: bx, y: tgtPos.y},
+          ]);
+        }
+        // 2. Drop to the target's center line, across to its side border.
+        candidates.push([
+          {x: bx, y: by},
+          {x: bx, y: tcy},
+          {x: entryX, y: tcy},
+        ]);
+        // 3. Across at the host's bottom edge, down into the top border.
+        candidates.push([
+          {x: bx, y: by},
+          {x: tcx, y: by},
+          {x: tcx, y: tgtPos.y},
+        ]);
+      } else {
+        // 1. Straight up into the target's bottom border.
+        if (bx >= tgtPos.x && bx <= tgtPos.x + tgtNode.width) {
+          candidates.push([
+            {x: bx, y: by},
+            {x: bx, y: tgtPos.y + tgtNode.height},
+          ]);
+        }
+        // 2. Vertical to the target's center line, across to its side border.
+        candidates.push([
+          {x: bx, y: by},
+          {x: bx, y: tcy},
+          {x: entryX, y: tcy},
+        ]);
+        // 3. Across at the host's bottom edge, up into the bottom border.
+        candidates.push([
+          {x: bx, y: by},
+          {x: tcx, y: by},
+          {x: tcx, y: tgtPos.y + tgtNode.height},
+        ]);
+      }
+      // The line starts at the boundary (on the host's edge) and may pass
+      // under the host's border; never cross any other shape.
+      const excluded = new Set<string>([srcId, tgtId]);
+      if (srcNode.attachedTo) {
+        excluded.add(srcNode.attachedTo);
+        for (const n of nodes) {
+          if (n.attachedTo === srcNode.attachedTo) {
+            excluded.add(n.id);
+          }
+        }
+      }
+      for (const candidate of candidates) {
+        if (routeClear(candidate, shapeRects, excluded)) {
+          return candidate;
+        }
+      }
+      // Fallback: corridor below every shape.
+      const corridorY =
+        Math.max(hostPos.y + host.height, tgtPos.y + tgtNode.height) + 40;
+      return [
+        {x: bx, y: by},
+        {x: bx, y: corridorY},
+        {x: tcx, y: corridorY},
+        {x: tcx, y: tgtPos.y + tgtNode.height},
+      ];
+    }
+    // Hosted element is the flow's target (rare): straight line into it.
+    const tx = tgtPos.x + tgtNode.width / 2;
+    const ty = tgtPos.y + tgtNode.height / 2;
+    const scx = srcPos.x + srcNode.width / 2;
+    const scy = srcPos.y + srcNode.height / 2;
+    return [
+      borderPoint({x: tx, y: ty}, {x: scx, y: scy}, srcNode, srcPos),
+      {x: tx, y: ty},
+    ];
+  };
+  for (const flow of flows) {
+    const touchesHosted =
+      hostedIds.has(flow.source) || hostedIds.has(flow.target);
+    if (!touchesHosted) {
+      continue;
+    }
+    const points = routeBoundaryFlow(flow.source, flow.target);
+    if (points && points.length >= 2) {
+      layout.edgePoints.set(flow.id, points);
+    }
+  }
 
   let processId: string;
   if (parsed.mode === 'fragment') {
