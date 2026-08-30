@@ -332,6 +332,8 @@ Listen to process instance start/end:
   <startEvent id="start"/>
   <endEvent id="end"/>
   
+  <sequenceFlow id="flow1" sourceRef="start" targetRef="end"/>
+  
 </process>
 ```
 
@@ -474,6 +476,8 @@ Listen to event execution:
         delegateExpression="${metricsListener}"/>
     </extensionElements>
   </serviceTask>
+  
+  <sequenceFlow id="toValidationCheck" sourceRef="validateOrder" targetRef="validationCheck"/>
   
   <exclusiveGateway id="validationCheck" name="Valid?"/>
   

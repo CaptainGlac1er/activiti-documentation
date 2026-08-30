@@ -47,6 +47,9 @@ A `Lane` subdivides a pool to group related activities (e.g., by role or team). 
   <userTask id="confirmOrderTask" name="Confirm Order"/>
   <userTask id="sendQuoteTask" name="Send Quote"/>
   <userTask id="shipOrderTask" name="Ship Order"/>
+  
+  <sequenceFlow id="flow1" sourceRef="confirmOrderTask" targetRef="sendQuoteTask"/>
+  <sequenceFlow id="flow2" sourceRef="sendQuoteTask" targetRef="shipOrderTask"/>
 </process>
 ```
 

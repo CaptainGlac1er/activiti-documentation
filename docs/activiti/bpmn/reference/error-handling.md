@@ -325,6 +325,9 @@ Errors bubble up through subprocess hierarchy:
     <errorEventDefinition errorRef="PaymentError"/>
   </endEvent>
   
+  <sequenceFlow id="flow1" sourceRef="subStart" targetRef="processPayment"/>
+  <sequenceFlow id="flow2" sourceRef="processPayment" targetRef="subThrowError"/>
+  
 </subProcess>
 
 <!-- Catch error on subprocess boundary -->

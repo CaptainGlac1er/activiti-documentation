@@ -284,6 +284,9 @@ Events represent **something that happens** during the execution of a process. T
   </startEvent>
   <serviceTask id="logActivity" name="Log Event" activiti:class="com.example.Logger"/>
   <endEvent id="logEnd"/>
+  
+  <sequenceFlow id="flow1" sourceRef="logSignal" targetRef="logActivity"/>
+  <sequenceFlow id="flow2" sourceRef="logActivity" targetRef="logEnd"/>
 </subProcess>
 
 <!-- Interrupting event sub-process -->
@@ -294,6 +297,9 @@ Events represent **something that happens** during the execution of a process. T
   <message id="escalationMsg" name="Escalation Message"/>
   <userTask id="escalationTask" name="Handle Escalation"/>
   <endEvent id="escalationEnd"/>
+  
+  <sequenceFlow id="flow1" sourceRef="escalationMessage" targetRef="escalationTask"/>
+  <sequenceFlow id="flow2" sourceRef="escalationTask" targetRef="escalationEnd"/>
 </subProcess>
 ```
 

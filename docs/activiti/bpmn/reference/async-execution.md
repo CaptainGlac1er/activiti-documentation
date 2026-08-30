@@ -192,6 +192,9 @@ flowchart TD
   <startEvent id="subStart"/>
   <task id="subTask"/>
   <endEvent id="subEnd"/>
+  
+  <sequenceFlow id="flow1" sourceRef="subStart" targetRef="subTask"/>
+  <sequenceFlow id="flow2" sourceRef="subTask" targetRef="subEnd"/>
 </subProcess>
 ```
 

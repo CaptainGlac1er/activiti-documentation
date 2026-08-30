@@ -17,6 +17,10 @@ Transaction SubProcesses group activities that should be treated as a unit. The 
   <serviceTask id="debitAccount" name="Debit Account"/>
   <serviceTask id="creditAccount" name="Credit Account"/>
   <endEvent id="end"/>
+  
+  <sequenceFlow id="flow1" sourceRef="start" targetRef="debitAccount"/>
+  <sequenceFlow id="flow2" sourceRef="debitAccount" targetRef="creditAccount"/>
+  <sequenceFlow id="flow3" sourceRef="creditAccount" targetRef="end"/>
 </transaction>
 ```
 

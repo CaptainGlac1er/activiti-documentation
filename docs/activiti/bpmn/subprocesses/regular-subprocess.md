@@ -16,6 +16,9 @@ Regular SubProcesses (also called **Embedded SubProcesses**) are containers that
   <startEvent id="start1"/>
   <userTask id="task1" name="Review Order"/>
   <endEvent id="end1"/>
+  
+  <sequenceFlow id="flow1" sourceRef="start1" targetRef="task1"/>
+  <sequenceFlow id="flow2" sourceRef="task1" targetRef="end1"/>
 </subProcess>
 ```
 
@@ -52,6 +55,10 @@ Create a simple embedded subprocess:
     <userTask id="reviewTask" name="Review Order"/>
     <serviceTask id="validateTask" name="Validate Order"/>
     <endEvent id="subEnd"/>
+    
+    <sequenceFlow id="subFlow1" sourceRef="subStart" targetRef="reviewTask"/>
+    <sequenceFlow id="subFlow2" sourceRef="reviewTask" targetRef="validateTask"/>
+    <sequenceFlow id="subFlow3" sourceRef="validateTask" targetRef="subEnd"/>
   </subProcess>
   
   <endEvent id="end"/>
@@ -133,6 +140,9 @@ Hook into subprocess lifecycle:
   <startEvent id="start1"/>
   <userTask id="task1" name="Task"/>
   <endEvent id="end1"/>
+  
+  <sequenceFlow id="flow1" sourceRef="start1" targetRef="task1"/>
+  <sequenceFlow id="flow2" sourceRef="task1" targetRef="end1"/>
 </subProcess>
 ```
 
@@ -158,6 +168,9 @@ SubProcesses have their own **variable scope**:
     </ioSpecification>
   </serviceTask>
   <endEvent id="end1"/>
+  
+  <sequenceFlow id="flow1" sourceRef="start1" targetRef="task1"/>
+  <sequenceFlow id="flow2" sourceRef="task1" targetRef="end1"/>
 </subProcess>
 ```
 
@@ -187,6 +200,9 @@ SubProcesses have their own **variable scope**:
   <startEvent id="start1"/>
   <userTask id="task1"/>
   <endEvent id="end1"/>
+  
+  <sequenceFlow id="flow1" sourceRef="start1" targetRef="task1"/>
+  <sequenceFlow id="flow2" sourceRef="task1" targetRef="end1"/>
 </subProcess>
 ```
 
