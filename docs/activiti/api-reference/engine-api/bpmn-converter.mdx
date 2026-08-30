@@ -924,7 +924,7 @@ List<ValidatorSet> getValidatorSets()
 | `ExclusiveGatewayXMLConverter` | `exclusiveGateway` | `ExclusiveGateway` |
 | `ParallelGatewayXMLConverter` | `parallelGateway` | `ParallelGateway` |
 | `InclusiveGatewayXMLConverter` | `inclusiveGateway` | `InclusiveGateway` |
-| `ComplexGatewayXMLConverter` | `complexGateway` | `ComplexGateway` |
+| `ComplexGatewayXMLConverter` | `complexGateway` | `ExclusiveGateway` |
 | `EventGatewayXMLConverter` | `eventBasedGateway` | `EventBasedGateway` |
 | `SequenceFlowXMLConverter` | `sequenceFlow` | `SequenceFlow` |
 | `TextAnnotationXMLConverter` | `textAnnotation` | `TextAnnotation` |
@@ -935,6 +935,8 @@ List<ValidatorSet> getValidatorSets()
 | `LinkEventDefinitionXMLConverter` | link event definitions | `LinkEventDefinition` |
 | `AlfrescoStartEventXMLConverter` | `startEvent` (alfresco) | `AlfrescoStartEvent` |
 | `AlfrescoUserTaskXMLConverter` | `userTask` (alfresco) | `AlfrescoUserTask` |
+
+The complex gateway is **not supported** at runtime: `ComplexGatewayXMLConverter` converts a `<complexGateway>` element to an `ExclusiveGateway` during XML parsing, which is why the produced Java type is `ExclusiveGateway` rather than `ComplexGateway`.
 
 ---
 

@@ -370,7 +370,7 @@ for (Execution execution : gatewayExecutions) {
 - [Exclusive Gateway](./exclusive-gateway.md) - XOR logic (one path)
 - [Parallel Gateway](./parallel-gateway.md) - AND logic (all paths)
 - [Event-Based Gateway](./event-gateway.md) - Event-driven routing
-- [Complex Gateway](./complex-gateway.md) - Advanced conditions
+- [Complex Gateway](./complex-gateway.md) - Support status (not supported)
 - [Gateway Overview](./index.md) - All gateway types
 
 ---

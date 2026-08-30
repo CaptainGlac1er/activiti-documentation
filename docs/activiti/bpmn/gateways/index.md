@@ -228,7 +228,7 @@ Gateways work seamlessly with multi-instance activities:
 3. **Balance Parallel Gateways:** Ensure split and join are balanced
 4. **Avoid Complex Logic:** Keep conditions simple and readable
 5. **Name Gateways Clearly:** Use descriptive names for decisions
-6. **Document Decision Logic:** Add documentation for complex gateways
+6. **Document Decision Logic:** Add documentation for branching decisions
 7. **Test All Paths:** Verify each branch executes correctly
 8. **Use Async for Parallel:** Prevent blocking in parallel branches
 9. **Handle Timeouts:** Add timer events for long waits
@@ -238,7 +238,7 @@ Gateways work seamlessly with multi-instance activities:
 
 - **Missing Conditions:** All flows should have conditions (except parallel)
 - **Unbalanced Gateways:** Split/join must match in type and count
-- **Deadlocks:** Circular dependencies in complex gateways
+- **Deadlocks:** Circular dependencies across gateway branches
 - **No Default Flow:** Unmatched conditions cause errors
 - **Complex Conditions:** Hard to maintain and debug
 - **Parallel Without Join:** Lost synchronizations

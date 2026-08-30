@@ -23,6 +23,14 @@ description: "Complex Gateway support status in Activiti."
 
 If your BPMN contains a `<complexGateway>`, the XML converter will attempt to parse it but will convert it to an exclusive gateway internally. The complex-specific attributes and semantics will be **ignored**. Depending on your process, this may cause unexpected behavior or parse warnings.
 
+The element itself carries the standard BPMN 2.0 symbol — a diamond with an asterisk — which is how it renders in any BPMN tool:
+
+```xml
+<complexGateway id="complex" name="Complex Decision"/>
+```
+
+In Activiti, though, the engine executes that shape as an exclusive (XOR) gateway.
+
 ### Recommended Alternative
 
 For multi-path conditional routing (selecting one or more paths based on conditions), use an **Inclusive Gateway** instead:

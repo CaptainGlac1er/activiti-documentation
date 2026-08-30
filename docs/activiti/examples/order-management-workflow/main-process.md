@@ -492,6 +492,20 @@ public class CreditScoreService implements Connector {
   <bpmn:outgoing>flowToEscalationHandler</bpmn:outgoing>
   <bpmn:messageEventDefinition messageRef="escalationMessage"/>
 </bpmn:boundaryEvent>
+
+<!-- The escalation path runs in parallel with the quality task:
+     notify the manager, then end. The quality task itself keeps going
+     to the gateway on flowToQualityGateway. -->
+<bpmn:userTask id="notifyManagerTask" 
+               name="Notify Manager" 
+               activiti:assignee="management">
+  <bpmn:incoming>flowToEscalationHandler</bpmn:incoming>
+  <bpmn:outgoing>flowToEscalationEnd</bpmn:outgoing>
+</bpmn:userTask>
+
+<bpmn:endEvent id="escalationEndEvent" name="Escalation Handled">
+  <bpmn:incoming>flowToEscalationEnd</bpmn:incoming>
+</bpmn:endEvent>
 ```
 
 **Key Feature:** Non-cancelling boundary event
@@ -506,6 +520,7 @@ public class CreditScoreService implements Connector {
 - Escalation notification sent
 - Original task continues
 - Enables parallel handling (notify manager + complete task)
+- The escalation token ends at `escalationEndEvent` without re-entering the quality path — the gateway only ever sees the quality task's own token
 
 **Quality Check Gateway:**
 ```xml
@@ -609,9 +624,9 @@ public class CreditScoreService implements Connector {
 
 | Metric | Value |
 |--------|-------|
-| **Total Elements** | 25 |
+| **Total Elements** | 28 |
 | **Start Events** | 1 (message) |
-| **End Events** | 6 (1 normal, 5 terminate) |
+| **End Events** | 7 (3 normal, 4 terminate) |
 | **User Tasks** | 4 |
 | **Service Tasks** | 5 |
 | **Call Activities** | 3 |

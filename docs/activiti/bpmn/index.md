@@ -57,7 +57,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | **Parallel Gateway** | AND - all paths | ⊞ | [Parallel Gateway](./gateways/parallel-gateway.md) |
 | **Inclusive Gateway** | OR - one or more | ⦿ | [Inclusive Gateway](./gateways/inclusive-gateway.md) |
 | **Event-Based Gateway** | Route by events | ⏣ | [Event-Based Gateway](./gateways/event-gateway.md) |
-| **Complex Gateway** | NOT supported — converted to exclusive (XOR) gateway | ⊟ | [Complex Gateway](./gateways/complex-gateway.md) |
+| **Complex Gateway** | NOT supported — converted to exclusive (XOR) gateway | ✱ | [Complex Gateway](./gateways/complex-gateway.md) |
 
 ### Event Elements
 

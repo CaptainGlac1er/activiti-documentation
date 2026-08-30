@@ -610,7 +610,8 @@ BaseElement
 - Parallel Gateway (AND)
 - Inclusive Gateway (OR)
 - Event-Based Gateway
-- Complex Gateway
+
+> **Note:** The complex gateway is **not supported** at runtime. `ComplexGatewayXMLConverter` converts a `<complexGateway>` to an exclusive gateway during XML parsing, so it executes with exclusive (XOR) semantics and complex-gateway features (activation/completion conditions) are ignored. See the [Complex Gateway](../../bpmn/gateways/complex-gateway.md) page for details.
 
 **Events:**
 - Start Event

@@ -237,6 +237,32 @@ test('sub-process interior DI is plane-level and parses without warnings', async
   );
 });
 
+// bpmn-js only paints the exclusive gateway's X marker when the DI shape
+// carries isMarkerVisible="true" (its modeler writes it on creation); the
+// moddle descriptor defines no default, so a bare BPMNShape renders as a
+// plain diamond. The generated DI must set it for exclusive gateways.
+test('exclusive gateway DI carries isMarkerVisible so the X marker renders', async () => {
+  const xml = `<process id="p" name="P">
+    <startEvent id="start"/>
+    <exclusiveGateway id="decision" name="Decision"/>
+    <endEvent id="end"/>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="decision"/>
+    <sequenceFlow id="f2" sourceRef="decision" targetRef="end"/>
+  </process>`;
+  const out = await toRenderableBpmn(xml);
+  const doc = parseDoc(out);
+  expect(shapeById(doc, 'decision').getAttribute('isMarkerVisible')).toBe('true');
+  expect(shapeById(doc, 'start').getAttribute('isMarkerVisible')).toBeNull();
+  // The renderer reads the flag through bpmn-moddle, so verify it there too.
+  const {BpmnModdle} = await import('bpmn-moddle');
+  const {rootElement, warnings} = await new (BpmnModdle as any)().fromXML(out);
+  expect(warnings).toEqual([]);
+  const shape = (rootElement.diagrams[0].plane.planeElement as any[]).find(
+    (e) => e.bpmnElement.id === 'decision',
+  );
+  expect(shape.get('isMarkerVisible')).toBe(true);
+});
+
 test('sub-process interior coordinates are absolute and fit inside the box', async () => {
   const out = await toRenderableBpmn(BASIC_SUBPROCESS_XML);
   const doc = parseDoc(out);

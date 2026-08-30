@@ -120,6 +120,7 @@ export function isBpmnXml(
 
 interface FlowNodeInfo {
   id: string;
+  tag: string;
   width: number;
   height: number;
   isSubprocess: boolean;
@@ -246,6 +247,7 @@ function collectModel(root: Element): {
         const attachedTo = getAttr(el, 'attachedTo');
         const node: FlowNodeInfo = {
           id,
+          tag,
           ...size,
           attachedTo: attachedTo ?? undefined,
         };
@@ -815,8 +817,13 @@ function planeContent(scope: DiagramScope): string {
       const hasInterior = !!sub && sub.nodes.length > 0;
       const expanded =
         node.isSubprocess && hasInterior ? ' isExpanded="true"' : '';
+      // bpmn-js only paints the exclusive gateway's X marker when the DI
+      // shape carries isMarkerVisible="true" (the modeler writes it on
+      // creation); without it the gateway renders as a bare diamond.
+      const marker =
+        node.tag === 'exclusiveGateway' ? ' isMarkerVisible="true"' : '';
       shapes.push(
-        `    <bpmndi:BPMNShape id="BPMNShape_${node.id}" bpmnElement="${node.id}"${expanded}>\n` +
+        `    <bpmndi:BPMNShape id="BPMNShape_${node.id}" bpmnElement="${node.id}"${marker}${expanded}>\n` +
         `      <dc:Bounds x="${Math.round(ax)}" y="${Math.round(ay)}" width="${node.width}" height="${node.height}"/>\n` +
         '    </bpmndi:BPMNShape>',
       );
@@ -1100,7 +1107,13 @@ export async function toRenderableBpmn(rawXml: string): Promise<string> {
       if (!knownIds.has(ref)) {
         knownIds.add(ref);
         placeholderIds.push(ref);
-        nodes.push({id: ref, width: 100, height: 80, isSubprocess: false});
+        nodes.push({
+          id: ref,
+          tag: 'task',
+          width: 100,
+          height: 80,
+          isSubprocess: false,
+        });
       }
     }
   }
@@ -1151,6 +1164,7 @@ export async function toRenderableBpmn(rawXml: string): Promise<string> {
           placeholders.push(ref);
           scope.nodes.push({
             id: ref,
+            tag: 'task',
             width: 100,
             height: 80,
             isSubprocess: false,

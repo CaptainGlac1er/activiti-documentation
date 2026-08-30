@@ -14,6 +14,7 @@ This section contains fully working examples that demonstrate common Activiti wo
 | Example | Description | Files |
 |---------|-------------|-------|
 | [Order Management Workflow](./order-management-workflow/summary.md) | End-to-end order processing with payment, inventory, and shipping sub-processes | 9 files |
+| [Bank Loan Workflow](./bank-loan-workflow/summary.md) | Multi-team loan lifecycle with an embedded sub-process, committee multi-instance approval, a regulatory signal, and an unattended nightly batch process | 9 files |
 
 ## How to Use These Examples
 

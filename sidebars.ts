@@ -441,6 +441,21 @@ const sidebars: SidebarsConfig = {
             'activiti/examples/order-management-workflow/rest-api',
           ],
         },
+        {
+          type: 'category',
+          label: 'Bank Loan Workflow',
+          link: {type: 'doc', id: 'activiti/examples/bank-loan-workflow/summary'},
+          items: [
+            'activiti/examples/bank-loan-workflow/loan-approval-process',
+            'activiti/examples/bank-loan-workflow/collateral-process',
+            'activiti/examples/bank-loan-workflow/disbursement-process',
+            'activiti/examples/bank-loan-workflow/batch-processing-process',
+            'activiti/examples/bank-loan-workflow/bpmn-files',
+            'activiti/examples/bank-loan-workflow/service-delegates',
+            'activiti/examples/bank-loan-workflow/process-extensions',
+            'activiti/examples/bank-loan-workflow/rest-api',
+          ],
+        },
       ],
     },
     {

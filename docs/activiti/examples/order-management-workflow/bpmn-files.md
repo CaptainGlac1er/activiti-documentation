@@ -35,7 +35,8 @@ were applied:
    invoice and email branches use distinct flow IDs into the parallel join
    (`flowToParallelJoinFromInvoice` / `flowToParallelJoinFromEmail`) to match
    the join's declared incoming flows. The non-cancelling escalation flow
-   rejoins at `qualityCheckGateway`, so the quality task can continue.
+   goes to `notifyManagerTask` and ends at `escalationEndEvent`, so the
+   quality task continues on its own path to `qualityCheckGateway`.
 2. **paymentProcess** — `retryPaymentTask` declares both incoming flows
    (from the timer boundary and from the payment result gateway).
 3. **inventoryProcess** — The parallel join gateway has two incoming flows,
@@ -172,9 +173,15 @@ were applied:
       <bpmn:messageEventDefinition messageRef="escalationMessage"/>
     </bpmn:boundaryEvent>
 
+    <bpmn:userTask id="notifyManagerTask"
+                   name="Notify Manager"
+                   activiti:assignee="management">
+      <bpmn:incoming>flowToEscalationHandler</bpmn:incoming>
+      <bpmn:outgoing>flowToEscalationEnd</bpmn:outgoing>
+    </bpmn:userTask>
+
     <bpmn:exclusiveGateway id="qualityCheckGateway" name="Quality Passed?">
       <bpmn:incoming>flowToQualityGateway</bpmn:incoming>
-      <bpmn:incoming>flowToEscalationHandler</bpmn:incoming>
       <bpmn:outgoing>flowToParallelJoin</bpmn:outgoing>
       <bpmn:outgoing>flowToQualityFail</bpmn:outgoing>
     </bpmn:exclusiveGateway>
@@ -228,6 +235,10 @@ were applied:
       <bpmn:incoming>flowToCompletedEnd</bpmn:incoming>
     </bpmn:endEvent>
 
+    <bpmn:endEvent id="escalationEndEvent" name="Escalation Handled">
+      <bpmn:incoming>flowToEscalationEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
     <bpmn:sequenceFlow id="flowToValidateCustomer" sourceRef="startEvent" targetRef="validateCustomerTask"/>
     <bpmn:sequenceFlow id="flowToTimeoutHandler" sourceRef="validateCustomerTimeout" targetRef="timeoutEndEvent"/>
     <bpmn:sequenceFlow id="flowToCustomerGateway" sourceRef="validateCustomerTask" targetRef="customerValidationGateway"/>
@@ -278,7 +289,8 @@ were applied:
     <bpmn:sequenceFlow id="flowToParallelJoinFromEmail" sourceRef="sendConfirmationTask" targetRef="parallelJoinGateway"/>
 
     <bpmn:sequenceFlow id="flowToQualityGateway" sourceRef="qualityCheckTask" targetRef="qualityCheckGateway"/>
-    <bpmn:sequenceFlow id="flowToEscalationHandler" sourceRef="qualityEscalation" targetRef="qualityCheckGateway"/>
+    <bpmn:sequenceFlow id="flowToEscalationHandler" sourceRef="qualityEscalation" targetRef="notifyManagerTask"/>
+    <bpmn:sequenceFlow id="flowToEscalationEnd" sourceRef="notifyManagerTask" targetRef="escalationEndEvent"/>
 
     <bpmn:sequenceFlow id="flowToParallelJoin" name="Passed"
                        sourceRef="qualityCheckGateway" targetRef="parallelJoinGateway">
