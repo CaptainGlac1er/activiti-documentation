@@ -5,7 +5,8 @@
 .bpmnButton {
   position: absolute;
   top: 0.4rem;
-  right: 2.75rem;
+  /* the classic copy button ends ~38px from the right; 72px leaves a clear gap */
+  right: 4.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -55,6 +56,32 @@
   color: var(--ifm-font-color-base);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.maximizeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  background-color: var(--ifm-background-surface-color);
+  color: var(--ifm-color-emphasis-800);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.maximizeButton:hover,
+.maximizeButton:focus-visible {
+  background-color: var(--ifm-color-emphasis-200);
+}
+
 .toggleButton {
   display: inline-flex;
   align-items: center;
@@ -87,9 +114,11 @@
   height: 100%;
 }
 
+/* bottom-LEFT so the zoom controls don't cover the bpmn.io powered-by
+   logo, which lives in the bottom-right corner */
 .toolbar {
   position: absolute;
-  right: 1rem;
+  left: 1rem;
   bottom: 1rem;
   display: flex;
   column-gap: 0.25rem;

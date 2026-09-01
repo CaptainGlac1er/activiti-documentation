@@ -13,6 +13,7 @@ import styles from './styles.module.scss';
 
 interface BpmnCanvas {
   zoom(newScale?: number | 'fit-viewport'): number;
+  resized(): void;
 }
 
 interface BpmnElement {
@@ -52,7 +53,10 @@ interface TooltipState {
   pinned: boolean;
 }
 
-export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
+export default function BpmnDiagram({
+  xml,
+  fullscreen,
+}: {xml: string; fullscreen: boolean}): React.ReactNode {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<BpmnViewerInstance | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -239,6 +243,18 @@ export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
       setTooltip(null);
     };
   }, [xml]);
+
+  // diagram-js does not watch its container's size, so re-measure and
+  // refit when the panel toggles fullscreen
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) {
+      return;
+    }
+    const canvas = viewer.get<BpmnCanvas>('canvas');
+    canvas.resized();
+    canvas.zoom('fit-viewport');
+  }, [fullscreen]);
 
   const zoomBy = (factor: number): void => {
     const viewer = viewerRef.current;
