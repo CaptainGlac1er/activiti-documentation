@@ -137,25 +137,22 @@
 }
 
 /* ============================================
-    BPMN PROPERTY INDICATORS (dot + tooltip)
+    BPMN PROPERTY INDICATORS (tooltip; the dot
+    badges are styled in activitiInspector.css)
     ============================================ */
 
-.propsDot {
-  fill: var(--ifm-color-primary);
-  stroke: #ffffff;
-  stroke-width: 1.5;
-}
-
 .canvas {
-  :global(.djs-element-props-hover) {
+  /* canvas.addMarker adds the raw marker class to the element group */
+  :global(.props-hover) {
     cursor: help;
   }
 }
 
 .tooltip {
   position: absolute;
-  z-index: 10;
-  max-width: 320px;
+  /* above everything in the canvas, incl. djs layers (z 100) */
+  z-index: 110;
+  max-width: 420px;
   padding: 0.5rem 0.7rem;
   border: 1px solid var(--ifm-table-border-color);
   border-radius: var(--ifm-global-radius);
@@ -165,8 +162,10 @@
   transform: translate(14px, 14px);
 }
 
+/* the `right` positioning already anchors the box at the cursor, so the
+   flip only needs the offset (no -100%, which would double-shift it) */
 .tooltipFlip {
-  transform: translate(calc(-100% - 14px), 14px);
+  transform: translate(-14px, 14px);
 }
 
 .tooltipTitle {

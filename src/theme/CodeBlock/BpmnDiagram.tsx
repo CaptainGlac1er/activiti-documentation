@@ -2,41 +2,22 @@ import React, {useEffect, useRef, useState} from 'react';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
+import {
+  activitiInspectorModule,
+  PIN_EVENT,
+} from './activitiInspector';
+import type {BpmnInspectPinEvent} from './activitiInspector';
 import {extractActivitiProperties, toRenderableBpmn} from './bpmnLayout';
 import type {ActivitiProperty} from './bpmnLayout';
 import styles from './styles.module.scss';
 
 interface BpmnCanvas {
   zoom(newScale?: number | 'fit-viewport'): number;
-  addMarker(id: string, marker: string): void;
-  removeMarker(id: string, marker: string): void;
-  getLayer(name: string): SVGGElement | null;
-}
-
-interface BpmnPoint {
-  x: number;
-  y: number;
-}
-
-interface BpmnElementBounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 interface BpmnElement {
   id: string;
-  type?: string;
-  bounds: BpmnElementBounds | null;
-  start?: BpmnPoint | null;
-  end?: BpmnPoint | null;
-  vertices?: BpmnPoint[];
   businessObject?: {name?: string} | null;
-}
-
-interface BpmnElementRegistry {
-  get(id: string): BpmnElement | null;
 }
 
 interface BpmnHoverEvent {
@@ -45,10 +26,11 @@ interface BpmnHoverEvent {
 }
 
 type BpmnEventHandler = (event: BpmnHoverEvent) => void;
+type BpmnPinHandler = (event: BpmnInspectPinEvent) => void;
 
 interface BpmnEventBus {
-  on(event: string, callback: BpmnEventHandler): void;
-  off(event: string, callback: BpmnEventHandler): void;
+  on(event: string, callback: BpmnEventHandler | BpmnPinHandler): void;
+  off(event: string, callback: BpmnEventHandler | BpmnPinHandler): void;
 }
 
 interface BpmnViewerInstance {
@@ -61,51 +43,13 @@ interface TooltipState {
   x: number;
   y: number;
   flip: boolean;
+  /** Right offset (container width - x); used for the flipped position. */
+  right: number;
   title: string;
   props: ActivitiProperty[];
-}
-
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
-function polylineMidpoint(
-  points: Array<{x: number; y: number}>,
-): {x: number; y: number} {
-  const segments: number[] = [];
-  let total = 0;
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const len = Math.hypot(
-      points[i + 1].x - points[i].x,
-      points[i + 1].y - points[i].y,
-    );
-    segments.push(len);
-    total += len;
-  }
-  let remaining = total / 2;
-  for (let i = 0; i < segments.length; i += 1) {
-    if (remaining <= segments[i] || i === segments.length - 1) {
-      const t = segments[i] > 0 ? remaining / segments[i] : 0;
-      return {
-        x: points[i].x + (points[i + 1].x - points[i].x) * t,
-        y: points[i].y + (points[i + 1].y - points[i].y) * t,
-      };
-    }
-    remaining -= segments[i];
-  }
-  return points[points.length - 1];
-}
-
-/**
- * Where the property dot lands for an element: the top-right corner for
- * shapes, the midpoint of the line for sequence flows.
- */
-function indicatorPosition(el: BpmnElement): {x: number; y: number} | null {
-  if (el.type === 'connection' && el.start && el.end) {
-    return polylineMidpoint([el.start, ...(el.vertices ?? []), el.end]);
-  }
-  if (!el.bounds) {
-    return null;
-  }
-  return {x: el.bounds.x + el.bounds.width - 7, y: el.bounds.y + 7};
+  elementId: string;
+  /** Pinned via a dot badge click; survives the mouse leaving the element. */
+  pinned: boolean;
 }
 
 export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
@@ -120,7 +64,10 @@ export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
     let viewer: BpmnViewerInstance | null = null;
     let eventBus: BpmnEventBus | null = null;
     let hoverHandler: BpmnEventHandler | null = null;
+    let moveHandler: BpmnEventHandler | null = null;
     let outHandler: BpmnEventHandler | null = null;
+    let pinHandler: BpmnPinHandler | null = null;
+    let viewboxHandler: BpmnEventHandler | null = null;
 
     async function init(): Promise<void> {
       try {
@@ -131,15 +78,19 @@ export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
         if (cancelled || !container) {
           return;
         }
-        viewer = new NavigatedViewer({container}) as unknown as BpmnViewerInstance;
+        viewer = new NavigatedViewer({
+          container,
+          // Plugin: dot badges + hover marker for elements carrying
+          // `activiti:` properties.
+          additionalModules: [activitiInspectorModule(xml)],
+        }) as unknown as BpmnViewerInstance;
         viewerRef.current = viewer;
         await viewer.importXML(finalXml);
         if (cancelled) {
           return;
         }
-        const canvas = viewer.get<BpmnCanvas>('canvas');
-        canvas.zoom('fit-viewport');
-        wirePropertyInspection(viewer, canvas);
+        viewer.get<BpmnCanvas>('canvas').zoom('fit-viewport');
+        wireTooltip(viewer);
         setLoading(false);
       } catch (e) {
         if (!cancelled) {
@@ -149,67 +100,111 @@ export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
       }
     }
 
-    // Marks elements that carry `activiti:` properties with a dot badge and
-    // shows the properties in a tooltip on hover. Touch users can still see
-    // the dots and switch to "View code" for the full XML.
-    function wirePropertyInspection(
-      activeViewer: BpmnViewerInstance,
-      canvas: BpmnCanvas,
-    ): void {
+    // Shows the `activiti:` properties of the hovered element in a tooltip.
+    // Only one tooltip is ever open: hovering or pinning a new element
+    // replaces the current one. The dot badges and the hover marker
+    // themselves come from the `activitiInspectorModule` plugin.
+    //
+    // `element.hover` fires only when the mouse *enters* an element, so the
+    // cursor position is additionally tracked via `element.mousemove` while
+    // the tooltip is visible. Clicking a dot badge pins the tooltip on that
+    // element (it then survives the mouse leaving); zooming/panning closes
+    // it, since its anchored position would go stale. Touch users can still
+    // switch to "View code" for the full XML.
+    function wireTooltip(activeViewer: BpmnViewerInstance): void {
       const propMap = extractActivitiProperties(xml);
       if (propMap.size === 0) {
         return;
       }
-      const registry = activeViewer.get<BpmnElementRegistry>('elementRegistry');
       const bus = activeViewer.get<BpmnEventBus>('eventBus');
       eventBus = bus;
       const container = containerRef.current;
-
-      const layer = canvas.getLayer('extra');
-      if (layer) {
-        for (const id of propMap.keys()) {
-          const el = registry.get(id);
-          const pos = el ? indicatorPosition(el) : null;
-          if (!pos) {
-            continue;
-          }
-          const group = document.createElementNS(SVG_NS, 'g');
-          const dot = document.createElementNS(SVG_NS, 'circle');
-          dot.setAttribute('cx', String(pos.x));
-          dot.setAttribute('cy', String(pos.y));
-          dot.setAttribute('r', '4.5');
-          dot.setAttribute('class', styles.propsDot);
-          group.appendChild(dot);
-          layer.appendChild(group);
-        }
-      }
 
       hoverHandler = (e: BpmnHoverEvent): void => {
         const props = propMap.get(e.element.id);
         if (!props || !e.originalEvent || !container) {
           return;
         }
-        canvas.addMarker(e.element.id, 'props-hover');
         const rect = container.getBoundingClientRect();
         const x = e.originalEvent.clientX - rect.left;
         const y = e.originalEvent.clientY - rect.top;
         const name = e.element.businessObject?.name;
-        setTooltip({
-          x,
-          y,
-          flip: x > rect.width / 2,
-          title: name ? `${name} · ${e.element.id}` : e.element.id,
-          props,
-        });
+        setTooltip((prev) =>
+          // re-hovering the element of an open pinned tooltip keeps it pinned
+          prev && prev.pinned && prev.elementId === e.element.id
+            ? prev
+            : {
+                x,
+                y,
+                flip: x > rect.width / 2,
+                right: rect.width - x,
+                title: name ? `${name} · ${e.element.id}` : e.element.id,
+                props,
+                elementId: e.element.id,
+                pinned: false,
+              },
+        );
       };
 
-      outHandler = (e: BpmnHoverEvent): void => {
-        canvas.removeMarker(e.element.id, 'props-hover');
+      moveHandler = (e: BpmnHoverEvent): void => {
+        if (!e.originalEvent || !container) {
+          return;
+        }
+        const rect = container.getBoundingClientRect();
+        const x = e.originalEvent.clientX - rect.left;
+        const y = e.originalEvent.clientY - rect.top;
+        setTooltip((prev) =>
+          prev && !prev.pinned && prev.elementId === e.element.id
+            ? {
+                ...prev,
+                x,
+                y,
+                flip: x > rect.width / 2,
+                right: rect.width - x,
+              }
+            : prev,
+        );
+      };
+
+      outHandler = (): void => {
+        setTooltip((prev) => (prev && prev.pinned ? prev : null));
+      };
+
+      pinHandler = (e: BpmnInspectPinEvent): void => {
+        const props = propMap.get(e.element.id);
+        if (!props || !container) {
+          return;
+        }
+        const rect = container.getBoundingClientRect();
+        const name = e.element.businessObject?.name;
+        setTooltip((prev) =>
+          // clicking the same dot again unpins
+          prev && prev.pinned && prev.elementId === e.element.id
+            ? null
+            : {
+                x: e.x,
+                y: e.y,
+                flip: e.x > rect.width / 2,
+                right: rect.width - e.x,
+                title: name ? `${name} · ${e.element.id}` : e.element.id,
+                props,
+                elementId: e.element.id,
+                pinned: true,
+              },
+        );
+      };
+
+      // a pinned tooltip is anchored to the dot's on-screen position; zooming
+      // or panning would leave it floating in the wrong place
+      viewboxHandler = (): void => {
         setTooltip(null);
       };
 
       bus.on('element.hover', hoverHandler);
+      bus.on('element.mousemove', moveHandler);
       bus.on('element.out', outHandler);
+      bus.on(PIN_EVENT, pinHandler);
+      bus.on('canvas.viewbox.changed', viewboxHandler);
     }
 
     init();
@@ -220,8 +215,17 @@ export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
         if (hoverHandler) {
           eventBus.off('element.hover', hoverHandler);
         }
+        if (moveHandler) {
+          eventBus.off('element.mousemove', moveHandler);
+        }
         if (outHandler) {
           eventBus.off('element.out', outHandler);
+        }
+        if (pinHandler) {
+          eventBus.off(PIN_EVENT, pinHandler);
+        }
+        if (viewboxHandler) {
+          eventBus.off('canvas.viewbox.changed', viewboxHandler);
         }
       }
       if (viewer) {
@@ -264,7 +268,14 @@ export default function BpmnDiagram({xml}: {xml: string}): React.ReactNode {
               ? `${styles.tooltip} ${styles.tooltipFlip}`
               : styles.tooltip
           }
-          style={{left: tooltip.x, top: tooltip.y}}
+          // Flipped tooltips are positioned with `right` (not `left` +
+          // transform), so their shrink-to-fit width gets the full space
+          // to the left of the cursor instead of the sliver to its right.
+          style={
+            tooltip.flip
+              ? {right: tooltip.right, top: tooltip.y}
+              : {left: tooltip.x, top: tooltip.y}
+          }
           role="tooltip"
         >
           <div className={styles.tooltipTitle}>{tooltip.title}</div>

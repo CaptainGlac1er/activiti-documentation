@@ -6,7 +6,7 @@ Docusaurus 3 documentation site for Activiti workflow/BPM engine. Docs live in `
 
 **Runtime availability.** Node.js 22 (via nvm) and the project's dependencies are available on this machine — `npm start`, `npm run build`, `npm run typecheck`, and `npm test` all work. There is no Java runtime, so Java examples in the docs must be verified by reading source, not compiling.
 
-**Tests.** `npm test` runs vitest over `src/theme/CodeBlock/bpmnLayout.test.ts` (jsdom environment; covers `extractActivitiProperties`, the detection logic behind the BPMN diagram property indicators). `npm run typecheck` currently reports three pre-existing errors (`DirectoryTree/FileIcon.tsx` x2, `theme/Mermaid/index.tsx`) plus a tsconfig `baseUrl` deprecation — treat those as the baseline, not regressions.
+**Tests.** `npm test` runs vitest over `src/theme/CodeBlock/bpmnLayout.test.ts` (jsdom environment; covers `extractActivitiProperties`, the detection logic behind the BPMN diagram property indicators) and `src/theme/CodeBlock/activitiInspector.test.ts` (the bpmn-js plugin module that renders the badges; also runs the real viewer in jsdom with SVG geometry stubs). `npm run typecheck` currently reports three pre-existing errors (`DirectoryTree/FileIcon.tsx` x2, `theme/Mermaid/index.tsx`) plus a tsconfig `baseUrl` deprecation — treat those as the baseline, not regressions.
 
 ## Docs Structure
 

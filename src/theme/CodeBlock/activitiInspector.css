@@ -1,0 +1,17 @@
+/*
+ * Dot badge rendered by the Activiti properties inspector plugin via the
+ * bpmn-js `overlays` service. Plain (non-module) CSS: the plugin creates
+ * DOM outside of React, so it cannot use CSS-module hashed class names.
+ */
+.bpmn-activiti-props-dot {
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  background-color: var(--ifm-color-primary);
+  /* clickable: pins the property tooltip (see BpmnDiagram); hover state
+     over the dot is kept coherent by the plugin re-firing the element's
+     interaction events */
+  cursor: pointer;
+}
