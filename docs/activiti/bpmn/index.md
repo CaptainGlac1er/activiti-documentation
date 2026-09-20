@@ -9,6 +9,8 @@ description: Comprehensive guide to BPMN 2.0 elements supported by Activiti and 
 
 This guide provides a comprehensive overview of all BPMN 2.0 elements supported by Activiti, including **Activiti-specific customizations** and extensions that go beyond the standard BPMN 2.0 specification.
 
+> All examples using `activiti:` extensions assume your BPMN file's root `<definitions>` element declares `xmlns:activiti="http://activiti.org/bpmn"`.
+
 ## Table of Contents
 
 - [Quick Reference](#quick-reference)
