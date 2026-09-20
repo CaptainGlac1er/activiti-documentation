@@ -209,7 +209,7 @@ Two schedule versions are supported:
 | `VER:1` | `AdvancedSchedulerResolverWithoutTimeZone` | Ignores DST; uses server time zone (legacy behavior) |
 | `VER:2` (default) | `AdvancedSchedulerResolverWithTimeZone` | Respects DST transitions in the specified time zone |
 
-> **Note:** The `VER:n` and `DSTZONE:zone` suffixes are only processed by the `AdvancedCycleBusinessCalendar`. With the engine's default configuration the `cycle` calendar is a plain `CycleBusinessCalendar`: there, an ISO cycle string with these suffixes **fails to parse**, and a CRON string **silently ignores** them (the timer runs in the server time zone). Register the advanced calendar — as the engine's own Spring factory does, replacing the default `cycle` entry (see [Registering Custom Calendars](#registering-custom-calendars)) — before using the suffixes.
+> **Note:** The `VER:n` and `DSTZONE:zone` suffixes are only processed by the `AdvancedCycleBusinessCalendar`. With the engine's default configuration the `cycle` calendar is a plain `CycleBusinessCalendar`: there, both ISO cycle strings and CRON strings carrying these suffixes **fail to parse** — the default calendar passes the raw CRON string to a Quartz-style `CronExpression`, which treats the trailing token as the (year) field and rejects it, raising `ActivitiException: Failed to parse cron expression`. Register the advanced calendar — as the engine's own Spring factory does, replacing the default `cycle` entry (see [Registering Custom Calendars](#registering-custom-calendars)) — before using the suffixes.
 
 ```xml
 <!-- DST-aware: runs at 8:30 PM Eastern time, handles clock changes -->
@@ -779,7 +779,7 @@ public BusinessCalendarManager businessCalendarManager(ClockReader clockReader) 
 
 Daylight saving time transitions can cause timers to fire at unexpected wall-clock times when the underlying time zone shifts by an hour.
 
-> **Prerequisite:** `VER:n` and `DSTZONE:zone` suffixes are only processed by the `AdvancedCycleBusinessCalendar` (see [AdvancedCycleBusinessCalendar](#advancedcyclebusinesscalendar) above). Under the default `cycle` calendar, an ISO string with these suffixes fails to parse and a CRON string silently ignores them.
+> **Prerequisite:** `VER:n` and `DSTZONE:zone` suffixes are only processed by the `AdvancedCycleBusinessCalendar` (see [AdvancedCycleBusinessCalendar](#advancedcyclebusinesscalendar) above). Under the default `cycle` calendar, strings with these suffixes fail to parse: an ISO cycle string is rejected by the duration parser, and a CRON string is rejected because the trailing token lands in the CRON year field (`Failed to parse cron expression`).
 
 **Without DST handling (VER:1 or no DSTZONE):**
 - `R/PT1D` always adds exactly 24 hours
@@ -888,6 +888,8 @@ calendar.add(Calendar.YEAR, duration.getYears() * duration.getSign());
 ```
 
 ### Example 2: Recurring Report Generation
+
+> **Prerequisite:** the `DSTZONE:` suffix in this timer is only resolved by the `AdvancedCycleBusinessCalendar`. Register it as the `cycle` calendar first (see [Registering Custom Calendars](#registering-custom-calendars)) — with the engine's default `CycleBusinessCalendar` this expression fails to parse.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -1003,7 +1005,7 @@ runtimeService.startProcessInstanceByKey("variableTimer", variables);
 
 ## Best Practices
 
-1. **Use `DSTZONE` for wall-clock schedules** — When a timer must fire at a specific time of day (e.g., "9 AM Monday-Friday"), always include `DSTZONE:your/timezone` to ensure consistent behavior across DST transitions.
+1. **Use `DSTZONE` for wall-clock schedules** — When a timer must fire at a specific time of day (e.g., "9 AM Monday-Friday"), include `DSTZONE:your/timezone` to ensure consistent behavior across DST transitions. This only works when the `AdvancedCycleBusinessCalendar` is registered as the `cycle` calendar (see [Registering Custom Calendars](#registering-custom-calendars)); with the default `CycleBusinessCalendar` the suffix makes the timer expression fail to parse.
 
 2. **Prefer `duration` calendar for simple delays** — If you only need relative offsets without CRON support, the `duration` calendar is sufficient and simpler.
 

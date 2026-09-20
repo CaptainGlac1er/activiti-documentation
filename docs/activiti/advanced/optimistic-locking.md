@@ -50,7 +50,7 @@ spring:
   activiti:
     async-executor:
       number-of-retries: 3            # max retries per failed job
-      retry-wait-time-in-millis: 500  # wait time between job retries
+      retry-wait-time-in-millis: 500  # wait time between job retries (despite the name, applied as SECONDS by the engine)
 ```
 
 These control the `AsyncExecutorProperties` which configure the async job executor's retry behavior — distinct from the `RetryInterceptor`'s optimistic-locking retry mechanism.

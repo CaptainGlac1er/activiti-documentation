@@ -581,10 +581,10 @@ public class GracefulJobHandler implements JavaDelegate {
             execution.setVariable("error", e.getMessage());
             execution.setVariable("canRetry", false);
             
-            // Or throw BPMN error for specific handling
-            throw new ActivitiException(
-                new BpmnError("PERMANENT_ERROR", e.getMessage())
-            );
+            // Or throw a BPMN error for specific handling — BpmnError extends
+            // ActivitiException, and the engine propagates it to a modeled
+            // error boundary event
+            throw new BpmnError("PERMANENT_ERROR", e.getMessage());
         }
     }
 }

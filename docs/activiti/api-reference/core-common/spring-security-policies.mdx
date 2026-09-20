@@ -677,13 +677,13 @@ public class ProcessQueryService {
     public List<ProcessDefinition> getVisibleProcessDefinitions() {
         GetProcessDefinitionsPayload payload =
             policyManager.restrictProcessDefQuery(SecurityPolicyAccess.READ);
-        return processRuntime.getProcessDefinitions(payload);
+        return processRuntime.processDefinitions(Pageable.ofSize(25), payload).getContent();
     }
 
     public List<ProcessInstance> getVisibleProcessInstances() {
         GetProcessInstancesPayload payload =
             policyManager.restrictProcessInstQuery(SecurityPolicyAccess.READ);
-        return processRuntime.getProcessInstances(payload);
+        return processRuntime.processInstances(Pageable.ofSize(25), payload).getContent();
     }
 }
 ```

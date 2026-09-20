@@ -205,8 +205,8 @@ ProcessInstance instance = processOperations
         .withBusinessKey("ORD-123")
         .build())
     .expectFields(
-        status(ProcessInstance.ProcessInstanceStatus.RUNNING),
-        businessKey("ORD-123")
+        processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+        processInstance().businessKey("ORD-123")
     )
     .expectEvents(
         processInstance().hasBeenStarted()
@@ -271,7 +271,6 @@ import static org.activiti.test.matchers.SignalMatchers.*;
 
 processOperations
     .signal(ProcessPayloadBuilder.signal().withName("ORDER_APPROVED")
-        .withProcessDefinitionId(processDefinitionId)
         .build())
     .expectEventsOnProcessInstance(instance,
         signal("ORDER_APPROVED").hasBeenReceived()
@@ -431,8 +430,8 @@ class OrderProcessTest {
                 .withVariable("customerId", "CUST-456")
                 .build())
             .expectFields(
-                status(ProcessInstance.ProcessInstanceStatus.RUNNING),
-                businessKey("ORD-123")
+                processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+                processInstance().businessKey("ORD-123")
             )
             .expectEvents(
                 processInstance().hasBeenStarted()
@@ -459,7 +458,7 @@ class OrderProcessTest {
                 .withProcessDefinitionKey("simpleProcess")
                 .build())
             .expectFields(
-                status(ProcessInstance.ProcessInstanceStatus.COMPLETED)
+                processInstance().status(ProcessInstance.ProcessInstanceStatus.COMPLETED)
             )
             .andReturn();
     }
@@ -478,6 +477,9 @@ class TaskTest {
 
     @Autowired
     private TaskOperations taskOperations;
+
+    @Autowired
+    private TaskRuntime taskRuntime;
 
     @Test
     void testTaskClaimAndComplete() {
@@ -543,7 +545,6 @@ class SignalTest {
 
         processOperations
             .signal(ProcessPayloadBuilder.signal().withName("ORDER_APPROVED")
-                .withProcessDefinitionId(instance.getProcessDefinitionId())
                 .build())
             .expectEventsOnProcessInstance(instance,
                 signal("ORDER_APPROVED").hasBeenReceived()
@@ -639,14 +640,14 @@ class ProcessInstanceMatcherTest {
                 .withBusinessKey("ORD-123")
                 .build())
             .expectFields(
-                status(ProcessInstance.ProcessInstanceStatus.RUNNING),
-                businessKey("ORD-123")
+                processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+                processInstance().businessKey("ORD-123")
             )
             .expectEvents(
                 processInstance().hasBeenStarted()
             )
             .expect(
-                hasTask("Review Order", Task.TaskStatus.CREATED)
+                processInstance().hasTask("Review Order", Task.TaskStatus.CREATED)
             );
     }
 }
@@ -802,7 +803,6 @@ class SignalMatcherTest {
 
         processOperations
             .signal(ProcessPayloadBuilder.signal().withName("ORDER_APPROVED")
-                .withProcessDefinitionId(instance.getProcessDefinitionId())
                 .build())
             .expectEventsOnProcessInstance(instance,
                 signal("ORDER_APPROVED").hasBeenReceived()
@@ -874,14 +874,13 @@ ProcessInstance instance = processOperations
         .withVariable("amount", 100.0)
         .build())
     .expectFields(
-        businessKey("ORD-123"),
-        status(ProcessInstance.ProcessInstanceStatus.RUNNING)
+        processInstance().businessKey("ORD-123"),
+        processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING)
     )
     .andReturn();
 
 processOperations
     .signal(ProcessPayloadBuilder.signal().withName("PROCEED")
-        .withProcessDefinitionId(instance.getProcessDefinitionId())
         .build())
     .expectEventsOnProcessInstance(instance,
         signal("PROCEED").hasBeenReceived()
@@ -1046,8 +1045,8 @@ class OrderProcessIntegrationTest {
                 .withVariable("orderAmount", 1000.0)
                 .build())
             .expectFields(
-                status(ProcessInstance.ProcessInstanceStatus.RUNNING),
-                businessKey("ORD-123")
+                processInstance().status(ProcessInstance.ProcessInstanceStatus.RUNNING),
+                processInstance().businessKey("ORD-123")
             )
             .expectEvents(
                 processInstance().hasBeenStarted(),
@@ -1140,7 +1139,6 @@ class SignalMatchingTest {
 
         processOperations
             .signal(ProcessPayloadBuilder.signal().withName("ORDER_APPROVED")
-                .withProcessDefinitionId(instance.getProcessDefinitionId())
                 .build())
             .expectEventsOnProcessInstance(instance,
                 signal("ORDER_APPROVED").hasBeenReceived(),

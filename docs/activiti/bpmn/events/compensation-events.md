@@ -637,12 +637,15 @@ public void testCompensationFlow() {
     // Trigger failure
     runtimeService.setVariable(processInstanceId, "shipmentValid", false);
     
-    // Verify compensation executed
-    List<HistoricActivityInstance> compensationActivities = 
-        historyService.createHistoricActivityInstanceQuery()
-            .processInstanceId(processInstanceId)
-            .activityIdIn("refundPayment", "releaseInventory")
-            .list();
+    // Verify compensation executed (HistoricActivityInstanceQuery only offers
+    // single-value activityId(String), so query per activity id and combine)
+    List<HistoricActivityInstance> compensationActivities =
+        Stream.of("refundPayment", "releaseInventory")
+            .flatMap(id -> historyService.createHistoricActivityInstanceQuery()
+                .processInstanceId(processInstanceId)
+                .activityId(id)
+                .list().stream())
+            .collect(Collectors.toList());
     
     assertEquals(2, compensationActivities.size());
 }

@@ -1023,7 +1023,7 @@ class OrderApprovalTest {
             .andReturn();
 
         // Get the task UUID from the task runtime query
-        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).get(0).getId();
+        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).getContent().get(0).getId();
 
         // Manager approves
         taskOperations.complete(
@@ -1056,7 +1056,7 @@ class OrderApprovalTest {
             .andReturn();
 
         // Get the task UUID from the task runtime query
-        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).get(0).getId();
+        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).getContent().get(0).getId();
 
         taskOperations.complete(
                 TaskPayloadBuilder.complete()

@@ -150,7 +150,7 @@ flowchart LR
 ### Programmatically via Configuration
 
 ```java
-ProcessEngineConfiguration config = new ProcessEngineConfigurationImpl();
+ProcessEngineConfigurationImpl config = new ProcessEngineConfigurationImpl();
 
 // Enable the event dispatcher
 config.setEnableEventDispatcher(true);
@@ -267,9 +267,11 @@ public class AuditEventListener implements ActivitiEventListener {
             case PROCESS_STARTED:
                 if (event instanceof ActivitiProcessStartedEvent) {
                     ActivitiProcessStartedEvent started = (ActivitiProcessStartedEvent) event;
+                    // getEntity() returns Object; PROCESS_STARTED carries the process instance
+                    ProcessInstance processInstance = (ProcessInstance) started.getEntity();
                     log.info("Process {} started, business key: {}",
                         started.getProcessInstanceId(),
-                        started.getEntity().getBusinessKey());
+                        processInstance.getBusinessKey());
                 }
                 break;
 

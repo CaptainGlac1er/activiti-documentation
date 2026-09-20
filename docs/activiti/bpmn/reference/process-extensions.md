@@ -1083,7 +1083,7 @@ Map variables for multi-instance tasks:
 
 **`VARIABLE` vs `VALUE`:** A `VARIABLE` mapping's `value` is a **literal variable name** — the engine performs a flat lookup of that name (e.g., `execution.getVariable("reviewer")`), so expressions are never evaluated for `VARIABLE` mappings and dotted names like `paymentResult.status` are treated as a single literal key. EL expressions (`${...}`) are only evaluated for `VALUE` mappings: the raw value is placed into the variable map and then resolved against the execution's variables. If a `VALUE` expression cannot be resolved, it evaluates to `null` and a warning is logged.
 
-Collection wiring for multi-instance loops (`activiti:collection`, `activiti:outputDataItem`) belongs in the BPMN diagram, not in the extensions file — a `Mapping` only has `type` and `value` fields.
+Collection wiring for multi-instance loops (`activiti:collection` and the standard `<outputDataItem>` element) belongs in the BPMN diagram, not in the extensions file — a `Mapping` only has `type` and `value` fields.
 
 ### 4. JSON Patch Operations
 

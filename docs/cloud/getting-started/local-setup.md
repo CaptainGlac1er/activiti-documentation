@@ -175,22 +175,22 @@ By default the deployment uses the image tags pinned in `local-values.yaml` at t
 ```yaml
 runtime-bundle:
   image:
-    tag: "8.8.0-alpha.108"
+    tag: "9.0.0"
     pullPolicy: IfNotPresent
 
 activiti-cloud-query:
   image:
-    tag: "8.8.0-alpha.108"
+    tag: "9.0.0"
     pullPolicy: IfNotPresent
 
 activiti-cloud-connector:
   image:
-    tag: "8.8.0-alpha.108"
+    tag: "9.0.0"
     pullPolicy: IfNotPresent
 
 activiti-cloud-identity-adapter:
   image:
-    tag: "8.8.0-alpha.108"
+    tag: "9.0.0"
     pullPolicy: IfNotPresent
 ```
 

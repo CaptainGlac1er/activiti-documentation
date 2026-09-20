@@ -219,8 +219,13 @@ public class CreditScoreService implements Connector {
         String customerId = (String) integrationContext.getInBoundVariables().get("customerId");
         BigDecimal orderAmount = (BigDecimal) integrationContext.getInBoundVariables().get("orderAmount");
         
-        // Business logic
-        int creditScore = calculateCreditScore(customerId, orderAmount);
+        // Business logic — credit-bureau faults raise the CREDIT001 error (handled by the boundary event below)
+        int creditScore;
+        try {
+            creditScore = calculateCreditScore(customerId, orderAmount);
+        } catch (CreditBureauException e) {
+            throw new BpmnError("CREDIT001", "Credit bureau call failed: " + e.getMessage());
+        }
         int minScore = serviceProperties.getCreditBureau().getMinCreditScore();
         boolean approved = creditScore >= minScore;
         

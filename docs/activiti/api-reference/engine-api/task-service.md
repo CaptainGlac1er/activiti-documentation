@@ -609,7 +609,7 @@ Subtasks are standalone tasks linked to a parent. Completing a subtask does not 
 // Task Creation
 Task newTask();
 Task newTask(String taskId);
-void saveTask(Task task);
+Task saveTask(Task task);
 void deleteTask(String taskId);
 void deleteTask(String taskId, boolean cascade);
 void deleteTask(String taskId, String deleteReason);

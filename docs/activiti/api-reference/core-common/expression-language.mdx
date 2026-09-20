@@ -362,7 +362,7 @@ ReadOnlyMapELResolver resolver = new ReadOnlyMapELResolver(vars);
 
 **Behavior:**
 - `getValue()` unwraps value nodes: booleans → `Boolean`, numbers → `Long`/`Double`, text → `String`
-- `getValue()` converts JSON arrays to `List` via `ObjectMapper.convertValue()`
+- `getValue()` converts JSON arrays to `List` via `JsonMapper.convertValue()` (Jackson 3, `tools.jackson.databind.json.JsonMapper`)
 - `setValue()` supports `BigDecimal`, `Boolean`, `Long`, `Double`, and `String` (on `ObjectNode`)
 - `isReadOnly()` returns `readOnly` flag
 
@@ -566,6 +566,7 @@ public class VariableManager {
 ### BPMN Expression Examples
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Service Task with Expression (as attribute) -->
 <serviceTask id="calculateTotal" 
              name="Calculate Total" 
@@ -734,7 +735,8 @@ try {
     ValueExpression expr = factory.createValueExpression(context, expression, Object.class);
     return expr.getValue(context);
 } catch (ELException e) {
-    throw new InvalidExpressionException("Invalid expression: " + expression, e);
+    // No custom exception type needed — rethrow as jakarta.el.ELException with context
+    throw new ELException("Invalid expression: " + expression, e);
 }
 
 // BAD

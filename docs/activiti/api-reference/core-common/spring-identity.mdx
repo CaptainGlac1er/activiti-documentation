@@ -517,7 +517,7 @@ public class ProcessStartService {
         List<String> roles = userGroupManager.getUserRoles(username);
         
         if (roles.contains("ADMIN") || roles.contains("MANAGER")) {
-            processEngine.startProcess(processKey);
+            processEngine.getRuntimeService().startProcessInstanceByKey(processKey);
         } else {
             throw new AccessDeniedException(
                 "User " + username + " is not authorized to start process " + processKey);
@@ -638,7 +638,7 @@ class ProductionSecurityConfig {
 public void assignTask(String username, String taskId) {
     List<String> users = userGroupManager.getUsers();
     if (!users.contains(username)) {
-        throw new UserNotFoundException("User " + username + " not found");
+        throw new UsernameNotFoundException("User " + username + " not found");
     }
     // Proceed with assignment
 }
@@ -646,7 +646,7 @@ public void assignTask(String username, String taskId) {
 // BAD
 public void assignTask(String username, String taskId) {
     // No validation - may fail later
-    taskService.assign(taskId, username);
+    taskService.setAssignee(taskId, username);
 }
 ```
 

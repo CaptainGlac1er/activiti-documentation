@@ -163,7 +163,7 @@ graph TD
 Activiti integrates with Spring Security through the `spring.activiti.security.enabled` property (defaults to `true`). When enabled, `ActivitiMethodSecurityAutoConfiguration` registers:
 
 ```java
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
+@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 ```
 
 ### Required Roles

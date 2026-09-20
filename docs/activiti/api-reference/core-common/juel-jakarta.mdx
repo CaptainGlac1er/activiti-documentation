@@ -219,8 +219,8 @@ Object result = expr.getValue(context);
 
 **Example:**
 ```java
-TypeConverter converter = TypeConverterImpl.getInstance();
-Double value = converter.convertType(context, "123.45", Double.class);
+TypeConverter converter = TypeConverter.DEFAULT;
+Double value = converter.convert("123.45", Double.class);
 ```
 
 ---
@@ -530,7 +530,8 @@ public void validateExpression(String expression) {
         );
         // Expression is valid
     } catch (Exception e) {
-        throw new InvalidExpressionException(expression, e);
+        // No custom exception type needed — jakarta.el.ELException is the standard EL error type
+        throw new ELException("Invalid expression: " + expression, e);
     }
 }
 
@@ -629,11 +630,13 @@ public class Builder implements TreeBuilder {
 
 ### TypeConverter
 
-**Methods:**
+**Interface:**
 
 ```java
-Object convertType(ELContext context, Object obj, Class<?> targetType)
-boolean isConvertible(ELContext context, Class<?> srcType, Class<?> targetType)
+public interface TypeConverter extends Serializable {
+    public static final TypeConverter DEFAULT = new TypeConverterImpl();
+    public <T> T convert(Object value, Class<T> type) throws ELException;
+}
 ```
 
 ---
@@ -683,7 +686,7 @@ props.setProperty("jakarta.el.cacheSize", "500");
 // Fix
 Object result = expr.getValue(context);
 if (result != null) {
-    Double amount = typeConverter.convertType(context, result, Double.class);
+    Double amount = typeConverter.convert(result, Double.class);
 }
 ```
 

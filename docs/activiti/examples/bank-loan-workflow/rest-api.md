@@ -178,9 +178,10 @@ GET /api/loans/{loanApplicationId}
 @GetMapping("/api/loans/{loanApplicationId}")
 public ProcessInstance getLoan(@PathVariable String loanApplicationId) {
     return processRuntime.processInstances(
-            ProcessPayloadBuilder.processInstances()
-                .withBusinessKey(loanApplicationId)
-                .build())
+        Pageable.of(0, 1),
+        ProcessPayloadBuilder.processInstances()
+            .withBusinessKey(loanApplicationId)
+            .build())
         .getContent().stream()
         .findFirst()
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -474,7 +475,7 @@ package com.example.bankloan.controllers;
 
 import org.activiti.api.process.model.builders.MessagePayloadBuilder;
 import org.activiti.api.process.model.builders.ProcessPayloadBuilder;
-import org.activiti.api.process.model.builders.TaskPayloadBuilder;
+import org.activiti.api.task.model.builders.TaskPayloadBuilder;
 import org.activiti.api.process.model.ProcessInstance;
 import org.activiti.api.process.runtime.ProcessRuntime;
 import org.activiti.api.runtime.shared.query.Page;
@@ -513,9 +514,10 @@ public class LoanController {
     @GetMapping("/loans/{loanApplicationId}")
     public ProcessInstance getLoan(@PathVariable String loanApplicationId) {
         return processRuntime.processInstances(
-                ProcessPayloadBuilder.processInstances()
-                    .withBusinessKey(loanApplicationId)
-                    .build())
+            Pageable.of(0, 1),
+            ProcessPayloadBuilder.processInstances()
+                .withBusinessKey(loanApplicationId)
+                .build())
             .getContent().stream()
             .findFirst()
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
