@@ -7,7 +7,7 @@ description: "Complete guide to using *-extensions.json files for variable mappi
 
 # Process Extensions (\`*-extensions.json\`)
 
-Process Extensions files (named `*-extensions.json`) provide a **powerful mechanism** to define process variables, variable mappings, and constants **separately** from your BPMN diagram. This separation of concerns makes your processes more maintainable, testable, and flexible.
+Process Extensions files (named `*-extensions.json`) define process variables, variable mappings, and constants **separately** from the BPMN diagram. Keeping these values outside the diagram makes them easier to maintain and test.
 
 ## Overview
 

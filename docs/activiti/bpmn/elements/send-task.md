@@ -12,17 +12,10 @@ A Send Task (`sendTask`) represents a one-way message sent from the process to a
 ## BPMN Element
 
 ```xml
-<sendTask id="notifyCustomer"
-            name="Notify Customer"
-            activiti:type="mail">
-  <extensionElements>
-    <activiti:field name="to" expression="${customer.email}"/>
-    <activiti:field name="subject" stringValue="Order Shipped"/>
-    <activiti:field name="html" stringValue="true"/>
-    <activiti:field name="text" expression="${notificationBody}"/>
-  </extensionElements>
-</sendTask>
+<sendTask id="notifyCustomer" name="Notify Customer" activiti:type="mail"/>
 ```
+
+The full example with the mail fields is in [Mail Send Task](#mail-send-task).
 
 **BPMN 2.0 Standard:** Yes  
 **Activiti Implementation:** Supports `mail`, `mule`, `camel`, and `##WebService`
@@ -32,7 +25,7 @@ A Send Task (`sendTask`) represents a one-way message sent from the process to a
 The `type` attribute or `implementation` attribute determines the behavior:
 
 | Type | Attribute | Behavior |
-|------|-----------|----------|
+| ------ | ----------- | ---------- |
 | `mail` | `activiti:type="mail"` | Sends email via configured mail server |
 | `mule` | `activiti:type="mule"` | Routes through Mule ESB |
 | `camel` | `activiti:type="camel"` | Routes through Apache Camel |
@@ -87,12 +80,10 @@ The `##WebService` implementation is specified via the `implementation` attribut
 
 The operation's message references are **child elements** — `<inMessageRef>` and `<outMessageRef>` — whose text content is the referenced message `id` (they are not attributes). The engine resolves the operation's input message from the `<inMessageRef>` text.
 
-**Note:** For custom Java implementations, use a **Service Task** instead. Send Task does not support `activiti:class`.
-
 ## Send Task vs Service Task vs Receive Task
 
 | Feature | Send Task | Service Task | Receive Task |
-|---------|-----------|--------------|--------------|
+| --------- | ----------- | -------------- | -------------- |
 | Direction | Outbound only | Both directions | Inbound only |
 | Wait state | No | No | Yes |
 | Message event | — (generic activity events only) | — | `ACTIVITY_MESSAGE_RECEIVED` |
@@ -148,7 +139,7 @@ A Send Task can be configured as asynchronous to decouple message sending from p
 </sendTask>
 ```
 
-When `async="true"`, the send task creates a job that is executed by the async job executor, allowing the process to continue and the message to be sent in the background.
+When `async="true"`, the engine creates a job and the async executor continues the activity in a worker thread — see [Async Execution](../reference/async-execution.md) for the transaction boundary and retry behavior.
 
 ## Related Documentation
 

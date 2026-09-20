@@ -30,12 +30,14 @@ User Tasks represent work items that require **human interaction** in a business
 ## Key Features
 
 ### Standard BPMN Features
+
 - **Name and Documentation** - Task identification
 - **Input/Output Data** - Data associations
 - **Multi-instance** - Parallel or sequential iterations
 - **Boundary Events** - Exception handling
 
 ### Activiti Customizations
+
 - **Assignee** - Direct task assignment
 - **Owner** - Task owner (delegation support)
 - **Candidate Users** - Potential task performers
@@ -60,13 +62,15 @@ Directly assign the task to a specific user:
 ```
 
 **Expression Support:**
+
 - Fixed value: `activiti:assignee="john.doe"`
 - Expression: `activiti:assignee="${user.id}"`
 - Bean Reference: `activiti:assignee="${currentUser.username}"`
 
 **Runtime Behavior:**
+
 - Task is immediately assigned
-- The engine `TaskService` performs no assignee enforcement: `claim()` only rejects claiming a task that already has a **different** assignee (`ActivitiTaskAlreadyClaimedException`), and `complete()` does not check the assignee. Assignee/candidate visibility is enforced by the modern `TaskRuntime` API instead (claiming requires the authenticated user to be a candidate; completing requires the authenticated user to be the assignee)
+- The engine `TaskService` performs no assignee enforcement: `claim()` only rejects claiming a task that already has a **different** assignee (`ActivitiTaskAlreadyClaimedException`), and `complete()` does not check the assignee. Assignee/candidate visibility is enforced by the [TaskRuntime](../../api-reference/activiti-api/task-runtime.mdx) API instead (claiming requires the authenticated user to be a candidate; completing requires the authenticated user to be the assignee)
 - Can be changed via Task Service
 
 ### 2. Owner
@@ -78,6 +82,7 @@ Set the task owner (useful for delegation):
 ```
 
 **Use Cases:**
+
 - Delegation scenarios
 - Task reassignment tracking
 - Audit purposes
@@ -93,11 +98,13 @@ Specify users who can claim the task (comma-separated list):
 ```
 
 **Or using expression:**
+
 ```xml
 <userTask id="reviewTask" activiti:candidateUsers="${reviewers}"/>
 ```
 
 **Runtime Behavior:**
+
 - Task is unassigned initially
 - Any candidate user can claim it
 - Candidates can be added/removed at runtime
@@ -113,11 +120,13 @@ Assign task to groups/roles (comma-separated list):
 ```
 
 **Or using expression:**
+
 ```xml
 <userTask id="approvalTask" activiti:candidateGroups="${approvalGroups}"/>
 ```
 
 **Use Cases:**
+
 - Role-based task assignment
 - Department approvals
 - Dynamic group membership
@@ -128,13 +137,15 @@ Advanced assignment with custom types for fine-grained access control:
 
 **Built-in Task Identity Link Types:**
 Activiti provides these predefined identity link types for tasks via `IdentityLinkType`:
+
 - `assignee` - Direct task assignee
 - `candidate` - Users/groups who can claim the task
 - `owner` - Task owner (for delegation)
 
-> **Note:** `IdentityLinkType.STARTER` and `IdentityLinkType.PARTICIPANT` are **process-instance** identity link types, not task link types. `STARTER` records the user who started the process instance and `PARTICIPANT` tracks involved users; both are managed automatically by the engine. They are not set via `taskService.addUserIdentityLink(...)`.
+> **Note:** `IdentityLinkType.STARTER` and `IdentityLinkType.PARTICIPANT` are **process-instance** identity link types, not task link types. `STARTER` records the user who started the process instance and `PARTICIPANT` tracks involved users; the engine maintains both automatically — see [Process Identity Links](../../advanced/process-identity-links.md) for how they are created.
 
 **Runtime API for Identity Links:**
+
 ```java
 import org.activiti.engine.task.IdentityLinkType;
 
@@ -149,13 +160,14 @@ taskService.addUserIdentityLink(taskId, "john", IdentityLinkType.ASSIGNEE);
 taskService.addUserIdentityLink(taskId, "alice", IdentityLinkType.CANDIDATE);
 taskService.addUserIdentityLink(taskId, "manager", IdentityLinkType.OWNER);
 
-// Query tasks by custom identity link
+// Query tasks for a candidate group (built-in "candidate" link type)
 List<Task> tasks = taskService.createTaskQuery()
     .taskCandidateGroup("auditors")
     .list();
 ```
 
 **Use Cases:**
+
 - Fine-grained permission control
 - Audit trail tracking
 - Specialized roles (viewer, commenter, approver)
@@ -187,11 +199,13 @@ Associate a form with the task:
 ```
 
 **Form Key Types:**
+
 - **External Form:** `activiti:formKey="http://example.com/form"`
 - **Internal Resource:** `activiti:formKey="forms/my-form.html"`
 - **Expression:** `activiti:formKey="${determineFormKey()}"`
 
 **Integration:**
+
 - Activiti Forms
 - External form systems
 - Dynamic form generation
@@ -201,20 +215,23 @@ Associate a form with the task:
 Set task deadline:
 
 ```xml
-<userTask id="urgentTask" name="Urgent Review" activiti:dueDate="${addDays(now(), 3)}"/>
+<userTask id="urgentTask" name="Urgent Review" activiti:dueDate="P3D"/>
 ```
 
 **Expression Examples:**
+
 ```xml
-<!-- Fixed date -->
-<userTask activiti:dueDate="2024-12-31"/>
+<!-- Absolute date-time (ISO 8601) -->
+<userTask activiti:dueDate="2026-05-01T17:00:00"/>
 
-<!-- EL Expression -->
-<userTask activiti:dueDate="${dueDateCalculator.calculate()}"/>
+<!-- Relative: due in 7 days (ISO 8601 period) -->
+<userTask activiti:dueDate="P7D"/>
 
-<!-- EL Expression -->
-<userTask activiti:dueDate="${calendar.addDays(new Date(), 7)}"/>
+<!-- EL expression (variable) -->
+<userTask activiti:dueDate="${taskDueDate}"/>
 ```
+
+All supported due date formats (ISO 8601 periods, absolute date-times, CRON via the `cycle` calendar) are documented in [Business Calendars](../reference/business-calendars.md).
 
 ### 8. Priority
 
@@ -232,11 +249,14 @@ Define working time calculations:
 
 ```xml
 <userTask id="workingDaysTask" name="Review" 
-          activiti:dueDate="${addBusinessDays(3)}"
-          activiti:businessCalendarName="standard"/>
+          activiti:dueDate="P3D"
+          activiti:businessCalendarName="businessDays"/>
 ```
 
+A complete business-days calendar (skipping weekends) and how to register it with the engine are in [Business Calendars](../reference/business-calendars.md).
+
 **Use Cases:**
+
 - Exclude weekends
 - Exclude holidays
 - Custom working hours
@@ -250,6 +270,7 @@ Classify tasks:
 ```
 
 **Runtime Usage:**
+
 ```java
 // Query tasks by category
 List<Task> tasks = taskService.createTaskQuery()
@@ -281,6 +302,7 @@ Execute custom logic at task lifecycle events:
 ```
 
 **Supported Events:**
+
 - `create` - When task is created
 - `assignment` - When the assignee changes (adding/removing candidates does not fire this event)
 - `complete` - When task is completed
@@ -288,11 +310,13 @@ Execute custom logic at task lifecycle events:
 - `all` - All of the above events
 
 **Listener Types:**
+
 1. **Class:** `class="com.example.ListenerClass"`
 2. **Delegate Expression:** `delegateExpression="${beanName}"`
 3. **Expression:** `expression="${methodCall()}"`
 
 **TaskListener Interface:**
+
 ```java
 public interface TaskListener {
     void notify(DelegateTask delegateTask);
@@ -300,6 +324,7 @@ public interface TaskListener {
 ```
 
 **Example Implementation:**
+
 ```java
 public class TaskCreatedListener implements TaskListener {
     @Override
@@ -322,15 +347,19 @@ Conditionally skip task execution:
 ```
 
 **Runtime Behavior:**
+
 - If expression evaluates to `true`, task is skipped
 - Process continues to next activity
 - Useful for conditional workflows
+
+> **Important:** Skip expressions require the process variable `_ACTIVITI_SKIP_EXPRESSION_ENABLED` to be set to `true`, otherwise they are silently ignored — see [Sequence Flows](./sequence-flows.md) for the full mechanism.
 
 ### Multi-Instance User Tasks
 
 Execute task for multiple users:
 
 **Using Collection (Activiti Extension - Recommended):**
+
 ```xml
 <userTask id="groupReview" name="Group Review">
   <multiInstanceLoopCharacteristics 
@@ -343,6 +372,7 @@ Execute task for multiple users:
 ```
 
 **Using Loop Cardinality (BPMN Standard):**
+
 ```xml
 <userTask id="groupReview" name="Group Review">
   <multiInstanceLoopCharacteristics isSequential="false">
@@ -353,6 +383,7 @@ Execute task for multiple users:
 ```
 
 **Configuration:**
+
 - `isSequential="true"` - One instance at a time
 - `isSequential="false"` - Parallel instances
 - `activiti:collection` - Collection to iterate (Activiti extension)
@@ -361,6 +392,7 @@ Execute task for multiple users:
 - `completionCondition` - When to complete multi-instance
 
 **Built-in Multi-Instance Variables:**
+
 - `nrOfInstances` - Total number of instances
 - `nrOfCompletedInstances` - Number of completed instances
 - `loopCounter` - Current iteration counter (set for each instance, in both sequential and parallel multi-instance)
@@ -368,18 +400,7 @@ Execute task for multiple users:
 
 **Multi-Instance Data Items (Not Parsed):**
 
-BPMN-standard `<inputDataItem>`/`<outputDataItem>` data associations (including `<assignment><from>/<to>`) are **not parsed** by the engine — they are silently ignored. Multi-instance iteration is driven solely by the `activiti:collection` and `activiti:elementVariable` attributes (plus `completionCondition`):
-
-```xml
-<userTask id="reviewTask" name="Review">
-  <multiInstanceLoopCharacteristics 
-    isSequential="false"
-    activiti:collection="${reviewers}"
-    activiti:elementVariable="reviewer">
-    <completionCondition>${reviewCount >= requiredApprovals}</completionCondition>
-  </multiInstanceLoopCharacteristics>
-</userTask>
-```
+BPMN-standard `<inputDataItem>`/`<outputDataItem>` data associations (including `<assignment><from>/<to>`) are **not parsed** by the engine — they are silently ignored. Multi-instance iteration is driven solely by the `activiti:collection` and `activiti:elementVariable` attributes (plus `completionCondition`); the working multi-instance configuration is in [Multi-Instance User Tasks](#multi-instance-user-tasks) above.
 
 > **Warning:** If an `<inputDataItem name="...">` element is present, its `name` attribute **is** parsed and silently **overrides** `activiti:elementVariable`. Don't add `inputDataItem`/`outputDataItem` elements to multi-instance characteristics (the `collection` attribute of `outputDataItem` is also ignored).
 
@@ -406,6 +427,7 @@ Define form fields:
 ```
 
 **Property Types:**
+
 - `string` - Text input
 - `int` - Integer
 - `long` - Long integer
@@ -414,7 +436,7 @@ Define form fields:
 - `date` - Date
 - `enum` - Enumerated values
 
-> **Note:** The `<activiti:formProperty>` feature is a **legacy** mechanism. The BPMN converter parses `formProperty` elements into the process model, but this engine version does not execute them at runtime (there is no form-type registry in the engine). Types such as `dateselection`, `timeselection`, `datetimeselection`, `user`, and `group` are legacy Activiti/Flowable form types that are not present in this codebase. For modern UI integration, prefer a `formKey` and an external form system. Also note that `<activiti:value>` **text content is not read** — only the `id` and `name` attributes are parsed, so write values as attributes (e.g., `<activiti:value id="eng" name="Engineering"/>`).
+> **Note:** The `<activiti:formProperty>` feature is a **legacy** mechanism. The BPMN converter parses `formProperty` elements into the process model, but this engine version does not execute them at runtime (there is no form-type registry in the engine). Types such as `dateselection`, `timeselection`, `datetimeselection`, `user`, and `group` are legacy form types that are not present in this codebase. For modern UI integration, prefer a `formKey` and an external form system. Also note that `<activiti:value>` **text content is not read** — only the `id` and `name` attributes are parsed, so write values as attributes (e.g., `<activiti:value id="eng" name="Engineering"/>`).
 
 ## Complete Examples
 
@@ -425,7 +447,7 @@ Define form fields:
           name="Approve Request" 
           activiti:assignee="${requestManager}"
           activiti:candidateGroups="approvers"
-          activiti:dueDate="${addDays(now(), 5)}"
+          activiti:dueDate="P5D"
           activiti:priority="70"
           activiti:formKey="approval-form"
           activiti:category="approval">
@@ -564,7 +586,7 @@ taskService.complete(taskId);
 
 ## Common Pitfalls
 
-- **No Assignee or Candidates:** Task cannot be claimed
+- **No Assignee or Candidates:** The task can be neither claimed (claiming requires being a candidate) nor completed (completing requires being the assignee) through the task runtime API ([1. Assignee](#1-assignee))
 - **Hard-coded Values:** Use expressions for flexibility
 - **Missing Form Key:** UI integration may fail
 - **Complex Skip Expressions:** Can make process hard to understand
@@ -579,4 +601,3 @@ taskService.complete(taskId);
 - [Execution Listeners](../reference/execution-listeners.md)
 
 ---
-

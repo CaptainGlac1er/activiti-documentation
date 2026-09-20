@@ -26,7 +26,8 @@ End Events mark the **completion** of a process or sub-process. They can be simp
 </endEvent>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
 **Activiti Extensions:** Multiple end event types, expressions
 
 ## Key Features
@@ -34,10 +35,10 @@ End Events mark the **completion** of a process or sub-process. They can be simp
 ### End Event Types
 
 | Type | Description | Use Case |
-|------|-------------|----------|
+| ------ | ------------- | ---------- |
 | **Terminator** | Normal completion | Standard process end |
 | **Error** | End with error | Exception termination |
-| **Cancel** | Cancel parent sub-process | Sub-process cancellation |
+| **Cancel** | Cancel the enclosing transaction | Transaction rollback |
 | **Message** | Send message on end | External system notification |
 | **Terminate** | End entire process instance | Force termination of all branches |
 
@@ -58,6 +59,7 @@ Simple process completion:
 ```
 
 **Behavior:**
+
 - Normal process completion
 - No additional actions
 - Process instance ends
@@ -77,11 +79,13 @@ End process with an error:
 ```
 
 **Error Definition:**
+
 ```xml
 <error id="ProcessingError" name="Processing Error" errorCode="PROC001"/>
 ```
 
 **Runtime Behavior:**
+
 - Throws error when reached
 - Can be caught by error boundary events
 - Process instance ends with error
@@ -111,15 +115,12 @@ Send a message to external systems:
 ```
 
 **Message Definition:**
+
 ```xml
 <message id="approvalMessage" name="Approval Message"/>
 ```
 
-**Runtime API:**
-```java
-// Message can be correlated by external systems
-// No direct API call needed - message is sent automatically
-```
+**Runtime API:** No runtime API call is needed — the message is sent automatically when the end event is reached, the same way as the throw message event on the [Intermediate Events](./intermediate-events.md) page.
 
 ### 5. Terminate End Event
 
@@ -141,6 +142,7 @@ Force termination of entire process instance:
 ```
 
 **Behavior:**
+
 - Ends ALL active branches
 - Ignores waiting gateways
 - Force terminates process instance
@@ -174,37 +176,63 @@ The `TerminateEventDefinition` model supports two additional attributes:
 
 ### 6. Cancel End Event
 
-Cancel parent sub-process:
+Cancel a **transaction** scope — with the required cancel boundary event on the transaction:
 
 ```xml
-<subProcess id="parentSubProcess" name="Parent Process">
-  
-  <startEvent id="subStart"/>
-  
-  <subProcess id="childSubProcess" name="Child Process">
-    <startEvent id="childStart"/>
-    <task id="childTask"/>
-    
-    <!-- Cancel end event -->
+<process id="bookingProcess" name="Booking Process">
+
+  <startEvent id="start"/>
+
+  <transaction id="bookingTransaction" name="Booking Transaction">
+    <startEvent id="transStart"/>
+
+    <serviceTask id="bookHotel" name="Book Hotel" activiti:class="com.example.HotelBooking"/>
+
+    <exclusiveGateway id="carCheck"/>
+
+    <sequenceFlow id="ok" sourceRef="carCheck" targetRef="bookCar">
+      <conditionExpression>${carAvailable}</conditionExpression>
+    </sequenceFlow>
+
+    <sequenceFlow id="noCar" sourceRef="carCheck" targetRef="cancelEnd">
+      <conditionExpression>${!carAvailable}</conditionExpression>
+    </sequenceFlow>
+
+    <serviceTask id="bookCar" name="Book Car" activiti:class="com.example.CarBooking"/>
+
+    <endEvent id="transEnd"/>
+
+    <!-- Reaching this end event cancels (rolls back) the transaction -->
     <endEvent id="cancelEnd">
       <cancelEventDefinition/>
     </endEvent>
-    
-    <sequenceFlow id="childFlow1" sourceRef="childStart" targetRef="childTask"/>
-    <sequenceFlow id="childFlow2" sourceRef="childTask" targetRef="cancelEnd"/>
-  </subProcess>
-  
-  <endEvent id="subEnd"/>
-  
-  <sequenceFlow id="subFlow1" sourceRef="subStart" targetRef="childSubProcess"/>
-  <sequenceFlow id="subFlow2" sourceRef="childSubProcess" targetRef="subEnd"/>
-</subProcess>
+
+    <sequenceFlow id="flow1" sourceRef="transStart" targetRef="bookHotel"/>
+    <sequenceFlow id="flow2" sourceRef="bookHotel" targetRef="carCheck"/>
+    <sequenceFlow id="flow3" sourceRef="bookCar" targetRef="transEnd"/>
+  </transaction>
+
+  <!-- Cancel boundary event (sibling of the transaction) - required for the cancel end event -->
+  <boundaryEvent id="cancelBoundary" attachedToRef="bookingTransaction">
+    <cancelEventDefinition/>
+  </boundaryEvent>
+
+  <endEvent id="end"/>
+
+  <sequenceFlow id="mainFlow1" sourceRef="start" targetRef="bookingTransaction"/>
+  <sequenceFlow id="mainFlow2" sourceRef="bookingTransaction" targetRef="end"/>
+  <sequenceFlow id="cancelFlow" sourceRef="cancelBoundary" targetRef="end"/>
+</process>
 ```
 
 **Behavior:**
-- Cancels parent sub-process
-- Triggers compensation if defined
-- Only works within sub-process context
+
+- Reaching the cancel end event cancels the enclosing transaction scope; a plain error from an activity does **not** cancel it (it propagates outward and fails the process instance if unhandled)
+- The engine's `EndEventValidator` rejects a cancel end event that is not directly inside a `<transaction>`
+- The cancel **boundary** event on the transaction (sibling of the `<transaction>`) is required — see the example above
+- Compensation handlers on the transaction fire as part of the cancellation
+
+The full pattern, including the compensation variant, is in [Transaction SubProcesses](../subprocesses/transaction.md).
 
 ### 7. Escalation End Event
 
@@ -248,6 +276,7 @@ Set variables before ending:
 ```
 
 **Variable Setter Example:**
+
 ```java
 public class VariableSetter implements JavaDelegate {
     @Override
@@ -303,9 +332,9 @@ public class VariableSetter implements JavaDelegate {
   <sequenceFlow id="flow3" sourceRef="validateOrder" targetRef="validationCheck"/>
   <sequenceFlow id="flow4" sourceRef="processOrder" targetRef="shipOrder"/>
   <sequenceFlow id="flow5" sourceRef="shipOrder" targetRef="successEnd"/>
-  <sequenceFlow id="flow6" sourceRef="validationCheck" targetRef="processOrder"/>
 
-  <!-- Signal definition -->
+  <!-- Event definitions -->
+  <error id="OrderRejected" name="Order Rejected" errorCode="REJ001"/>
   <signal id="orderShipped" name="Order Shipped"/>
 </process>
 ```
@@ -344,18 +373,19 @@ public class VariableSetter implements JavaDelegate {
 ```
 
 **Behavior:**
+
 - When `terminateEnd` is reached, ALL branches end immediately
 - `longTask` and `anotherTask` are terminated
 - Process instance ends
 
-### Example 3: Sub-Process with Cancel End
+### Example 3: Transaction with Cancel End
 
 ```xml
 <process id="mainProcess" name="Main Process">
   
   <startEvent id="start"/>
   
-  <subProcess id="orderSubProcess" name="Order Sub-Process">
+  <transaction id="orderTransaction" name="Order Transaction">
     <startEvent id="subStart"/>
     
     <serviceTask id="checkInventory" name="Check Inventory"/>
@@ -382,12 +412,18 @@ public class VariableSetter implements JavaDelegate {
     <sequenceFlow id="subFlow1" sourceRef="subStart" targetRef="checkInventory"/>
     <sequenceFlow id="subFlow2" sourceRef="checkInventory" targetRef="inventoryCheck"/>
     <sequenceFlow id="subFlow3" sourceRef="processOrder" targetRef="subEnd"/>
-  </subProcess>
-  
+  </transaction>
+
+  <!-- Cancel boundary event (sibling of the transaction) - required for the cancel end event -->
+  <boundaryEvent id="cancelBoundary" attachedToRef="orderTransaction">
+    <cancelEventDefinition/>
+  </boundaryEvent>
+
   <endEvent id="end"/>
-  
-  <sequenceFlow id="mainFlow1" sourceRef="start" targetRef="orderSubProcess"/>
-  <sequenceFlow id="mainFlow2" sourceRef="orderSubProcess" targetRef="end"/>
+
+  <sequenceFlow id="mainFlow1" sourceRef="start" targetRef="orderTransaction"/>
+  <sequenceFlow id="mainFlow2" sourceRef="orderTransaction" targetRef="end"/>
+  <sequenceFlow id="cancelFlow" sourceRef="cancelBoundary" targetRef="end"/>
 </process>
 ```
 
@@ -420,7 +456,7 @@ Map<String, Object> variables = Map.of("orderId", "12345");
 runtimeService.signalEventReceived("orderShipped", variables);
 ```
 
-Signal **end** events are unsupported: a signal definition on an end event is ignored and the end event behaves as a plain end event. To broadcast a signal when a process ends, place an intermediate throw signal event before the end event.
+Signal **end** events are not supported — see the [Signal End Event](#3-signal-end-event) section above.
 
 ## Best Practices
 
@@ -437,7 +473,7 @@ Signal **end** events are unsupported: a signal definition on an end event is ig
 - **Terminate Misuse** - Can unexpectedly kill parallel branches
 - **Error Not Caught** - Errors may propagate unexpectedly
 - **Signal Broadcasting** - Affects ALL waiting processes
-- **Cancel Scope** - Only works in sub-process context
+- **Cancel Scope** - A cancel end event only works inside a `<transaction>` (see the [Cancel End Event](#6-cancel-end-event) section)
 - **Multiple Terminators** - Can cause confusion
 - **Missing End Events** - Process must have at least one
 
@@ -450,4 +486,3 @@ Signal **end** events are unsupported: a signal definition on an end event is ig
 - [SubProcesses](../subprocesses/index.md) - Process containers
 
 ---
-

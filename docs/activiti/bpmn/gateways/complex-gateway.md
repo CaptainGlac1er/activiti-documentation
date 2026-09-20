@@ -13,30 +13,20 @@ description: "Complex Gateway support status in Activiti."
 
 ### What This Means
 
-- There is **no `ComplexGatewayParseHandler`** class — the engine does not assign any activity behavior to complex gateways.
-- There is **no `ComplexGatewayActivityBehavior`** class — no runtime logic exists for complex gateway semantics.
-- The `ComplexGatewayXMLConverter` in the BPMN converter simply transforms a `<complexGateway>` into an `ExclusiveGateway` during XML parsing, meaning it will behave as a standard exclusive (XOR) gateway at best.
-- Complex gateway-specific features such as DAN (Disjunctive AND), DOR (Disjunctive OR), activation conditions, and cancellation conditions are **not implemented**.
-- A complex gateway registered in `ProcessEngineConfigurationImpl` does not exist.
+- The BPMN-to-model converter maps `<complexGateway>` to an `ExclusiveGateway` at parse time (see [Source Reference](#source-reference)) — the engine never sees a complex gateway, so no activity behavior is ever assigned to one.
+- There is no `ComplexGatewayParseHandler` and no `ComplexGatewayActivityBehavior` in the engine, and no complex-gateway handler in the parse-handler registry.
+- Complex gateway-specific features — activation conditions, cancellation conditions, and the DAN/DOR operator sets — are **not implemented**.
 
 ### What Happens If You Use One?
 
-If your BPMN contains a `<complexGateway>`, the XML converter will attempt to parse it but will convert it to an exclusive gateway internally. The complex-specific attributes and semantics will be **ignored**. Depending on your process, this may cause unexpected behavior or parse warnings.
-
-The element itself carries the standard BPMN 2.0 symbol — a diamond with an asterisk — which is how it renders in any BPMN tool:
-
-```xml
-<complexGateway id="complex" name="Complex Decision"/>
-```
-
-In Activiti, though, the engine executes that shape as an exclusive (XOR) gateway.
+If your BPMN contains a `<complexGateway>`, the converter maps it to an exclusive gateway silently — no parse error or warning is emitted. The element keeps the standard BPMN 2.0 symbol (a diamond with an asterisk) in any tool, but the engine executes it as an exclusive (XOR) gateway: at most one outgoing flow is taken. The complex-specific attributes are discarded during conversion, so a process that relied on them will behave as a plain XOR decision — often in a way that is not obvious at a glance.
 
 ### Recommended Alternative
 
 For multi-path conditional routing (selecting one or more paths based on conditions), use an **Inclusive Gateway** instead:
 
 ```xml
-<inclusiveGateway id="gateway" name="Decision"/>
+<inclusiveGateway id="gateway" name="Decision" default="defaultFlow"/>
 
 <sequenceFlow id="pathA" sourceRef="gateway" targetRef="taskA">
   <conditionExpression>${conditionA}</conditionExpression>
@@ -45,16 +35,17 @@ For multi-path conditional routing (selecting one or more paths based on conditi
 <sequenceFlow id="pathB" sourceRef="gateway" targetRef="taskB">
   <conditionExpression>${conditionB}</conditionExpression>
 </sequenceFlow>
+
+<sequenceFlow id="defaultFlow" sourceRef="gateway" targetRef="taskDefault"/>
 ```
 
-The inclusive gateway supports selecting one or more paths simultaneously, which covers most use cases that might otherwise require a complex gateway.
+The inclusive gateway supports selecting one or more paths simultaneously, which covers most use cases that might otherwise require a complex gateway. Give it a `default` flow (no condition) so the process cannot stall when every condition evaluates to `false` — see [Sequence Flows — Always Define Default](../elements/sequence-flows.md#3-always-define-default).
 
 ### Source Reference
 
-- `ComplexGatewayXMLConverter.java` — Converts `<complexGateway>` to `ExclusiveGateway` (see comment: *"complex gateway is not supported so transform it to exclusive gateway"*)
-- No `ComplexGatewayParseHandler` found in the engine module
-- No `ComplexGatewayActivityBehavior` found in the engine module
-- No registration of a complex gateway handler in `ProcessEngineConfigurationImpl`
+- `ComplexGatewayXMLConverter` (`org.activiti.bpmn.converter`) — `convertXMLToElement` builds an `ExclusiveGateway`; the class comment reads *"complex gateway is not supported so transform it to exclusive gateway"*
+- `ComplexGateway` model class exists (`org.activiti.bpmn.model`), but the parser never produces one — the converter replaces it before model building
+- No `ComplexGatewayParseHandler`, no `ComplexGatewayActivityBehavior`, and no complex-gateway entry in the engine's parse-handler registry
 
 ### Related Documentation
 

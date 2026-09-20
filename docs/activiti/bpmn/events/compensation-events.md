@@ -32,7 +32,8 @@ Compensation Events provide a mechanism to **undo or compensate for completed ac
 </intermediateThrowEvent>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
 **Activiti Extensions:** None (standard BPMN behavior)
 
 ## Key Features
@@ -49,10 +50,10 @@ Compensation Events provide a mechanism to **undo or compensate for completed ac
 ### Compensation Characteristics
 
 | Feature | Description |
-|---------|-------------|
+| --------- | ------------- |
 | **Interrupting Mode** | Both `cancelActivity="true"` and `cancelActivity="false"` are accepted; `false` (non-interrupting) is the typical setup |
 | **Completed Activities** | Only compensates completed tasks |
-| **Activity Reference** | `activityRef` is optional — if empty/null, compensation broadcasts to ALL completed activities in the current scope. When set on a **throw** event it must reference the compensation **handler** activity (subscriptions are keyed by the handler id); pointing it at the source activity matches no subscription |
+| **Activity Reference** | `activityRef` is optional — if empty/null, compensation broadcasts to ALL completed activities in the current scope (the innermost sub-process, or the whole process if there is no sub-process). When set on a **throw** event it must reference the compensation **handler** activity (subscriptions are keyed by the handler id); pointing it at the source activity matches no subscription |
 | **waitForCompletion** | Attribute exists on `CompensateEventDefinition` but is **not yet implemented** (TODO in source). Always defaults to `true` |
 | **Order** | Compensates in reverse order |
 | **Variables** | Original variables available |
@@ -117,6 +118,7 @@ Define compensation handler on an activity:
 ```
 
 **Important:**
+
 - The boundary event must be a **sibling** of the activity (with `attachedToRef`); nested inside the activity element it is dropped by the parser
 - The handler is linked with an `<association>` and must declare `isForCompensation="true"` — otherwise the engine throws `Compensation activity could not be found (or it is missing 'isForCompensation="true"')` when the activity completes
 - `cancelActivity` accepts both `true` and `false`; `false` is the typical (non-interrupting) setup
@@ -198,9 +200,7 @@ Trigger compensation from anywhere in the process:
 
 There is no compensation end event element in Activiti — a `compensateEventDefinition` on an end event gets no behavior (the `CompensateEventDefinitionParseHandler` only handles throw events and boundary events). Boundary/throw compensation is the supported mechanism: to compensate and then terminate, place a throw-compensation event in the flow before the end event (as in the examples below).
 
-**Note:** `activityRef` is optional. When omitted, the compensation event broadcasts to ALL completed activities in the current compensation scope.
-
-**Note:** `waitForCompletion` attribute exists on `CompensateEventDefinition` but is not yet implemented (marked as TODO in source code).
+The `activityRef` and `waitForCompletion` semantics are in the [Compensation Characteristics](#compensation-characteristics) table above.
 
 ## Complete Examples
 
@@ -278,6 +278,7 @@ There is no compensation end event element in Activiti — a `compensateEventDef
 ```
 
 **Compensation Flow:**
+
 1. Shipment validation fails
 2. The throw-compensation event broadcasts within scope → handlers run in reverse order of completion: `refundPayment` (compensates #2), then `releaseInventory` (compensates #1)
 3. Process ends with failure
@@ -456,6 +457,7 @@ There is no compensation end event element in Activiti — a `compensateEventDef
 ```
 
 **Saga Pattern Benefits:**
+
 - Each step has compensating action
 - Failure triggers reverse-order compensation
 - Maintains data consistency across distributed systems
@@ -511,20 +513,7 @@ public class PaymentRefunder implements JavaDelegate {
 
 ### Compensation Execution Order
 
-```java
-// When multiple compensations are triggered, they execute in REVERSE order
-// of the original activity completion
-
-// Original order:
-// 1. reserveInventory (completed first)
-// 2. processPayment (completed second)
-// 3. createShipment (completed third)
-
-// Compensation order (reverse):
-// 1. createShipment compensation (executed first)
-// 2. processPayment compensation (executed second)
-// 3. reserveInventory compensation (executed third)
-```
+Reverse-order execution (reverse of the original completion order) is walked step by step in the How it works notes of the [Intermediate Compensation Throw Event](#2-intermediate-compensation-throw-event) section.
 
 ### Monitoring Compensation
 
@@ -628,15 +617,12 @@ public class LoggedCompensator implements JavaDelegate {
 ```java
 @Test
 public void testCompensationFlow() {
-    // Start process
-    String processInstanceId = runtimeService.startProcessInstanceByKey("orderProcess");
-    
-    // Complete activities
-    // ...
-    
-    // Trigger failure
-    runtimeService.setVariable(processInstanceId, "shipmentValid", false);
-    
+    // Start the process with the failure condition in place, so the
+    // shipmentValidation gateway takes the compensation path
+    Map<String, Object> vars = new HashMap<>();
+    vars.put("shipmentValid", false);
+    String processInstanceId = runtimeService.startProcessInstanceByKey("orderProcess", vars);
+
     // Verify compensation executed
     List<HistoricActivityInstance> compensationActivities = 
         historyService.createHistoricActivityInstanceQuery()
@@ -675,7 +661,7 @@ public void testCompensationFlow() {
 <serviceTask id="cancelOrder" name="Cancel Order" isForCompensation="true"/>
 ```
 
-**Error:** `ActivitiException: Compensation activity could not be found (or it is missing 'isForCompensation="true"')` — thrown when the activity completes and its compensation boundary event cannot resolve a handler. Note that a sequence flow from the boundary event to a handler is **not** enough — the engine resolves the handler through the `<association>` and requires `isForCompensation="true"` on the target.
+**Error:** The `ActivitiException` described in the [Compensation Boundary Event](#1-compensation-boundary-event) section is thrown when a compensation boundary event cannot resolve its handler. A sequence flow from the boundary event to a handler is **not** enough — the engine resolves the handler through the `<association>` and requires `isForCompensation="true"` on the target.
 
 ### 2. Trying to Compensate Incomplete Activities
 
@@ -700,7 +686,7 @@ public void testCompensationFlow() {
 </intermediateThrowEvent>
 ```
 
-**Note:** The engine no longer validates `activityRef` at deploy time (the legacy check is disabled in the source), so pointing it at a regular activity such as `step1` deploys without error — and then silently matches no subscription, making the throw a no-op.
+**Note:** The deploy-time validation of `activityRef` only checks that it references an existing activity (a missing id is rejected with an 'Invalid attribute value for activityRef' validation error) — it does **not** check that the target is a compensation handler. Pointing it at a regular activity such as `step1` therefore passes validation, and the throw then silently matches no subscription (a no-op).
 
 ### 3. Interrupting vs Non-Interrupting Compensation
 
@@ -760,7 +746,7 @@ With `cancelActivity="false"`, the activity completes normally and registers a c
 ### Compensation vs Error Handling
 
 | Aspect | Error Handling | Compensation |
-|--------|----------------|--------------|
+| -------- | ---------------- | -------------- |
 | **Timing** | During activity | After completion |
 | **Use Case** | Activity failures | Business rollback |
 | **Scope** | Single activity | Multiple activities |
@@ -769,7 +755,7 @@ With `cancelActivity="false"`, the activity completes normally and registers a c
 ### Compensation vs Transaction Rollback
 
 | Aspect | Transaction Rollback | Compensation |
-|--------|---------------------|---------------|
+| -------- | --------------------- | --------------- |
 | **Scope** | Database transaction | Business process |
 | **Timing** | Immediate | Can be delayed |
 | **External Systems** | Not supported | Supported |

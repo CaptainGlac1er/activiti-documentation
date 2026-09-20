@@ -23,18 +23,21 @@ Intermediate Events occur **during process execution** between the start and end
 </intermediateThrowEvent>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
 **Activiti Extensions:** Multiple event types, expressions, async support
 
 ## Key Features
 
 ### Catch Events (Wait for Events)
+
 - **Message** - Wait for external message
 - **Timer** - Wait for time condition
 - **Signal** - Wait for global signal
 - **Link** - Jump from link throw event
 
 ### Throw Events (Trigger Events)
+
 - **Message** - Send message to external system
 - **Signal** - Broadcast signal globally
 - **Link** - Jump to link catch event
@@ -61,11 +64,13 @@ Wait for a message to arrive:
 ```
 
 **Message Definition:**
+
 ```xml
 <message id="approvalMessage" name="Approval Message"/>
 ```
 
 **Runtime API:**
+
 ```java
 // Send message to trigger event
 runtimeService.messageEventReceived("approvalMessage", processInstanceId);
@@ -85,6 +90,12 @@ Send a message to external systems:
 </intermediateThrowEvent>
 
 <sequenceFlow id="flow2" sourceRef="sendNotification" targetRef="endEvent"/>
+```
+
+**Message Definition:**
+
+```xml
+<message id="orderCompleteMessage" name="Order Complete"/>
 ```
 
 ### 2. Timer Intermediate Events
@@ -108,6 +119,7 @@ Wait for a specific duration:
 ```
 
 **Duration Formats:**
+
 - `PT24H` - 24 hours
 - `P7D` - 7 days
 - `PT30M` - 30 minutes
@@ -126,6 +138,7 @@ Wait until a specific date:
 ```
 
 **Expression Support:**
+
 ```xml
 <timeDate>${calculateDueDate()}</timeDate>
 <timeDate>${dateCalculator.calculate()}</timeDate>
@@ -144,6 +157,7 @@ Repeat at intervals. `timeCycle` accepts the `R[<n>]/<ISO-8601 duration>` format
 ```
 
 **Cycle Formats:**
+
 - `R10/PT1H` - Repeat 10 times, every 1 hour
 - `R/PT5M` - Repeat indefinitely, every 5 minutes
 - `R5/PT1D` - Repeat 5 times, every day
@@ -152,6 +166,7 @@ Repeat at intervals. `timeCycle` accepts the `R[<n>]/<ISO-8601 duration>` format
 > **Note:** iCal recurrence rules (`RRULE:FREQ=DAILY;...`) are not supported: the engine parses `timeCycle` only as `R[<n>]/<duration>` or as a cron expression and fails otherwise.
 
 **Timer Event Types Summary:**
+
 | Type | Element | Description | Example |
 |------|---------|-------------|---------|
 | Duration | `<timeDuration>` | Relative time period | `PT24H`, `P7D` |
@@ -171,11 +186,13 @@ Wait for a global signal:
 ```
 
 **Signal Definition:**
+
 ```xml
 <signal id="emergencySignal" name="Emergency Signal"/>
 ```
 
 **Runtime API:**
+
 ```java
 // Broadcast signal to all waiting processes
 runtimeService.signalEventReceived("emergencySignal");
@@ -191,11 +208,17 @@ Send a global signal:
 </intermediateThrowEvent>
 ```
 
+**Signal Definition:**
+
+```xml
+<signal id="completionSignal" name="Completion Signal"/>
+```
+
 **Use Case:** Notify other processes of completion
 
 #### Signal Scope and Signal Expressions
 
-Signals are **global by default**: a throw event wakes every waiting subscription for that signal name, even in other process instances. Two attributes refine this:
+Signals are **global by default**: a throw event wakes every waiting subscription for that signal name, even in other process instances. A subscription is the engine's record of a process instance waiting for an external event — messages, signals, or compensation triggers; the [Event Subscription Querying](../../advanced/event-subscription-querying.md) page covers how to query them. Two attributes refine this:
 
 - **`activiti:scope` on `<signal>`** — `activiti:scope="processInstance"` limits the signal to the process instance the throw event runs in. The default (no scope, or `activiti:scope="global"`) keeps the global behavior.
 - **`activiti:signalExpression` on `<signalEventDefinition>`** — the expression is evaluated at execution time and used as the signal name. It is only used when no `signalRef` is present (`signalRef` takes precedence).
@@ -218,6 +241,7 @@ Signals are **global by default**: a throw event wakes every waiting subscriptio
 ```
 
 **Runtime behavior:**
+
 - A throw event referencing a `processInstance`-scoped signal only wakes catch subscriptions of the **same process instance** (matched by process instance id + signal name). With the default scope it wakes matching subscriptions across process instances (matched by signal name + tenant).
 - The scope is read from the `<signal>` element referenced by `signalRef`; the catch subscription stores the scope when it is created, and the throw event checks the same scope to decide which subscriptions to wake.
 - `runtimeService.signalEventReceived(...)` only wakes **global** subscriptions — process-instance-scoped signals must be triggered by a throw event from within the process itself.
@@ -225,25 +249,25 @@ Signals are **global by default**: a throw event wakes every waiting subscriptio
 
 ### 4. Link Intermediate Events
 
-Create internal process jumps:
-
-#### Link Throw Event
+Create internal process jumps. Link events are supported as of 8.7.0 using the id-based syntax: a throw's `<linkEventDefinition>` carries a `<target>` element holding the catch's definition `id`, and a catch's definition carries one or more `<source>` elements holding the throw definitions' `id`s — the `name` attribute is parsed but not used for matching. Links work only within the same process, and deployment validation rejects a throw without a `<target>` or a catch without any `<source>`.
 
 ```xml
+<!-- Link throw: <target> holds the id of the catch event's linkEventDefinition -->
 <intermediateThrowEvent id="jumpToReview">
-  <linkEventDefinition name="ReviewLink"/>
+  <linkEventDefinition id="jumpToReviewLinkId">
+    <target>reviewEntryPointLinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
-```
 
-#### Link Catch Event
-
-```xml
+<!-- Link catch: one <source> per contributing throw definition -->
 <intermediateCatchEvent id="reviewEntryPoint">
-  <linkEventDefinition name="ReviewLink"/>
+  <linkEventDefinition id="reviewEntryPointLinkId">
+    <source>jumpToReviewLinkId</source>
+  </linkEventDefinition>
 </intermediateCatchEvent>
 ```
 
-**Use Case:** Avoid complex flow lines, create clear jump points
+**Use Case:** Avoid complex flow lines, create clear jump points. The complete throw/catch pattern, including multiple throws to one catch, is in [Link Events](./link-events.md).
 
 ### 5. Compensate Intermediate Events
 
@@ -258,8 +282,6 @@ Trigger compensation (undo) operations:
 **Precondition:** a throw-compensation event only triggers handlers for which a compensation subscription exists — the compensated activity needs a compensation boundary event (`<compensateEventDefinition/>`), an `<association>` from that boundary event to a handler activity with `isForCompensation="true"`, and the activity must have completed. If no matching subscription exists, the throw event does nothing (the engine continues silently). `activityRef` is optional — when omitted (as above), the compensation is broadcast to all completed activities in the current scope. See [Compensation Events](./compensation-events.md) for the full pattern.
 
 **Use Case:** Rollback completed activities
-
-## Advanced Features
 
 ## Complete Examples
 
@@ -285,9 +307,15 @@ Trigger compensation (undo) operations:
     <messageEventDefinition messageRef="paymentMessage"/>
   </intermediateCatchEvent>
   
-  <exclusiveGateway id="paymentCheck"/>
+  <!-- Payment deadline: if the 24h timer expires before the payment message
+       arrives, the default flow rejects the order. The 'paymentReceived'
+       variable is set by the 3-argument messageEventReceived call shown in
+       the Runtime API section below. -->
+  <exclusiveGateway id="paymentCheck" default="rejectFlow"/>
   
   <serviceTask id="processOrder" name="Process Order"/>
+
+  <serviceTask id="rejectOrder" name="Reject Unpaid Order"/>
   
   <!-- Send completion signal -->
   <intermediateThrowEvent id="notifyCompletion">
@@ -306,6 +334,12 @@ Trigger compensation (undo) operations:
   </sequenceFlow>
   <sequenceFlow id="flow7" sourceRef="processOrder" targetRef="notifyCompletion"/>
   <sequenceFlow id="flow8" sourceRef="notifyCompletion" targetRef="end"/>
+  <sequenceFlow id="rejectFlow" sourceRef="paymentCheck" targetRef="rejectOrder"/>
+  <sequenceFlow id="flow9" sourceRef="rejectOrder" targetRef="end"/>
+
+  <!-- Event definitions -->
+  <message id="paymentMessage" name="Payment Received"/>
+  <signal id="orderComplete" name="Order Complete"/>
 </process>
 ```
 
@@ -348,7 +382,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 1. **Use Messages for External Triggers** - Clear integration points
 2. **Use Signals for Internal Communication** - Cross-process coordination
 3. **Timer Precision** - Understand timer accuracy limitations
-4. **Conditional Events** - Use for polling external systems
+4. **Polling External Systems** - Use a cycle timer (Section 2); conditional events are not supported in Activiti
 5. **Link Events** - Simplify complex flow diagrams
 6. **Non-Interrupting** - For logging and notifications
 7. **Clear Naming** - Descriptive event and message names
@@ -358,12 +392,12 @@ List<Job> timerJobs = managementService.createJobQuery()
 - **Message Not Correlating** - Check message name matches
 - **Timer Not Firing** - Verify duration format
 - **Signal Broadcasting** - Affects ALL waiting processes
-- **Conditional Polling** - Can cause performance issues
-- **Link Name Mismatch** - Throw and catch must match
+- **Link ID Mismatch** - Matching is by definition `id` (the throw's `<target>` must equal the catch's definition `id`), never by `name` — see [Link Events](./link-events.md)
 - **Error Handling** - Not catching all error types
 
 ## Related Documentation
 
+- [Link Events](./link-events.md) - Internal process jumps (supported as of 8.7.0)
 - [Start Events](./start-event.md) - Process initiation
 - [End Events](./end-event.md) - Process termination
 - [Boundary Events](./boundary-event.md) - Activity-level events
@@ -371,4 +405,3 @@ List<Job> timerJobs = managementService.createJobQuery()
 - [User Task](../elements/user-task.md) - Human tasks
 
 ---
-

@@ -29,6 +29,7 @@ Activiti uses business calendars internally to parse the string values found in 
 ```
 
 **Key Concepts:**
+
 - A **calendar type** determines how a timer string is parsed (cycle, duration, duedate, or custom)
 - **ISO 8601** expressions cover absolute dates, relative durations, and repeating cycles
 - **CRON** expressions support Unix-style scheduling with Quartz-compatible syntax
@@ -60,7 +61,7 @@ flowchart TD
 Activiti ships with four built-in business calendars, each identified by a name:
 
 | Calendar Name | Class | Description |
-|---|---|---|
+| --- | --- | --- |
 | `cycle` | `CycleBusinessCalendar` | Parses ISO 8601 repeating cycles and CRON expressions |
 | `duration` | `DurationBusinessCalendar` | Parses ISO 8601 durations and cycles without CRON |
 | `dueDate` | `DueDateBusinessCalendar` | Parses ISO 8601 absolute dates and period offsets |
@@ -173,30 +174,7 @@ return DateTime.parse(duedate).toDate();
     activiti:dueDate="2026-05-01T17:00:00"/>
 ```
 
-**Example: User task with due date**
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:process id="reviewProcess" name="Review Process"
-    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-    xmlns:activiti="http://activiti.org/bpmn">
-
-  <bpmn:startEvent id="start"/>
-
-  <bpmn:sequenceFlow sourceRef="start" targetRef="review"/>
-
-  <bpmn:userTask id="review"
-      name="Manager Review"
-      activiti:assignee="${manager}"
-      activiti:dueDate="P5D"
-      activiti:businessCalendarName="dueDate"/>
-
-  <bpmn:sequenceFlow sourceRef="review" targetRef="end"/>
-
-  <bpmn:endEvent id="end"/>
-
-</bpmn:process>
-```
+A complete user-task process built around these due dates is shown in [Business Calendar Usage in User Tasks](#business-calendar-usage-in-user-tasks).
 
 ### AdvancedCycleBusinessCalendar
 
@@ -205,7 +183,7 @@ The `CycleBusinessCalendar` is the default calendar registered under the name `c
 Two schedule versions are supported:
 
 | Version | Resolver | DST Behavior |
-|---|---|---|
+| --- | --- | --- |
 | `VER:1` | `AdvancedSchedulerResolverWithoutTimeZone` | Ignores DST; uses server time zone (legacy behavior) |
 | `VER:2` (default) | `AdvancedSchedulerResolverWithTimeZone` | Respects DST transitions in the specified time zone |
 
@@ -259,7 +237,7 @@ Fires the timer at a specific point in time.
 ```
 
 | Format | Example | Description |
-|---|---|---|
+| --- | --- | --- |
 | Date only | `2026-06-15` | Midnight local time |
 | Date + time | `2026-06-15T09:00:00` | Specific time |
 | With offset | `2026-06-15T09:00:00+02:00` | Explicit timezone |
@@ -282,7 +260,7 @@ Fires the timer after a duration has elapsed from the moment the timer was creat
 ```
 
 | Expression | Meaning |
-|---|---|
+| --- | --- |
 | `PT5S` | 5 seconds |
 | `PT30M` | 30 minutes |
 | `PT2H` | 2 hours |
@@ -307,7 +285,7 @@ Fires the timer repeatedly according to a cycle pattern. Uses the `DurationHelpe
 Cycle expressions are parsed by splitting on `/` into segments:
 
 | Pattern | Example | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `R` | `R/PT1H` | Repeat indefinitely every 1 hour |
 | `Rn` | `R5/PT1H` | Repeat 5 times, every 1 hour |
 | `R/Pduration` | `R/PT1D` | Infinite repeat, daily |
@@ -363,15 +341,7 @@ if (isDuration(expression.get(0))) {
 <bpmn:timeCycle activiti:endDate="2026-03-01T00:00:00">R/2026-01-01T00:00:00/PT1W</bpmn:timeCycle>
 ```
 
-**Repeat cycle with end date attribute:**
-
-As an alternative to encoding the end time in the cycle string, the `activiti:endDate` attribute can be used on the `timeCycle` element:
-
-```xml
-<bpmn:timerEventDefinition>
-  <bpmn:timeCycle activiti:endDate="2026-12-31T23:59:59">R/PT1H</bpmn:timeCycle>
-</bpmn:timerEventDefinition>
-```
+The same bounding can be expressed with the `activiti:endDate` attribute; see [Timer Event Attributes](#timer-event-attributes).
 
 ## CRON Expression Syntax
 
@@ -382,7 +352,7 @@ When the timer expression does **not** start with `R`, the cycle calendar delega
 A CRON expression has six required fields and one optional field, separated by whitespace:
 
 | Field | Allowed Values | Special Characters |
-|---|---|---|
+| --- | --- | --- |
 | Seconds | `0-59` | `, - * /` |
 | Minutes | `0-59` | `, - * /` |
 | Hours | `0-23` | `, - * /` |
@@ -394,7 +364,7 @@ A CRON expression has six required fields and one optional field, separated by w
 ### Special Characters
 
 | Character | Name | Description | Example |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `*` | All values | Matches every possible value | `*` in minutes = every minute |
 | `?` | No specific value | Used in day-of-month or day-of-week when the other is specified | `0 0 12 * * ?` |
 | `-` | Range | Specifies a range of values | `10-12` in hours = 10, 11, 12 |
@@ -420,7 +390,7 @@ A CRON expression has six required fields and one optional field, separated by w
 ### Common CRON Patterns
 
 | CRON Expression | Meaning |
-|---|---|
+| --- | --- |
 | `0 0/5 * * * ?` | Every 5 minutes |
 | `0 15 10 * * ?` | Daily at 10:15 AM |
 | `0 0 9-17 * * ?` | Every hour from 9 AM to 5 PM |
@@ -455,7 +425,7 @@ When using the AdvancedCycleBusinessCalendar, append `DSTZONE:timezone` to a CRO
 The following attributes are available on timer-related elements:
 
 | Attribute | Element | Namespace | Description | Default |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `activiti:businessCalendarName` | `timerEventDefinition` | `http://activiti.org/bpmn` | Name of the business calendar to use | `cycle` |
 | `activiti:endDate` | `timeCycle` | `http://activiti.org/bpmn` | ISO date string limiting timer repeats | No limit |
 
@@ -467,7 +437,7 @@ The following attributes are available on timer-related elements:
 
 **How `activiti:endDate` works:**
 
-The `endDate` is parsed by `BusinessCalendarImpl.resolveEndDate()`:
+`endDate` is parsed by `BusinessCalendarImpl.resolveEndDate()`:
 
 ```java
 // Source: BusinessCalendarImpl.resolveEndDate()
@@ -777,17 +747,11 @@ public BusinessCalendarManager businessCalendarManager(ClockReader clockReader) 
 
 ### How DST Affects Timers
 
-Daylight saving time transitions can cause timers to fire at unexpected wall-clock times when the underlying time zone shifts by an hour.
+Daylight saving time transitions can cause timers to fire at unexpected wall-clock times when the underlying time zone shifts by an hour. The `VER:n`/`DSTZONE:zone` suffixes discussed here are only processed by the `AdvancedCycleBusinessCalendar` (see [AdvancedCycleBusinessCalendar](#advancedcyclebusinesscalendar) above) — under the default `cycle` calendar an ISO string with these suffixes fails to parse, and a CRON string silently ignores them.
 
-> **Prerequisite:** `VER:n` and `DSTZONE:zone` suffixes are only processed by the `AdvancedCycleBusinessCalendar` (see [AdvancedCycleBusinessCalendar](#advancedcyclebusinesscalendar) above). Under the default `cycle` calendar, an ISO string with these suffixes fails to parse and a CRON string silently ignores them.
+**Without DST handling (VER:1 or no DSTZONE):** `R/PT1D` always adds exactly 24 hours, so a timer set for 2:00 AM fires at 3:00 AM after the spring-forward transition.
 
-**Without DST handling (VER:1 or no DSTZONE):**
-- `R/PT1D` always adds exactly 24 hours
-- A timer set for 2:00 AM will fire at 3:00 AM after the spring-forward transition
-
-**With DST handling (VER:2 + DSTZONE):**
-- The calendar uses the specified time zone for calculations
-- `R/PT1D DSTZONE:US/Eastern` fires at the same wall-clock time regardless of DST
+**With DST handling (VER:2 + DSTZONE):** the calendar uses the specified time zone for calculations, so `R/PT1D DSTZONE:US/Eastern` fires at the same wall-clock time regardless of DST.
 
 ### Spring Forward vs Fall Back
 
@@ -803,7 +767,7 @@ flowchart TD
 ### Recommended Timezones
 
 | Timezone ID | DST Behavior | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `UTC` | None | Recommended for server internals |
 | `US/Eastern` | Yes | EDT/EST |
 | `US/Central` | Yes | CDT/CST |
@@ -1003,19 +967,12 @@ runtimeService.startProcessInstanceByKey("variableTimer", variables);
 
 ## Best Practices
 
-1. **Use `DSTZONE` for wall-clock schedules** — When a timer must fire at a specific time of day (e.g., "9 AM Monday-Friday"), always include `DSTZONE:your/timezone` to ensure consistent behavior across DST transitions.
-
-2. **Prefer `duration` calendar for simple delays** — If you only need relative offsets without CRON support, the `duration` calendar is sufficient and simpler.
-
-3. **Use `dueDate` calendar for user tasks** — The `dueDate` calendar correctly handles both ISO periods and absolute timestamps, making it ideal for task deadlines.
-
-4. **Bound repeating timers** — Use `activiti:endDate` or `Rn` syntax to prevent timers from firing indefinitely, especially in production environments.
-
-5. **Test timers with clock manipulation** — See [Clock Manipulation for Testing](#clock-manipulation-for-testing) below.
-
-6. **Keep CRON expressions readable** — Use named days (`MON-FRI`) and months (`JAN-DEC`) rather than numeric values for maintainability.
-
-7. **Use `UTC` for server-internal timers** — Timers that don't need to align with human schedules should use `UTC` to avoid DST complications.
+- **Wall-clock schedules need `DSTZONE`** — for a "9 AM Monday–Friday" style schedule, include `DSTZONE:your/timezone`; the mechanics and failure modes are in [Common Pitfalls](#2-dst-causing-missed-or-double-firings).
+- **Simple delays don't need CRON** — the `duration` calendar handles plain ISO 8601 offsets without CRON support.
+- **Bound repeating timers** — use `Rn` counts or `activiti:endDate` (see [Common Pitfalls](#4-unbounded-repeat-timers)).
+- **Readable CRON** — prefer named days and months (`MON-FRI`, `JAN-DEC`) over numeric values.
+- **Server-internal timers** — use `UTC` when the schedule does not need to align with a human time zone.
+- **Deterministic tests** — see [Clock Manipulation for Testing](#clock-manipulation-for-testing).
 
 ## Common Pitfalls
 
@@ -1164,7 +1121,7 @@ public void tearDown() {
 ### What the Clock Affects
 
 | Feature | Affected by Clock |
-|---------|------------------|
+| --------- | ------------------ |
 | Timer start events | Yes |
 | Intermediate timer catch events | Yes |
 | Boundary timer events | Yes |

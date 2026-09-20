@@ -97,7 +97,7 @@ CommandExecutorContext.setShellExecutorContextFactory(executorContext -> {
 });
 ```
 
-The `ShellExecutorContext` passed to the factory has these getters: `getArgList()`, `getWaitFlag()`, `getCleanEnvBoolan()`, `getRedirectErrorFlag()`, `getDirectoryStr()`, `getResultVariableStr()`, `getErrorCodeVariableStr()`.
+The `ShellExecutorContext` passed to the factory has these getters: `getArgList()`, `getWaitFlag()`, `getCleanEnvBoolean()`, `getRedirectErrorFlag()`, `getDirectoryStr()`, `getResultVariableStr()`, `getErrorCodeVariableStr()`.
 
 ## Examples
 
@@ -108,7 +108,7 @@ The `ShellExecutorContext` passed to the factory has these getters: `getArgList(
   <extensionElements>
     <activiti:field name="command" stringValue="/bin/rm"/>
     <activiti:field name="arg1" stringValue="-rf"/>
-    <activiti:field name="arg2" stringValue="/tmp/workflow-*.tmp"/>
+    <activiti:field name="arg2" stringValue="/tmp/workflow-cache"/>
   </extensionElements>
 </serviceTask>
 ```
@@ -173,6 +173,7 @@ When running async, shell tasks benefit from retry configuration:
 
 - **Maximum 5 arguments** — The engine supports `arg1` through `arg5` only. For commands needing more arguments, concatenate them into fewer fields or use a shell script as the command.
 - **No built-in input stream** — Shell tasks cannot pipe data into stdin. Use a temporary file and reference it as an argument instead.
+- **No shell** — The command runs directly via `ProcessBuilder`, with no shell in between: no glob expansion, no pipes, no shell syntax. When you need shell features, use `/bin/sh` with `-c` and the command line as its single argument.
 - **Security risk** — Shell commands execute with the permissions of the process running Activiti. Always validate and sanitize expression-resolved arguments, and consider using `CommandExecutorContext.setShellExecutorContextFactory()` for whitelisting.
 - **Platform dependency** — Commands are OS-specific. Shell tasks are not portable across Windows/Linux/macOS without conditional logic.
 - **Output is always String** — Both stdout and the exit code are stored as `String` process variables, not typed values.

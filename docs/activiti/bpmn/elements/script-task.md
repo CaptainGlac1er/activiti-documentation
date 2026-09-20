@@ -304,8 +304,6 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 <sequenceFlow id="flow3" sourceRef="groovyProcess" targetRef="end"/>
 ```
 
-> **Note:** `activiti:scriptFormat="java"` and `activiti:scriptFormat="beanshell"` are **not supported** by default. Java code should use Service Tasks with `activiti:class` instead. BeanShell requires additional setup and is not included by default.
-
 ## Runtime API Usage
 
 ### Executing Scripts Programmatically
@@ -339,16 +337,16 @@ public class CustomScriptEngine implements javax.script.ScriptEngine {
 
 ## Best Practices
 
-1. **Choose Right Language:** Use appropriate script format for task
-2. **Keep Scripts Simple:** Complex logic belongs in service tasks
-3. **Error Handling:** Add boundary events for script failures
-4. **External Resources:** Store complex scripts externally
-5. **Testing:** Test scripts thoroughly before deployment
-6. **Performance:** Avoid heavy computations in scripts
-7. **Security:** Validate all inputs in scripts
-8. **Documentation:** Comment complex script logic
-9. **Version Control:** Track script changes
-10. **Result Variables:** Store outputs for downstream use
+1. **Choose the right language:** Use an appropriate script format for the task.
+2. **Keep scripts simple:** Put complex logic in service tasks.
+3. **Handle errors:** Add boundary events for script failures.
+4. **Use external resources:** Store complex scripts outside the BPMN definition.
+5. **Test before deployment:** Exercise scripts with representative inputs.
+6. **Protect performance:** Avoid heavy computation in scripts.
+7. **Validate inputs:** Treat external values as untrusted.
+8. **Document complex logic:** Add comments where the intent is not obvious.
+9. **Use version control:** Track script changes with the process definition.
+10. **Store results:** Save outputs that downstream activities need.
 
 ## Common Pitfalls
 

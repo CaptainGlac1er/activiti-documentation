@@ -542,10 +542,10 @@ public class VariableUser implements JavaDelegate {
 </process>
 ```
 
-**Use Case:**
-- Complex state transitions
-- Avoids spaghetti diagram
-- Clear state entry points
+**Use case:**
+- Modeling complex state transitions
+- Avoiding spaghetti diagrams
+- Providing clear state entry points
 
 ## Runtime Behavior
 

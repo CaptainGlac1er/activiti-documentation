@@ -22,7 +22,8 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 </boundaryEvent>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
 **Activiti Extensions:** Multiple event types, interrupting/non-interrupting
 
 **Important:** The `attachedToRef` attribute is **required** and must reference the ID of the activity the boundary event is attached to.
@@ -32,7 +33,7 @@ Boundary Events are **attached to activities** and handle exceptions, timeouts, 
 ### Boundary Event Types
 
 | Type | Description | Use Case |
-|------|-------------|----------|
+| ------ | ------------- | ---------- |
 | **Error** | Catch errors from activity | Exception handling |
 | **Timer** | Timeout handling | Activity deadlines |
 | **Message** | External trigger | Cancel/stop requests |
@@ -71,12 +72,14 @@ Handle activity timeouts:
 ```
 
 **Timer Formats:**
+
 - `PT24H` - 24 hours
 - `P7D` - 7 days
 - `PT30M` - 30 minutes
 - Expression: `${calculateTimeout()}`
 
 **Timer Types:**
+
 - **Duration Timer:** `<timeDuration>PT24H</timeDuration>` - Relative duration
 - **Date Timer:** `<timeDate>${dueDate}</timeDate>` - Absolute date
 - **Cycle Timer:** `<timeCycle>R/PT1H</timeCycle>` - Repeat (use `R[<n>]/<ISO-8601 duration>` or a cron expression; iCal/RRULE is not supported)
@@ -101,6 +104,7 @@ Log activity without canceling:
 ```
 
 **Behavior:**
+
 - Main task continues running
 - Logging happens every hour
 - Multiple log activities can execute
@@ -123,13 +127,14 @@ Catch errors from activities:
 ```
 
 **Error Definition:**
+
 ```xml
 <error id="PaymentError" name="Payment Error" errorCode="PAY001"/>
 ```
 
 ### 4. Message Boundary Event
 
-Wait for external messages:
+Handle external cancel or stop requests:
 
 ```xml
 <!-- xmlns:activiti="http://activiti.org/bpmn" required -->
@@ -145,11 +150,13 @@ Wait for external messages:
 ```
 
 **Message Definition:**
+
 ```xml
 <message id="cancelMessage" name="Cancel Review"/>
 ```
 
 **Runtime API:**
+
 ```java
 // Send message to cancel task
 runtimeService.messageEventReceived("cancelMessage", executionId);
@@ -173,6 +180,7 @@ Respond to global signals:
 ```
 
 **Signal Definition:**
+
 ```xml
 <signal id="emergencySignal" name="Emergency Stop"/>
 ```
@@ -233,9 +241,10 @@ Attach multiple boundary events to one activity:
 ```
 
 **Behavior:**
+
 - First triggering event wins (for interrupting events)
 - Non-interrupting events run in parallel
-- Multiple timeout logs can occur
+- The `logProgress` timer in the example is one-shot (`timeDuration`); use a `timeCycle` to repeat it, as in the [Non-Interrupting Timer Boundary Event](#2-non-interrupting-timer-boundary-event) section
 
 ## Advanced Features
 
@@ -261,6 +270,7 @@ Boundary events attach to the multi-instance activity as a whole, not inside `mu
 ```
 
 **Behavior:**
+
 - The boundary event attaches to the multi-instance activity as a whole, not to individual instances.
 - A single timer is created for the entire multi-instance activity.
 - When the boundary event fires, it affects the multi-instance activity as a unit.
@@ -401,16 +411,11 @@ Boundary events inside subprocesses must be siblings of the activity within the 
 </process>
 ```
 
-**Note:** Compensation is **not** triggered via event sub-processes — the engine's `EventSubprocessValidator` only accepts `error`, `message`, or `signal` start event definitions on event subprocesses. The supported mechanism is a compensation boundary event + `<association>` + an `isForCompensation="true"` handler, triggered by a throw-compensation event. See [Compensation Events](./compensation-events.md).
+**Note:** Compensation cannot be triggered from an event sub-process — the engine's `EventSubprocessValidator` only accepts `error`, `message`, or `signal` start event definitions on event subprocesses. The Example 2 pattern is explained in the [Compensate Boundary Event](#6-compensate-boundary-event) section; the full workflow is in [Compensation Events](./compensation-events.md).
 
 ## Runtime API
 
-### Sending Messages to Boundary Events
-
-```java
-// Correlate message with boundary event
-runtimeService.messageEventReceived("cancelApproval", executionId);
-```
+To deliver a message to a boundary event, use `RuntimeService.messageEventReceived(...)` as shown in the [Message Boundary Event](#4-message-boundary-event) section.
 
 ### Handling Timer Boundary Events
 
@@ -420,13 +425,6 @@ runtimeService.messageEventReceived("cancelApproval", executionId);
 List<Job> timerJobs = managementService.createJobQuery()
     .processInstanceId(processInstanceId)
     .list();
-```
-
-### Error Handling
-
-```java
-// Errors from boundary events can be caught
-// by error intermediate events or propagated
 ```
 
 ## Best Practices
@@ -445,7 +443,7 @@ List<Job> timerJobs = managementService.createJobQuery()
 - **Conflicting Events** - Multiple interrupting events competing
 - **Missing Error Handling** - Not catching all error types
 - **Timer Precision** - Timers may not fire exactly on time
-- **Non-Interrupting Confusion** - Understanding parallel execution
+- **Non-Interrupting Confusion** - A non-interrupting event never cancels the activity; it runs in parallel with it (see the [Non-Interrupting Timer Boundary Event](#2-non-interrupting-timer-boundary-event) section)
 - **Compensation Order** - Reverse order of completion
 
 ## Related Documentation
@@ -457,4 +455,3 @@ List<Job> timerJobs = managementService.createJobQuery()
 - [User Task](../elements/user-task.md) - Human tasks with boundary events
 
 ---
-

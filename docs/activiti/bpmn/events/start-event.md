@@ -15,26 +15,27 @@ Start Events **initiate process instances** and define how a process can be star
 <startEvent id="start1" name="Process Start"/>
 ```
 
-**BPMN 2.0 Standard:** Partially Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
 **Activiti Extensions:** Form key, initiator variable
 
 ## Key Features
 
 ### Standard BPMN Features
+
 - **None** - Manual start (supported)
 - **Message** - Event-driven start (supported as a main process start via `startProcessInstanceByMessage`, and within event sub-processes)
-- **Timer** - Scheduled start (**supported** as a main process start — the engine schedules a `timer-start-event` timer job at deployment for each top-level timer start event; **not supported** within event sub-processes)
+- **Timer** - Scheduled start (supported as a main process start — see [Timer Start Event](#3-timer-start-event); **not supported** within event sub-processes)
 - **Signal** - Broadcast start (supported as a main process start event; **NOT supported** within event sub-processes)
 - **Conditional** - Condition-based start (**NOT supported** — no `ConditionalEventDefinition` class exists)
 
-**Unsupported as standalone process starts:** Conditional start events. Timer start events are supported for main processes (see section 3).
-The `StartEventParseHandler` only assigns behaviors for: (1) message start events within event sub-processes, (2) error start events within event sub-processes, (3) none start events for main processes. A signal start event on a main process also receives no behavior from this handler — it is started through the signal subscription mechanism instead (see section 4). A timer start event on a main process likewise receives no behavior — it is started when its deployment-time timer job (type `timer-start-event`) fires (see section 3).
+The only trigger type that is not supported anywhere is the **Conditional** start event (see section 5). At the engine level, `StartEventParseHandler` assigns an activity behavior only to (1) `message` and (2) `error` start events inside event sub-processes, and (3) start events that carry no event definition at all — the none start of section 1, and the start events of embedded sub-processes. Main process message, signal, and timer start events receive no behavior from this handler; they are started through the mechanisms described in sections 2, 3, and 4.
 
 ### Activiti Customizations
+
 - **Form Key** - Startup form
 - **Initiator** - Automatic variable
 - **Multiple Start Events** - Any can trigger
-- **Custom Properties** - Metadata
 
 ## Start Event Types
 
@@ -45,6 +46,7 @@ The `StartEventParseHandler` only assigns behaviors for: (1) message start event
 ```
 
 **Runtime Usage:**
+
 ```java
 // Start process manually
 runtimeService.startProcessInstanceByKey("processKey");
@@ -63,11 +65,13 @@ runtimeService.startProcessInstanceByKey("processKey",
 ```
 
 **Message Definition:**
+
 ```xml
 <message id="orderReceived" name="Order Received"/>
 ```
 
 **Runtime Usage:**
+
 ```java
 // Start by message
 ProcessInstance process = runtimeService
@@ -100,11 +104,13 @@ The scheduled job is a regular timer job and can be listed through `managementSe
 ```
 
 **Signal Definition:**
+
 ```xml
 <signal id="orderSignal" name="Order Signal"/>
 ```
 
 **Runtime Usage:**
+
 ```java
 // Start a new process instance by signal
 runtimeService.signalEventReceived("orderSignal");
@@ -121,9 +127,9 @@ runtimeService.signalEventReceived("orderSignal", Map.of("orderId", "123"));
 
 ### 6. Multiple Event Definitions
 
-**NOT supported on main process start events.** The parser only handles a single event definition on main process start events, and only for none start events (no event definitions).
+**NOT supported on main process start events.** A main process start event that carries event definitions is started through the subscription and timer mechanisms of sections 2, 3, and 4 — `StartEventParseHandler` assigns an activity behavior to a main process start event only when it carries no event definition at all (none start events, section 1). Stacking several definitions on one start event is therefore never read.
 
-Within event sub-processes, only message and error start event definitions are handled.
+Within event sub-processes, the parser reads only the **first** event definition of a start event, and only `message` and `error` definitions receive a behavior.
 
 ### 7. Candidate Starters (Who Can Start the Process)
 
@@ -132,12 +138,13 @@ Start event types control *how* a process is triggered; candidate starters contr
 **Activiti extension** — comma-separated `activiti:candidateStarterUsers` / `activiti:candidateStarterGroups` attributes, read by `ProcessParser` into the process's `candidateStarterUsers` / `candidateStarterGroups` lists:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="onboarding" name="Onboarding"
+         xmlns:activiti="http://activiti.org/bpmn"
          activiti:candidateStarterUsers="user1, user2"
          activiti:candidateStarterGroups="group1, group2">
   <startEvent id="onboardingStart" name="Onboarding Started"/>
-  ...
+  <endEvent id="onboardingEnd"/>
+  <sequenceFlow id="onboardingFlow" sourceRef="onboardingStart" targetRef="onboardingEnd"/>
 </process>
 ```
 
@@ -151,7 +158,8 @@ Start event types control *how* a process is triggered; candidate starters contr
     </resourceAssignmentExpression>
   </potentialStarter>
   <startEvent id="onboardingStart" name="Onboarding Started"/>
-  ...
+  <endEvent id="onboardingEnd"/>
+  <sequenceFlow id="onboardingFlow" sourceRef="onboardingStart" targetRef="onboardingEnd"/>
 </process>
 ```
 
@@ -172,11 +180,13 @@ When no candidate starters are declared at all, the Spring Boot starter adds the
 ### Form Key
 
 ```xml
-<startEvent id="formStart" name="Start with Form" 
+<startEvent id="formStart" name="Start with Form"
+            xmlns:activiti="http://activiti.org/bpmn"
             activiti:formKey="startup-form.html"/>
 ```
 
 **Use Cases:**
+
 - Collect initial data
 - User-friendly process initiation
 - Dynamic variable input
@@ -184,8 +194,8 @@ When no candidate starters are declared at all, the Spring Boot starter adds the
 ### Initiator Variable
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="initiatorStart" name="Track Initiator"
+            xmlns:activiti="http://activiti.org/bpmn"
             activiti:initiator="owner"/>
 ```
 
@@ -195,58 +205,53 @@ When no candidate starters are declared at all, the Spring Boot starter adds the
 
 ### Form Properties
 
-Form properties define the fields collected at process start time. They are configured via extension JSON, not as child elements of `<startEvent>`.
-
-```xml
-<startEvent id="formStart" name="Start with Form" 
-            activiti:formKey="order-entry-form.html"/>
-```
-
-**order-entry-form-extensions.json:**
-```json
-{
-  "extensions": {
-    "orderProcess": {
-      "formProperties": {
-        "formStart": {
-          "properties": [
-            { "name": "teamSize", "type": "int", "required": true }
-          ]
-        }
-      }
-    }
-  }
-}
-```
+Form properties declare the fields a start form collects. They use the same `<activiti:formProperty>` extension children documented for [User Tasks](../elements/user-task.md#form-properties): the BPMN converter parses them into the process model, but this engine version does not execute them at runtime (there is no form-type registry in the engine). For forms that render and validate at runtime, use `activiti:formKey` (see [Form Key](#form-key)) to point at a form defined in an external form system.
 
 ## Complete Examples
 
 ### Example 1: Multiple Start Events
 
 ```xml
-<!-- Process can be started manually or by message -->
+<process id="multiStart" name="Multi Start">
 
-<startEvent id="manualStart" name="Manual Start"/>
+  <!-- The process can be started manually or by message -->
+  <message id="newOrder" name="New Order"/>
 
-<startEvent id="messageStart" name="Order Received">
-  <messageEventDefinition messageRef="newOrder"/>
-</startEvent>
+  <startEvent id="manualStart" name="Manual Start"/>
+
+  <startEvent id="messageStart" name="Order Received">
+    <messageEventDefinition messageRef="newOrder"/>
+  </startEvent>
+
+  <endEvent id="done"/>
+
+  <sequenceFlow id="manualFlow" sourceRef="manualStart" targetRef="done"/>
+  <sequenceFlow id="messageFlow" sourceRef="messageStart" targetRef="done"/>
+</process>
 ```
 
-**Note:** Conditional start events are NOT supported anywhere. Timer start events ARE supported as main process start events (see section 3) but NOT within event sub-processes. Signal start events ARE supported as main process start events (see section 4); they are NOT supported within event sub-processes.
+**Note:** Conditional start events are not supported anywhere (section 5); timer and signal starts are supported only on main processes (sections 3 and 4).
 
 ### Example 2: Message Start with Form
 
 ```xml
-<startEvent id="orderStart" name="Order Received" 
-            activiti:formKey="order-entry-form.html">
-  <messageEventDefinition messageRef="orderMessage"/>
-</startEvent>
+<process id="orderProcess" name="Order Process"
+         xmlns:activiti="http://activiti.org/bpmn">
 
-<message id="orderMessage" name="Order Message"/>
+  <message id="orderMessage" name="Order Message"/>
+
+  <startEvent id="orderStart" name="Order Received"
+              activiti:formKey="order-entry-form.html">
+    <messageEventDefinition messageRef="orderMessage"/>
+  </startEvent>
+
+  <endEvent id="orderEnd"/>
+  <sequenceFlow id="orderFlow" sourceRef="orderStart" targetRef="orderEnd"/>
+</process>
 ```
 
 **Runtime Correlation:**
+
 ```java
 // Start with correlated data
 ProcessInstance process = runtimeService
@@ -263,27 +268,34 @@ ProcessInstance process = runtimeService
 **Note:** Only message and error start events are supported inside event sub-processes (timer start events are not). For main processes, timer start is supported (see section 3).
 
 ```xml
-<!-- Main process with none start -->
-<startEvent id="mainStart"/>
+<process id="orderProcess" name="Order Process"
+         xmlns:activiti="http://activiti.org/bpmn">
 
-<!-- Event sub-process triggered by message -->
-<subProcess id="messageSubProcess" triggeredByEvent="true">
-  <startEvent id="messageStart">
-    <messageEventDefinition messageRef="triggerMessage"/>
-  </startEvent>
-
+  <!-- Event definitions -->
   <message id="triggerMessage" name="Trigger Message"/>
 
-  <serviceTask id="handleMessage" 
-               name="Handle Message" 
-               activiti:class="com.example.MessageHandler"
-               activiti:async="true"/>
+  <!-- Main process with none start -->
+  <startEvent id="mainStart" name="Manual Start"/>
+  <endEvent id="mainEnd"/>
+  <sequenceFlow id="mainFlow" sourceRef="mainStart" targetRef="mainEnd"/>
 
-  <endEvent id="messageEnd"/>
-  
-  <sequenceFlow id="subFlow1" sourceRef="messageStart" targetRef="handleMessage"/>
-  <sequenceFlow id="subFlow2" sourceRef="handleMessage" targetRef="messageEnd"/>
-</subProcess>
+  <!-- Event sub-process triggered by message -->
+  <subProcess id="messageSubProcess" triggeredByEvent="true">
+    <startEvent id="messageStart">
+      <messageEventDefinition messageRef="triggerMessage"/>
+    </startEvent>
+
+    <serviceTask id="handleMessage"
+                 name="Handle Message"
+                 activiti:class="com.example.MessageHandler"
+                 activiti:async="true"/>
+
+    <endEvent id="messageEnd"/>
+
+    <sequenceFlow id="subFlow1" sourceRef="messageStart" targetRef="handleMessage"/>
+    <sequenceFlow id="subFlow2" sourceRef="handleMessage" targetRef="messageEnd"/>
+  </subProcess>
+</process>
 ```
 
 ### Example 4: Start with Initial Variables
@@ -300,62 +312,57 @@ ProcessInstance process = runtimeService
     .startProcessInstanceByKey("orderProcess", variables);
 ```
 
-Form properties on start events only define what the form collects — they do not set default values in the BPMN XML. Default values are configured in the form extension JSON or at runtime.
+Form properties on start events only define what the form collects — they do not set default values in the BPMN XML. Default values must be provided at runtime as start variables (see the call above).
 
 ### Example 5: Form-Based Start Event
 
 ```xml
-<startEvent id="taskForm" name="Start Task" 
-            activiti:formKey="task-start-form.html"/>
+<process id="taskProcess" name="Task Process"
+         xmlns:activiti="http://activiti.org/bpmn">
+
+  <startEvent id="taskForm" name="Start Task"
+              activiti:formKey="task-start-form.html"/>
+
+  <endEvent id="taskEnd"/>
+  <sequenceFlow id="taskFlow" sourceRef="taskForm" targetRef="taskEnd"/>
+</process>
 ```
 
-The form collects initial data and passes it as process variables. The `activiti:formKey` attribute references the form definition.
+The form itself is hosted by an external form system — this engine version has no built-in form renderer. The engine's only action on the attribute is to flag the process definition with `startFormKey` (`StartEventParseHandler` → `checkStartFormKey`) so calling applications can tell that a start form exists; values collected by the form only reach the engine when the caller passes them to the start API as process variables (see [Example 4](#example-4-start-with-initial-variables)).
 
 ## Runtime API Usage
 
 ### Starting Processes
 
+Manual, message, and signal starts — including the with-variables overloads — are covered in the [None Start Event](#1-none-start-event-manual), [Message Start Event](#2-message-start-event), and [Signal Start Event](#4-signal-start-event) sections above. To start a specific deployed version of a process definition:
+
 ```java
-// By key
-ProcessInstance process = runtimeService
-    .startProcessInstanceByKey("processKey");
-
-// By key with variables
-ProcessInstance process = runtimeService
-    .startProcessInstanceByKey("processKey", 
-        Map.of("var1", "value1", "var2", 123));
-
-// By message
-ProcessInstance process = runtimeService
-    .startProcessInstanceByMessage("messageName");
-
-// By message with variables
-ProcessInstance process = runtimeService
-    .startProcessInstanceByMessage("messageName", 
-        Map.of("correlationKey", "value"));
-
-// By definition key
+// By process definition ID (a specific deployed version)
 ProcessInstance process = runtimeService
     .startProcessInstanceById(processDefinitionId);
 ```
 
 ### Querying Startable Processes
 
+To find definitions the current user may start, use `ProcessDefinitionQuery.startableByUser` / `startableByGroups` — see [Candidate Starters](#7-candidate-starters-who-can-start-the-process). To inspect which definitions carry message start events (e.g., to expose them to external senders):
+
 ```java
-// Get process definitions
+// Get active process definitions
 List<ProcessDefinition> definitions = repositoryService
     .createProcessDefinitionQuery()
     .active()
     .list();
 
 // Check for message start events via the BpmnModel
-BpmnModel model = repositoryService.getBpmnModel(definition.getId());
-for (FlowElement element : model.getMainProcess().getFlowElements()) {
-    if (element instanceof StartEvent) {
-        StartEvent startEvent = (StartEvent) element;
-        if (startEvent.getEventDefinitions() != null
-                && startEvent.getEventDefinitions().get(0) instanceof MessageEventDefinition) {
-            String messageRef = ((MessageEventDefinition) startEvent.getEventDefinitions().get(0)).getMessageRef();
+for (ProcessDefinition definition : definitions) {
+    BpmnModel model = repositoryService.getBpmnModel(definition.getId());
+    for (FlowElement element : model.getMainProcess().getFlowElements()) {
+        if (element instanceof StartEvent) {
+            StartEvent startEvent = (StartEvent) element;
+            if (startEvent.getEventDefinitions() != null
+                    && startEvent.getEventDefinitions().get(0) instanceof MessageEventDefinition) {
+                String messageRef = ((MessageEventDefinition) startEvent.getEventDefinitions().get(0)).getMessageRef();
+            }
         }
     }
 }
@@ -376,12 +383,12 @@ for (FlowElement element : model.getMainProcess().getFlowElements()) {
 - **No Start Event:** Process must have at least one
 - **Message Duplication:** Same message starting multiple instances
 - **Missing Correlation:** Messages without proper correlation
-- **Unsupported Types:** Conditional start events and multiple event definitions are not supported on main process start events. Timer start events **are** supported on main processes (see [Timer Start Event](#3-timer-start-event)) but **not** inside event sub-processes
+- **Unsupported Types:** Conditional start events are not supported anywhere, and a single start event cannot carry multiple event definitions. Timer and signal starts are supported on main processes but not inside event sub-processes — see [Timer Start Event](#3-timer-start-event) and [Signal Start Event](#4-signal-start-event)
 
 ## Related Documentation
 
 - [Events Overview](./index.md)
-- [Intermediate Events](./intermediate-events.md)
+- [Event SubProcess](../subprocesses/event-subprocess.md) - Event sub-processes (message and error starts; signal and compensation not supported)
 - [Intermediate Events](./intermediate-events.md#1-message-intermediate-events) - Message events during process execution
 - [Intermediate Events](./intermediate-events.md#2-timer-intermediate-events) - Timer events during process execution
 - [Runtime Service](../../api-reference/engine-api/runtime-service.md)

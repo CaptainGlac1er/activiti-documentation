@@ -17,7 +17,8 @@ Events represent **something that happens** during the execution of a process. T
 <endEvent id="end1" name="Process End"/>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
 **Activiti Extensions:** Enhanced event handling and subscriptions
 
 ## Event Categories
@@ -55,6 +56,7 @@ Events represent **something that happens** during the execution of a process. T
 ```
 
 **Message Reference:**
+
 ```xml
 <message id="orderReceived" name="Order Received">
   <itemDefinition id="orderItem" structureRef="Order"/>
@@ -64,6 +66,7 @@ Events represent **something that happens** during the execution of a process. T
 ### Timer Event Definition
 
 **Date Timer:**
+
 ```xml
 <timerEventDefinition>
   <timeDate>${dueDate}</timeDate>
@@ -71,6 +74,7 @@ Events represent **something that happens** during the execution of a process. T
 ```
 
 **Duration Timer:**
+
 ```xml
 <timerEventDefinition>
   <timeDuration>PT24H</timeDuration>
@@ -78,6 +82,7 @@ Events represent **something that happens** during the execution of a process. T
 ```
 
 **Cycle Timer (cron expression):**
+
 ```xml
 <timerEventDefinition>
   <timeCycle>0 0 8 * * ?</timeCycle>
@@ -91,6 +96,7 @@ Events represent **something that happens** during the execution of a process. T
 ```
 
 **Signal Reference:**
+
 ```xml
 <signal id="paymentCompleted" name="Payment Completed"/>
 ```
@@ -102,15 +108,22 @@ Events represent **something that happens** during the execution of a process. T
 ```
 
 **Error Reference:**
+
 ```xml
 <error id="paymentError" name="Payment Error" errorCode="PAY001"/>
 ```
 
 ### Link Event Definition
 
+Supported as of 8.7.0. A throw's definition carries a `<target>` element holding the catch's definition `id`, and a catch's definition carries one or more `<source>` elements holding the throw definitions' `id`s — the `name` attribute is parsed but not used for matching.
+
 ```xml
-<linkEventDefinition id="link1"/>
+<linkEventDefinition id="link1">
+  <target>someCatchLinkId</target>
+</linkEventDefinition>
 ```
+
+The complete throw/catch pattern, including multiple-source catches, is in [Link Events](./link-events.md).
 
 ### Compensate Event Definition
 
@@ -207,9 +220,11 @@ Events represent **something that happens** during the execution of a process. T
   <signalEventDefinition signalRef="processCompleted"/>
 </intermediateThrowEvent>
 
-<!-- Link throw -->
+<!-- Link throw (8.7.0+): <target> holds the id of the catch event's linkEventDefinition; see Link Events -->
 <intermediateThrowEvent id="jumpToSection" name="Jump">
-  <linkEventDefinition name="section2"/>
+  <linkEventDefinition id="jumpToSectionLinkId">
+    <target>section2LinkId</target>
+  </linkEventDefinition>
 </intermediateThrowEvent>
 
 <!-- Compensate throw -->
@@ -318,6 +333,7 @@ Events represent **something that happens** during the execution of a process. T
 ```
 
 **Runtime Message Correlation:**
+
 ```java
 // Send message to correlate
 runtimeService.messageEventReceived("orderMessage", processInstanceId, 
@@ -346,6 +362,7 @@ Two `activiti:` attributes refine `<messageEventDefinition>`:
 ### Timer Expressions
 
 **Dynamic Timer Duration:**
+
 ```xml
 <timerEventDefinition>
   <timeDuration>${calculateTimeout()}</timeDuration>
@@ -353,12 +370,14 @@ Two `activiti:` attributes refine `<messageEventDefinition>`:
 ```
 
 **ISO 8601 Duration Format:**
+
 - `PT1H` - 1 hour
 - `PT30M` - 30 minutes
 - `P1D` - 1 day
 - `P2W` - 2 weeks
 
 **Cycle Timer Format:**
+
 - ISO 8601 repeat: `R[<n>]/<ISO-8601 duration>` (e.g. `R5/PT24H`) or a cron expression (e.g. `0 0 8 * * ?`)
 - iCalendar `RRULE` format is NOT supported
 
@@ -380,12 +399,14 @@ runtimeService.signalEventReceived("globalSignal",
 ### Error Handling
 
 **Define Errors:**
+
 ```xml
 <error id="PaymentError" name="Payment Failed" errorCode="PAY001"/>
 <error id="ValidationError" name="Validation Failed" errorCode="VAL001"/>
 ```
 
 **Catch Errors:**
+
 ```xml
 <!-- Attached to the activity that throws the error (e.g., a serviceTask with id="paymentTask") -->
 <boundaryEvent id="catchPaymentError" attachedToRef="paymentTask" cancelActivity="true">
@@ -394,6 +415,7 @@ runtimeService.signalEventReceived("globalSignal",
 ```
 
 **Throw Errors:**
+
 ```java
 // In JavaDelegate
 throw new BpmnError("PAY001", "Payment failed");
@@ -432,23 +454,13 @@ runtimeService.messageEventReceived("orderReceived", processInstanceId);
 
 // Send message to start process
 ProcessInstance process = runtimeService.startProcessInstanceByMessage("orderReceived");
-
-// Send message with variables
-runtimeService.messageEventReceived("orderReceived", 
-    processInstanceId,
-    Map.of("orderId", "123", "amount", 500.0));
 ```
+
+The three-argument form that passes variables is shown in the [Message Correlation](#message-correlation) section above.
 
 ### Broadcasting Signals
 
-```java
-// Broadcast signal (all waiting processes)
-runtimeService.signalEventReceived("paymentCompleted");
-
-// Signal with variables
-runtimeService.signalEventReceived("paymentCompleted", 
-    Map.of("transactionId", "txn123"));
-```
+Broadcasting a signal, with or without variables, is shown in the [Signal Broadcasting](#signal-broadcasting) section above.
 
 ### Timer Management
 
@@ -464,12 +476,7 @@ managementService.deleteJob(timerJobId);
 
 ### Error Handling
 
-```java
-// Throw error from JavaDelegate
-public void execute(DelegateExecution execution) {
-throw new BpmnError("PAY001", "Payment failed");
-}
-```
+The runtime side is the `BpmnError` throw shown in the Error Handling section under Activiti Customizations; the boundary event that catches it is part of the model.
 
 ## Related Documentation
 
@@ -483,4 +490,3 @@ throw new BpmnError("PAY001", "Payment failed");
 - [Execution Listeners](../reference/execution-listeners.md)
 
 ---
-

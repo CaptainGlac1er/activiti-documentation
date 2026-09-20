@@ -69,10 +69,10 @@ Create a simple embedded subprocess:
 ```
 
 **Key Points:**
-- SubProcess has its own `id` and `name`
-- Contains start and end events
-- Internal flows are isolated from parent process
-- Variables can be scoped to subprocess
+- The subprocess has its own `id` and `name`.
+- It contains start and end events.
+- Its internal flows are isolated from the parent process.
+- Variables can be scoped to the subprocess.
 
 ### 2. SubProcess with Multi-Instance
 
@@ -323,7 +323,7 @@ runtimeService.setVariable(processInstanceId, "sharedVariable", "value");
 
 1. **Keep It Focused** - Each subprocess should have a single responsibility
 2. **Use Meaningful Names** - Clear subprocess names improve understanding
-3. **Limit Nesting** - Avoid deeply nested subprocesses (max 2-3 levels)
+3. **Limit Nesting** - Avoid deeply nested subprocesses that make the process difficult to follow
 4. **Document Interfaces** - Clearly define input/output variables
 5. **Use Multi-Instance** - For repetitive subprocess execution
 6. **Add Boundary Events** - Handle exceptions at subprocess level
@@ -331,11 +331,11 @@ runtimeService.setVariable(processInstanceId, "sharedVariable", "value");
 
 ## Common Pitfalls
 
-- **Variable Scope Confusion** - Understanding which variables are local vs inherited
-- **Over-nesting** - Too many levels of subprocesses makes processes hard to follow
-- **Missing Error Handling** - Not adding boundary events for exceptions
-- **Performance Issues** - Large subprocesses with many activities can slow execution
-- **Testing Difficulty** - Subprocesses can be harder to test in isolation
+- **Variable Scope Confusion** - Mixing up local and inherited variables
+- **Over-nesting** - Adding so many subprocess levels that the process becomes difficult to follow
+- **Missing Error Handling** - Omitting boundary events for exceptions
+- **Performance Issues** - Creating large subprocesses whose many activities slow execution
+- **Testing Difficulty** - Making subprocesses difficult to test in isolation
 
 ## Related Documentation
 

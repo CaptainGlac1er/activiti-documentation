@@ -20,7 +20,7 @@ A Data Object represents a piece of data relevant to the process. It carries met
 ### Data Object Properties
 
 | Property | Description |
-|----------|-------------|
+| ---------- | ------------- |
 | `name` | Display name with localization support |
 | `description` | Human-readable description with localization |
 | `itemSubjectRef` | Reference to a data type definition |
@@ -106,7 +106,7 @@ runtimeService.removeVariable(processInstanceId, "orderData");
 The engine's `TaskService` exposes task-scoped equivalents of the data object API. A task's scope is the execution scope of that task — the data objects visible from the task, including parent scopes — and the locale/localization-fallback behavior is identical to the execution-scoped API above. All overloads throw `ActivitiObjectNotFoundException` when no task exists for the given id.
 
 | Method | Description |
-|--------|-------------|
+| -------- | ------------- |
 | `getDataObjects(String taskId)` | All data objects visible from the task's scope |
 | `getDataObjects(String taskId, String locale, boolean withLocalizationFallback)` | Same, with localized name and description |
 | `getDataObjects(String taskId, Collection<String> dataObjectNames)` | Data objects filtered by name |
@@ -140,7 +140,7 @@ public interface DataObject {
 ## Data Objects vs Process Variables
 
 | Aspect | Data Object | Process Variable |
-|--------|-------------|------------------|
+| -------- | ------------- | ------------------ |
 | Metadata | Name, description, type, localization | Name and value only |
 | BPMN modeling | Visible in process diagram | Not modeled in BPMN |
 | API | `getDataObject()` (read-only); use `setVariable()`/`removeVariable()` to modify | `getVariable()`, `setVariable()` |
@@ -176,7 +176,6 @@ graph TD
     <documentation>Related shipments for this order</documentation>
   </dataObject>
   <dataObject id="payments" name="Payments" isCollection="true"/>
-  ...
 </process>
 ```
 

@@ -26,7 +26,7 @@ Receive Tasks represent activities that **wait for an external message** before 
 ### Receive Task Characteristics
 
 | Feature | Description |
-|---------|-------------|
+| --------- | ------------- |
 | **Wait State** | Pauses execution until signaled to continue |
 | **Task Visibility** | Does **not** appear in task list (same as intermediate events) |
 | **Continuation** | Advanced via `RuntimeService.trigger(executionId)` |
@@ -34,7 +34,7 @@ Receive Tasks represent activities that **wait for an external message** before 
 ### Differences from Service Task
 
 | Aspect | Service Task | Receive Task |
-|--------|--------------|--------------|
+| -------- | -------------- | -------------- |
 | **Execution** | Active - calls external system | Passive - waits for signal |
 | **Blocking** | Blocks until call completes | Waits until signaled |
 | **Use Case** | Outbound integration | Inbound / request-response |
@@ -128,6 +128,8 @@ List<Execution> waiting = runtimeService.createExecutionQuery()
 <message id="msg1" name="Message"/>
 ```
 
+For receive tasks the message definition is metadata only — it does not create a subscription (see the note in [Overview](#overview)). Naming still matters for model readability and for any message catch events in the same model.
+
 ## Common Pitfalls
 
 ### 1. Confusing with Service Task
@@ -147,7 +149,7 @@ List<Execution> waiting = runtimeService.createExecutionQuery()
 
 ### 2. Missing Message Definition
 
-**Problem:** Forgetting to define the message
+**Problem:** Referencing a message that is not defined in the model. The definition is required for model integrity even though the engine does not dispatch messages to receive tasks (see the note in [Overview](#overview)):
 
 ```xml
 <!-- WRONG: Message not defined -->
@@ -190,21 +192,20 @@ List<Execution> waiting = runtimeService.createExecutionQuery()
 **Problem:** Expecting `messageEventReceived()` to work on a receive task
 
 ```xml
-<!-- The messageEventDefinition inside a receiveTask is IGNORED by the engine:
-     it does NOT create a message subscription and is NOT used for correlation -->
+<!-- The messageEventDefinition inside a receiveTask is ignored by the engine -->
 <receiveTask id="waitForResponse" name="Wait">
   <messageEventDefinition messageRef="response"/>
 </receiveTask>
 ```
 
-**Solution:** The engine releases a receive task exclusively via `RuntimeService.trigger(executionId)`. Use an intermediate message catch event if you need actual message subscription and correlation.
+**Solution:** The `messageEventDefinition` is inert metadata (see the note in [Overview](#overview)); the task is released exclusively via `RuntimeService.trigger(executionId)`. For real subscription and correlation, use an intermediate message catch event (see [Comparison with Alternatives](#comparison-with-alternatives)).
 
 ## Comparison with Alternatives
 
 ### Receive Task vs Intermediate Message Catch Event
 
 | Aspect | Receive Task | Intermediate Message Catch Event |
-|--------|--------------|----------------------------------|
+| -------- | -------------- | ---------------------------------- |
 | **Creates TaskEntity** | No | No |
 | **Task List Visible** | No | No |
 | **Message Subscription** | No | Yes |
@@ -214,12 +215,14 @@ List<Execution> waiting = runtimeService.createExecutionQuery()
 ### When to Use Each
 
 **Use Receive Task when:**
+
 - Modeling a request-response pattern (service task sends, receive task waits)
 - You want semantic clarity in the BPMN diagram that the process is "waiting"
 - You'll advance the process programmatically via `RuntimeService.trigger(executionId)`
 
 **Use Intermediate Message Catch Event when:**
-- You need actual message subscription and correlation
+
+- You need actual message subscription and correlation — the engine only creates subscriptions for message catch events and message start events, never for receive tasks (see the note in [Overview](#overview))
 - Multiple processes may be waiting for different messages
 - You want the engine to match incoming messages to waiting executions
 

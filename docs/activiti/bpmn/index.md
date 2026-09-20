@@ -2,12 +2,12 @@
 sidebar_label: BPMN Guide
 title: "BPMN 2.0 Elements in Activiti"
 slug: /bpmn/index
-description: Comprehensive guide to BPMN 2.0 elements supported by Activiti and their customizations
+description: Reference for BPMN 2.0 elements supported by Activiti and their extensions
 ---
 
 # BPMN 2.0 Elements in Activiti
 
-This guide provides a comprehensive overview of all BPMN 2.0 elements supported by Activiti, including **Activiti-specific customizations** and extensions that go beyond the standard BPMN 2.0 specification.
+This guide describes the BPMN 2.0 elements that Activiti supports, along with **Activiti-specific extensions** and runtime limitations.
 
 ## Table of Contents
 
@@ -162,7 +162,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 | External message | Message Event |
 | Time-based | Timer Event |
 | Global broadcast | Signal Event |
-| Condition | Conditional Event |
+| Condition | Conditional Event (**not supported**) |
 | Exception | Error Event |
 | Timeout | Timer Boundary Event |
 
@@ -191,7 +191,7 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 
 ## Common Activiti Extensions
 
-### Available on All Activities
+### Common Activity Extensions
 
 | Extension | Description | Example |
 |-----------|-------------|---------|
@@ -244,11 +244,11 @@ This guide provides a comprehensive overview of all BPMN 2.0 elements supported 
 
 ## Overview
 
-Activiti fully supports the **BPMN 2.0 specification** while adding powerful extensions for enterprise workflow automation. The engine can parse, validate, execute, and visualize BPMN diagrams with both standard and custom elements.
+Activiti supports a broad subset of **BPMN 2.0** and adds engine-specific extensions for workflow automation. The engine can parse, validate, execute, and visualize supported standard and custom elements. The element pages document unsupported or partially supported behavior.
 
 ### Key Features
 
-- **Full BPMN 2.0 compliance** - All standard elements supported
+- **BPMN 2.0 process execution** - Common tasks, gateways, events, and subprocesses
 - **Activiti extensions** - Custom properties and behaviors
 - **Multi-instance support** - Parallel and sequential iterations
 - **Boundary events** - Exception handling at activity level
@@ -325,24 +325,13 @@ Hook into activity execution:
 - `end` - When activity completes
 - `take` - When sequence flow is taken
 
-### 4. **Field Injection**
-Inject dependencies into delegates:
-```xml
-<serviceTask id="service1" activiti:class="com.example.MyDelegate">
-  <extensionElements>
-    <activiti:field name="service" expression="${beanName}"/>
-    <activiti:field name="configValue" stringValue="some value"/>
-  </extensionElements>
-</serviceTask>
-```
-
-### 5. **Skip Expression**
+### 4. **Skip Expression**
 Conditionally skip activities:
 ```xml
 <userTask id="task1" name="Optional Review" activiti:skipExpression="${skipReview}"/>
 ```
 
-### 6. **Async Execution**
+### 5. **Async Execution**
 Run activities asynchronously:
 ```xml
 <serviceTask id="service1" name="Long Running Task" activiti:async="true"/>
@@ -354,7 +343,7 @@ Run activities asynchronously:
 managementService.setJobRetries(jobId, 3);
 ```
 
-### 7. **Job Retry Configuration**
+### 6. **Job Retry Configuration**
 Configure retry policies for failed jobs:
 ```xml
 <serviceTask id="service1" activiti:async="true">
@@ -644,4 +633,4 @@ Define variables, mappings, and constants separately from BPMN:
 
 ---
 
-**Note:** All BPMN elements can be customized using Activiti's extension mechanisms. Refer to specific element documentation for detailed configuration options.
+**Note:** Activiti extensions apply only to the elements documented on their respective reference pages. Consult the element documentation before adding an extension attribute or element.
