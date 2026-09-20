@@ -139,7 +139,7 @@ The `activiti-api-process-model` module defines all domain models, events, and p
 
 ## Dependencies
 
-```
+```text
 activiti-api-process-model
     └── activiti-api-model-shared
 ```
@@ -181,7 +181,7 @@ public interface ProcessInstance extends ApplicationElement {
 **Purpose**: Represents a running instance of a process definition.
 
 **Lifecycle States**:
-```
+```text
 CREATED → RUNNING → SUSPENDED ↔ RUNNING → COMPLETED
                       ↓
                  CANCELLED
@@ -251,7 +251,7 @@ public interface ProcessDefinition extends ApplicationElement {
    - `formKey`: Associated form identifier
 
 **Versioning Strategy**:
-```
+```text
 First deployment:  order:1:abc123
 Second deployment: order:2:def456
 ```
@@ -458,7 +458,7 @@ public interface BPMNTimerEvent extends
 **Purpose**: Events for timer intermediate/boundary events.
 
 **Timer Lifecycle**:
-```
+```text
 SCHEDULED → FIRED → EXECUTED
      ↓
   FAILED → RETRIES_DECREMENTED
@@ -485,7 +485,7 @@ public interface BPMNMessageEvent extends
 **Purpose**: Events for message-based interactions.
 
 **Message Flow**:
-```
+```text
 MESSAGE_WAITING → MESSAGE_RECEIVED
                     ↓
               MESSAGE_SENT (for send tasks)
@@ -526,7 +526,7 @@ public interface IntegrationEvent extends
 **Purpose**: Events for external system integrations (connectors).
 
 **Integration Flow**:
-```
+```text
 INTEGRATION_REQUESTED
         ↓
 INTEGRATION_RESULT_RECEIVED / INTEGRATION_ERROR_RECEIVED

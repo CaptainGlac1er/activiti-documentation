@@ -5,7 +5,7 @@ title: "Security Policies and Authorization in Activiti"
 description: "Complete guide to Activiti security architecture, declarative policies, Spring Security integration, and authorization customization."
 ---
 
-# Security Policies and Authorization
+# Security Policies and Authorization in Activiti
 
 Activiti provides a layered security model combining Spring Security integration, declarative policies, and runtime permission checks. This guide covers the full security architecture from configuration to customization.
 

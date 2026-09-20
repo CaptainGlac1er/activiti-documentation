@@ -63,7 +63,7 @@ flowchart TD
 
 ## File Structure
 
-```
+```text
 bank-loan-workflow/
 ├── src/main/
 │   ├── java/com/example/bankloan/
@@ -112,6 +112,7 @@ The main process starts with a message event, enabling external triggers:
 Each human task belongs to a specific bank team via `activiti:candidateGroups`:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="creditAnalysisTask"
                name="Credit Analysis"
                activiti:candidateGroups="creditAnalysis">
@@ -153,6 +154,7 @@ The credit assessment stage is an **embedded sub-process** — a self-contained 
 The risk committee approval is a sequential multi-instance task driven by a variable collection:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="riskApprovalTask" name="Risk Committee Approval"
                activiti:candidateGroups="riskCommittee"
                activiti:assignee="${approver}">

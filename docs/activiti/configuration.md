@@ -44,7 +44,7 @@ The Activiti Engine is highly configurable through the `ProcessEngineConfigurati
 
 ### Configuration Lifecycle
 
-```
+```text
 1. Create Configuration
    │
    ▼

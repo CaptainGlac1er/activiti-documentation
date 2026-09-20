@@ -597,7 +597,7 @@ public class VariableManager {
 <sequenceFlow id="rejectFlow" 
               sourceRef="approveGateway" 
               targetRef="rejectTask">
-  <conditionExpression>${order.totalAmount <= 1000}</conditionExpression>
+  <conditionExpression>${order.totalAmount &lt;= 1000}</conditionExpression>
 </sequenceFlow>
 
 <!-- Message Event with Field Expressions -->

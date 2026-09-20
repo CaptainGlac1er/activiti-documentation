@@ -74,6 +74,7 @@ flowchart TD
 **Element ID:** `enterPaymentDetailsTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="enterPaymentDetailsTask" 
                name="Enter Payment Details" 
                activiti:assignee="paymentProcessor">
@@ -209,6 +210,7 @@ public class PaymentValidationService implements Connector {
 **Element ID:** `processPaymentTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:serviceTask id="processPaymentTask" 
                   name="Process Payment" 
                   implementation="paymentProcessingService" 
@@ -348,6 +350,7 @@ services:
 **Element ID:** `retryPaymentTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="retryPaymentTask" 
                name="Retry Payment" 
                activiti:assignee="paymentProcessor">
@@ -441,7 +444,7 @@ services:
                    name="More Retries" 
                    sourceRef="retryCountGateway" 
                    targetRef="processPaymentTask">
-  <bpmn:conditionExpression>${retryCount < 3}</bpmn:conditionExpression>
+  <bpmn:conditionExpression>${retryCount &lt; 3}</bpmn:conditionExpression>
 </bpmn:sequenceFlow>
 
 <!-- No more retries -->
@@ -582,6 +585,7 @@ public class AccountingNotificationService implements Connector {
 ### 1. Async Service Task
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="processPaymentTask" activiti:async="true"/>
 ```
 

@@ -132,7 +132,7 @@ The Spring Integration bridge classes are part of `activiti-spring-boot-starter`
 <dependency>
     <groupId>org.activiti</groupId>
     <artifactId>activiti-spring-boot-starter</artifactId>
-    <version>8.7.1</version>
+    <version>9.0.0</version>
 </dependency>
 
 <dependency>

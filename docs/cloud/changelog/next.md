@@ -9,7 +9,7 @@ description: "Changes currently staged on the Activiti Cloud develop branch for 
 
 The changes below are currently staged on the `develop` branch of `activiti-cloud` for the next release, version `9.1.0`. This page is a point-in-time snapshot — **last checked at commit `c21c60f688` (2026-08-12)** — and the final release content may differ.
 
-As with the [engine 9.1.0 release](/changelog/next), the cloud platform inherits the engine baseline changes: Spring Boot 4.0, Jackson 3 for JSON handling, and Java 25.
+As with the [engine 9.1.0 release](/docs/changelog/next), the cloud platform inherits the engine baseline changes: Spring Boot 4.0, Jackson 3 for JSON handling, and Java 25.
 
 ## Breaking Changes & Mitigations
 
@@ -44,5 +44,5 @@ As with the [engine 9.1.0 release](/changelog/next), the cloud platform inherits
 ## Related Links
 
 - [GitHub repository](https://github.com/Activiti/activiti-cloud)
-- [Engine 9.1.0 changelog](/changelog/next)
+- [Engine 9.1.0 changelog](/docs/changelog/next)
 - [Previous release: 9.0.0](./v9-0-0.md)

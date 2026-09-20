@@ -215,6 +215,7 @@ Map Java exceptions to BPMN errors:
 ### 1. Direct Exception Mapping
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="paymentTask" 
               name="Process Payment" 
               activiti:class="com.example.PaymentService">
@@ -241,6 +242,7 @@ Map Java exceptions to BPMN errors:
 ### 2. Multiple Exception Mappings
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="databaseTask" 
               name="Database Task" 
               activiti:class="com.example.DatabaseService">
@@ -266,6 +268,7 @@ Map Java exceptions to BPMN errors:
 ### 3. Exception Hierarchy Mapping
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="paymentTask" 
               name="Process Payment" 
               activiti:class="com.example.PaymentService">
@@ -288,6 +291,7 @@ Map Java exceptions to BPMN errors:
 ### 4. Class Delegate with Exception Mapping
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="fileOperation" 
               name="File Operation" 
               activiti:class="com.example.FileService">
@@ -389,6 +393,7 @@ Errors bubble up through subprocess hierarchy:
 ### Example 1: Payment Processing with Error Handling
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="paymentProcess" name="Payment Processing">
   
   <!-- Error definitions -->
@@ -487,6 +492,7 @@ Errors bubble up through subprocess hierarchy:
 ### Example 2: Subprocess with Error Propagation
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="Order Processing">
   
   <error id="PaymentError" name="Payment Error" errorCode="PAY001"/>
@@ -699,6 +705,7 @@ List<HistoricActivityInstance> boundaryEvents = historyService
 ### 3. Map Specific Exceptions
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Specific exception mapping -->
 <activiti:mapException errorCode="PAY001">
   com.example.CreditCardException
@@ -756,6 +763,7 @@ List<HistoricActivityInstance> boundaryEvents = historyService
 **Problem:** Multiple boundary events catching same exception
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- BAD: Both catch IOException -->
 <boundaryEvent id="catch1">
   <activiti:mapException>java.io.IOException</activiti:mapException>
@@ -778,6 +786,7 @@ List<HistoricActivityInstance> boundaryEvents = historyService
 **Problem:** Errors in async tasks not properly handled
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- BAD: No error handling for async task -->
 <serviceTask id="asyncTask" activiti:async="true"/>
 
@@ -812,6 +821,7 @@ List<HistoricActivityInstance> boundaryEvents = historyService
 **Problem:** Catching too broad exception hierarchy
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- BAD: Catches all RuntimeExceptions -->
 <activiti:mapException includeChildExceptions="true">
   java.lang.RuntimeException

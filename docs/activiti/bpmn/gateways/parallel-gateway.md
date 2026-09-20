@@ -73,6 +73,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Fork and Join Pattern
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Complete fork-join pattern -->
 <parallelGateway id="split" name="Split"/>
 
@@ -120,6 +121,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Parallel with Multi-Instance
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <parallelGateway id="split"/>
 
 <!-- Multi-instance user task -->
@@ -140,6 +142,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Deferred Activation
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <parallelGateway id="deferredSplit" activiti:async="true"/>
 
 <!-- Tasks will be activated asynchronously -->
@@ -152,6 +155,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Example 1: Order Processing Pipeline
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="start" name="Start Order Processing"/>
 
 <sequenceFlow id="flow1" sourceRef="start" targetRef="orderProcessingSplit"/>
@@ -200,6 +204,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Example 2: Notification Fan-Out
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="start"/>
 
 <sequenceFlow id="flow1" sourceRef="start" targetRef="notificationSplit"/>
@@ -250,6 +255,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Example 3: Data Aggregation
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="start"/>
 
 <sequenceFlow id="flow1" sourceRef="start" targetRef="dataFetchSplit"/>
@@ -309,6 +315,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Example 4: Parallel Approvals
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="start"/>
 
 <sequenceFlow id="flow1" sourceRef="start" targetRef="approvalSplit"/>

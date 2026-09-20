@@ -11,7 +11,7 @@ Activiti uses **revision-based optimistic locking** to handle concurrent access 
 
 ## How It Works
 
-```
+```text
 Transaction A                          Transaction B
 ─────────────                          ─────────────
 Read task (rev_ = 1)

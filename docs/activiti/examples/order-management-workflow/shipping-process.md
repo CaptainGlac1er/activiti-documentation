@@ -70,6 +70,7 @@ flowchart TD
 **Element ID:** `prepareShipmentTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="prepareShipmentTask" 
                name="Prepare Shipment" 
                activiti:assignee="${warehouseTeam}">
@@ -391,6 +392,7 @@ public class RegularPickupService implements Connector {
 **Element ID:** `notifyStorePickupTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="notifyStorePickupTask" 
                name="Notify Customer for Pickup" 
                activiti:assignee="${customerServiceTeam}">
@@ -702,7 +704,7 @@ public class DeliveryConfirmationService implements Connector {
 
 ### 2. Converging Parallel Paths
 
-```
+```text
 Express → \
            → [Update Tracking]
 Standard → /

@@ -9,7 +9,7 @@ description: "Release history for Activiti Cloud versions 8.1.0 through 9.0.0 pl
 
 This section summarizes the changes in each Activiti Cloud release from 8.1.0 through 9.0.0, plus a snapshot of what is staged for the next release (9.1.0). Each entry lists cloud-platform changes — Query service, Audit service, Runtime Bundle, connectors, GraphQL, and identity — new features, bug fixes, notable changes, and — where applicable — breaking changes with mitigations.
 
-Engine-level changes (BPMN model API, process extension JSON, task/process runtime APIs) are covered in the [Activiti engine changelog](/changelog). Activiti Cloud releases track the same version numbers and release dates as the engine, but this changelog focuses on what changed in the cloud microservices.
+Engine-level changes (BPMN model API, process extension JSON, task/process runtime APIs) are covered in the [Activiti engine changelog](/docs/changelog). Activiti Cloud releases track the same version numbers and release dates as the engine, but this changelog focuses on what changed in the cloud microservices.
 
 ## Notable Breaking Changes
 

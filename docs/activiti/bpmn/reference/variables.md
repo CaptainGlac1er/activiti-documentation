@@ -346,6 +346,7 @@ runtimeService.startProcessInstanceByKey("orderProcess",
 ### Service Task Variables
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="processOrder" 
              activiti:class="com.example.OrderService">
   
@@ -374,6 +375,7 @@ public class OrderService implements JavaDelegate {
 ### User Task Variables
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="approvalTask" 
           activiti:assignee="${manager}"
           activiti:formKey="approval-form">
@@ -713,7 +715,7 @@ List<HistoricVariableInstance> history = historyService
 // Get variable updates
 List<HistoricDetail> updates = historyService
     .createHistoricDetailQuery()
-    .variableUpdatesOnly()
+    .variableUpdates()
     .processInstanceId(processId)
     .list();
 ```

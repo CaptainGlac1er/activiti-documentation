@@ -321,6 +321,7 @@ Supported variable types:
 **BPMN Usage**:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="serviceTask"
              implementation="mealsConnector.mealAction"
              name="Get Meal">
@@ -677,6 +678,7 @@ public IntegrationContext apply(IntegrationContext context) {
 ### 5. Use Async for Long Operations
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="longRunningTask"
              implementation="Heavy Processing Connector.process"
              activiti:async="true"/>

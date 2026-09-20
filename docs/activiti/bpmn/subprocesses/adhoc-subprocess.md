@@ -42,6 +42,7 @@ The `AdhocSubProcess` model class in Activiti has two standard BPMN 2.0 attribut
 Simple ad-hoc subprocess with multiple activities:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="flexibleProcess" name="Flexible Process">
   <startEvent id="start"/>
   
@@ -77,6 +78,7 @@ Simple ad-hoc subprocess with multiple activities:
 The default behavior is parallel (`ordering="Parallel"`), allowing multiple activities to run simultaneously:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <adHocSubProcess id="parallelAdHoc" name="Parallel Tasks" ordering="Parallel">
   <userTask id="basicReview" name="Basic Review" activiti:assignee="${reviewer}"/>
 
@@ -100,6 +102,7 @@ The default behavior is parallel (`ordering="Parallel"`), allowing multiple acti
 Execute activities one at a time using the `ordering` attribute:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <adHocSubProcess id="sequentialAdHoc" name="Sequential Flexible Process" ordering="Sequential" cancelRemainingInstances="true">
   
   <userTask id="phase1Task" name="Phase 1 Task" activiti:assignee="${phase1User}"/>
@@ -161,6 +164,7 @@ Control whether remaining activities are cancelled when the subprocess completes
 ### Scenario: Project Onboarding Process
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="onboardingProcess" name="Employee Onboarding">
   
   <startEvent id="start"/>

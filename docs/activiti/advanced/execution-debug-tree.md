@@ -128,7 +128,7 @@ System.out.println(tree);
 ```
 
 Output:
-```
+```text
 12345 : theStart (process instance)
 └── 12346 : serviceTask1, parent id 12345 (active)
 ```

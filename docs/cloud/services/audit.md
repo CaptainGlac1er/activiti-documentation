@@ -143,8 +143,8 @@ Accept: application/json
           "appName": "hr-app",
           "appVersion": "1",
           "serviceName": "runtime-bundle",
-          "serviceFullName": "org.activiti.cloud:hr-app",
-          "serviceType": "runtime",
+          "serviceFullName": "runtime-bundle",
+          "serviceType": "runtime-bundle",
           "serviceVersion": "1.0.0",
           "sequenceNumber": 1,
           "messageId": "8f14e45f-ceea-4b1a-9d6d-2f0e5c1b7a33"

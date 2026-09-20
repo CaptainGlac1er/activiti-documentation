@@ -190,7 +190,7 @@ public class AsyncExecutionConfig {
 
 ### 2. Job Acquisition
 
-```
+```text
 Async Executor Acquisition Loop:
 
  1. Acquire database lock (prevents multiple executors)
@@ -321,7 +321,7 @@ Common job operations are available through `ManagementService`. See [Management
   <!-- Cycle timer - fires repeatedly -->
   <intermediateCatchEvent id="cycleTimer">
     <timerEventDefinition>
-      <timeCycle>R/10/PT5M</timeCycle>  <!-- 10 times, every 5 minutes -->
+      <timeCycle>R10/PT5M</timeCycle>  <!-- 10 times, every 5 minutes -->
     </timerEventDefinition>
   </intermediateCatchEvent>
 </process>

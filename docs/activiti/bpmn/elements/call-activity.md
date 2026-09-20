@@ -63,6 +63,7 @@ Call Activities **reference and execute** sub-processes, enabling process modula
 Set a specific business key or inherit from the parent process:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Set explicit business key (supports expressions) -->
 <callActivity id="callWithBusinessKey"
               name="Call with Business Key"
@@ -115,6 +116,7 @@ Variable mapping for call activities can be configured via `<activiti:in>`/`<act
 ### Async Execution
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <callActivity id="asyncCall" 
               name="Async SubProcess" 
               calledElement="subProcess"
@@ -124,6 +126,7 @@ Variable mapping for call activities can be configured via `<activiti:in>`/`<act
 ### Multi-Instance Call Activity
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <callActivity id="multiCall" 
               name="Parallel SubProcesses" 
               calledElement="subProcess">
@@ -139,6 +142,7 @@ Variable mapping for call activities can be configured via `<activiti:in>`/`<act
 ### Execution Listeners
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <callActivity id="trackedCall" 
               calledElement="subProcess">
   
@@ -226,6 +230,7 @@ Variable mapping for the dynamic call:
 ### Example 4: Multi-Instance Call
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <callActivity id="batchProcessing" 
               name="Process Batch" 
               calledElement="itemProcessingSubProcess">

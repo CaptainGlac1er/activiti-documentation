@@ -13,7 +13,7 @@ Activiti's validation framework checks BPMN process definitions against a set of
 
 Validation is organized in a **validator-set** architecture:
 
-```
+```text
 ProcessValidatorImpl
   └── ValidatorSet ("activiti-executable-process")
         ├── UserTaskValidator

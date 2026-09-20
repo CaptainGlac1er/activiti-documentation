@@ -45,7 +45,7 @@ public List<Resource> discoverBpmnFiles(ResourceFinderDescriptor descriptor) thr
 
 ## Architecture
 
-```
+```text
 ResourceFinder
     └── ResourceFinderDescriptor (strategy interface)
         └── implementors define location prefix, suffixes, validation, etc.

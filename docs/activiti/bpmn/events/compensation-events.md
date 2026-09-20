@@ -79,7 +79,7 @@ Compensation Events provide a mechanism to **undo or compensate for completed ac
 
 ### Example Use Case: Order Cancellation
 
-```
+```text
 Process Flow:
 1. Reserve Inventory ✓ (completed)
 2. Process Payment ✓ (completed)

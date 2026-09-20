@@ -90,6 +90,7 @@ Specify if script is inline or external:
 Store script output:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <scriptTask id="calculation"
              scriptFormat="javascript"
              activiti:resultVariable="calculationResult">
@@ -102,6 +103,7 @@ Store script output:
 By default, scripts run with a copy of all process variables. Changes made to variables within the script are **not** automatically stored back to the process scope. Set `activiti:autoStoreVariables="true"` to automatically persist all variable changes:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <scriptTask id="updateScript"
              scriptFormat="groovy"
              activiti:autoStoreVariables="true">
@@ -121,6 +123,7 @@ By default, scripts run with a copy of all process variables. Changes made to va
 Run scripts asynchronously:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <scriptTask id="asyncScript" 
             name="Long Running Script"
             scriptFormat="groovy"
@@ -136,6 +139,7 @@ Run scripts asynchronously:
 Hook into script execution:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <scriptTask id="trackedScript" 
             scriptFormat="javascript">
   <extensionElements>
@@ -173,6 +177,7 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 ### Example 1: Data Transformation
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <scriptTask id="transformData" 
             name="Transform Order Data"
             scriptFormat="groovy"
@@ -197,6 +202,7 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 ### Example 2: Complex Calculation
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <scriptTask id="calculatePricing" 
             name="Calculate Final Price"
             scriptFormat="javascript"
@@ -275,6 +281,7 @@ Boundary events must be **siblings** of the script task (not nested inside it):
 ### Example 5: Multi-Language Script
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="start"/>
 
 <sequenceFlow id="flow1" sourceRef="start" targetRef="jsCalc"/>

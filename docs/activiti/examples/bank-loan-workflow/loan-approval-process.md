@@ -85,6 +85,7 @@ processRuntime.start(MessagePayloadBuilder.start("loanApplicationReceived")
 **Element ID:** `intakeReviewTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="intakeReviewTask"
                name="Intake Review"
                activiti:candidateGroups="loanIntake">
@@ -119,6 +120,7 @@ processRuntime.start(MessagePayloadBuilder.start("loanApplicationReceived")
 **Timeout Handling - Escalation, Not Termination:**
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="intakeEscalationTask"
                name="Intake Escalation"
                activiti:candidateGroups="loanSupervisor">
@@ -196,6 +198,7 @@ Unlike the Order Management example (where a timeout ends the process), a bank l
 **Element ID:** `kycScreeningTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:serviceTask id="kycScreeningTask"
                   name="KYC &amp; AML Screening"
                   implementation="kycScreeningService"
@@ -297,6 +300,7 @@ public class KycScreeningService implements Connector {
 **Element ID:** `creditAssessmentSubProcess`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:subProcess id="creditAssessmentSubProcess" name="Credit Assessment">
   <bpmn:incoming>flowToCreditAssessment</bpmn:incoming>
   <bpmn:outgoing>flowToCreditGateway</bpmn:outgoing>
@@ -426,6 +430,7 @@ public class KycScreeningService implements Connector {
 **Element ID:** `seniorReviewTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="seniorReviewTask"
                name="Senior Credit Review"
                activiti:candidateGroups="seniorCreditOfficer">
@@ -479,6 +484,7 @@ public class KycScreeningService implements Connector {
 **Element ID:** `riskApprovalTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="riskApprovalTask"
                name="Risk Committee Approval"
                activiti:candidateGroups="riskCommittee"
@@ -634,6 +640,7 @@ public class KycScreeningService implements Connector {
 **Element IDs:** `regulatorySplitGateway`, `regulatoryHoldEvent`, `prepareDisbursementTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:parallelGateway id="regulatorySplitGateway" name="">
   <bpmn:incoming>flowToRegulatorySplit</bpmn:incoming>
   <bpmn:incoming>flowToRegulatorySplitNoCollateral</bpmn:incoming>

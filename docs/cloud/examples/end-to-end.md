@@ -109,7 +109,6 @@ A sidecar JSON file, named after the process definition key and placed next to t
 ```json
 {
   "id": "leaveRequestProcess",
-  "type": "PROCESS",
   "extensions": {
     "leaveRequestProcess": {
       "properties": {

@@ -55,7 +55,7 @@ public void checkUpgrade() throws IOException {
 
 ## Architecture
 
-```
+```text
 ApplicationUpgradeContextService
     ├── Project Manifest Loading
     ├── Version Enforcement

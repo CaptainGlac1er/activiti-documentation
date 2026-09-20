@@ -985,7 +985,7 @@ The upgrade walks an ordered list of versions (`ACTIVITI_VERSIONS` in `DbSqlSess
 
 For each consecutive step of the chain, the engine executes a SQL script shipped in the engine resources:
 
-```
+```text
 org/activiti/db/upgrade/activiti.<database>.upgradestep.<from>.to.<to>.<component>.sql
 ```
 

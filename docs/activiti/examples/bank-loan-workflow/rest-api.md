@@ -586,7 +586,7 @@ public class LoanController {
 ### Request Examples
 
 **Start Loan:**
-```
+```http
 POST {{baseUrl}}/api/loans
 Body (JSON):
 {
@@ -601,22 +601,22 @@ Body (JSON):
 ```
 
 **Get Loan Status:**
-```
+```http
 GET {{baseUrl}}/api/loans/LN-TEST-001
 ```
 
 **Send Regulatory Clearance:**
-```
+```http
 POST {{baseUrl}}/api/loans/LN-TEST-001/regulatory-clearance
 ```
 
 **Trigger Batch:**
-```
+```http
 POST {{baseUrl}}/api/batch/interest-posting
 ```
 
 **Complete Task:**
-```
+```http
 POST {{baseUrl}}/api/tasks/{{taskId}}/complete
 Body (JSON):
 {

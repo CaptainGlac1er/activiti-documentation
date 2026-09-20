@@ -41,7 +41,7 @@ The **TaskService** manages user tasks in the Activiti engine. It provides opera
 
 ### Core Concepts
 
-```
+```text
 Task
     ├── Assignee (current owner)
     ├── Candidate Users (can claim)

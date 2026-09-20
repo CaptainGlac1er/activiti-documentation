@@ -57,6 +57,7 @@ When paths converge at an Inclusive Gateway:
 Simple OR decision with multiple conditions:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="notificationProcess" name="Notification Process">
   <startEvent id="start"/>
   
@@ -148,6 +149,7 @@ Add a default flow when no conditions match:
 Process through multiple channels simultaneously:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="multiChannelProcess" name="Multi-Channel Processing">
   <startEvent id="start"/>
   
@@ -197,6 +199,7 @@ Process through multiple channels simultaneously:
 ### Example 1: Order Fulfillment with Multiple Options
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderFulfillment" name="Order Fulfillment">
   <startEvent id="start"/>
   
@@ -254,6 +257,7 @@ Process through multiple channels simultaneously:
 ### Example 2: Multi-Step Approval Process
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="approvalProcess" name="Multi-Step Approval">
   <startEvent id="start"/>
   

@@ -82,6 +82,7 @@ ProcessPayloadBuilder.start()
 **Element ID:** `validateCustomerTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="validateCustomerTask" 
                name="Validate Customer Information" 
                activiti:assignee="customerValidator">
@@ -108,7 +109,7 @@ ProcessPayloadBuilder.start()
                     cancelActivity="true">
   <bpmn:outgoing>flowToTimeoutHandler</bpmn:outgoing>
   <bpmn:timerEventDefinition>
-    <bpmn:timeDuration>PT30M</timeDuration>
+    <bpmn:timeDuration>PT30M</bpmn:timeDuration>
   </bpmn:timerEventDefinition>
 </bpmn:boundaryEvent>
 ```
@@ -297,6 +298,7 @@ public class CreditScoreService implements Connector {
 **Element ID:** `manualCreditReviewTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="manualCreditReviewTask" 
                name="Manual Credit Review" 
                activiti:assignee="creditManager">
@@ -477,6 +479,7 @@ public class CreditScoreService implements Connector {
 **Element ID:** `qualityCheckTask`
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="qualityCheckTask" 
                name="Quality Check" 
                activiti:assignee="qualityTeam">
@@ -568,7 +571,7 @@ public class CreditScoreService implements Connector {
 
 ```xml
 <bpmn:callActivity id="shippingCallActivity" 
-                   name="Shipping & Delivery" 
+                   name="Shipping &amp; Delivery" 
                    calledElement="shippingProcess">
   <bpmn:incoming>flowToShippingCall</bpmn:incoming>
   <bpmn:outgoing>flowToUpdateStatus</bpmn:outgoing>

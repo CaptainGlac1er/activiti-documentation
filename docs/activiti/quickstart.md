@@ -19,7 +19,7 @@ Ensure the following are installed before beginning:
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
-| Java Development Kit (JDK) | 11+ (17+ recommended) | Runtime environment |
+| Java Development Kit (JDK) | 21 (8.2.0–8.8.0) / 25 (9.0.0+) | Runtime environment |
 | Maven | 3.6+ | Build tool (alternative: Gradle 7+) |
 | Text Editor / IDE | Any | Code development |
 
@@ -36,7 +36,7 @@ Add the following dependencies to your project's `pom.xml`:
     <dependency>
         <groupId>org.activiti</groupId>
         <artifactId>activiti-spring-boot-starter</artifactId>
-        <version>8.7.1</version>
+        <version>9.0.0</version>
     </dependency>
 </dependencies>
 ```
@@ -47,7 +47,7 @@ Add to your `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'org.activiti:activiti-spring-boot-starter:8.7.1'
+    implementation 'org.activiti:activiti-spring-boot-starter:9.0.0'
 }
 ```
 
@@ -511,7 +511,7 @@ For production deployments, update the following:
 | Setting | Development | Production |
 |---------|-------------|------------|
 | Database | H2 (in-memory) | PostgreSQL/MySQL |
-| History Level | FULL | audit (for performance) |
+| History Level | FULL | AUDIT (for performance) |
 | Schema Update | true | false (use migrations) |
 | Logging | DEBUG | INFO/WARN |
 | H2 Console | enabled | disabled |

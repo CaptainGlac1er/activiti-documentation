@@ -163,7 +163,7 @@ flowchart TD
 
 Operations return assertion wrappers. The caller chains `expectFields()`, `expectEvents()`, or `expect()` with matchers to verify process state, task state, and event history.
 
-```
+```text
 processOperations.start(payload)
   → ProcessInstanceAssertions
     .expectFields(processInstanceMatchers.status(RUNNING))
@@ -200,7 +200,7 @@ processOperations.start(payload)
 import static org.activiti.test.matchers.ProcessInstanceMatchers.*;
 
 ProcessInstance instance = processOperations
-    .start(StartProcessPayloadBuilder.start()
+    .start(ProcessPayloadBuilder.start()
         .withProcessDefinitionKey("orderProcess")
         .withBusinessKey("ORD-123")
         .build())
@@ -299,7 +299,7 @@ processOperations
 **Example:**
 ```java
 ProcessInstance instance = processOperations
-    .start(StartProcessPayloadBuilder.start()
+    .start(ProcessPayloadBuilder.start()
         .withProcessDefinitionKey("orderProcess")
         .withBusinessKey("ORD-123")
         .build())
@@ -356,7 +356,7 @@ Task completedTask = taskOperations
 ```java
 // When await is enabled, all assertions poll until they pass
 ProcessInstance instance = processOperations
-    .start(StartProcessPayloadBuilder.start()
+    .start(ProcessPayloadBuilder.start()
         .withProcessDefinitionKey("asyncProcess")
         .build())
     .expectEvents(
@@ -425,7 +425,7 @@ class OrderProcessTest {
     @Test
     void testOrderProcessStart() {
         ProcessInstance instance = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .withBusinessKey("ORD-123")
                 .withVariable("customerId", "CUST-456")
@@ -446,7 +446,7 @@ class OrderProcessTest {
     @Test
     void testProcessCompletion() {
         ProcessInstance instance = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("simpleProcess")
                 .build())
             .expectEvents(
@@ -455,7 +455,7 @@ class OrderProcessTest {
             .andReturn();
 
         ProcessInstance completed = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("simpleProcess")
                 .build())
             .expectFields(
@@ -483,7 +483,7 @@ class TaskTest {
     void testTaskClaimAndComplete() {
         // Start process with a task
         ProcessInstance instance = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("taskProcess")
                 .build())
             .andReturn();
@@ -536,7 +536,7 @@ class SignalTest {
     @Test
     void testSignalReception() {
         ProcessInstance instance = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("signalProcess")
                 .build())
             .andReturn();
@@ -594,7 +594,7 @@ class ActivityMatcherTest {
     @Test
     void testActivityMatchers() {
         processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .build())
             .expectEvents(
@@ -634,7 +634,7 @@ class ProcessInstanceMatcherTest {
     @Test
     void testProcessInstanceMatchers() {
         processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .withBusinessKey("ORD-123")
                 .build())
@@ -712,7 +712,7 @@ class VariableMatcherTest {
     @Test
     void testProcessVariableMatchers() {
         processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .withVariable("orderId", "ORD-123")
                 .build())
@@ -740,7 +740,7 @@ class SequenceFlowMatcherTest {
     @Test
     void testSequenceFlowMatchers() {
         processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .build())
             .expectEvents(
@@ -768,7 +768,7 @@ class ProcessTaskMatcherTest {
     @Test
     void testProcessTaskMatchers() {
         processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .build())
             .expectEvents(
@@ -795,7 +795,7 @@ class SignalMatcherTest {
     @Test
     void testSignalMatchers() {
         ProcessInstance instance = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("signalProcess")
                 .build())
             .andReturn();
@@ -868,7 +868,7 @@ interface ProcessOperations {
 private ProcessOperations processOperations;
 
 ProcessInstance instance = processOperations
-    .start(StartProcessPayloadBuilder.start()
+    .start(ProcessPayloadBuilder.start()
         .withProcessDefinitionKey("orderProcess")
         .withBusinessKey("ORD-123")
         .withVariable("amount", 100.0)
@@ -964,7 +964,7 @@ When `awaitEnabled` is `true`, `AwaitableProcessOperations.start()` wraps the re
 void testAsyncProcessWithAwait() {
     // When await is enabled, assertions poll until they pass
     ProcessInstance instance = processOperations
-        .start(StartProcessPayloadBuilder.start()
+        .start(ProcessPayloadBuilder.start()
             .withProcessDefinitionKey("asyncProcess")
             .build())
         .expectEvents(
@@ -1039,7 +1039,7 @@ class OrderProcessIntegrationTest {
     void testCompleteOrderProcess() {
         // 1. Start order process and assert
         ProcessInstance instance = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .withBusinessKey("ORD-123")
                 .withVariable("customerId", "CUST-456")
@@ -1081,7 +1081,7 @@ class OrderProcessIntegrationTest {
 
         // 5. Assert process completed
         ProcessInstance completedInstance = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .build())
             .expectEvents(processInstance().hasBeenCompleted())
@@ -1102,7 +1102,7 @@ class ActivityMatchingTest {
     @Test
     void testActivityFlow() {
         processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .build())
             .expectEvents(
@@ -1130,7 +1130,7 @@ class SignalMatchingTest {
     @Test
     void testSignalFlow() {
         ProcessInstance instance = processOperations
-            .start(StartProcessPayloadBuilder.start()
+            .start(ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("signalProcess")
                 .build())
             .expectEvents(

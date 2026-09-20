@@ -5,7 +5,7 @@ title: "Process Extensions"
 description: "Complete guide to using *-extensions.json files for variable mapping, properties, and constants in Activiti processes - separation of concerns for maintainable workflows."
 ---
 
-# Process Extensions (\`*-extensions.json\`)
+# Process Extensions
 
 Process Extensions files (named `*-extensions.json`) provide a **powerful mechanism** to define process variables, variable mappings, and constants **separately** from your BPMN diagram. This separation of concerns makes your processes more maintainable, testable, and flexible.
 
@@ -1238,7 +1238,7 @@ Constants are merged into the `MAP_ALL_INPUTS` variable map, so a task can recei
 
 By default, Activiti scans `classpath*:**/processes/` for process definitions and their extension files (overridable via `spring.activiti.process.extensions.dir`). The only enforced naming rule is the `-extensions.json` suffix — base-name matching against the BPMN file is a recommended convention, not a requirement:
 
-```
+```text
 src/main/resources/processes/
 ├── orderProcess.bpmn
 ├── orderProcess-extensions.json
