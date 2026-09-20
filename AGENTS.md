@@ -8,6 +8,8 @@ Docusaurus 3 documentation site for Activiti workflow/BPM engine. Docs live in `
 
 **Tests.** `npm test` runs vitest over `src/theme/CodeBlock/bpmnLayout.test.ts` (jsdom environment; covers `extractActivitiProperties`, the detection logic behind the BPMN diagram property indicators) and `src/theme/CodeBlock/activitiInspector.test.ts` (the bpmn-js plugin module that renders the badges; also runs the real viewer in jsdom with SVG geometry stubs). `npm run typecheck` currently reports three pre-existing errors (`DirectoryTree/FileIcon.tsx` x2, `theme/Mermaid/index.tsx`) plus a tsconfig `baseUrl` deprecation — treat those as the baseline, not regressions.
 
+**Build baseline.** `npm run build` succeeds (`onBrokenLinks: 'warn'`) but carries a known pre-existing set of broken links/anchors under `docs/cloud` (11 changelog links to `/changelog/*` and one broken anchor on `/docs/cloud/connectors/api-reference`). Treat those as baseline; only *new* broken links/anchors in touched pages are regressions.
+
 ## Docs Structure
 
 The site is organized into **modules** — each module is a top-level folder under `docs/` with its own sidebar.
@@ -29,9 +31,8 @@ The site is organized into **modules** — each module is a top-level folder und
 ## Doc Conventions
 
 - BPMN XML examples must include `xmlns:activiti="http://activiti.org/bpmn"` when using `activiti:` extensions
-- No Camunda-specific content — this is Activiti-only
-- No Flowable-specific content — this is Activiti-only
-- Java code blocks must compile — verify types against the Activiti submodule
+- No Camunda- or Flowable-specific content — this is Activiti-only
+- Java code blocks must compile — verify types against the Activiti engine source. Before doing so, check whether the user has it cloned locally (public repo: `Activiti/Activiti`); if it isn't available, ask, or flag Java examples as unverified rather than guessing
 - Keep `activiti:` legacy attributes clearly distinguished from standard BPMN
 
 ## Specialized Agents & Skills

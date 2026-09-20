@@ -163,24 +163,27 @@ Key entities from `org.activiti.engine.runtime`, `.task`, `.repository`, `.histo
 
 ```java
 org.activiti.engine.test.ActivitiRule — class rule for engine
-org.activiti.engine.test.ActivitiGroupRule — group rule for parallel tests
 org.activiti.engine.test.Deployment — annotation for test deployments
 org.activiti.engine.test.ActivitiTestCase — base test class
 ```
 
 ### JUnit 5 / Spring
 
+No dedicated JUnit 5 extension class exists. Use standard Spring Boot tests with the test modules:
+
 ```java
-org.activiti.engine.test.Extensions.ActivitiSpringTest — JUnit 5 extension
-@ExtendWith(ActivitiSpringTest.class)
-@SpringBootTest
+@SpringBootTest — standard Spring Boot test
+org.activiti.test.config.ActivitiAssertionsAutoConfiguration — auto-configuration from
+  `activiti-core-test-local-runtime` (transitively pulls in `activiti-core-test-assertions`)
+org.activiti.test.operations.ProcessRuntimeOperations / TaskRuntimeOperations — BDD-style test operations
 ```
 
 ### Mocking
 
 ```java
-org.activiti.engine.test.mock.MockProvider — custom mock registration
-org.activiti.engine.test.mock.MockTask — mock task implementation
+org.activiti.engine.test.mock.Mocks — static mock registry (register/get/reset; ThreadLocal map)
+org.activiti.engine.test.mock.MockServiceTask — annotation for mocking service task behavior
+org.activiti.engine.test.mock.ActivitiMockSupport — programmatic mock support (mockServiceTaskWithClassDelegate, setAllServiceTasksNoOp, ...)
 ```
 
 ---
@@ -201,8 +204,8 @@ org.activiti.engine.test.mock.MockTask — mock task implementation
 | Class | Package | Purpose |
 |-------|---------|---------|
 | `UserGroupManager` | `org.activiti.api.runtime.shared.identity` | Abstracts user/group operations |
-| `ActivitiUserGroupManagerImpl` | `org.activiti.spring.identity` | Spring Security implementation |
-| `ExtendedInMemoryUserDetailsManager` | `org.activiti.spring.identity` | In-memory user store for testing |
+| `ActivitiUserGroupManagerImpl` | `org.activiti.core.common.spring.identity` | Spring Security implementation |
+| `ExtendedInMemoryUserDetailsManager` | `org.activiti.core.common.spring.identity` | In-memory user store for testing |
 | `SecurityManager` | `org.activiti.api.runtime.shared.security` | Security context management |
 | `PrincipalIdentityProvider` | `org.activiti.api.runtime.shared.security` | User identity provider |
 | `PrincipalGroupsProvider` | `org.activiti.api.runtime.shared.security` | Group membership provider |

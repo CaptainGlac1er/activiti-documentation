@@ -45,7 +45,7 @@ Values for standard BPMN attributes (e.g., `implementation="someBean"`) are appl
 
 ### 4. Activiti attribute reference (source of truth)
 
-Verify each attribute name against the constant in `BpmnXMLConstants.java`. The constant name (`ATTRIBUTE_*`) is the authoritative source — not docs or assumptions.
+Verify each attribute name against the constant in `BpmnXMLConstants.java`, cross-checked against the converter's read path where known. The constant name (`ATTRIBUTE_*`) is usually authoritative, but is not always what the parser reads — see the caveat below the ServiceTask table.
 
 Do not attempt to verify the *values* of any BPMN attribute against the Activiti codebase. Values like class names, bean references, expressions, and implementation IDs are application-level and may reference user-defined code.
 
@@ -60,15 +60,17 @@ However, do validate:
 | `activiti:class` | `ATTRIBUTE_TASK_SERVICE_CLASS` | |
 | `activiti:expression` | `ATTRIBUTE_TASK_SERVICE_EXPRESSION` | |
 | `activiti:delegateExpression` | `ATTRIBUTE_TASK_SERVICE_DELEGATEEXPRESSION` | |
-| `activiti:resultVariableName` | `ATTRIBUTE_TASK_SERVICE_RESULTVARIABLE` | NOT `resultVariable` |
+| `activiti:resultVariable` | `ATTRIBUTE_TASK_SERVICE_RESULTVARIABLE` | Read path accepts both spellings — constant (`resultVariableName`) first, literal `resultVariable` as fallback. Write path emits `resultVariableName`; hand-written BPMN should use `resultVariable` (consistent with scriptTask/businessRuleTask) |
 | `activiti:skipExpression` | `ATTRIBUTE_TASK_SERVICE_SKIP_EXPRESSION` | |
 | `activiti:type` | `ATTRIBUTE_TYPE` | |
 | `activiti:extensionId` | `ATTRIBUTE_TASK_SERVICE_EXTENSIONID` | |
 
+> **Caveat — constants ≠ read path.** `BpmnXMLConstants.ATTRIBUTE_TASK_SERVICE_RESULTVARIABLE` is `"resultVariableName"`, but `ServiceTaskXMLConverter`'s read path tries the constant first and falls back to the literal `"resultVariable"` (lines 81–86 of the converter). When a constant and a converter's read call disagree, the read call wins — check the converter before "correcting" an attribute name in the docs.
+
 **ScriptTask:**
 | Attribute | Constant | Notes |
 |---|---|---|
-| `activiti:resultVariable` | `ATTRIBUTE_TASK_SCRIPT_RESULTVARIABLE` | Different from serviceTask |
+| `activiti:resultVariable` | `ATTRIBUTE_TASK_SCRIPT_RESULTVARIABLE` | Same spelling as serviceTask's read path |
 | `activiti:autoStoreVariables` | `ATTRIBUTE_TASK_SCRIPT_AUTO_STORE_VARIABLE` | |
 | `scriptFormat` | `ATTRIBUTE_TASK_SCRIPT_FORMAT` | **Standard BPMN — no `activiti:` prefix** |
 
