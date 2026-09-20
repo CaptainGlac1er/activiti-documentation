@@ -262,10 +262,10 @@ graph TD
 
 When a process instance completes, variable values are moved to history tables (`ACT_HI_VARINST`). Activiti uses `HistoricJPAEntityVariableType` and `HistoricJPAEntityListVariableType` to handle historical JPA entity variables.
 
-These historic variants **override `isCachable()` to return `true`**, unlike the runtime types which are not cached by default (`forceCacheable = false`). This difference is important:
+These historic variants **override `isCachable()` to return `true`**, unlike the runtime types which are not cached by default (`forceCacheable = false`). This difference matters, but it is not what it might sound like:
 
-- **Runtime (`jpa-entity`)**: Not cacheable by default — each `getVariable()` call triggers a fresh `EntityManager.find()`, ensuring the latest database state
-- **Historic (`jpa-entity`)**: Cacheable — the entity snapshot is cached because the entity may no longer exist in the production database when the history is queried
+- **Runtime (`jpa-entity`)**: Not cacheable — each `getVariable()` call triggers a fresh `EntityManager.find()`, ensuring the latest database state
+- **Historic (`jpa-entity`)**: Cacheable — a value already resolved in the current session can be served from the engine's variable cache instead of re-fetched. The historic type still inherits the same `getValue()` as the runtime type, so it stores **no snapshot** — the history tables hold the same class name + primary key reference. A cold-cache access still goes through `EntityManager.find()`, and if the production row has since been deleted it fails with the same `Entity does not exist` error as a runtime read
 
 ```java
 // Historical query — the entity snapshot may be cached
@@ -275,7 +275,7 @@ List<HistoricVariableInstance> history = historyService
     .list();
 ```
 
-If you need the most up-to-date entity data during historical queries, the cache ensures the value is still available even if the underlying database record has been deleted.
+Do not rely on historic JPA variables for data that may have been deleted: if you need the entity in a historical context, capture the fields you need into plain variables while the process is running.
 
 ## Complete Example
 
@@ -384,6 +384,7 @@ This can happen if the entity was deleted outside the process.
 The class must be annotated with `@Entity`. Subclasses of `@Entity` classes are also recognized.
 
 Activiti throws:
+
 ```
 ActivitiIllegalArgumentException: Object is not a JPA Entity: class='<fully.qualified.ClassName>', <value>
 ```
@@ -395,6 +396,7 @@ ActivitiIllegalArgumentException: Object is not a JPA Entity: class='<fully.qual
 Activiti does not support entities with `@EmbeddedId` or `@IdClass`.
 
 The scanner throws:
+
 ```
 ActivitiException: Cannot find field or method with annotation @Id on class '<ClassName>', only single-valued primary keys are supported on JPA-entities
 ```

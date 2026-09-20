@@ -7,7 +7,7 @@ description: "Complete guide to asynchronous execution in Activiti - background 
 
 # Async Execution
 
-Asynchronous execution allows activities to run in the **background** using Activiti's job executor, preventing blocking of process engine threads and improving scalability.
+Asynchronous execution creates a persisted job and lets Activiti's async executor continue the activity in a worker thread. This introduces a transaction boundary and enables configured retry behavior.
 
 ## Overview
 
@@ -25,29 +25,25 @@ Asynchronous execution allows activities to run in the **background** using Acti
 </bpmn:process>
 ```
 
-**Key Benefits:**
-- Non-blocking execution
-- Better resource utilization
-- Improved scalability
-- Automatic retry on failure
-- Job persistence across restarts
+**Key behaviors:**
+- Persists work before a worker executes it.
+- Moves execution outside the thread that reached the async continuation.
+- Uses the configured executor pool and acquisition settings.
+- Retries failed jobs according to the activity or executor configuration.
+- Retains pending jobs across application restarts when the database is preserved.
 
 ## When to Use Async
 
-### **Use Async For:**
-- Long-running operations (> 1 second)
-- External system calls (APIs, databases)
-- Batch processing
-- Email/SMS notifications
-- File processing
-- Complex calculations
-- Operations that may fail and need retry
+### Use async execution for
+- Work that should continue in an executor thread.
+- External calls or batch work that needs configured retries.
+- Activities that benefit from a transaction boundary before execution.
+- Work whose caller does not require same-transaction completion.
 
-### ❌ **Don't Use Async For:**
-- Simple variable assignments
-- Fast in-memory operations
-- Critical path activities requiring immediate completion
-- Operations that must complete within the same transaction
+### Keep execution synchronous for
+- Small in-memory operations where queueing adds no benefit.
+- Activities that must complete in the current transaction.
+- Paths whose caller requires the result before the transaction can continue.
 
 ## Configuration
 
@@ -99,7 +95,7 @@ Asynchronous execution allows activities to run in the **background** using Acti
 
 **Retry Cycle Syntax (single-phase only):**
 - `R5/PT0S` - Retry 5 times with no delay between retries
-- `R3/PT1M` - Retry 3 times with 1 minute interval
+- `R3/PT1M` - Retry 3 times with a 1-minute interval
 - `R[<n>]/<ISO-8601 duration>[/<end date>]` - General form, e.g. `R10/PT30S/2024-01-31T23:59:59`
 - cron expressions are also accepted, e.g. `0 */5 * * * ?`
 
@@ -382,6 +378,7 @@ Delay async activation:
 ```
 
 **Runtime Configuration:**
+
 ```java
 // Set job retries to retry a failed job
 managementService.setJobRetries(jobId, 3);
@@ -479,6 +476,7 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
 ## Common Pitfalls
 
 ### 1. **Too Many Async Tasks**
+
 ```xml
 <!-- BAD: Everything async -->
 <serviceTask activiti:async="true"/>
@@ -486,9 +484,10 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
 <scriptTask activiti:async="true"/>
 ```
 
-**Solution:** Only async long-running operations
+**Solution:** Use async execution only for long-running operations.
 
 ### 2. **No Retry Configuration**
+
 ```xml
 <!-- BAD: No retry policy -->
 <serviceTask id="unreliableApi" 
@@ -496,9 +495,10 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
              activiti:class="com.example.ExternalApi"/>
 ```
 
-**Solution:** Always add retry policy for external calls
+**Solution:** Add a retry policy for external calls that can fail transiently.
 
 ### 3. **Transaction Issues**
+
 ```java
 // BAD: Modifying process variables outside transaction
 public void execute(DelegateExecution execution) {
@@ -510,6 +510,7 @@ public void execute(DelegateExecution execution) {
 **Solution:** Use proper transaction management
 
 ### 4. **Ignoring Job Failures**
+
 ```java
 // BAD: No error handling
 try {

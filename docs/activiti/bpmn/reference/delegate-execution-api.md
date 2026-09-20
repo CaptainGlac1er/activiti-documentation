@@ -157,7 +157,7 @@ public class TypedVariableDelegate implements JavaDelegate {
 ### Process Instance Identification
 
 :::info[Added in 8.1.0]
-`getRootProcessInstanceId()` and `getEngineServices()` were added to `DelegateExecution` in version 8.1.0.
+`getEngineServices()` was added to `DelegateExecution` in version 8.1.0 (it is a `default` method returning `Context.getProcessEngineConfiguration()`). `getRootProcessInstanceId()` already existed before 8.1.0.
 :::
 
 DelegateExecution provides process instance identification directly. For full process instance details (name, start date, version), query via the RuntimeService:
@@ -276,6 +276,8 @@ public class MultiInstanceDelegate implements JavaDelegate {
 }
 ```
 
+**Scoping note (verified against `MultiInstanceActivityBehavior`):** the engine sets the loop element variable — and the built-in `nrOfInstances` / `nrOfActiveInstances` / `nrOfCompletedInstances` counters — via `setVariableLocal`, i.e. as **local** variables on the execution, not as process variables (only an explicitly configured `loopDataOutputRef` is propagated to the process instance; see [Multi-Instance](./multi-instance.md)). The `getVariable("orderItem")` reads above still resolve because `getVariable` checks the calling execution's own (local) variables before walking up the parent scope — `getVariableLocal` is the precise API, and a read from an unrelated execution simply returns `null`.
+
 ## Flow Control
 
 ### Current Activity Information
@@ -332,6 +334,8 @@ public class ErrorHandlingDelegate implements JavaDelegate {
     }
 }
 ```
+
+**How `BpmnError` actually routes (verified against the engine source):** the service/script/web-task behaviors catch `Exception` and **walk the cause chain** looking for a `BpmnError`; when they find one they hand its **error code** to `ErrorPropagation.propagateError`, which searches for a boundary error event whose `errorRef` matches the code — including events defined on ancestor scopes (it walks the execution's parent chain) and, for call activities, the calling process. The first matching catch executes; if none exists anywhere, the `BpmnError` is rethrown ("No catching boundary event found…") and the execution fails. Two consequences: a plain `ActivitiException` (first snippet above) is **never** routed to error boundary events — it just fails the execution (or the async job, subject to its configured retries); and the `errorCode` must be non-empty and must exactly match an `errorRef` in the model. Throwing `BpmnError` directly is the cleanest path; wrapping it still works in these behavior contexts because of the cause-chain walk.
 
 ## Process Engine Access
 
@@ -521,6 +525,8 @@ public class BatchProcessingDelegate implements JavaDelegate {
     }
 }
 ```
+
+The same scoping rules from the [Multi-Instance Execution](#multi-instance-execution) section apply here: `orderItem` is an engine-managed local of the current iteration execution, and `getVariable` resolves it only because the read originates from that same execution.
 
 ### Example 3: Subprocess Communication
 

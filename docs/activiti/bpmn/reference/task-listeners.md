@@ -34,6 +34,7 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 ```
 
 **Key Benefits:**
+
 - Hook into task lifecycle events
 - Send notifications
 - Dynamic task configuration
@@ -42,6 +43,7 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 - Available for User Tasks only
 
 **Important Attributes:**
+
 - `event` - The event type (create, assignment, complete, delete, all)
 - `class` - Fully qualified class name implementing TaskListener
 - `expression` - EL expression to evaluate
@@ -56,7 +58,7 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 Task listeners support **four lifecycle events**:
 
 | Event | When It Fires | Use Cases |
-|-------|---------------|-----------|
+| ------- | --------------- | ----------- |
 | `create` | Task is created | Notifications, initial setup, logging |
 | `assignment` | Assignee changes (candidate add/remove does not fire it) | Dynamic routing, notifications |
 | `complete` | Task is completed | Audit logging, notifications, cleanup |
@@ -88,6 +90,7 @@ Specify a fully qualified class name implementing `TaskListener`:
 ```
 
 **Requirements:**
+
 - Class must implement `org.activiti.engine.delegate.TaskListener`
 - Class must be in classpath
 - Class must have no-arg constructor
@@ -105,6 +108,7 @@ Reference a Spring bean or expression:
 ```
 
 **Requirements:**
+
 - Expression must resolve to `TaskListener` instance
 - Works with Spring beans
 - Supports EL expressions
@@ -122,7 +126,8 @@ Execute a method call directly:
 ```
 
 **Requirements:**
-- Expression must return void
+
+- The expression is evaluated with the task as the EL root (bean methods can be called); any return value is ignored — the engine performs no return-type check
 - Method must be accessible
 - Useful for simple operations
 
@@ -151,12 +156,12 @@ public interface TransactionDependentTaskListener {
 **Key differences:**
 
 | Aspect | `TaskListener` | `TransactionDependentTaskListener` |
-|--------|---------------|-----------------------------------|
+| -------- | --------------- | ----------------------------------- |
 | Receives | Live `DelegateTask` | Data snapshots |
 | Can modify task | Yes — `task.setAssignee()` | No — task is read-only |
 | Can modify variables | Yes — `task.setVariable()` | No — map is a copy |
 | Timing options | `create`, `assignment`, `complete`, `delete` | `before-commit`, `committed`, `rolled-back` |
-| Transaction context | Inside the transaction | After commit or after rollback |
+| Transaction context | Inside the transaction | `before-commit`: during the commit phase, before the data is committed; `committed`: after the commit; `rolled-back`: after the rollback |
 
 ### Implementation Example
 
@@ -223,6 +228,7 @@ public class TaskCompletedNotifier implements TransactionDependentTaskListener {
 ```
 
 **Use cases:**
+
 - Send email/SMS notifications only after task state is persisted
 - Publish domain events after transaction commit
 - Perform cleanup on rollback
@@ -356,6 +362,7 @@ public class TaskCreatedNotificationListener implements TaskListener {
 ```
 
 **BPMN Configuration:**
+
 ```xml
 <userTask id="approvalTask" name="Approval Task" activiti:assignee="${manager}">
   <extensionElements>
@@ -416,6 +423,7 @@ public class AssignmentChangeTracker implements TaskListener {
 ```
 
 **BPMN Configuration:**
+
 ```xml
 <userTask id="reassignableTask" name="Reassignable Task">
   <extensionElements>
@@ -480,6 +488,7 @@ public class TaskCompletionAuditor implements TaskListener {
 ```
 
 **BPMN Configuration:**
+
 ```xml
 <userTask id="auditedTask" name="Audited Task">
   <extensionElements>
@@ -542,6 +551,7 @@ public class DynamicTaskConfigurer implements TaskListener {
 ```
 
 **BPMN Configuration:**
+
 ```xml
 <userTask id="dynamicTask" name="Dynamic Task">
   <extensionElements>
@@ -604,6 +614,7 @@ public class UniversalTaskHandler implements TaskListener {
 ```
 
 **BPMN Configuration:**
+
 ```xml
 <userTask id="multiEventTask" name="Multi-Event Task">
   <extensionElements>
@@ -617,6 +628,7 @@ public class UniversalTaskHandler implements TaskListener {
 ### Create Event Patterns
 
 **1. Initial Setup**
+
 ```java
 public class InitialSetupListener implements TaskListener {
     @Override
@@ -634,6 +646,7 @@ public class InitialSetupListener implements TaskListener {
 ```
 
 **2. Notification**
+
 ```java
 public class TaskNotificationListener implements TaskListener {
     @Override
@@ -649,6 +662,7 @@ public class TaskNotificationListener implements TaskListener {
 ### Assignment Event Patterns
 
 **1. Reassignment Tracking**
+
 ```java
 public class ReassignmentTracker implements TaskListener {
     @Override
@@ -667,6 +681,7 @@ public class ReassignmentTracker implements TaskListener {
 ```
 
 **2. SLA Reset**
+
 ```java
 public class SLAResetListener implements TaskListener {
     @Override
@@ -684,6 +699,7 @@ public class SLAResetListener implements TaskListener {
 ### Complete Event Patterns
 
 **1. Performance Tracking**
+
 ```java
 public class PerformanceTracker implements TaskListener {
     @Override
@@ -704,6 +720,7 @@ public class PerformanceTracker implements TaskListener {
 ```
 
 **2. Approval Aggregation**
+
 ```java
 public class ApprovalAggregator implements TaskListener {
     @Override
@@ -733,6 +750,7 @@ public class ApprovalAggregator implements TaskListener {
 ### Delete Event Patterns
 
 **1. Cleanup**
+
 ```java
 public class TaskCleanupListener implements TaskListener {
     @Override
@@ -961,6 +979,7 @@ public class EventAwareListener implements TaskListener {
 **Problem:** Task listener doesn't execute
 
 **Solutions:**
+
 1. Verify event name is correct
 2. Check class is in classpath
 3. Ensure TaskListener interface is implemented
@@ -972,6 +991,7 @@ public class EventAwareListener implements TaskListener {
 **Problem:** Listener throws exception
 
 **Solutions:**
+
 1. Add try-catch blocks
 2. Log exceptions properly
 3. Don't let exceptions break task lifecycle
@@ -982,6 +1002,7 @@ public class EventAwareListener implements TaskListener {
 **Problem:** Listeners slow down task operations
 
 **Solutions:**
+
 1. Move heavy operations to async
 2. Minimize database calls
 3. Cache frequently accessed data
@@ -995,4 +1016,3 @@ public class EventAwareListener implements TaskListener {
 - [Variables](./variables.md) - Task variables
 
 ---
-

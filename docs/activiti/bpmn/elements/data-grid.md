@@ -34,12 +34,10 @@ grid.getRows().add(row);
 ### Model Classes
 
 | Class | Description |
-|-------|-------------|
+| ------- | ------------- |
 | `DataGrid` | A grid of `DataGridRow`s; implements `ComplexDataType` |
 | `DataGridRow` | A single row; holds a list of `DataGridField`s |
 | `DataGridField` | A name/value pair within a row |
-
-> **Note:** `DataGrid` is a complex data type used to represent structured tabular data (form/table definitions) within the BPMN model.
 
 ## Related Documentation
 

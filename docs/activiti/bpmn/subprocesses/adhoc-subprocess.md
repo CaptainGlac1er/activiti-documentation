@@ -21,11 +21,11 @@ Ad-hoc SubProcesses allow activities to be executed in **arbitrary order** based
 </adHocSubProcess>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported
+**BPMN 2.0 Standard:** Supported, except where noted below
 
 The `AdhocSubProcess` model class in Activiti has two standard BPMN 2.0 attributes:
 - **`ordering`** (default: `Parallel`) — controls whether activities execute in parallel or sequentially
-- **`cancelRemainingInstances`** (default: `true`) — whether unfinished activities are cancelled when the subprocess completes
+- **`cancelRemainingInstances`** (default: `true`) — whether activities still running are deleted when the completion condition is first met; when `false`, completion is deferred until in-flight activities finish (see [Cancel Behavior](#5-ad-hoc-subprocess-with-cancel-behavior))
 
 ## Key Features
 
@@ -69,8 +69,8 @@ Simple ad-hoc subprocess with multiple activities:
 **Behavior:**
 - All 4 tasks are available from the start
 - Users can complete them in any order
-- Subprocess completes when 2 or more tasks are done
-- Remaining tasks become unavailable
+- The completion condition is re-evaluated on each task completion inside the subprocess; once it first evaluates to `true`, the scope ends
+- Activities still running are deleted with the scope (the default `cancelRemainingInstances="true"`); activities that were never activated simply disappear with it
 
 ### 2. Ad-hoc SubProcess with Parallel Execution
 
@@ -113,9 +113,9 @@ Execute activities one at a time using the `ordering` attribute:
 ```
 
 **Behavior:**
-- Only one activity can be active at a time
-- Next activity is chosen by the user from available (non-completed) activities
-- Subprocess completes when the completion condition evaluates to true
+- Only one activity can be active at a time — activating another while one is running throws an `ActivitiException`
+- The enabled-activities API returns nothing while an activity is running, and once it is free again it does **not** exclude already-completed activities (see [Query Available Activities](#query-available-activities))
+- The scope ends when the completion condition evaluates to `true` on a task completion
 
 ### 4. Ad-hoc SubProcess with Multiple Completion Conditions
 
@@ -153,8 +153,8 @@ Control whether remaining activities are cancelled when the subprocess completes
 ```
 
 **Behavior:**
-- When completion condition is met, any unfinished activities are automatically cancelled
-- Set `cancelRemainingInstances="false"` to allow remaining activities to stay available
+- When the completion condition first evaluates to `true` (checked on each task completion), the scope ends and any activity still running is deleted with it
+- With `cancelRemainingInstances="false"`, the engine refuses to end the scope while other activities are still running — it waits for them to finish and re-checks the condition on each completion; activities that were never activated remain available until the scope finally ends
 
 ## Complete Real-World Example
 
@@ -248,7 +248,7 @@ This is the primary way to drive ad-hoc subprocesses without user interaction. T
 runtimeService.completeAdhocSubProcess(executionId);
 ```
 
-Bypasses `<completionCondition>` entirely. Any remaining activities are cancelled according to the `cancelRemainingInstances` attribute.
+Bypasses the `<completionCondition>`, but requires that no activity of the subprocess is still running — with running child executions present the engine throws an `ActivitiException` ("Ad-hoc sub process has running child executions that need to be completed first"). It does not consult `cancelRemainingInstances`; it deletes the scope and continues the process past the subprocess.
 
 ### Complete Example: Automated Decision
 
@@ -274,6 +274,8 @@ for (FlowNode node : available) {
 // Force completion when all needed work is done
 runtimeService.completeAdhocSubProcess(executionId);
 ```
+
+**Note:** `singleResult()` returns `null` when no execution matches the query — guard against that before calling the ad-hoc methods, and note that `completeAdhocSubProcess` requires all child activities to have finished first (see [Force Completion](#force-completion)).
 
 ### Sequential Ordering Constraints
 
@@ -338,6 +340,4 @@ Completion of the ad-hoc subprocess can also be driven by the `<completionCondit
 - [Transaction](./transaction.md) - Atomic subprocesses
 - [User Task](../elements/user-task.md) - Human-performed tasks
 - [Service Task](../elements/service-task.md) - Automated tasks
-
----
 

@@ -7,7 +7,7 @@ description: "How the transaction element is parsed and executed in Activiti - a
 
 # Transaction SubProcess
 
-Transaction SubProcesses group activities that should be treated as a unit. The `<transaction>` element is **parsed and modeled** by the engine, but it executes with the engine's **regular sub-process behavior** — there is no BPMN *commit* step and no database-level atomicity. The transaction is *canceled* only when execution reaches a **cancel end event** (`<endEvent><cancelEventDefinition/></endEvent>`) paired with a cancel boundary event on the transaction; reaching it cancels the transaction scope and triggers the transaction's compensation handlers. A plain error thrown by an activity does **not** cancel the transaction — it propagates outward and, if unhandled, fails the process instance.
+Transaction SubProcesses group activities that should be treated as a unit. The `<transaction>` element is **parsed and modeled** by the engine, but it executes with the engine's **regular sub-process behavior** — there is no BPMN *commit* step and no database-level atomicity. The transaction is *canceled* only when execution reaches a **cancel end event** (`<endEvent><cancelEventDefinition/></endEvent>`) paired with a cancel boundary event on the transaction. Reaching the cancel end event first **snapshots** the transaction scope — its live compensation registrations (if any) are moved under the process instance together with a by-value copy of its variables — and removes the scope; the cancel boundary then dispatches the compensation registrations the process instance now holds, which includes that snapshot, in reverse completion order. So a transaction wired with per-activity compensation (§2) has its handlers run on cancellation; a transaction that holds **no** compensation registrations when the cancel end is reached has its cancel boundary fail at runtime instead (`No execution found for sub process of boundary cancel event ...`) — see §2 for the full verified behavior. A plain error thrown by an activity does **not** cancel the transaction — it propagates outward and, if unhandled, fails the process instance.
 
 ## Overview
 
@@ -30,13 +30,15 @@ Transaction SubProcesses group activities that should be treated as a unit. The 
 ## Key Features
 
 ### Standard BPMN Features
+
 - **Regular Sub-Process Execution** - No commit semantics; the transaction simply completes at its normal end event
 - **Cancel End Event** - Cancels the transaction scope via the cancel end event
-- **Rollback Support** - Cancellation triggers the transaction's compensation flow
-- **Compensation** - Undo completed activities
+- **Rollback Support** - Cancellation snapshots the transaction's per-activity compensation registrations and dispatches them in reverse completion order; those registrations are created as activities complete (and a cancel path reached without any of them fails at runtime — see §2)
+- **Compensation** - Handlers that undo the side effects of completed activities, wired explicitly (per activity or per scope) — there is no automatic rollback
 - **Error Handling** - Transaction-specific error events
 
 ### Activiti Extensions
+
 - **Custom Compensation Logic** - Define rollback behavior
 - **Error Event Definitions** - Custom transaction errors
 - **Scope Management** - Variable isolation
@@ -100,8 +102,9 @@ Simple transaction with a commit path and a cancel path:
 ```
 
 **Behavior:**
+
 - The transaction **completes** when execution reaches the normal end event (`transEnd`) — there is no special commit step
-- The transaction is **canceled** only when execution reaches the cancel end event (`cancelEnd` with `<cancelEventDefinition/>`)
+- The transaction is **canceled** only when execution reaches the cancel end event (`cancelEnd` with `<cancelEventDefinition/>`) — and the cancel completes only if the scope holds compensation registrations at that moment (per §2); this example has no COMPENSATE boundary at all, so taking the `noFunds` branch fails at runtime with `No execution found for sub process of boundary cancel event ...` instead of completing the cancel
 - A plain error from a service task does NOT cancel the transaction — it propagates outward and fails the process instance if unhandled
 - Activiti does NOT automatically roll back side effects from service tasks (e.g., external API calls, database writes outside the engine)
 - You must define compensation logic to undo completed activities
@@ -170,12 +173,14 @@ Define compensation (undo) logic for completed activities:
 </process>
 ```
 
-**Compensation Behavior:**
-- A compensation-start **event subprocess is NOT supported** (the `EventSubprocessValidator` only allows error/message/signal starts); the compensation boundary event on the transaction is the canonical trigger
-- When the transaction is canceled (its cancel end event is reached), the engine triggers the compensation boundary event and runs the associated handlers
-- Each compensation handler must declare `isForCompensation="true"` — the engine fails with `Compensation activity could not be found (or it is missing 'isForCompensation="true"')` otherwise
-- Handlers are invoked in reverse order of the compensated activities
-- `processPayment` is compensated (refund executed), then `reserveInventory` (inventory released)
+**Compensation Behavior (verified against the engine source — read this before relying on the XML above):**
+
+- A compensation-start **event subprocess is NOT supported** — the `EventSubprocessValidator` only accepts error/message/signal start events for event subprocesses.
+- **How compensation registrations are created.** When a `<boundaryEvent>` carrying a `<compensateEventDefinition/>` is attached to an *activity*, the engine executes it when that **activity completes** (`AbstractBpmnActivityBehavior.leave` → `executeCompensateBoundaryEvents`): it resolves the associated handler — the **first** association target with `isForCompensation="true"`, failing at runtime if there is none — and records a compensation subscription in the nearest enclosing scope (the transaction scope here, or the process instance at top level). A compensation boundary attached to the *transaction itself*, as in the XML above, is executed only when the **transaction completes normally** — never when inner activities complete, and never on the cancel path.
+- **What the cancel path actually does** — the engine's `TransactionSubProcessTest` asserts this end to end. Reaching the cancel end event first runs the cancel end's own behavior (`CancelEndEventActivityBehavior`): it snapshots the transaction scope — the scope's live compensation subscriptions are moved onto a snapshot execution under the process instance, its local variables are copied by value, and a `compensate(<transaction-id>)` pointer is registered against the process instance — then removes the scope's executions and hands off to the cancel boundary (`BoundaryCancelEventActivityBehavior`). The cancel boundary then collects **all** compensation subscriptions currently held by the process instance — which includes the snapshot it just created — and dispatches them in **reverse order of registration** (i.e. reverse completion order), descending into any snapshot and running the registered handlers, which execute with the snapshot of the scope's variables available. If the scope held **no** compensation registrations when the cancel end was reached, no snapshot is created and the cancel boundary instead fails at runtime with `No execution found for sub process of boundary cancel event ...` — a cancel path is therefore only reliable when per-activity compensation is wired and has actually been registered. With per-activity compensation wired (one boundary + association per activity — exactly the engine's `transactionProcess` test model), cancellation runs every registered handler — `testSimpleCaseTxCancelled` asserts the handlers ran and no registrations remain — in reverse completion order (the dispatch is sorted by the subscriptions' creation timestamps, descending); `testNestedCancelInner` and `testMultiInstanceTx` pin down the variants (an inner cancellation does *not* cascade to the outer, and an outer cancellation kills still-active inner scopes without compensating them — only completed scopes' snapshots are dispatched; canceling one multi-instance instance cancels all of them and compensates each). With the XML above as written, nothing is registered by the time `cancelEnd` could be reached, so **`refundPayment` and `releaseInventory` never run — the cancel boundary fails instead.**
+- **What the XML above actually achieves.** When the transaction **completes normally**, the engine executes the `transactionCompensation` boundary, takes the **first** `isForCompensation="true"` association target (`refundPayment` — the second association, to `releaseInventory`, is ignored), and records it as a whole-transaction compensation. At transaction end the engine snapshots the scope execution — local variables copied by value — and re-registers that compensation against the process instance under the transaction id (`createCopyOfSubProcessExecutionForCompensation`). It can later be dispatched by an intermediate **throw** compensation event with `<compensateEventDefinition activityRef="orderTransaction"/>` (the pattern the engine's `CompensateEventTest` uses — the throw behavior resolves the process-instance pointer and runs the registered handler against the snapshot) or by a later cancel boundary in the same process (which dispatches all compensation registrations the process instance holds at that moment, in reverse registration order).
+- **The pattern that delivers per-activity, reverse-order compensation** (refund `processPayment`, then release `reserveInventory`): attach a compensation boundary event *and* its association to **each** activity to be compensated — one per activity, exactly the shape of the engine's `TransactionSubProcessTest` `transactionProcess` model — and let the transaction's **own cancel end event** (plus its cancel boundary) do the triggering: on cancellation the engine snapshots the scope and runs the registered handlers in reverse completion order, with a by-value copy of the scope's variables available to them. Separately, an intermediate **throw** compensation event with `activityRef="<scope-id>"` compensates an **already-completed** scope (the engine's `CompensateEventTest` pattern): after normal completion the scope's registrations live on the snapshot behind the process-instance pointer that the throw event resolves.
+- Each compensation handler must declare `isForCompensation="true"` — when a compensation boundary resolves its association, a missing flag (or a missing target) fails at runtime with `Compensation activity could not be found (or it is missing 'isForCompensation="true"')`.
 
 ### 3. Transaction with Error Handling
 
@@ -254,9 +259,11 @@ Transactions within transactions:
 ```
 
 **Behavior:**
+
 - Each transaction completes when it reaches its normal end event (no commit semantics), and is canceled only when it reaches its own cancel end event
 - If the inner transaction is canceled, route the flow so the outer transaction can also be canceled via its own cancel end event
 - Both must complete for the full transaction to finish successfully
+- The example above shows only the happy path: any transaction that must be cancellable needs its own cancel end event **and** a cancel boundary event on it (see §1) — a cancel end event without its boundary fails with `Could not find cancel boundary event for cancel end event ...` — plus per-activity COMPENSATE boundaries on its steps (see §2), because a cancel path reached without any compensation registrations fails with `No execution found for sub process of boundary cancel event ...`
 
 ## Complete Real-World Example
 
@@ -358,8 +365,9 @@ Transactions within transactions:
 ```
 
 **Transaction Guarantees:**
+
 - The transaction completes only when execution reaches `transEnd` (no commit semantics); it is canceled only when execution reaches the cancel end event (`cancelEnd`) — a plain error from a step does not cancel it
-- On cancellation, the engine triggers the compensation boundary event and runs the associated `isForCompensation="true"` handlers
+- On the transaction's **own** cancellation, no compensation handler runs in this example: the `transactionCompensation` boundary is attached to the *transaction*, so the engine executes it only when the transaction **completes normally** — at which point it records the first `isForCompensation="true"` association target (`cancelShipping`) as a whole-transaction compensation, snapshotted against the process instance and dispatchable later via an intermediate throw compensation event with `activityRef="orderTransaction"` (the pattern the engine's `CompensateEventTest` uses). On the cancel path, by contrast, this boundary has never executed, so the scope holds no registrations: the engine creates no snapshot, and the cancel boundary fails at runtime with `No execution found for sub process of boundary cancel event ...` — `cancelShipping` never runs. (The only cancel-reachable branch in this model is the no-inventory one, reached before any compensatable step — exactly the shape that triggers the failure.)
 - Activiti does NOT automatically undo side effects from service tasks (payments, inventory changes, etc.)
 - You must explicitly define compensation handlers to reverse completed activities
 - The transaction subprocess provides structured compensation flow, not automatic rollback
@@ -416,21 +424,25 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 ## Use Cases
 
 ### 1. **Financial Operations**
+
 - Bank transfers
 - Payment processing
 - Account updates
 
 ### 2. **Inventory Management**
+
 - Stock reservations
 - Order fulfillment
 - Warehouse operations
 
 ### 3. **Order Processing**
+
 - E-commerce orders
 - Purchase orders
 - Sales transactions
 
 ### 4. **Data Synchronization**
+
 - Multi-system updates
 - Coordinated compensating updates when a step fails
 - API integrations
@@ -444,4 +456,3 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 - [Error Events](../events/index.md) - Error handling
 
 ---
-

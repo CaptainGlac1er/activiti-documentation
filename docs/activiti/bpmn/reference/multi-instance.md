@@ -22,6 +22,7 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 ```
 
 **Key Benefits:**
+
 - Process collections efficiently
 - Parallel or sequential execution
 - Built-in completion conditions
@@ -77,6 +78,7 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 ```
 
 **Parameters:**
+
 - `activiti:collection` - The collection to iterate over
 - `activiti:elementVariable` - Variable name for current element
 - `isSequential` - Execution mode (true/false)
@@ -92,6 +94,7 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 ```
 
 **Parameters:**
+
 - `loopCardinality` - Number of iterations
 - `isSequential` - Execution mode
 
@@ -110,6 +113,7 @@ Instances execute **one after another** in order.
 ```
 
 **Characteristics:**
+
 - Ordered execution
 - Each instance waits for previous to complete
 - Access to `loopCounter` variable
@@ -117,6 +121,7 @@ Instances execute **one after another** in order.
 - ❌ Slower overall execution
 
 **Use Cases:**
+
 - Sequential approvals
 - Ordered processing
 - Dependent operations
@@ -134,6 +139,7 @@ Instances execute **concurrently** without waiting.
 ```
 
 **Characteristics:**
+
 - Concurrent execution
 - Faster overall processing
 - No ordering guarantees
@@ -141,6 +147,7 @@ Instances execute **concurrently** without waiting.
 - ❌ Higher resource usage
 
 **Use Cases:**
+
 - Sending notifications
 - Parallel API calls
 - Independent approvals
@@ -226,6 +233,7 @@ Multi-instance activities provide these **automatic variables**:
 | `<elementVariable>`      | Current collection element (name varies) | ✅      | ✅       |
 
 **Notes:**
+
 - `loopCounter` is the 0-based index of the current instance. Its variable name defaults to `loopCounter` but can be customized with `activiti:elementIndexVariable`.
 - `<elementVariable>` refers to the name set via `activiti:elementVariable` (e.g., if `activiti:elementVariable="item"`, the variable is called `item`).
 - All counter variables (`nrOfInstances`, `nrOfActiveInstances`, `nrOfCompletedInstances`) are set on the **multi-instance scope execution** (parent), not on individual child executions. Child executions can access them through variable inheritance.
@@ -297,7 +305,7 @@ The `inputDataItem` name attribute maps to the `elementVariable`. It specifies w
 
 ### Output Data Items
 
-The `outputDataItem` name attribute specifies the variable name used to collect results from each instance. Results are aggregated into a collection:
+The `outputDataItem` name attribute specifies the name of the **child-local variable** to collect from each instance. Collected values are appended to a list variable whose name is given by the standard `loopDataOutputRef` attribute on `<multiInstanceLoopCharacteristics>` — without `loopDataOutputRef` no collection is created, updated, or exposed, and `outputDataItem` alone does nothing. When the multi-instance completes, that list is copied from the multi-instance scope to the process instance under the same name:
 
 ```xml
   <multiInstanceLoopCharacteristics 
@@ -329,7 +337,7 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 </userTask>
 ```
 
-**Note:** Each child execution receives the current collection element as the variable named by `activiti:elementVariable` (here: `approver`). To collect results, have each instance set a variable and reference it with the `outputDataItem` attribute:
+**Note:** Each child execution receives the current collection element as the variable named by `activiti:elementVariable` (here: `approver`). To collect results, have each instance set a **local** variable, reference it with `outputDataItem`, and name the target collection with `loopDataOutputRef` on the loop characteristics (without `loopDataOutputRef` nothing is collected):
 
 ```xml
 <multiInstanceLoopCharacteristics 
@@ -678,6 +686,7 @@ public void execute(DelegateExecution execution) {
 **Problem:** Activity hangs indefinitely
 
 **Solutions:**
+
 1. Check completion condition syntax
 2. Verify collection is not empty
 3. Ensure instances are actually completing
@@ -688,6 +697,7 @@ public void execute(DelegateExecution execution) {
 **Problem:** Different count than expected
 
 **Solutions:**
+
 1. Verify collection size before multi-instance
 2. Check if collection is filtered correctly
 3. Ensure elementVariable is set properly
@@ -697,6 +707,7 @@ public void execute(DelegateExecution execution) {
 **Problem:** Slow execution
 
 **Solutions:**
+
 1. Use parallel instead of sequential
 2. Add async execution for service tasks
 3. Limit collection size
@@ -711,4 +722,3 @@ public void execute(DelegateExecution execution) {
 - [Service Task](../elements/service-task.md) - Multi-instance service tasks
 
 ---
-

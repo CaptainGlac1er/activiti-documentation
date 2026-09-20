@@ -404,7 +404,7 @@ When `ActivitiInboundGateway.execute()` is called, the Spring Integration flow e
 
 1. The exception propagates back to the `IntegrationActivityBehavior.execute()` method
 2. The Activiti engine's standard exception handling takes over
-3. If the receive task is configured as async (`activiti:async="true"`), the exception is captured and can be retried
+3. If the service task is configured as async (`activiti:async="true"`), the exception is captured and can be retried
 4. If not async, the exception fails the process execution
 
 ### Recommended Patterns
@@ -481,6 +481,8 @@ public IntegrationFlow approvalFlow(ActivitiInboundGateway approvalGateway) {
 }
 ```
 
+Returning a default keeps the process moving, but note that the catch block also swallows genuine bugs — a `NullPointerException` inside `performApprovalCheck` looks exactly like a failed approval check. Log the exception (along with the `orderId` header) before returning the default, so a broken check is distinguishable from a legitimately rejected order in the logs.
+
 ## Best Practices
 
 ### 1. Preserve Only Necessary Variables
@@ -520,7 +522,7 @@ public IntegrationActivityBehavior approvalBehavior(...) { ... }
 
 ### 4. Test the Bridge Independently
 
-Test the Spring Integration flow separately from the Activiti process:
+Test the Spring Integration flow separately from the Activiti process. The test below is a skeleton — wire in your own assertions (for example, drive the flow with a test message carrying an `orderId` header and assert on the enriched `approved` header in the reply):
 
 ```java
 @SpringBootTest
@@ -576,6 +578,8 @@ Activiti.inboundGateway(processEngine, "orderId", "approved");
 **Problem:** The Spring Integration flow returns `null` instead of a reply message.
 
 **Cause:** The flow is configured for fire-and-forget (no reply channel).
+
+**Effect:** With no reply, the gateway never calls `leave()` — the process stays parked at the service task until the execution is triggered externally, which is usually not what you want in a request-reply pattern.
 
 **Solution:** Ensure the `IntegrationFlow` returns a message. Use `.get()` to build a flow with a reply channel, or configure a proper output:
 

@@ -21,12 +21,14 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 ## Key Features
 
 ### Standard BPMN Features
+
 - **Condition Expressions** - Evaluate on outgoing flows
 - **Default Flow** - Fallback when no conditions match
 - **Divergence** - Split into multiple paths
 - **Convergence** - Merge from multiple paths
 
 ### Activiti Customizations
+
 - **EL Expressions** - Advanced condition language
 - **Default Flow Attribute** - Explicit default specification
 - **Execution Listeners** - Track decision points
@@ -185,7 +187,7 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 ### Inspecting Gateway Decisions
 
 ```java
-// Get historic activity instances to see which path was taken
+// The gateway's own historic start/end record — it does not by itself show the chosen flow
 List<HistoricActivityInstance> instances = historyService
     .createHistoricActivityInstanceQuery()
     .processInstanceId(processInstanceId)
@@ -212,14 +214,14 @@ List<HistoricActivityInstance> enteredActivities = historyService
 5. **Document Logic:** Explain complex decision rules
 6. **Test All Paths:** Verify each branch executes correctly
 7. **Use Expressions:** Leverage EL for flexibility
-8. **History Level:** Enable history to track decisions
+8. **History Level:** Verify the engine's history level is at least `activity` (the core engine default is `audit`, which already records activity start/end — including gateways; `none` records nothing)
 
 ## Common Pitfalls
 
 - **Overlapping Conditions:** When several conditions evaluate to true, only the first outgoing flow (in document order) with a true condition is taken; otherwise the default flow is taken; otherwise the engine throws an exception
 - **No Default Flow:** Unmatched conditions cause errors
 - **Complex Logic:** Hard to understand and maintain
-- **Missing Conditions:** Not all flows have conditions
+- **Missing Conditions:** Not all flows have conditions — the engine treats a flow with no condition expression as an always-true path (`ConditionUtil.hasTrueCondition` returns `true` when no expression is present), so an unconditional flow placed earlier in document order is taken before any later conditional flow
 - **Performance:** Expensive condition evaluation
 - **Debugging:** Hard to trace which condition matched
 
@@ -232,4 +234,3 @@ List<HistoricActivityInstance> enteredActivities = historyService
 - [Expression Language](../../api-reference/core-common/expression-language)
 
 ---
-

@@ -26,7 +26,8 @@ End Events mark the **completion** of a process or sub-process. They can be simp
 </endEvent>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
 **Activiti Extensions:** Multiple end event types, expressions
 
 ## Key Features
@@ -34,10 +35,10 @@ End Events mark the **completion** of a process or sub-process. They can be simp
 ### End Event Types
 
 | Type | Description | Use Case |
-|------|-------------|----------|
+| ------ | ------------- | ---------- |
 | **Terminator** | Normal completion | Standard process end |
 | **Error** | End with error | Exception termination |
-| **Cancel** | Cancel parent sub-process | Sub-process cancellation |
+| **Cancel** | Cancel the enclosing sub-process scope (requires a cancel boundary event on that sub-process) | Transaction rollback |
 | **Message** | Send message on end | External system notification |
 | **Terminate** | End entire process instance | Force termination of all branches |
 
@@ -58,6 +59,7 @@ Simple process completion:
 ```
 
 **Behavior:**
+
 - Normal process completion
 - No additional actions
 - Process instance ends
@@ -77,11 +79,13 @@ End process with an error:
 ```
 
 **Error Definition:**
+
 ```xml
 <error id="ProcessingError" name="Processing Error" errorCode="PROC001"/>
 ```
 
 **Runtime Behavior:**
+
 - Throws error when reached
 - Can be caught by error boundary events
 - Process instance ends with error
@@ -111,11 +115,13 @@ Send a message to external systems:
 ```
 
 **Message Definition:**
+
 ```xml
 <message id="approvalMessage" name="Approval Message"/>
 ```
 
-**Runtime API:**
+**Runtime API:** No runtime API call is needed — the message is sent automatically when the end event is reached, the same way as the throw message event on the [Intermediate Events](./intermediate-events.md) page.
+
 ```java
 // Message can be correlated by external systems
 // No direct API call needed - message is sent automatically
@@ -141,6 +147,7 @@ Force termination of entire process instance:
 ```
 
 **Behavior:**
+
 - Ends ALL active branches
 - Ignores waiting gateways
 - Force terminates process instance
@@ -174,7 +181,7 @@ The `TerminateEventDefinition` model supports two additional attributes:
 
 ### 6. Cancel End Event
 
-Cancel parent sub-process:
+Cancel the enclosing sub-process scope:
 
 ```xml
 <subProcess id="parentSubProcess" name="Parent Process">
@@ -202,9 +209,12 @@ Cancel parent sub-process:
 ```
 
 **Behavior:**
-- Cancels parent sub-process
-- Triggers compensation if defined
-- Only works within sub-process context
+
+- Reaching the cancel end event cancels the enclosing sub-process scope; a plain error from an activity does **not** cancel it (it propagates outward and fails the process instance if unhandled)
+- The engine's `CancelEndEventActivityBehavior` requires the enclosing sub-process to carry a cancel **boundary** event and throws an `ActivitiException` if it does not. The examples on this page show the model shape only — as shown, reaching the cancel end event at runtime throws because the sub-process carries no cancel boundary
+- The cancelled scope's compensation copies are created, so compensation handlers on the sub-process fire as part of the cancellation
+
+The full, deployable pattern — including the `<transaction>` element and compensation on cancel — is in [Transaction SubProcesses](../subprocesses/transaction.md).
 
 ### 7. Escalation End Event
 
@@ -248,6 +258,7 @@ Set variables before ending:
 ```
 
 **Variable Setter Example:**
+
 ```java
 public class VariableSetter implements JavaDelegate {
     @Override
@@ -344,6 +355,7 @@ public class VariableSetter implements JavaDelegate {
 ```
 
 **Behavior:**
+
 - When `terminateEnd` is reached, ALL branches end immediately
 - `longTask` and `anotherTask` are terminated
 - Process instance ends
@@ -420,7 +432,7 @@ Map<String, Object> variables = Map.of("orderId", "12345");
 runtimeService.signalEventReceived("orderShipped", variables);
 ```
 
-Signal **end** events are unsupported: a signal definition on an end event is ignored and the end event behaves as a plain end event. To broadcast a signal when a process ends, place an intermediate throw signal event before the end event.
+Signal **end** events are not supported — see the [Signal End Event](#3-signal-end-event) section above.
 
 ## Best Practices
 
@@ -437,7 +449,7 @@ Signal **end** events are unsupported: a signal definition on an end event is ig
 - **Terminate Misuse** - Can unexpectedly kill parallel branches
 - **Error Not Caught** - Errors may propagate unexpectedly
 - **Signal Broadcasting** - Affects ALL waiting processes
-- **Cancel Scope** - Only works in sub-process context
+- **Cancel Scope** - A cancel end event only works inside a sub-process that carries a cancel boundary event; without one the engine throws an `ActivitiException` at runtime (see the [Cancel End Event](#6-cancel-end-event) section)
 - **Multiple Terminators** - Can cause confusion
 - **Missing End Events** - Process must have at least one
 
@@ -450,4 +462,3 @@ Signal **end** events are unsupported: a signal definition on an end event is ig
 - [SubProcesses](../subprocesses/index.md) - Process containers
 
 ---
-

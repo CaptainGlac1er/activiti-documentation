@@ -13,9 +13,9 @@ description: "Event-Based Gateway support status in Activiti."
 
 ### Implementation Details
 
-The `EventBasedGatewayActivityBehavior` class extends `FlowNodeActivityBehavior` with **zero method overrides**. It is essentially a pass-through — the class body is empty (23 lines total, only a class declaration and `serialVersionUID`).
+The `EventBasedGatewayActivityBehavior` class extends `FlowNodeActivityBehavior` with **zero method overrides** — the entire class body is a single `serialVersionUID` field, so the gateway is a plain pass-through flow node at runtime.
 
-The `EventGateway` model class has no `exclusive`, `instant`, or `eventGatewayType` fields. These attributes from the BPMN 2.0 spec are **not modeled** and **not parsed**.
+The `EventGateway` model class has no `exclusive`, `instant`, or `eventGatewayType` fields (it declares no fields at all). These attributes from the BPMN 2.0 spec are **not modeled** and **not parsed**.
 
 ### What This Means
 
@@ -26,13 +26,13 @@ The `EventGateway` model class has no `exclusive`, `instant`, or `eventGatewayTy
 
 ### How Event Handling Actually Works
 
-The actual event-based gateway behavior — registering event listeners, canceling competing events when one fires — is implemented in the **downstream intermediate catch events**, not in the gateway itself. The `IntermediateCatchEventActivityBehavior` class:
+The actual event-based gateway behavior — competing events canceling each other when one fires — is implemented in the **downstream intermediate catch events**, not in the gateway itself. The `IntermediateCatchEventActivityBehavior` class:
 
-1. Detects when it is preceded by an event-based gateway via `getPrecedingEventBasedGateway()`.
-2. Registers itself as a pending event listener.
-3. When one event fires, calls `deleteOtherEventsRelatedToEventBasedGateway()` to cancel all sibling intermediate catch events connected to the same gateway.
+1. At leave time, detects whether it is directly preceded by an event-based gateway — `getPrecedingEventBasedGateway()` matches only the case of exactly one incoming flow whose source is an `EventGateway`.
+2. Otherwise contributes nothing: the catch event's own message/timer/signal subscription — set up exactly as for any intermediate catch event — is what parks the execution in its wait state. The gateway registers no subscriptions of its own.
+3. When one event fires, `trigger()` → `leaveIntermediateCatchEvent()` calls `deleteOtherEventsRelatedToEventBasedGateway()`, which deletes the sibling executions parked behind the same gateway (with `DeleteReason.EVENT_BASED_GATEWAY_CANCEL`); the process then continues through the triggered event's path.
 
-This means the event-based gateway pattern works in Activiti, but the behavior is entirely driven by the intermediate catch events, not by the gateway element itself.
+The class javadoc is explicit that only the exclusive form is supported: *"we're only supporting the exclusive event based gateway type currently"*.
 
 ### Recommended Pattern
 

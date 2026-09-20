@@ -158,5 +158,3 @@ Process → External System → ... → Callback → Process
 - [Timer Events](../events/intermediate-events.md#2-timer-intermediate-events) - Time-based triggers
 - [REST API](/docs/api-reference/engine-api) - Engine APIs
 
----
-

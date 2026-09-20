@@ -877,6 +877,8 @@ config.setDelegateExpressionFieldInjectionMode(
 // or DelegateExpressionFieldInjectionMode.MIXED
 ```
 
+**Compile-time caveat (verified against the source):** `setDelegateExpressionFieldInjectionMode(...)` is declared on `ProcessEngineConfigurationImpl` (the base of the standalone/JTA engine configurations) — **not** on the `ProcessEngineConfiguration` interface. The variable in the snippet above must therefore be typed as `ProcessEngineConfigurationImpl` (or a concrete subclass); as written against the interface it will not compile.
+
 ### Field Extension Syntax
 
 Each field can use **attribute syntax** or **child element syntax**:

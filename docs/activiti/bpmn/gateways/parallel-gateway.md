@@ -15,8 +15,11 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <parallelGateway id="parallel" name="Parallel Processing"/>
 ```
 
-**BPMN 2.0 Symbol:** ⊞ (circle with plus)  
-**Activiti Extensions:** Complex parallel execution, multi-instance integration
+**BPMN 2.0 Standard:** Supported
+
+**BPMN 2.0 Symbol:** a bold "+" inside a circle
+
+**Activiti Extensions:** Async boundaries on any flow node (requires the async executor — see [Async Execution](../reference/async-execution.md))
 
 ## Key Features
 
@@ -28,10 +31,8 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 - **Convergence** - Synchronize parallel flows
 
 ### Activiti Customizations
-- **Async Execution** - Background parallel processing
-- **Multi-Instance Integration** - Combined parallel patterns
-- **Execution Listeners** - Track parallel branches
-- **Complex Synchronization** - Advanced join patterns
+- **Async Boundaries** - `activiti:async` on any flow node, including the gateway itself (requires the async executor; see [Async Execution](../reference/async-execution.md))
+- **Multi-Instance Composition** - Parallel branches can host multi-instance activities; the gateway itself does not loop (see [Multi-Instance](../reference/multi-instance.md))
 
 ## Configuration Options
 
@@ -138,6 +139,8 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ```
 
 ### Deferred Activation
+
+`activiti:async` on the fork defers the split itself: the engine persists a job and the branch executions are activated by the async executor instead of the calling thread. This requires the async executor (enabled by default in the Spring Boot starter; see [Async Execution](../reference/async-execution.md)).
 
 ```xml
 <parallelGateway id="deferredSplit" activiti:async="true"/>
@@ -384,7 +387,7 @@ taskService.complete(taskId2);
 ## Best Practices
 
 1. **Balance Forks and Joins:** Ensure every split has a corresponding join
-2. **Use Async:** Prevent thread blocking in parallel branches
+2. **Use Async:** `activiti:async` on branch activities (or on the gateways) moves work to the async executor and keeps the calling thread free — see [Async Execution](../reference/async-execution.md)
 3. **Independent Branches:** Parallel tasks should not depend on each other
 4. **Error Handling:** Add boundary events for failures in branches
 5. **Timeout Management:** Prevent indefinite waiting at joins
@@ -399,7 +402,7 @@ taskService.complete(taskId2);
 - **Resource Contention:** Parallel branches competing for resources
 - **Deadlocks:** Circular dependencies between branches
 - **No Async:** Blocking threads in synchronous parallel execution
-- **Shared State:** Parallel branches modifying same variables
+- **Shared State:** `setVariable` writes to the process-instance scope, which every parallel branch shares — concurrent branches writing the same variable is a race. Keep branches on distinct variables, or use `setVariableLocal` for branch-private state (it is deleted with the branch's execution when the join fires)
 - **Missing Error Handling:** One failure stops all branches
 
 ## Related Documentation
@@ -409,6 +412,4 @@ taskService.complete(taskId2);
 - [Inclusive Gateway](./inclusive-gateway.md)
 - [Async Execution](../reference/async-execution.md)
 - [Multi-Instance](../reference/multi-instance.md)
-
----
 

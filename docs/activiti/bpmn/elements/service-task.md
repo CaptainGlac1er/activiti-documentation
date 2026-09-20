@@ -24,24 +24,26 @@ Service Tasks represent **automated work** performed by the system, such as call
 </bpmn:process>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Rich integration capabilities
+- **BPMN element:** `<serviceTask>`
+- **Activiti extensions:** Class, delegate-expression, connector, async, retry, listener, and field configuration
 
 ## Key Features
 
 ### Standard BPMN Features
+
 - **Implementation** - Service interface and operation
 - **Input/Output Data** - Data associations
 - **Operation Reference** - External service operation
 - **Multi-instance** - Parallel executions
 
 ### Activiti Customizations
+
 - **Class Implementation** - Direct Java class execution
 - **Delegate Expression** - Spring bean integration
 - **Expression** - EL expression execution
 - **Field Injection** - Dependency injection
-- **Operation Reference** - Connector support
-- **DMN Integration** - Decision engine
+- **Operation Reference** - BPMN web-service operation
+- **External DMN Integration** - Decision evaluation through a connector
 - **Mail Task** - Email sending
 - **Async Execution** - Background jobs
 - **Custom Properties** - Metadata extension
@@ -64,7 +66,7 @@ Use the standard BPMN `implementation` attribute to reference a Spring bean:
 
 **How it actually works:** The core engine's `ServiceTaskParseHandler` routes plain `implementation` values to `DefaultActivityBehaviorFactory.createDefaultServiceTaskBehavior()`, which wraps the behavior as the expression `${defaultServiceTaskBehavior}`. The Spring bean `defaultServiceTaskBehavior` (provided by `ConnectorsAutoConfiguration`) receives the `ServiceTask` at runtime and reads `serviceTask.getImplementation()` to determine which connector bean to invoke. The value in `implementation` is **not** directly looked up as a bean name by the core engine — it's passed through the `defaultServiceTaskBehavior` routing layer, which resolves it to a `Connector` bean from the ApplicationContext.
 
-#### For Connector Implementations (Activiti 7/8 API Layer):
+#### For Connector Implementations (Activiti 7/8 API Layer)
 
 ```java
 import org.activiti.api.process.runtime.connector.Connector;
@@ -108,7 +110,7 @@ public class TagImageConnector implements Connector {
 }
 ```
 
-#### For JavaDelegate Implementations (Legacy but Still Supported):
+#### For JavaDelegate Implementations (Legacy but Still Supported)
 
 ```java
 import org.activiti.engine.delegate.JavaDelegate;
@@ -138,6 +140,7 @@ public class PaymentService implements JavaDelegate {
 ```
 
 **Usage:**
+
 ```xml
 <serviceTask id="paymentTask" 
              name="Process Payment"
@@ -147,6 +150,7 @@ public class PaymentService implements JavaDelegate {
 **Important:** `implementation="beanName"` is routed through `defaultServiceTaskBehavior` which resolves the bean name to a `Connector`. For `JavaDelegate`, you must use `activiti:delegateExpression="${beanName}"` instead.
 
 **Benefits:**
+
 - ✅ Full Spring dependency injection (`@Autowired`)
 - ✅ Backward compatible with Activiti 5/6/7/8
 - ✅ Works with extension JSON variable mappings
@@ -195,7 +199,7 @@ public class MoviesConnector implements Connector {
 
 **Using Connector with Extension JSON:**
 
-Connectors work seamlessly with extension JSON for variable mapping:
+Connectors use extension JSON to map process variables to connector inputs and outputs:
 
 ```json
 {
@@ -224,6 +228,7 @@ Connectors work seamlessly with extension JSON for variable mapping:
 ```
 
 **Benefits of Connectors:**
+
 - ✅ Clean separation of integration logic
 - ✅ Reusable across multiple processes
 - ✅ Works with extension JSON variable mappings
@@ -251,6 +256,7 @@ For direct class instantiation without Spring beans:
 ```
 
 **Legacy JavaDelegate Interface (Activiti 5/6):**
+
 ```java
 import org.activiti.engine.delegate.DelegateExecution;
 import org.activiti.engine.delegate.JavaDelegate;
@@ -265,6 +271,7 @@ public class LegacyService implements JavaDelegate {
 ```
 
 **Use Cases for `activiti:class`:**
+
 - Direct class instantiation (no Spring bean required)
 - Simple utility classes
 - Backward compatibility with Activiti 5/6
@@ -281,6 +288,7 @@ public class LegacyService implements JavaDelegate {
 ```
 
 **Spring Bean:**
+
 ```java
 @Component("legacyService")
 public class LegacyBeanService implements JavaDelegate {
@@ -301,6 +309,7 @@ public class LegacyBeanService implements JavaDelegate {
 ```
 
 **⚠️ Legacy Syntax Note:**
+
 - Legacy syntax uses `JavaDelegate` and `DelegateExecution` (Activiti 5/6/7/8 API)
 - Modern syntax uses `Connector` interface (Activiti 8+)
 - Legacy attributes require `<xmlns:activiti="http://activiti.org/bpmn">` namespace
@@ -310,7 +319,7 @@ public class LegacyBeanService implements JavaDelegate {
 ### Comparison Table
 
 | Feature | `implementation="beanName"` | Legacy `activiti:class` | Legacy `activiti:delegateExpression` | Legacy `activiti:expression` |
-|---------|----------------------------|------------------------|-------------------------------------|-----------------------------|
+| --------- | ---------------------------- | ------------------------ | ------------------------------------- | ----------------------------- |
 | **Bean Type** | `Connector` | `JavaDelegate` | `JavaDelegate` | N/A (EL expression) |
 | **Spring Bean** | Required (`@Component`, routed via `defaultServiceTaskBehavior`) | Not required | Required (`@Component`) | Required (`@Component`) |
 | **Dependency Injection** | ✅ `@Autowired` | ❌ No (field injection only) | ✅ `@Autowired` | ✅ `@Autowired` |
@@ -325,6 +334,7 @@ public class LegacyBeanService implements JavaDelegate {
 ### Migration Example
 
 **From Legacy (Activiti 6):**
+
 ```xml
 <!-- OLD -->
 <serviceTask activiti:class="com.example.PaymentService"/>
@@ -339,6 +349,7 @@ public class PaymentService implements JavaDelegate {
 ```
 
 **To Modern (Activiti 8) - Using Connector:**
+
 ```xml
 <!-- NEW - Recommended -->
 <serviceTask implementation="paymentService"/>
@@ -361,6 +372,7 @@ public class PaymentService implements Connector {
 ```
 
 **Or Using `activiti:delegateExpression` with JavaDelegate (Legacy):**
+
 ```xml
 <!-- For JavaDelegate, use activiti:delegateExpression -->
 <serviceTask id="paymentTask" 
@@ -382,6 +394,7 @@ public class PaymentService implements JavaDelegate {
 ```
 
 **Key Changes:**
+
 1. Remove `activiti:` namespace prefix
 2. Change `class` to `implementation`
 3. Use bean name instead of full class name
@@ -432,6 +445,7 @@ For backward compatibility, Activiti supports field injection via XML:
 ```
 
 **Legacy Java Class with Field Injection:**
+
 ```java
 public class OrderService implements JavaDelegate {
 
@@ -497,6 +511,7 @@ Activiti includes some built-in connectors that **only work with legacy XML synt
 ```
 
 **Other Built-in Connector Types (Legacy Only):**
+
 - `activiti:type="mule"` - Mule ESB integration
 - `activiti:type="camel"` - Apache Camel routes
 - `activiti:type="shell"` - Execute shell commands
@@ -506,6 +521,7 @@ Activiti includes some built-in connectors that **only work with legacy XML synt
 For email and other integrations, create your own Connector bean for full Spring integration:
 
 **BPMN:**
+
 ```xml
 <serviceTask id="sendEmail" 
              name="Send Email"
@@ -513,6 +529,7 @@ For email and other integrations, create your own Connector bean for full Spring
 ```
 
 **Java Implementation:**
+
 ```java
 import org.activiti.api.process.runtime.connector.Connector;
 import org.activiti.api.process.model.IntegrationContext;
@@ -557,6 +574,7 @@ public class EmailConnector implements Connector {
 ```
 
 **Extension JSON for Variable Mapping:**
+
 ```json
 {
   "id": "notificationProcess",
@@ -592,6 +610,7 @@ public class EmailConnector implements Connector {
 ```
 
 **Benefits of Custom Connectors:**
+
 - ✅ Full Spring dependency injection (`@Autowired`)
 - ✅ Better error handling and logging
 - ✅ More flexibility (attachments, templates, etc.)
@@ -672,6 +691,7 @@ The operation **must** be declared inside an `<interface>` element — the engin
 Run service tasks in the background:
 
 **Modern Syntax:**
+
 ```xml
 <serviceTask id="longRunningService" 
              name="Process Large Dataset"
@@ -680,6 +700,7 @@ Run service tasks in the background:
 ```
 
 **Legacy Syntax (Activiti 5/6 Style - Still Supported):**
+
 ```xml
 <serviceTask id="longRunningService" 
              name="Process Large Dataset"
@@ -690,6 +711,7 @@ Run service tasks in the background:
 **Note:** Job expiry is configured via Management Service or job executor settings, not through BPMN attributes.
 
 **Use Cases:**
+
 - Long-running operations
 - External system calls
 - Batch processing
@@ -700,6 +722,7 @@ Run service tasks in the background:
 Configure retry policies for failed jobs:
 
 **Modern Syntax:**
+
 ```xml
 <serviceTask id="unreliableService" 
              name="Call External API"
@@ -714,6 +737,7 @@ Configure retry policies for failed jobs:
 ```
 
 **Or with a longer fixed interval:**
+
 ```xml
 <serviceTask id="unreliableService" 
               implementation="externalApiService"
@@ -725,6 +749,7 @@ Configure retry policies for failed jobs:
 ```
 
 **Legacy Syntax (Activiti 5/6 Style - Still Supported):**
+
 ```xml
 <serviceTask id="unreliableService" 
              activiti:async="true"
@@ -736,9 +761,10 @@ Configure retry policies for failed jobs:
 ```
 
 **Retry Cycle Syntax:**
-- `R5/PT5S` - Retry 5 times with 5-second interval
-- `R5/PT1M` - Retry 5 times with 1 minute interval
-- `R3/PT5M` - Retry 3 times with 5 minute interval
+
+- `R5/PT5S` - Retry 5 times with a 5-second interval
+- `R5/PT1M` - Retry 5 times with a 1-minute interval
+- `R3/PT5M` - Retry 3 times with a 5-minute interval
 
 > **Note:** Only a single-phase `R[<n>]/ISO-8601` duration (or a cron expression) is supported — the engine splits the cycle on `/` only. Chained phases separated by `;` (e.g., `R3/PT5M;R2/PT30M`) are **not** supported and fail at runtime with `failedJobRetryTimeCylcle has wrong format`.
 
@@ -747,6 +773,7 @@ Configure retry policies for failed jobs:
 Conditionally skip service execution:
 
 **Modern Syntax:**
+
 ```xml
 <serviceTask id="optionalService" 
              name="Enrich Data"
@@ -755,6 +782,7 @@ Conditionally skip service execution:
 ```
 
 **Legacy Syntax (Activiti 5/6 Style - Still Supported):**
+
 ```xml
 <serviceTask id="optionalService" 
              name="Enrich Data"
@@ -767,6 +795,7 @@ Conditionally skip service execution:
 Add metadata using `<activiti:field>` elements:
 
 **Modern Syntax:**
+
 ```xml
 <serviceTask id="customService" 
              name="Custom Processing"
@@ -787,6 +816,7 @@ Add metadata using `<activiti:field>` elements:
 ```
 
 **Legacy Syntax (Activiti 5/6 Style - Still Supported):**
+
 ```xml
 <serviceTask id="customService" 
              name="Custom Processing"
@@ -811,6 +841,7 @@ Add metadata using `<activiti:field>` elements:
 Hook into execution lifecycle:
 
 **Modern Syntax:**
+
 ```xml
 <serviceTask id="trackedService" 
              name="Tracked Service"
@@ -824,6 +855,7 @@ Hook into execution lifecycle:
 ```
 
 **Legacy Syntax (Activiti 5/6 Style - Still Supported):**
+
 ```xml
 <serviceTask id="trackedService" 
              name="Tracked Service"
@@ -837,6 +869,7 @@ Hook into execution lifecycle:
 ```
 
 **Supported Events:**
+
 - `start` - Before the service task executes
 - `end` - After the service task completes
 
@@ -845,6 +878,7 @@ Hook into execution lifecycle:
 Handle exceptions (boundary events are siblings, not children):
 
 **Modern Syntax:**
+
 ```xml
 <serviceTask id="riskyService" 
              name="External Call"
@@ -865,6 +899,7 @@ Handle exceptions (boundary events are siblings, not children):
 ```
 
 **Legacy Syntax (Activiti 5/6 Style - Still Supported):**
+
 ```xml
 <serviceTask id="riskyService" 
              name="External Call"
@@ -889,6 +924,7 @@ Handle exceptions (boundary events are siblings, not children):
 ### Example 1: Payment Processing with Retry
 
 **BPMN:**
+
 ```xml
 <startEvent id="start"/>
 
@@ -917,6 +953,7 @@ Handle exceptions (boundary events are siblings, not children):
 ```
 
 **Java Implementation (Connector):**
+
 ```java
 @Component("paymentProcessor")
 public class PaymentProcessor implements Connector {
@@ -969,6 +1006,7 @@ In the delegate above, `maxRetries` is available as a process variable (e.g., fo
 ### Example 2: Multi-Service Orchestration
 
 **BPMN:**
+
 ```xml
 <startEvent id="start"/>
 
@@ -1007,6 +1045,7 @@ In the delegate above, `maxRetries` is available as a process variable (e.g., fo
 ```
 
 **Java Implementation for Email Connector:**
+
 ```java
 @Component("emailConnector")
 public class EmailConnector implements Connector {
@@ -1095,6 +1134,7 @@ If you prefer the built-in mail functionality (legacy syntax only):
 **⚠️ Note:** The built-in mail task only works with legacy `activiti:type="mail"` syntax. For modern development, create a custom Connector bean as shown above.
 
 **Extension JSON for Variable Mapping:**
+
 ```json
 {
   "id": "orderProcess",
@@ -1133,6 +1173,7 @@ If you prefer the built-in mail functionality (legacy syntax only):
 ### Example 3: REST API Integration
 
 **BPMN:**
+
 ```xml
 <serviceTask id="callExternalAPI" 
              name="Fetch Customer Data"
@@ -1141,6 +1182,7 @@ If you prefer the built-in mail functionality (legacy syntax only):
 ```
 
 **Java Implementation:**
+
 ```java
 @Component("restApiClient")
 public class RestApiClient implements Connector {
@@ -1172,6 +1214,7 @@ public class RestApiClient implements Connector {
 ```
 
 **application.yml Configuration:**
+
 ```yaml
 api:
   customer:
@@ -1201,11 +1244,12 @@ For reference, here's how these examples would look using legacy syntax:
 ```
 
 **Why Modern Approach is Better:**
+
 - ✅ No XML field injection (use `@Autowired` instead)
 - ✅ Cleaner separation of concerns (BPMN for flow, Java for logic, JSON for mappings)
 - ✅ Type-safe with Spring dependency injection
 - ✅ Easier to test and maintain
-- ✅ Works seamlessly with extension JSON
+- ✅ Supports variable mappings through extension JSON
 
 ```java
 import org.activiti.engine.delegate.JavaDelegate;
@@ -1388,4 +1432,3 @@ public class PaymentServiceTest {
 - [DMN in Business Rule Tasks](./business-rule-task.md#pattern-3-dmn-decision-integration-via-service-task-recommended)
 
 ---
-

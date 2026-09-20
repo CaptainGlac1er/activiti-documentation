@@ -7,7 +7,7 @@ description: "Complete guide to using *-extensions.json files for variable mappi
 
 # Process Extensions (\`*-extensions.json\`)
 
-Process Extensions files (named `*-extensions.json`) provide a **powerful mechanism** to define process variables, variable mappings, and constants **separately** from your BPMN diagram. This separation of concerns makes your processes more maintainable, testable, and flexible.
+Process Extensions files (named `*-extensions.json`) define process variables, variable mappings, and constants **separately** from the BPMN diagram. Keeping these values outside the diagram makes them easier to maintain and test.
 
 ## Overview
 
@@ -1268,6 +1268,7 @@ No special configuration needed. Extension files are not preloaded at deployment
 - Constants: Descriptive names (e.g., `apiEndpoint`, `timeout`)
 
 ### 2. **Documentation**
+
 ```json
 "properties": {
   "orderId-id": {
@@ -1283,6 +1284,7 @@ No special configuration needed. Extension files are not preloaded at deployment
 
 ### 3. **Environment Variables**
 Use expressions for environment-specific values in **property default values** — they are resolved at process start against the variables passed with the process:
+
 ```json
 "properties": {
   "apiKey-id": {
@@ -1294,6 +1296,7 @@ Use expressions for environment-specific values in **property default values** �
   }
 }
 ```
+
 **Note:** `constants` are a different story — constant values are injected into activities **as-is**, so expressions in `constants` are not resolved. Use a property default value or a `VALUE` mapping when an expression must be evaluated.
 
 ### 4. **Validation**
@@ -1311,6 +1314,7 @@ Use expressions for environment-specific values in **property default values** �
 ## Common Pitfalls
 
 ### 1. **Extensions Key Mismatch**
+
 ```json
 // ❌ Wrong - key in `extensions` doesn't match the BPMN process definition key
 {
@@ -1332,6 +1336,7 @@ Use expressions for environment-specific values in **property default values** �
 Only the key of the `extensions` map matters for lookup — the top-level `id` field is optional metadata and is ignored by the engine. If the key doesn't match the process definition key, the extensions are silently ignored (no error is raised).
 
 ### 2. **Type Mismatch**
+
 ```json
 // ❌ Wrong - Declaring string but providing number
 {
@@ -1349,6 +1354,7 @@ Only the key of the `extensions` map matters for lookup — the top-level `id` f
 ```
 
 ### 3. **Missing Required Variables**
+
 ```json
 // ❌ Wrong - Required variable has no value
 {
@@ -1368,6 +1374,7 @@ Only the key of the `extensions` map matters for lookup — the top-level `id` f
 ```
 
 ### 4. **Activity ID Mismatch**
+
 ```json
 // ❌ Wrong - Activity ID doesn't exist in BPMN
 "mappings": {

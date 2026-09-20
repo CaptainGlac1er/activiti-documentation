@@ -2,12 +2,12 @@
 sidebar_label: DelegateTask API
 slug: /bpmn/reference/delegate-task-api
 title: "DelegateTask API"
-description: "Complete reference for the DelegateTask API in Activiti - accessing and manipulating user tasks from task listeners and delegates."
+description: "Complete reference for the DelegateTask API in Activiti - accessing and manipulating user tasks from task listeners and other custom code."
 ---
 
 # DelegateTask API
 
-The `DelegateTask` interface provides **programmatic access to user task context** from within task listeners, JavaDelegates, and other custom code. It extends the task concept with execution context, enabling full manipulation of task properties, variables, and assignments.
+The `DelegateTask` interface provides **programmatic access to user task context** from within task listeners (it is the object passed to `TaskListener.notify`) and other custom code. It extends the task concept with execution context, enabling full manipulation of task properties, variables, and assignments. Note that `JavaDelegate` implementations receive a `DelegateExecution`, not a `DelegateTask`.
 
 ## Overview
 

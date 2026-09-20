@@ -15,7 +15,10 @@ Gateways control the **divergence and convergence of sequence flows** in a BPMN 
 <exclusiveGateway id="gateway1" name="Decision Point"/>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
+Two caveats, detailed on the individual pages: **event-based gateways** implement only the exclusive competing-events pattern, and the behavior lives in the downstream catch events ([Event-Based Gateway](./event-gateway.md)); **complex gateways** are not supported and are converted to exclusive gateways at parse time ([Complex Gateway](./complex-gateway.md)). The inclusive gateway does not model the BPMN 2.0 `instant` attribute ([Inclusive Gateway](./inclusive-gateway.md)).
+
 **Activiti Extensions:** Enhanced condition evaluation
 
 ## Gateway Types
@@ -92,7 +95,8 @@ All gateways (except parallel) support conditions on outgoing sequence flows:
 ```
 
 **Expression Types:**
-- **EL Expressions:** `${variable.method()}`
+
+Conditions are evaluated as **EL (JUEL) expressions** — the only expression language available in conditions: `${variable.method()}` may call methods on process variables, and boolean tests combine with `&amp;&amp;` / `||`. There is no script-language option for conditions.
 
 ### Default Flow
 
@@ -223,7 +227,7 @@ Gateways work seamlessly with multi-instance activities:
 
 ## Best Practices
 
-1. **Always Define Conditions:** Ensure all paths have clear conditions
+1. **Clear Conditions, Defined Defaults:** Give every conditional path an explicit condition, and give every gateway a default flow so an unmatched case cannot stall the process (see [Sequence Flows — Always Define Default](../elements/sequence-flows.md#3-always-define-default))
 2. **Use Default Flows:** Provide fallback when no conditions match
 3. **Balance Parallel Gateways:** Ensure split and join are balanced
 4. **Avoid Complex Logic:** Keep conditions simple and readable
@@ -236,10 +240,10 @@ Gateways work seamlessly with multi-instance activities:
 
 ## Common Pitfalls
 
-- **Missing Conditions:** All flows should have conditions (except parallel)
+- **Missing Conditions:** A gateway whose conditions can all evaluate to `false` — with no default flow — stalls the process
 - **Unbalanced Gateways:** Split/join must match in type and count
 - **Deadlocks:** Circular dependencies across gateway branches
-- **No Default Flow:** Unmatched conditions cause errors
+- **No Default Flow:** Unmatched conditions with no default flow stall the process (no error is raised)
 - **Complex Conditions:** Hard to maintain and debug
 - **Parallel Without Join:** Lost synchronizations
 - **Event Gateway Misuse:** Wrong gateway type for scenario
@@ -284,6 +288,4 @@ There is no `addSequenceFlow` API. To add or remove sequence flows around a gate
 - [Complex Gateway](./complex-gateway.md)
 - [Sequence Flows](../elements/sequence-flows.md)
 - [Process Validation](../../api-reference/engine-api/process-validation.md)
-
----
 

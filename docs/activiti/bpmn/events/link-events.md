@@ -314,6 +314,7 @@ Variables are shared via process scope:
 ```
 
 **Variable Setter:**
+
 ```java
 public class VariableSetter implements JavaDelegate {
     @Override
@@ -325,6 +326,7 @@ public class VariableSetter implements JavaDelegate {
 ```
 
 **Variable User:**
+
 ```java
 public class VariableUser implements JavaDelegate {
     @Override
@@ -542,10 +544,10 @@ public class VariableUser implements JavaDelegate {
 </process>
 ```
 
-**Use Case:**
-- Complex state transitions
-- Avoids spaghetti diagram
-- Clear state entry points
+**Use case:**
+- Modeling complex state transitions
+- Avoiding spaghetti diagrams
+- Providing clear state entry points
 
 ## Runtime Behavior
 

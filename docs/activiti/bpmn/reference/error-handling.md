@@ -26,7 +26,7 @@ Error handling in Activiti allows you to **gracefully manage exceptions** and **
 </endEvent>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below  
 **Activiti Extensions:** Exception mapping, error propagation, uncaught error handling
 
 ## Key Features
@@ -35,15 +35,15 @@ Error handling in Activiti allows you to **gracefully manage exceptions** and **
 - **Error Definitions** - Named errors with optional codes
 - **Error Boundary Events** - Catch errors from activities
 - **Error End Events** - Throw errors to upstream handlers
-- **Error Start Events** - Start process on error
+- **Error-Triggered Event SubProcesses** - an event subprocess that can be triggered by a `BpmnError` matching its error definition; the engine only wires the error start behavior inside an `EventSubProcess` — a top-level process start event with an error definition is not supported
 - **Error Propagation** - Bubble errors up subprocess hierarchy
 
 ### Activiti Extensions
-- **Exception Mapping** - Map Java exceptions to BPMN errors
+- **Exception Mapping** - Map Java exceptions to BPMN errors (core engine: `activiti:class` tasks + call activities; expression tasks: 8.x API layer)
 - **Include Child Exceptions** - Catch exception hierarchies
-- **Uncaught Error Handling** - Global error listeners
-- **Error Events API** - Programmatic error throwing
-- **Activity Error Events** - Monitor error occurrences
+- **Uncaught Error Handling** - an uncaught `BpmnError` is rethrown ("No catching boundary event found…") and fails the execution
+- **Programmatic Throwing** - `BpmnError` from a `JavaDelegate` (there is no `runtimeService.throwError()` in the core engine)
+- **Activity Error Events** - `ACTIVITY_ERROR_RECEIVED` via `ActivitiEventListener`
 
 ## Error Definitions
 
@@ -101,7 +101,7 @@ Stops the activity and transfers control to error handler:
 
 ### 2. Non-Interrupting Error Boundary Event
 
-Logs error without stopping activity (rare use case):
+**Engine caveat (verified against `ErrorEventDefinitionParseHandler`):** for *error* boundary events the engine builds the behavior with `interrupting` **hard-coded to `true`** — the `cancelActivity="false"` attribute below is parsed into the model but **ignored at runtime**: the catch still cancels the attached activity. This is unlike timer/message/conditional/signal boundary events, whose behaviors receive the model's interrupting flag. When you need to observe or react to an error without the boundary's cancel semantics, use an `ACTIVITY_ERROR_RECEIVED` listener or an error-triggered event subprocess (see [Runtime API](#runtime-api)):
 
 ```xml
 <boundaryEvent id="logError" 
@@ -111,7 +111,7 @@ Logs error without stopping activity (rare use case):
 </boundaryEvent>
 ```
 
-**Note:** Non-interrupting error boundary events are unusual; typically used for logging/monitoring.
+**Note:** the snippet above therefore does **not** behave as a non-interrupting observer — at runtime it interrupts exactly like a plain interrupting error boundary; only the `cancelActivity` attribute in the XML differs.
 
 ### 3. Generic Error Catcher
 
@@ -123,9 +123,10 @@ Catch any error (no errorRef):
 </boundaryEvent>
 ```
 
-**Behavior:**
-- Catches ALL errors thrown from the activity
+**Behavior (verified against `ErrorPropagation`):**
+- Catches every error that resolves to this boundary's scope — directly from the attached activity, or bubbled up from child scopes when no inner catch consumed it
 - Use as fallback when specific errors not caught
+- Matching note: the engine compares the thrown code against the `errorCode` attribute of the referenced `<error>` definition (not the `errorRef` id); a boundary with no resolvable code is unconditionally registered as the fallback for its scope
 
 ### 4. Multiple Error Handlers
 
@@ -210,7 +211,7 @@ public class PaymentService implements JavaDelegate {
 
 ## Exception Mapping
 
-Map Java exceptions to BPMN errors:
+Map Java exceptions to BPMN errors. **Scope (verified against the engine):** in the core engine this works for `activiti:class` service tasks and call activities (`ClassDelegate` hands unmatched exceptions to `ErrorPropagation.mapException`); `activiti:expression` / delegate-expression service tasks are **not** mapped by their core behaviors — mapping for those is provided by the 8.x Spring/API layer (`MappingAwareActivityBehaviorFactory`). All examples below use `activiti:class`, which the core engine supports. A mapping entry that declares an `errorCode` but no exception class acts as the **default** mapping for the task (first such entry wins, applied only when no class-specific mapping matches).
 
 ### 1. Direct Exception Mapping
 
@@ -602,6 +603,8 @@ Errors bubble up through subprocess hierarchy:
   
 </process>
 ```
+
+**Note:** for readability the `<boundaryEvent>` is shown nested inside the `<callActivity>` above; in a deployable model it must be a **sibling** of the call activity (a direct child of `<process>`) with `attachedToRef="callPaymentService"`. The XML converter only parses `in`/`out` parameters inside `<callActivity>`, so a nested `<boundaryEvent>` element is silently dropped from the model and the catch never exists. Compare Examples 1 and 2, where the boundary event is a sibling of the element it attaches to.
 
 ## Runtime API
 

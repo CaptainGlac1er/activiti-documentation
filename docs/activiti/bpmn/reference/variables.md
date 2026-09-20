@@ -23,6 +23,7 @@ execution.setVariableLocal("subProcessData", data);
 ```
 
 **Key Concepts:**
+
 - **Process Variables** - Available throughout the entire process instance
 - **Local Variables** - Scoped to specific executions (subprocesses)
 - **Task Variables** - Associated with user tasks
@@ -45,6 +46,7 @@ String customer = (String) execution.getVariable("customerName");
 ```
 
 **Characteristics:**
+
 - Stored on the root execution (process instance)
 - Accessible from any activity in the process
 - Persisted to database (`ACT_RU_VARIABLE`)
@@ -66,6 +68,7 @@ boolean hasLocal = subExecution.hasVariableLocal("subProcessData");
 ```
 
 **Characteristics:**
+
 - Stored on specific execution (not root)
 - Only accessible within that execution scope
 - Shadows process variable with same name
@@ -87,6 +90,7 @@ Map<String, Object> taskVars = taskService.getVariables("taskId");
 ```
 
 **Characteristics:**
+
 - Linked to specific task instance
 - Accessible via TaskService
 - Useful for form data and task-specific information
@@ -110,6 +114,7 @@ execution.setTransientVariable("myVar", "temporary");
 ```
 
 **Characteristics:**
+
 - Not stored in database
 - Lost after wait state (user task, timer, etc.)
 - Useful for intermediate calculations
@@ -143,6 +148,7 @@ Ephemeral variables are declared in the process extension JSON via the `ephemera
 Variable events for ephemeral variables still fire, but the payload carries an empty value, and `VariableCreatedEvent`, `VariableUpdatedEvent`, and `VariableDeletedEvent` report `isEphemeralVariable()` as `true` so consumers can skip persisting them.
 
 **Characteristics:**
+
 - Participate in process execution like regular variables
 - Not persisted to the event store (empty value in events)
 - `isEphemeralVariable()` returns `true` on variable events
@@ -162,6 +168,7 @@ execution.setVariable("loanRequests", listOfLoanRequests);
 ```
 
 **Characteristics:**
+
 - Only class name + primary key are persisted in `ACT_RU_VARIABLE` (`TEXT_` and `TEXT2_` columns)
 - Entity is loaded via `EntityManager.find()` on each access (not cached)
 - Supports single entities and lists of entities (same type)
@@ -497,27 +504,28 @@ historyService.createHistoricVariableInstanceQuery()
 **Table:** `ACT_RU_VARIABLE`
 
 | Column | Description |
-|--------|-------------|
+| -------- | ------------- |
 | `ID_` | Variable instance ID |
+| `REV_` | Revision number (optimistic locking) |
 | `TYPE_` | Variable type (string, long, date, bytes, jpa-entity, jpa-entity-list, etc.) |
 | `NAME_` | Variable name |
-| `EXECUTION_ID_` | Execution ID (null = process instance level) |
+| `EXECUTION_ID_` | Execution the variable belongs to. For process-level variables this is the process instance ID (the root execution) |
+| `PROC_INST_ID_` | Process instance ID |
 | `TASK_ID_` | Task ID (if task variable) |
-| `TEXT_` | String value |
-| `TEXT2_` | Secondary string value |
-| `LONG_VALUE_` | Long numeric value |
-| `DOUBLE_VALUE_` | Double numeric value |
-| `TIMESTAMP_` | Date/time value |
-| `BYTES_` | Blob/serialized object |
+| `TEXT_` | String value. For JPA entity variables: the entity's class name |
+| `TEXT2_` | Secondary string value. For JPA entity variables: the entity's primary key |
+| `LONG_` | Long numeric value. Date variables are stored here as epoch milliseconds |
+| `DOUBLE_` | Double numeric value |
+| `BYTEARRAY_ID_` | Reference to the serialized bytes in `ACT_GE_BYTEARRAY` (byte arrays, serializable objects) |
 
 ### Historical Variables
 
 **Table:** `ACT_HI_VARINST`
 
-Same structure as runtime variables, plus:
-- `PROC_INST_ID_` - Process instance ID
-- `PROC_DEF_ID_` - Process definition ID
-- `REV_` - Revision number
+Same value columns as the runtime table, with two differences:
+
+- The type column is named `VAR_TYPE_` instead of `TYPE_`
+- Adds `CREATE_TIME_` and `LAST_UPDATED_TIME_` (when the variable was created and last updated)
 
 ## Best Practices
 
@@ -727,4 +735,3 @@ List<HistoricDetail> updates = historyService
 - [JPA Entity Variables](../integration/jpa-process-variables.md) - Using JPA entities as process variables
 
 ---
-

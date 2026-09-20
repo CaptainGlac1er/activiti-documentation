@@ -21,18 +21,20 @@ Manual Tasks represent work that is performed **outside the workflow engine**, t
 ## Key Features
 
 ### Standard BPMN Features
+
 - **Documentation** - Manual procedures
 - **Input/Output Data** - Data associations
 - **Multi-instance** - Parallel executions
 
 ### Activiti Customizations
+
 - **Execution Listeners** - Track when the task is passed through
 - **Documentation** - Standard BPMN `<documentation>` child element
 - **Async Execution** - Supports `activiti:async="true"` (inherited from `FlowNode`)
 
 ## Configuration Options
 
-**Important:** Manual Tasks are **pass-through** activities. The process engine does not pause execution at a manual task — it continues immediately to the next element. No `TaskEntity` is created, so the task is **not** visible in the task list. Manual Tasks exist solely for documentation purposes in the BPMN diagram to indicate where human operators perform work using external systems or procedures.
+**Important:** Manual Tasks are **pass-through** activities. The process engine does not pause execution at a manual task — it continues immediately to the next element. No `TaskEntity` is created, so the task is **not** visible in the task list. In the diagram, the element serves as a documentation marker.
 
 ### Documentation
 
@@ -80,7 +82,7 @@ Execution listeners can track when the engine passes through the task:
 
 ## Runtime API Usage
 
-**Important:** Because Manual Tasks are pass-through activities, no runtime action is needed. The process engine continues execution automatically. The task cannot be completed via `taskService.complete()` because no `TaskEntity` is created.
+**Important:** Manual Tasks are pass-through (see [Configuration Options](#configuration-options)), so no runtime action is needed — and since no `TaskEntity` is created, `taskService.complete()` does not apply.
 
 ## Best Practices
 
@@ -98,4 +100,3 @@ Execution listeners can track when the engine passes through the task:
 - [Task Listeners](../reference/task-listeners.md)
 
 ---
-

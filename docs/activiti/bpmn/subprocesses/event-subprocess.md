@@ -34,14 +34,14 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 ### Types of Event SubProcesses
 
 | Type | Trigger (on start event) | Behavior | Use Case |
-|------|--------------------------|----------|----------|
-| **Interrupting** | Error, message, or signal with `isInterrupting="true"` (default) on start event | Cancels parent activities | Exception handling |
-| **Non-Interrupting** | Error, message, or signal with `isInterrupting="false"` on start event | Runs parallel to parent | Logging, notifications |
+| ------ | -------------------------- | ---------- | ---------- |
+| **Interrupting** | Error (always — see note below), or message/signal with `isInterrupting="true"` (default) on start event | Cancels parent activities | Exception handling |
+| **Non-Interrupting** | `message` start with `isInterrupting="false"` on the start event only | Runs parallel to parent | Logging, notifications |
 | **Error** | `<errorEventDefinition errorRef="..."/>` or `errorCode="..."` | Catches errors | Error recovery |
 | **Message** | `<messageEventDefinition messageRef=""/>` | Waits for message | External triggers |
 | **Signal** | `<signalEventDefinition signalRef=""/>` | **Not supported** (see [section 5](#5-signal-event-subprocess-not-supported)) | — |
 
-> **Note:** Only `error`, `message`, and `signal` start event definitions are valid on an event subprocess — the engine's `EventSubprocessValidator` rejects any other trigger type. In particular, **timer** and **compensation** cannot start an event subprocess: for time-outs, use a [boundary timer event](../events/boundary-event.md) on the activity, and for undo operations, use the [compensation pattern](./transaction.md#2-transaction-with-compensation) (compensation boundary event + `isForCompensation="true"` handler). A `signal` start definition passes this validation, but is **never triggered at runtime** (see [section 5](#5-signal-event-subprocess-not-supported)).
+> **Note:** Only `error`, `message`, and `signal` start event definitions are valid on an event subprocess — the engine's `EventSubprocessValidator` rejects any other trigger type. In particular, **timer** and **compensation** cannot start an event subprocess: for time-outs, use a [boundary timer event](../events/boundary-event.md) on the activity, and for undo operations, use the [compensation pattern](./transaction.md#2-transaction-with-compensation) (compensation boundary event + `isForCompensation="true"` handler). A `signal` start definition passes this validation, but is **never triggered at runtime** (see [section 5](#5-signal-event-subprocess-not-supported)). The non-interrupting option applies to **message**-triggered subprocesses only: an **error**-triggered subprocess always cancels the failing activity, because the engine's error propagation path (`ErrorPropagation`) does not consult `isInterrupting` at all — `isInterrupting="false"` on an error start event has no effect; the attribute (default `true`) is read by the message path (`EventSubProcessMessageStartEventActivityBehavior`), where `false` lets the main process keep running in parallel with the subprocess. Finally, a **message**-triggered event subprocess must be a **direct child of the `<process>` element** to ever fire: when a process instance is created, the engine registers a message subscription only for event subprocesses at that top level (`ProcessInstanceHelper` iterates over the process's top-level flow elements and does not descend into regular subprocesses). A message event subprocess nested inside a regular `<subProcess>` — as in several examples on this page, which wrap their content in a container `<subProcess>` for readability — gets **no subscription** and its start event is **never triggered** at runtime; to deploy it, move the event subprocess up to the process level. (Error-triggered subprocesses are not subject to this restriction: error routing is model-based, with the usual scope rules — a subprocess only catches errors that propagate from within its own scope.)
 
 ## Configuration Options
 
@@ -73,15 +73,18 @@ Cancels parent activities when triggered. By default, start events in event subp
 ```
 
 **Behavior:**
+
 - When `task1` throws an error with `errorCode` `APP001`, the event subprocess triggers
 - **Cancels** the "Risky Task"
 - Executes the error handling logic
 
-> **Note:** Timer start events are **not supported** on event subprocesses (see the `EventSubprocessValidator` note above). If you need a timeout on a main-process activity, use a boundary timer event on that activity instead.
+> **Note:** The `errorCode` attribute directly on `<errorEventDefinition>` is **not parsed** — the converter's `ErrorEventDefinitionParser` reads only `errorRef`. The example above therefore has no code to match, and the engine registers it as a **catch-all** that triggers on *any* error (an unresolved code matches everything in `ErrorPropagation`). To catch a specific code, declare the error once and reference it by id, as in [section 3](#3-error-event-subprocess) below: `<error id="ApplicationError" name="Application Error" errorCode="APP001"/>` plus `<errorEventDefinition errorRef="ApplicationError"/>`. Timer start events are **not supported** on event subprocesses (see the `EventSubprocessValidator` note above); if you need a timeout on a main-process activity, use a boundary timer event on that activity instead.
 
 ### 2. Non-Interrupting Event SubProcess
 
 Runs parallel without canceling parent:
+
+> **Note:** as written, this example nests the event subprocess inside the regular `trackedProcess` container. Message-triggered event subprocesses only receive a message subscription when they are **direct children of the `<process>` element** (see the scoping note above) — lift the `<subProcess triggeredByEvent="true">` block up to the process level for this to fire. The `isInterrupting="false"` semantics shown here apply once it is at the process level.
 
 ```xml
 <subProcess id="trackedProcess" name="Tracked Process">
@@ -107,6 +110,7 @@ Runs parallel without canceling parent:
 ```
 
 **Behavior:**
+
 - Main process continues normally
 - When "cancelMessage" arrives, event subprocess triggers
 - **Does NOT cancel** the main task
@@ -149,6 +153,7 @@ Catches and handles errors:
 ```
 
 **Error Definition:**
+
 ```xml
 <definitions>
   <error id="ApplicationError" name="Application Error" errorCode="APP001"/>
@@ -160,6 +165,8 @@ Catches and handles errors:
 ### 4. Message Event SubProcess
 
 Waits for external messages:
+
+> **Note:** as written, this example nests the event subprocess inside the regular `orderProcess` container. Message-triggered event subprocesses only receive a message subscription when they are **direct children of the `<process>` element** (see the scoping note above) — lift the `<subProcess triggeredByEvent="true">` block up to the process level for this to fire.
 
 ```xml
 <subProcess id="orderProcess" name="Order Processing">
@@ -185,6 +192,7 @@ Waits for external messages:
 ```
 
 **Message Definition:**
+
 ```xml
 <message id="cancelOrderMessage" name="Cancel Order Message"/>
 ```
@@ -220,6 +228,7 @@ For cross-process communication, use a signal start event on a **main process** 
 ```
 
 **Signal Definition:**
+
 ```xml
 <signal id="EmergencyStop" name="Emergency Stop"/>
 ```
@@ -348,8 +357,12 @@ runtimeService.messageEventReceived("cancelOrder", executionId);
 // Or with variables
 runtimeService.messageEventReceived("cancelOrder", executionId, variables);
 
-// Start a new process instance by message
-runtimeService.startProcessInstanceByMessage("cancelOrder");
+// Start a new process instance by message — only works when the message is
+// bound to a process START event (a top-level start event with a
+// messageEventDefinition). "cancelOrder" from the examples above only targets
+// an event subprocess: no process start is bound to it, so this call would
+// throw ActivitiObjectNotFoundException ("no subscription to message ... found").
+runtimeService.startProcessInstanceByMessage("someProcessStartMessage");
 ```
 
 ### Sending Signals

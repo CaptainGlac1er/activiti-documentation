@@ -11,7 +11,7 @@ This document describes **features available across all BPMN elements** in Activ
 
 ## Overview
 
-Activiti provides powerful extensions that can be applied to most BPMN elements:
+Activiti provides extensions that apply to many BPMN elements:
 
 - **Multi-Instance** - Execute activities multiple times
 - **Execution Listeners** - Hook into lifecycle events
@@ -323,15 +323,15 @@ public class MyDelegate implements JavaDelegate {
 
 ## Best Practices
 
-1. **Use Listeners Sparingly:** Too many listeners impact performance
-2. **Async for Long Operations:** Prevent blocking
-3. **Boundary Events for Errors:** Handle exceptions locally
-4. **Multi-Instance for Collections:** Process lists efficiently
-5. **Task Listeners for User Tasks:** See [Task Listeners](./reference/task-listeners.md)
-6. **Skip Expressions for Options:** Implement conditional logic
-7. **Field Injection for Dependencies:** Use DI properly
-8. **Extension Elements for Metadata:** Store custom info
-9. **Document Complex Configurations:** Explain why features are used
+1. **Register only necessary listeners:** Each listener adds lifecycle work and another failure point.
+2. **Use async execution deliberately:** Add a transaction boundary when background execution or retries are required.
+3. **Handle errors with boundary events:** Keep recovery behavior visible in the process model.
+4. **Use multi-instance for collections:** Choose sequential or parallel execution based on ordering and resource constraints.
+5. **Use task listeners only for user tasks:** See [Task Listeners](./reference/task-listeners.md).
+6. **Use skip expressions for optional work:** Keep the condition explicit and test both paths.
+7. **Prefer dependency injection for managed services:** Use field injection only where the selected implementation style requires it.
+8. **Reserve extension elements for engine-specific metadata:** Do not use them when a standard BPMN element represents the same concept.
+9. **Document non-obvious configuration:** Explain why the extension is needed and which runtime behavior it changes.
 
 ## Related Documentation
 

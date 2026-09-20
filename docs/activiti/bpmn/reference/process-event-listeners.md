@@ -41,6 +41,7 @@ Unlike [Execution Listeners](./execution-listeners.md) and [Task Listeners](./ta
 A listener declared in process A therefore **only receives events that carry process A's definition id** — other process definitions never see them.
 
 **Important Attributes:**
+
 - `events` - Comma-separated list of event type names the listener should receive (see [Valid Event Types](#valid-event-types)). Omit for *all* events.
 - `class` - Fully qualified class name implementing `org.activiti.engine.delegate.event.ActivitiEventListener`
 - `delegateExpression` - EL expression resolving to a Spring bean implementing `ActivitiEventListener`
@@ -101,6 +102,7 @@ public class OrderLifecycleListener implements ActivitiEventListener {
 ```
 
 **Requirements:**
+
 - Class must implement `org.activiti.engine.delegate.event.ActivitiEventListener`
 - Class must be on the classpath and have a no-arg constructor
 - Spring annotations (`@Autowired`, `@Component`, ...) are **not** processed — the engine instantiates the class with plain reflection
@@ -150,11 +152,11 @@ public class TaskAssignedNotifier implements ActivitiEventListener {
 ### Full Attribute Reference
 
 | Attribute | Required | Description |
-|-----------|----------|-------------|
+| ----------- | ---------- | ------------- |
 | `class` | one of `class`, `delegateExpression`, `throwEvent` | Fully qualified class name of an `ActivitiEventListener` implementation |
 | `delegateExpression` | one of `class`, `delegateExpression`, `throwEvent` | EL expression (`${...}`) resolving to an `ActivitiEventListener` bean |
 | `throwEvent` | one of `class`, `delegateExpression`, `throwEvent` | `signal`, `globalSignal`, `message`, or `error` — throw a BPMN event instead of running custom code |
-| `signalName` | with `throwEvent="signal"` or `throwEvent="globalSignal"` | Name of the signal to throw (must match a `<signal>` / signal catch event) |
+| `signalName` | with `throwEvent="signal"` or `throwEvent="globalSignal"` | Name of the signal to throw — delivery requires a signal catch event registered under that name (in the same process instance for `signal`); with no matching subscription the throw is silently ignored. No `<signal>` declaration is required for the throw itself |
 | `messageName` | with `throwEvent="message"` | Name of the message to throw (must match a `<message>` / message catch event) |
 | `errorCode` | with `throwEvent="error"` | Error code propagated to a boundary error event or error event sub-process. A handler without a matching code accepts any error |
 | `events` | optional | Comma-separated `ActivitiEventType` names. Omit (or leave empty) to receive **all** event types. No spaces after commas |
@@ -204,7 +206,7 @@ When `entityType` is set, the engine only delivers events that target an entity 
 Valid values (mapped to engine types):
 
 | `entityType` value | Event entity |
-|--------------------|--------------|
+| -------------------- | -------------- |
 | `attachment` | `org.activiti.engine.task.Attachment` *(deprecated)* |
 | `comment` | `org.activiti.engine.task.Comment` *(deprecated)* |
 | `execution` | `org.activiti.engine.runtime.Execution` |
@@ -225,9 +227,9 @@ Instead of running custom code, a listener can **throw a BPMN event** into the p
 ```
 
 | `throwEvent` value | Throws | Delivery scope |
-|--------------------|--------|----------------|
+| -------------------- | -------- | ---------------- |
 | `signal` | A signal event | Signal catch events **of the same process instance** |
-| `globalSignal` | A signal event | **All** process instances subscribing to the signal (tenant-scoped when the event carries a process definition) |
+| `globalSignal` | A signal event | Signal subscribers across all tenants — except when the triggering event carries a process definition, in which case the lookup is filtered by that definition's tenant id (an event from a non-tenant, i.e. default-tenant, process reaches only default-tenant subscribers) |
 | `message` | A message event | Message catch events **of the same process instance** |
 | `error` | A BPMN error | Nearest boundary error event / error event sub-process (or the call activity parent) that matches the `errorCode` |
 
@@ -269,7 +271,7 @@ Instead of running custom code, a listener can **throw a BPMN event** into the p
 
 Assigning the task in `subProcess` dispatches `TASK_ASSIGNED`, which triggers the listener to throw the `Signal` signal. The non-interrupting boundary signal event on `subProcess` catches it and the process continues at `boundaryTask`.
 
-Because signal delivery is **process-instance scoped** for `throwEvent="signal"`, the triggering event must belong to an ongoing process instance — otherwise the engine fails the operation with `Cannot throw process-instance scoped signal, since the dispatched event is not part of an ongoing process instance`. Use `throwEvent="globalSignal"` to reach every process instance instead of one: if the triggering event carries a process definition with a non-empty tenant, only that tenant's subscribers are signaled; otherwise all signal subscribers across all tenants are reached.
+Because signal delivery is **process-instance scoped** for `throwEvent="signal"`, the triggering event must belong to an ongoing process instance — otherwise the engine fails the operation with `Cannot throw process-instance scoped signal, since the dispatched event is not part of an ongoing process instance`. Use `throwEvent="globalSignal"` to reach every process instance instead of one: when the triggering event carries a process definition, the subscription lookup is filtered by that definition's tenant id — including the empty (default) tenant, so an event dispatched from a non-tenant process reaches only default-tenant subscribers; only a triggering event with no process definition at all reaches subscribers across all tenants.
 
 **Keep the trigger narrow:** the listener fires on *every* `TASK_ASSIGNED` event of this process definition — assigning `boundaryTask` would throw the signal again and trigger the boundary once more. In a production process, choose an event type that occurs once per lifecycle (or use a custom listener that filters, e.g. by activity id) instead of a broad event on a re-entrant path.
 
@@ -342,7 +344,7 @@ Message delivery is also **process-instance scoped** and requires the triggering
 
 The engine resolves the execution from the triggering event's `executionId` and propagates the error from there. If the event carries no execution (or the execution can no longer be found), the operation fails with `No execution context active and event is not related to an execution. No compensation event can be thrown.`. Matching follows the usual BPMN error rules: a handler whose `errorCode` equals the thrown code matches, and a handler **without** an error code accepts any error. A `errorRef` that names a declared `<error>` element is resolved to that element's `errorCode`. If no matching handler exists in the process (or, for called processes, in the parent process), a `BpmnError` is raised — the assignment operation fails and no state change is committed.
 
-Here the boundary error event is **interrupting** (the default), so assigning `userTask` cancels the task and the process ends. If the process had another task whose assignment would re-trigger the listener, the second throw would fail with a `BpmnError` unless an error handler exists on that path — scope the trigger event type accordingly.
+Note that `cancelActivity` has no effect on error boundaries: the converter forces it to `false` for them, and the engine's parse handler still builds the boundary behavior as interrupting (hard-coded), so assigning `userTask` always cancels the task (the throwing execution is cancelled with a boundary-interrupting reason) and the process continues at the boundary's outgoing flow — which ends it in this model. If the process had another task whose assignment would re-trigger the listener, the second throw would fail with a `BpmnError` unless an error handler exists on that path — scope the trigger event type accordingly.
 
 **All four throw-variants are fail-on-exception listeners**: if delivery fails, the engine operation that dispatched the triggering event is aborted.
 
@@ -353,7 +355,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Entity Lifecycle Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `ENTITY_CREATED` | A new entity is created |
 | `ENTITY_INITIALIZED` | A new entity is created **and** all child entities created as a result are created and initialized |
 | `ENTITY_UPDATED` | An existing entity is updated |
@@ -364,7 +366,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Activity Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `ACTIVITY_STARTED` | An activity is starting to execute (dispatched right before execution) |
 | `ACTIVITY_COMPLETED` | An activity has been completed successfully |
 | `ACTIVITY_CANCELLED` | An activity was cancelled because of a boundary event |
@@ -378,7 +380,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Process Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `PROCESS_STARTED` | A process instance has been started (dispatched after the related `ENTITY_INITIALIZED`) |
 | `PROCESS_COMPLETED` | A process has completed (dispatched after the last `ACTIVITY_COMPLETED`) |
 | `PROCESS_COMPLETED_WITH_ERROR_END_EVENT` | A process completed with an error end event |
@@ -387,7 +389,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Task Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `TASK_CREATED` | A task has been created (fully initialized, before `TaskListener.EVENTNAME_CREATE`) |
 | `TASK_ASSIGNED` | A task has been assigned (dispatched alongside an `ENTITY_UPDATED` event) |
 | `TASK_COMPLETED` | A task has been completed (before the task entity is deleted and before the process moves on) |
@@ -395,7 +397,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Job, Timer, and Sequence Flow Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `TIMER_SCHEDULED` | A timer has been scheduled |
 | `TIMER_FIRED` | A timer has fired successfully |
 | `JOB_CANCELED` | A job was cancelled (e.g. the bound user task was completed early) |
@@ -407,7 +409,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Variable Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `VARIABLE_CREATED` | A new variable has been created |
 | `VARIABLE_UPDATED` | An existing variable has been updated |
 | `VARIABLE_DELETED` | An existing variable has been deleted |
@@ -415,7 +417,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### History Events (require history level >= ACTIVITY)
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `HISTORIC_ACTIVITY_INSTANCE_CREATED` | A `HistoricActivityInstance` was created |
 | `HISTORIC_ACTIVITY_INSTANCE_ENDED` | A `HistoricActivityInstance` was marked as ended |
 | `HISTORIC_PROCESS_INSTANCE_CREATED` | A `HistoricProcessInstance` was created |
@@ -424,7 +426,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Engine, Custom, Error, and Identity Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `ENGINE_CREATED` | The process engine has been created and is ready for use |
 | `ENGINE_CLOSED` | The process engine has been closed and cannot be used anymore |
 | `CUSTOM` | Custom events dispatched via the public API (never thrown by the engine itself) |
@@ -542,7 +544,7 @@ public class TaskNotifier implements ActivitiEventListener {
 The `<activiti:eventListener>` element is the **BPMN-level front end** of the same event mechanism documented in [Engine Event System](../../advanced/engine-event-system.md). Both approaches consume `ActivitiEvent` objects dispatched by the `ActivitiEventDispatcher`, and a single engine event is delivered **twice** when both are present:
 
 | Aspect | Engine-wide listeners | Process event listeners |
-|--------|-----------------------|-------------------------|
+| -------- | ----------------------- | ------------------------- |
 | Registration | `ProcessEngineConfigurationImpl.setEventListeners(...)` or the `ActivitiEventDispatcher` API (Java/XML configuration) | `<activiti:eventListener>` in the process XML |
 | Scope | Every process definition and every engine event | Only events that carry *this* process definition's id |
 | Per-process filtering | No — you filter in code (`event.getProcessDefinitionId()`) | Yes — declared per process definition |

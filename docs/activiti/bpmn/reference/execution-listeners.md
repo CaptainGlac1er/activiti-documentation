@@ -231,7 +231,7 @@ public interface TransactionDependentExecutionListener {
 |--------|---------------------|----------------------------------------|
 | Receives | Live `DelegateExecution` | Data snapshots (String, FlowElement, Maps) |
 | Can modify variables | Yes — `execution.setVariable()` | No — maps are copies |
-| Can throw `BpmnError` | Yes — interrupts flow | No — thrown errors are ignored |
+| Can throw `BpmnError` | Yes — interrupts flow | No live flow to interrupt (a `BpmnError` just fails the short-lived command context) |
 | Timing options | `start`, `end`, `take` | `before-commit`, `committed`, `rolled-back` |
 | Transaction context | Inside the transaction | After commit or after rollback |
 
@@ -241,6 +241,8 @@ The engine dispatches based on the delegate's implemented interface. If your cla
 - **`onTransaction="before-commit"`** → `TransactionDependentExecutionListener.notify(...)` before the transaction commits
 - **`onTransaction="committed"`** → `TransactionDependentExecutionListener.notify(...)` after the transaction commits
 - **`onTransaction="rolled-back"`** → `TransactionDependentExecutionListener.notify(...)` after the transaction rolls back
+
+**What actually happens if a transaction-dependent listener throws (verified against `StandaloneMybatisTransactionContext` and `ExecuteExecutionListenerTransactionListener`):** nothing is swallowed — there is no guard around the `notify()` call. With `before-commit` the listener runs **before** the database commit, so an exception **aborts the commit** and the process transaction rolls back. With `committed` the database is already committed; the listener runs in a fresh command context and an exception propagates to the caller (the process data stays committed). With `rolled-back` the event fires in a `finally` block after the rollback, and an exception there propagates out of the rollback path. Wrap the body of `notify()` in your own try/catch if the side effect must not affect the process transaction or the caller.
 
 ### Implementation Example
 

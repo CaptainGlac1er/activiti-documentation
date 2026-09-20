@@ -9,7 +9,7 @@ description: Complete guide to connectors in Activiti for external system integr
 
 **Important:** The Connector API (`org.activiti.api.process.runtime.connector.Connector` and `org.activiti.api.process.model.IntegrationContext`) belongs to the **Activiti 7/8 API layer** (`activiti-api` module), NOT the core engine (`activiti-engine` module). The core engine's `ServiceTaskParseHandler` does **not** handle connectors — it handles service tasks via `activiti:class`, `activiti:delegateExpression`, `activiti:expression`, `activiti:type` (mail, mule, camel, shell), and `operationRef` (webservice).
 
-Connectors in the Activiti 7/8 API layer provide a **declarative way to integrate with external systems** from your BPMN processes. They enable you to call APIs, send emails, process data, and perform external operations using **JSON definitions** instead of writing custom Java code.
+Connectors in the Activiti 7/8 API layer integrate BPMN processes with external systems. JSON definitions describe connector actions and their inputs and outputs; a connector implementation performs the operation.
 
 ## Overview
 
@@ -19,12 +19,12 @@ Connectors in the Activiti 7/8 API layer provide a **declarative way to integrat
              implementation="Process Image Connector.processImageActionName"/>
 ```
 
-**Key Benefits:**
-- **No Java Code Required** - Configure integrations declaratively
-- **Reusable** - Define once, use across multiple processes
-- **Type-Safe** - Input/output validation via JSON schema
-- **Testable** - Easy to mock and test
-- **Simple Syntax** - Just reference connector in `implementation` attribute
+**Key benefits:**
+- **Declarative contract** - Define actions, inputs, and outputs in JSON.
+- **Reusable implementation** - Invoke the same connector from multiple processes.
+- **Schema validation** - Validate inputs and outputs against the connector definition.
+- **Testable boundary** - Mock the connector when testing process behavior.
+- **Direct reference** - Select a connector action through the `implementation` attribute.
 
 ## What Are Connectors?
 
@@ -484,12 +484,13 @@ The `activiti.connectors.dir` property is a **single** resource path: `Connector
 
 There is **no name-based automatic mapping** of process variables to connector inputs. `ExtensionsVariablesMappingProvider.calculateInputVariables` (invoked when `DefaultServiceTaskBehavior` builds the `IntegrationContext`) determines the inputs:
 
-1. **Inputs**: Without a process-extensions mapping for the activity, the connector receives its **constants only**. With an explicit `inputs` mapping, only the mapped variables (plus constants) are passed. With `mappingType: MAP_ALL_INPUTS` (or `MAP_ALL`), **all** process variables (plus constants) are passed. See [Process Extensions](../reference/process-extensions.md)
-2. **Outputs**: Whatever the connector adds via `addOutBoundVariable(...)` is written back to the process execution after the connector completes
+1. **Inputs:** Without a process-extensions mapping for the activity, the connector receives its **constants only**. With an explicit `inputs` mapping, only the mapped variables (plus constants) are passed. With `mappingType: MAP_ALL_INPUTS` (or `MAP_ALL`), **all** process variables (plus constants) are passed. See [Process Extensions](../reference/process-extensions.md).
+2. **Outputs:** Values added through `addOutBoundVariable(...)` are written back to the process execution after the connector completes.
 
 ### Example
 
 **Connector Definition:**
+
 ```json
 {
   "inputs": [
@@ -510,6 +511,7 @@ There is **no name-based automatic mapping** of process variables to connector i
 ```
 
 **Process Variables Before:**
+
 ```java
 Map<String, Object> variables = Map.of(
     "input-variable-name-1", "some value"  // Passed to the connector only if the activity mapping is MAP_ALL_INPUTS (or explicitly mapped)
@@ -517,6 +519,7 @@ Map<String, Object> variables = Map.of(
 ```
 
 **Process Variables After:**
+
 ```java
 // Automatically set by connector
 "out-variable-name-1": "result value"

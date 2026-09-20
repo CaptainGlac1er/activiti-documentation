@@ -21,6 +21,7 @@ Sequence Flows **connect flow elements** (activities, events, gateways) and defi
 ## Key Features
 
 ### Standard BPMN Features
+
 - **Source and Target** - Connect two flow elements
 - **Condition Expressions** - Guard outgoing flows
 - **Default Flow** - Fallback when no condition matches
@@ -75,6 +76,7 @@ Conditionally skip a sequence flow (i.e., the flow is not taken):
 ```
 
 **Behavior:**
+
 - When `skipExpression` evaluates to `true`, this sequence flow is skipped
 - Useful for dynamic flow routing based on process variables
 - The engine evaluates the expression when considering this flow as a candidate path
@@ -142,7 +144,7 @@ Conditionally skip a sequence flow (i.e., the flow is not taken):
 </sequenceFlow>
 ```
 
-### 6. Method Calls
+Conditions can call bean methods on process variables — e.g. `${orderValidator.isExpedited(order)}`. The full method-call syntax (simple methods, parameters, EL bean methods) is in the [Method Calls](#method-calls) block under Condition Expression Syntax below.
 
 ```xml
 <sequenceFlow id="methodFlow" name="Method Evaluation">
@@ -176,6 +178,7 @@ A default flow specifies the sequence flow to take when no condition expressions
 ```
 
 **Behavior:**
+
 - If `approved == true` → takes `approvedFlow`
 - If `approved == false` → takes `rejectedFlow`
 - If neither condition matches (e.g., `approved` is `null`) → takes `elseFlow` (the default)
@@ -199,6 +202,7 @@ A default flow specifies the sequence flow to take when no condition expressions
 ```
 
 **Behavior:**
+
 - If `sendEmail` or `sendSMS` is true → activates corresponding path(s)
 - If both are false → takes `logFlow` (the default)
 
@@ -293,6 +297,8 @@ A default flow specifies the sequence flow to take when no condition expressions
 
 </exclusiveGateway>
 ```
+
+The threshold conditions are the same as those in [Numeric Conditions](#2-numeric-conditions), combined in one gateway with a default flow (see [Default Flows](#default-flows)) so unmatched amounts still have a path.
 
 ### Example 3: Multi-Criteria Decision
 
@@ -443,6 +449,8 @@ A default flow specifies the sequence flow to take when no condition expressions
 <sequenceFlow><conditionExpression>${amount &lt;= 1000}</conditionExpression></sequenceFlow>
 ```
 
+Give ranges clear, non-overlapping boundaries — the failure mode and the fix are shown in the [Overlapping Conditions](#2-overlapping-conditions) pitfall below.
+
 ### 3. Always Define Default
 
 ```xml
@@ -459,6 +467,8 @@ A default flow specifies the sequence flow to take when no condition expressions
 </exclusiveGateway>
 ```
 
+A gateway whose conditions can all evaluate to `false` has no path — the [Missing Default Flow](#1-missing-default-flow) pitfall below shows the failure and the fix.
+
 ### 4. Keep Conditions Simple
 
 ```xml
@@ -468,6 +478,8 @@ A default flow specifies the sequence flow to take when no condition expressions
 <!-- BAD: Complex, hard to maintain -->
 <conditionExpression>${orderAmount > (baseAmount * multiplier) + adjustment - discount}</conditionExpression>
 ```
+
+If an expression needs nested arithmetic to stay readable, extract it into a bean method — see the [Complex Expressions in XML](#5-complex-expressions-in-xml) pitfall below.
 
 ### 5. Document Complex Logic
 
@@ -564,4 +576,3 @@ A default flow specifies the sequence flow to take when no condition expressions
 - [Error Handling](../reference/error-handling.md) - Error management and exception mapping
 
 ---
-
