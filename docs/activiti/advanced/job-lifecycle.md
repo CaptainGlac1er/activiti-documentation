@@ -14,7 +14,6 @@ Activiti jobs represent units of asynchronous work: executing an async service t
 When a process encounters an async boundary (`activiti:async="true"`), the engine creates a **job** and persists it to the database. The job is then picked up and executed by a background thread, decoupling execution from the user-facing request.
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:serviceTask id="externalApi" 
                   name="Call External API" 
                   activiti:async="true"
@@ -297,7 +296,6 @@ Only the ISO 8601 form is accepted — cron expressions are **not** parsed by `D
 ### Examples
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Retry 5 times immediately (0 delay between retries) -->
 <serviceTask id="apiCall" activiti:async="true">
   <extensionElements>
@@ -666,7 +664,6 @@ Async jobs may be executed multiple times (retries, cluster recovery). Ensure jo
 Use `activiti:failedJobRetryTimeCycle` for external system calls rather than relying on default retries. Choose a conservative interval and retry count to avoid overwhelming failing services (only a single-phase cycle is supported).
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="paymentService" activiti:async="true">
   <extensionElements>
     <activiti:failedJobRetryTimeCycle>R10/PT10S</activiti:failedJobRetryTimeCycle>

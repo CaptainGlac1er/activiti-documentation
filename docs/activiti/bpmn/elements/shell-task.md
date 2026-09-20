@@ -12,7 +12,6 @@ Shell Tasks are a service task type that **executes operating system commands** 
 ## Overview
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="shellTask" name="Run Shell Command" activiti:type="shell">
   <extensionElements>
     <activiti:field name="command" stringValue="echo" />
@@ -53,7 +52,6 @@ Shell tasks are configured through `<activiti:field>` child elements inside `<ex
 All fields accept either `stringValue` for literals or `expression` for runtime evaluation:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="dynamicShell" name="Dynamic Command" activiti:type="shell">
   <extensionElements>
     <activiti:field name="command">
@@ -106,7 +104,6 @@ The `ShellExecutorContext` passed to the factory has these getters: `getArgList(
 ### Basic Command Execution
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="cleanup" name="Cleanup Temp Files" activiti:type="shell">
   <extensionElements>
     <activiti:field name="command" stringValue="/bin/rm"/>
@@ -119,7 +116,6 @@ The `ShellExecutorContext` passed to the factory has these getters: `getArgList(
 ### Capturing Output
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="versionCheck" name="Check App Version" activiti:type="shell">
   <extensionElements>
     <activiti:field name="command" stringValue="java"/>
@@ -136,7 +132,6 @@ The `ShellExecutorContext` passed to the factory has these getters: `getArgList(
 ### With Async Execution and Error Handling
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="deploy" name="Deploy Application" activiti:type="shell" activiti:async="true">
   <extensionElements>
     <activiti:field name="command" stringValue="kubectl"/>
@@ -159,7 +154,6 @@ The `ShellExecutorContext` passed to the factory has these getters: `getArgList(
 When running async, shell tasks benefit from retry configuration:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="resilientShell" name="Resilient Command" activiti:type="shell"
     activiti:async="true">
   <extensionElements>

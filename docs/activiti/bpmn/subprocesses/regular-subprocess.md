@@ -79,7 +79,6 @@ Create a simple embedded subprocess:
 Execute subprocess for multiple items:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <subProcess id="processItems" name="Process Order Items">
   <!-- Multi-instance characteristics are a child of the subProcess with no children of their own;
        the subprocess body stays as direct children of the subProcess -->
@@ -133,7 +132,6 @@ Add exception handling at subprocess level:
 Hook into subprocess lifecycle:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <subProcess id="trackedProcess" name="Tracked Operation">
   <extensionElements>
     <activiti:executionListener event="start" class="com.example.SubProcessStartListener"/>
@@ -213,7 +211,6 @@ SubProcesses have their own **variable scope**:
 ### Example 1: Order Processing SubProcess
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderManagement" name="Order Management">
   <startEvent id="start"/>
   
@@ -263,7 +260,6 @@ SubProcesses have their own **variable scope**:
 ### Example 2: Multi-Instance SubProcess
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="batchProcess" name="Batch Processing">
   <startEvent id="start"/>
   

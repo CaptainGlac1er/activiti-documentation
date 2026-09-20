@@ -49,7 +49,6 @@ Documentation is provided as a standard BPMN `<documentation>` child element (no
 Execution listeners can track when the engine passes through the task:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <manualTask id="trackedManual" name="Tracked Manual Task">
   <extensionElements>
     <activiti:executionListener event="start" class="com.example.ManualTaskStartedListener"/>
@@ -63,7 +62,6 @@ Execution listeners can track when the engine passes through the task:
 ### Example 1: External System Verification
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <manualTask id="verifyInExternalSystem" name="Verify in Legacy System">
   <documentation>Log into legacy system and verify customer data matches</documentation>
   <extensionElements>

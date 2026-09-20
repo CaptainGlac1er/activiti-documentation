@@ -107,7 +107,6 @@ Specify a default path when no conditions match, using the `default` **attribute
 Gateways work seamlessly with multi-instance activities:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <parallelGateway id="split"/>
 
 <userTask id="reviewTask">
@@ -150,7 +149,6 @@ Gateways work seamlessly with multi-instance activities:
 ### Example 2: Parallel Gateway for Concurrent Processing
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Split into parallel paths -->
 <parallelGateway id="parallelSplit" name="Start Parallel Processing"/>
 
@@ -174,7 +172,6 @@ Gateways work seamlessly with multi-instance activities:
 ### Example 3: Inclusive Gateway for Optional Paths
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Multiple independent conditions -->
 <inclusiveGateway id="notificationDecision" name="Notification Options"/>
 

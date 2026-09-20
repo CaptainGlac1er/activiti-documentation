@@ -155,7 +155,6 @@ public class AutoDelegateListener implements TaskListener {
 Or from BPMN:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="reviewTask" name="Review Documents">
   <extensionElements>
     <activiti:taskListener event="create"

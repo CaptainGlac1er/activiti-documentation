@@ -102,7 +102,6 @@ flowchart TD
 
 **Manual Fallback:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="manualAccountSetupTask"
                name="Manual Account Setup"
                activiti:candidateGroups="opsTeam">
@@ -129,7 +128,6 @@ flowchart TD
 **Element ID:** `disburseFundsTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:serviceTask id="disburseFundsTask"
                   name="Disburse Funds"
                   implementation="fundDisbursementService"
@@ -212,7 +210,6 @@ services:
 
 **Manual Fallback:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="manualDisbursementTask"
                name="Manual Disbursement"
                activiti:candidateGroups="opsTeam">

@@ -47,7 +47,6 @@ Receive Tasks represent activities that **wait for an external message** before 
 Wait for a message:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="sendRequest" name="Send Request" activiti:class="com.example.RequestSender"/>
 
 <sequenceFlow id="flow1" sourceRef="sendRequest" targetRef="waitForResponse"/>
@@ -136,7 +135,6 @@ List<Execution> waiting = runtimeService.createExecutionQuery()
 **Problem:** Using receive task for outbound calls
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- WRONG: Receive task doesn't call anything -->
 <receiveTask id="callApi" name="Call API">
   <messageEventDefinition messageRef="apiResponse"/>

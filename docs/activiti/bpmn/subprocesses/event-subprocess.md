@@ -50,7 +50,6 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 Cancels parent activities when triggered. By default, start events in event subprocesses are interrupting. Set `isInterrupting="true"` explicitly for clarity:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="errorDrivenProcess" name="Error-Driven Process">
   <startEvent id="start"/>
   <serviceTask id="task1" name="Risky Task" activiti:class="com.example.RiskyService"/>
@@ -118,7 +117,6 @@ Runs parallel without canceling parent:
 Catches and handles errors:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="errorHandlingProcess" name="Error Handling Process">
   <startEvent id="start"/>
 
@@ -164,7 +162,6 @@ Catches and handles errors:
 Waits for external messages:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <subProcess id="orderProcess" name="Order Processing">
   <startEvent id="start"/>
   <userTask id="prepareOrder" name="Prepare Order"/>
@@ -199,7 +196,6 @@ An event subprocess started by a `<signalEventDefinition>` is **not supported**.
 For cross-process communication, use a signal start event on a **main process** instead (see [Start Events — Signal Start Event](../events/start-event.md#4-signal-start-event)). The example below is shown **only** to illustrate what does *not* work:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- NOT SUPPORTED: a signal start event inside an event subprocess is never triggered -->
 <subProcess id="monitoredProcess" name="Monitored Process">
   <startEvent id="start"/>
@@ -239,7 +235,6 @@ Compensation (undo) operations are modeled differently in Activiti: a compensati
 ### Scenario: E-Commerce Order Processing with Event Handling
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="E-Commerce Order Process">
 
   <!-- Message definitions -->

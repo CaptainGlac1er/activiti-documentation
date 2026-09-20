@@ -279,7 +279,6 @@ Jump to error handling without crossing flows:
 Variables are shared via process scope:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="linkWithVariables" name="Link with Variables">
   
   <startEvent id="start"/>
@@ -345,7 +344,6 @@ public class VariableUser implements JavaDelegate {
 ### Example 1: Complex Approval Workflow
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="approvalWorkflow" name="Complex Approval Workflow">
   
   <startEvent id="start"/>
@@ -788,7 +786,6 @@ The definition `id` values (and the `<target>` references) are what tie a throw 
 **Problem:** Assuming variables are lost across links
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Link events DON'T clear variables -->
 <serviceTask id="setVar" activiti:class="com.example.SetVariable"/>
 

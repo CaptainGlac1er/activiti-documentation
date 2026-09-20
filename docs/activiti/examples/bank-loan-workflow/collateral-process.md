@@ -66,7 +66,6 @@ flowchart TD
 **Element ID:** `runAutomatedValuationTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:serviceTask id="runAutomatedValuationTask"
                   name="Run Automated Valuation"
                   implementation="automatedValuationService"
@@ -188,7 +187,6 @@ services:
 **Element ID:** `manualAppraisalTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="manualAppraisalTask"
                name="Manual Appraisal"
                activiti:candidateGroups="valuationTeam">

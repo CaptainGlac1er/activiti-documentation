@@ -44,7 +44,6 @@ Activiti provides multiple approaches for external system integration:
 **Best for:** Complex logic, custom integrations
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="customIntegration" 
              activiti:class="com.example.CustomIntegrationService"/>
 ```

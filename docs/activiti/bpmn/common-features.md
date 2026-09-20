@@ -29,7 +29,6 @@ Execute activities in the **background** using job executor.
 ### Basic Configuration
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="asyncTask" 
             name="Async Task" 
             activiti:async="true"
@@ -69,7 +68,6 @@ managementService.moveDeadLetterJobToExecutableJob(jobId, 3);
 Configure retry policy using `failedJobRetryTimeCycle`:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="retryTask"
             activiti:async="true">
   
@@ -160,7 +158,6 @@ Add **custom metadata** to any BPMN element.
 Inject values into delegates and listeners using `<activiti:field>`:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="task1" name="Task" activiti:class="com.example.MyDelegate">
   
   <extensionElements>
@@ -200,7 +197,6 @@ Inject values into delegates and listeners using `<activiti:field>`:
 ### Configuration
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="optionalTask" 
           name="Optional Task"
           activiti:skipExpression="${skipOptionalTasks}"/>
@@ -223,7 +219,6 @@ Inject values into delegates and listeners using `<activiti:field>`:
 ### Configuration
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="task1" 
             name="Task" 
             activiti:class="com.example.MyDelegate">
@@ -285,7 +280,6 @@ public class MyDelegate implements JavaDelegate {
 ## Complete Example
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="complexTask"
           name="Complex Review Task"
           activiti:assignee="${reviewer}"

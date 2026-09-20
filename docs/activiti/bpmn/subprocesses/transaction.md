@@ -48,7 +48,6 @@ Transaction SubProcesses group activities that should be treated as a unit. The 
 Simple transaction with a commit path and a cancel path:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="bankTransfer" name="Bank Transfer Process">
   <startEvent id="start"/>
   
@@ -113,7 +112,6 @@ Simple transaction with a commit path and a cancel path:
 Define compensation (undo) logic for completed activities:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="Order Processing">
   <startEvent id="start"/>
   
@@ -184,7 +182,6 @@ Define compensation (undo) logic for completed activities:
 Handle transaction-specific errors:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="paymentProcess" name="Payment Process">
   <startEvent id="start"/>
   
@@ -226,7 +223,6 @@ Handle transaction-specific errors:
 Transactions within transactions:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <transaction id="outerTransaction" name="Outer Transaction">
   <startEvent id="outerStart"/>
   
@@ -267,7 +263,6 @@ Transactions within transactions:
 ### Scenario: E-Commerce Order Processing with Inventory and Payment
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="Order Processing">
   
   <startEvent id="start"/>

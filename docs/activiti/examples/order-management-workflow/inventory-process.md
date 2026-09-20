@@ -448,7 +448,6 @@ public class SupplierNotificationService implements Connector {
 **Element ID:** `backorderApprovalTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="backorderApprovalTask" 
                name="Backorder Approval" 
                activiti:assignee="${inventoryManager}">

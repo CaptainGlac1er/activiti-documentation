@@ -12,7 +12,6 @@ Execution Listeners allow you to **execute custom logic** at specific points dur
 ## Overview
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="myTask">
   <extensionElements>
     <activiti:executionListener
@@ -83,7 +82,6 @@ public interface BaseExecutionListener extends Serializable {
 Java class implementing `ExecutionListener`:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="myTask" name="My Task">
   <extensionElements>
     <activiti:executionListener 
@@ -125,7 +123,6 @@ public class MyExecutionListener implements ExecutionListener {
 Evaluate EL expression:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="myTask" name="My Task">
   <extensionElements>
     <activiti:executionListener 
@@ -147,7 +144,6 @@ Evaluate EL expression:
 The expression must resolve to a **Spring bean implementing `ExecutionListener`** (or a `JavaDelegate`); it is *not* a method call. `DelegateExpressionExecutionListener` throws `ActivitiIllegalArgumentException` if the resolved bean is neither. When the listener declares an `onTransaction` attribute, the bean must instead implement `TransactionDependentExecutionListener`.
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="myTask" name="My Task">
   <extensionElements>
     <activiti:executionListener 
@@ -175,7 +171,6 @@ public class AuditListener implements ExecutionListener {
 Execute JavaScript or Groovy script:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="myTask" name="My Task">
   <extensionElements>
     <activiti:executionListener 
@@ -195,7 +190,6 @@ execution.setVariable('completionTime', new Date());
 
 **Groovy Example:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
   <activiti:executionListener
   event="start"
   class="org.activiti.engine.impl.bpmn.listener.ScriptExecutionListener">
@@ -278,7 +272,6 @@ public class PostCommitAuditListener implements TransactionDependentExecutionLis
 Transaction-dependent listeners can receive custom properties via `CustomPropertiesResolver`:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <activiti:executionListener
     event="end"
     class="com.example.PostCommitListener"
@@ -322,7 +315,6 @@ Do **not** implement `TransactionDependentExecutionListener` when you need to mo
 Listen to process instance start/end:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="myProcess" name="My Process">
   
   <extensionElements>
@@ -356,7 +348,6 @@ Listen to process instance start/end:
 Listen to specific activity start/end:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="approvalTask" name="Approval Task">
   <extensionElements>
     <!-- Task start -->
@@ -383,7 +374,6 @@ Listen to specific activity start/end:
 Listen to transitions between activities:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <sequenceFlow id="flow1" sourceRef="task1" targetRef="task2">
   <extensionElements>
     <activiti:executionListener 
@@ -404,7 +394,6 @@ Listen to transitions between activities:
 Listen to gateway execution:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <exclusiveGateway id="decisionGateway" name="Decision">
   <extensionElements>
     <activiti:executionListener 
@@ -424,7 +413,6 @@ Listen to gateway execution:
 Listen to event execution:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <intermediateCatchEvent id="waitEvent" name="Wait for Message">
   <extensionElements>
     <activiti:executionListener 
@@ -440,7 +428,6 @@ Listen to event execution:
 ### Example 1: Comprehensive Process with Listeners
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="orderProcess" name="Order Processing">
   
   <!-- Process-level listeners -->
@@ -527,7 +514,6 @@ Listen to event execution:
 ### Example 2: Script-Based Listeners
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="scriptListenerProcess" name="Script Listener Example">
   
   <startEvent id="start"/>
@@ -576,7 +562,6 @@ log.info "Task completed in ${duration}ms, activity: ${execution.currentActivity
 ### Example 3: Field Injection in Listeners
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="fieldInjectionProcess" name="Field Injection Example">
   
   <extensionElements>
@@ -641,7 +626,6 @@ public class ConfigurableListener implements ExecutionListener {
 ### Example 4: Multiple Listeners on Same Element
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="multiListenerTask" name="Multi-Listener Task">
   <extensionElements>
     <!-- First listener - start -->
@@ -764,7 +748,6 @@ public class DoEverythingListener implements ExecutionListener {
 ### 2. Use Appropriate Event Types
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Right event for the job -->
 <activiti:executionListener event="start" class="InitListener"/>
 <activiti:executionListener event="end" class="CleanupListener"/>
@@ -794,7 +777,6 @@ public class SafeExecutionListener implements ExecutionListener {
 ### 4. Use Field Injection for Configuration
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Configurable -->
 <activiti:executionListener class="ConfigurableListener">
   <activiti:field name="environment" stringValue="production"/>
@@ -807,7 +789,6 @@ public class SafeExecutionListener implements ExecutionListener {
 ### 5. Document Listener Purpose
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Documented -->
 <!-- 
   Listener: Records task start time for SLA monitoring
@@ -873,7 +854,6 @@ List<? extends DelegateExecution> children = execution.getExecutions();
 **Problem:** Relying on execution order
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- BAD: Order not guaranteed across deployments -->
 <activiti:executionListener event="start" class="FirstListener"/>
 <activiti:executionListener event="start" class="SecondListener"/>

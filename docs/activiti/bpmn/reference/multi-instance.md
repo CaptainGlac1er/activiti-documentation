@@ -12,7 +12,6 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 ## Overview
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="reviewTask" name="Review">
   <multiInstanceLoopCharacteristics 
     isSequential="false" 
@@ -68,7 +67,6 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 ### Using Collection (Activiti Extension)
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="reviewTask" name="Review">
   <multiInstanceLoopCharacteristics 
     isSequential="false" 
@@ -104,7 +102,6 @@ Multi-instance activities allow you to **execute an activity multiple times**, e
 Instances execute **one after another** in order.
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="true"
   activiti:collection="${items}"
@@ -129,7 +126,6 @@ Instances execute **one after another** in order.
 Instances execute **concurrently** without waiting.
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${items}"
@@ -156,7 +152,6 @@ Specify when the multi-instance activity should complete.
 ### Basic Completion
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${reviewers}"
@@ -171,7 +166,6 @@ Specify when the multi-instance activity should complete.
 ### Using Built-in Variables
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${reviewers}"
@@ -192,7 +186,6 @@ Specify when the multi-instance activity should complete.
 ### Complex Completion
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${tasks}"
@@ -212,7 +205,6 @@ Specify when the multi-instance activity should complete.
 If no completion condition is specified, the multi-instance completes when **all instances have finished**.
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${items}"
@@ -244,7 +236,6 @@ Multi-instance activities provide these **automatic variables**:
 By default, the loop index variable is named `loopCounter`. Use `activiti:elementIndexVariable` to customize it:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${items}"
@@ -256,7 +247,6 @@ By default, the loop index variable is named `loopCounter`. Use `activiti:elemen
 ### Using Built-in Variables
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="true"
   activiti:collection="${items}"
@@ -294,7 +284,6 @@ Map data to and from each instance.
 The `inputDataItem` name attribute maps to the `elementVariable`. It specifies what variable name to use for the current collection element inside each instance:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${reviewers}"
@@ -311,7 +300,6 @@ The `inputDataItem` name attribute maps to the `elementVariable`. It specifies w
 The `outputDataItem` name attribute specifies the variable name used to collect results from each instance. Results are aggregated into a collection:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
   <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${reviewers}"
@@ -326,7 +314,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 ### Complete Input/Output Example
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="approvalTask" name="Approve Document" activiti:assignee="${approver.email}">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -345,7 +332,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 **Note:** Each child execution receives the current collection element as the variable named by `activiti:elementVariable` (here: `approver`). To collect results, have each instance set a variable and reference it with the `outputDataItem` attribute:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
   activiti:collection="${approvers}"
@@ -359,7 +345,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 ### Example 1: Sequential Approvals
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="sequentialApproval" name="Sequential Approval" activiti:assignee="${approver.email}">
   <multiInstanceLoopCharacteristics 
     isSequential="true"
@@ -381,7 +366,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 ### Example 2: Parallel Notifications
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="sendNotifications" name="Send Notifications" activiti:class="com.example.NotificationService" activiti:async="true">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -402,7 +386,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 ### Example 3: Batch Processing with Retry
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="start"/>
 
 <sequenceFlow id="flow1" sourceRef="start" targetRef="batchProcess"/>
@@ -440,7 +423,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 ### Example 4: Multi-Instance SubProcess
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <subProcess id="miSubProcess" name="Multi-Instance SubProcess">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -468,7 +450,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 ### Example 5: Voting/Consensus
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="votingTask" name="Vote on Proposal" activiti:assignee="${voter.email}">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -499,7 +480,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 ### Combining with Async Execution
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="asyncMiTask" name="Async Multi-Instance" activiti:class="com.example.AsyncProcessor" activiti:async="true">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -521,7 +501,6 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 Listeners must be inside `extensionElements`:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="miWithListeners" name="Tracked Multi-Instance">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -541,7 +520,6 @@ Listeners must be inside `extensionElements`:
 ### Nested Multi-Instance
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <subProcess id="outerMI" name="Outer Multi-Instance">
   <multiInstanceLoopCharacteristics 
     isSequential="false"
@@ -582,7 +560,6 @@ Listeners must be inside `extensionElements`:
 ### 2. Set Appropriate Completion Conditions
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Clear completion criteria -->
 <completionCondition>${nrOfCompletedInstances >= requiredCount}</completionCondition>
 
@@ -595,7 +572,6 @@ Listeners must be inside `extensionElements`:
 ### 3. Use elementVariable and outputDataItem
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Use elementVariable to pass data, outputDataItem to collect results -->
 <multiInstanceLoopCharacteristics
   isSequential="false"
@@ -611,7 +587,6 @@ Listeners must be inside `extensionElements`:
 ### 4. Handle Errors Appropriately
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Error handling for async MI -->
 <serviceTask id="miTask" activiti:async="true">
   <multiInstanceLoopCharacteristics isSequential="false" activiti:collection="${items}" activiti:elementVariable="item"/>
@@ -628,7 +603,6 @@ Listeners must be inside `extensionElements`:
 ### 5. Monitor Performance
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Limit parallel instances for large collections -->
 <multiInstanceLoopCharacteristics 
   isSequential="false"
@@ -656,7 +630,6 @@ Object currentItem = execution.getVariable("currentItem");
 ### 2. Missing Completion Condition
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- BAD: Large collection without completion condition -->
 <multiInstanceLoopCharacteristics 
   activiti:collection="${thousandItems}">

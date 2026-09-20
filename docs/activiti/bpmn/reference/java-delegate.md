@@ -19,7 +19,6 @@ public interface JavaDelegate {
 
 **Usage in BPMN:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="myTask" name="Process Order" 
              activiti:class="com.example.OrderProcessor"/>
 ```
@@ -79,7 +78,6 @@ public class SimpleDelegate implements JavaDelegate {
 
 **BPMN Configuration:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="simpleTask" name="Simple Task" 
              activiti:class="com.example.SimpleDelegate"/>
 ```
@@ -133,7 +131,6 @@ public class OrderProcessor implements JavaDelegate {
 
 **BPMN Configuration (using delegateExpression):**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="processOrder" name="Process Order" 
              activiti:delegateExpression="${orderProcessor}"/>
 ```
@@ -169,7 +166,6 @@ public class SimpleDelegate implements JavaDelegate {
 
 **BPMN Configuration:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="simpleTask" name="Simple Task" 
              activiti:class="com.example.SimpleDelegate"/>
 ```
@@ -574,7 +570,6 @@ public class OrderProcessingDelegate implements JavaDelegate {
 
 **BPMN:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="start"/>
 
 <sequenceFlow id="entry" sourceRef="start" targetRef="processOrder"/>
@@ -682,7 +677,6 @@ public class OrderValidator implements JavaDelegate {
 
 **BPMN:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask id="validateOrder" name="Validate Order" 
              activiti:delegateExpression="${orderValidator}"/>
 ```
@@ -888,7 +882,6 @@ config.setDelegateExpressionFieldInjectionMode(
 Each field can use **attribute syntax** or **child element syntax**:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- Attribute syntax -->
 <activiti:field name="url" stringValue="https://api.example.com"/>
 <activiti:field name="timeout" expression="${connectionTimeout}"/>
@@ -944,7 +937,6 @@ public class MyDelegate implements JavaDelegate {
 Field injection works on **any** element that supports listeners — not just service tasks:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="myTask">
   <extensionElements>
     <activiti:executionListener event="start" class="com.example.MyListener">

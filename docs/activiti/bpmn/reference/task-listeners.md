@@ -12,7 +12,6 @@ Task listeners allow you to **execute custom logic at specific points** in the l
 ## Overview
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="approvalTask" name="Approval">
   <extensionElements>
     <activiti:taskListener
@@ -81,7 +80,6 @@ flowchart TD
 Specify a fully qualified class name implementing `TaskListener`:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="task1" name="Task">
   <extensionElements>
     <activiti:taskListener event="create" class="com.example.TaskCreatedListener"/>
@@ -99,7 +97,6 @@ Specify a fully qualified class name implementing `TaskListener`:
 Reference a Spring bean or expression:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="task1" name="Task">
   <extensionElements>
     <activiti:taskListener event="complete" delegateExpression="${taskCompletionListener}"/>
@@ -117,7 +114,6 @@ Reference a Spring bean or expression:
 Execute a method call directly:
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="task1" name="Task">
   <extensionElements>
     <activiti:taskListener event="create" expression="${sendTaskNotification()}"/>
@@ -213,7 +209,6 @@ public class TaskCompletedNotifier implements TransactionDependentTaskListener {
 ### BPMN Configuration
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="approvalTask" name="Manager Approval">
   <extensionElements>
     <activiti:taskListener
@@ -362,7 +357,6 @@ public class TaskCreatedNotificationListener implements TaskListener {
 
 **BPMN Configuration:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="approvalTask" name="Approval Task" activiti:assignee="${manager}">
   <extensionElements>
     <activiti:taskListener event="create" class="com.example.TaskCreatedNotificationListener">
@@ -423,7 +417,6 @@ public class AssignmentChangeTracker implements TaskListener {
 
 **BPMN Configuration:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="reassignableTask" name="Reassignable Task">
   <extensionElements>
     <activiti:taskListener event="assignment" class="com.example.AssignmentChangeTracker"/>
@@ -488,7 +481,6 @@ public class TaskCompletionAuditor implements TaskListener {
 
 **BPMN Configuration:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="auditedTask" name="Audited Task">
   <extensionElements>
     <activiti:taskListener event="complete" class="com.example.TaskCompletionAuditor">
@@ -551,7 +543,6 @@ public class DynamicTaskConfigurer implements TaskListener {
 
 **BPMN Configuration:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="dynamicTask" name="Dynamic Task">
   <extensionElements>
     <activiti:taskListener event="create" class="com.example.DynamicTaskConfigurer"/>
@@ -614,7 +605,6 @@ public class UniversalTaskHandler implements TaskListener {
 
 **BPMN Configuration:**
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <userTask id="multiEventTask" name="Multi-Event Task">
   <extensionElements>
     <activiti:taskListener event="all" class="com.example.UniversalTaskHandler"/>
@@ -809,7 +799,6 @@ public class SafeTaskListener implements TaskListener {
 ### 3. Use Appropriate Event
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <!-- GOOD: Right event for right action -->
 <userTask id="task1">
   <extensionElements>

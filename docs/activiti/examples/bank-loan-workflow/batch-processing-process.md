@@ -77,7 +77,6 @@ processRuntime.start(ProcessPayloadBuilder.start()
 **Element ID:** `fetchAccountsDueTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:serviceTask id="fetchAccountsDueTask"
                   name="Fetch Accounts with Interest Due"
                   implementation="accountExtractService"
@@ -182,7 +181,6 @@ If the ledger is down at 02:00, the batch *aborts* — it does not guess, does n
 **Element ID:** `postInterestTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:serviceTask id="postInterestTask"
                   name="Post Interest"
                   implementation="interestPostingService"
@@ -441,7 +439,6 @@ public class BatchReconciliationService implements Connector {
 ### 2. Parallel Multi-Instance Over a Collection
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <multiInstanceLoopCharacteristics isSequential="false"
                                   activiti:collection="${accountsDue}"
                                   activiti:elementVariable="account">
@@ -464,7 +461,6 @@ public class BatchReconciliationService implements Connector {
 ### 3. Automatic Job Retry
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <serviceTask ... activiti:async="true"
              activiti:failedJobRetryTimeCycle="R3/PT5M"/>
 ```

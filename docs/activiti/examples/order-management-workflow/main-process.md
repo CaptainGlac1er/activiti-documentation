@@ -82,7 +82,6 @@ ProcessPayloadBuilder.start()
 **Element ID:** `validateCustomerTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="validateCustomerTask" 
                name="Validate Customer Information" 
                activiti:assignee="customerValidator">
@@ -303,7 +302,6 @@ public class CreditScoreService implements Connector {
 **Element ID:** `manualCreditReviewTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="manualCreditReviewTask" 
                name="Manual Credit Review" 
                activiti:assignee="creditManager">
@@ -484,7 +482,6 @@ public class CreditScoreService implements Connector {
 **Element ID:** `qualityCheckTask`
 
 ```xml
-<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <bpmn:userTask id="qualityCheckTask" 
                name="Quality Check" 
                activiti:assignee="qualityTeam">
