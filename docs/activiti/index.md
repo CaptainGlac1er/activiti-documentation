@@ -3,7 +3,7 @@ sidebar_position: 0
 sidebar_label: Activiti
 slug: /activiti
 title: "Activiti API Documentation"
-description: "Comprehensive documentation for Activiti API 8.7.1. Learn to build robust workflow automation solutions."
+description: "Comprehensive documentation for Activiti API 9.0.0. Learn to build robust workflow automation solutions."
 ---
 
 # Activiti API Documentation
@@ -78,5 +78,5 @@ A selection from the full [Feature Catalog](./features/index.md):
 
 ---
 
-*Documentation Version: 8.7.1*  
+*Documentation Version: 9.0.0*  
 *Last Updated: 2026*

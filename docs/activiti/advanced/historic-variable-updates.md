@@ -75,7 +75,7 @@ if (statusUpdates != null) {
 ```
 
 Output:
-```
+```text
 [2024-01-15 09:00:00] Revision 1: orderStatus = CREATED
 [2024-01-15 09:05:00] Revision 2: orderStatus = VALIDATED
 [2024-01-15 10:30:00] Revision 3: orderStatus = APPROVED

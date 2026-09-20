@@ -283,7 +283,7 @@ The `activiti:failedJobRetryTimeCycle` extension element (inside `<extensionElem
 
 The retry cycle uses an ISO 8601 repeat expression, parsed by `DurationHelper` at the first job failure:
 
-```
+```text
 R[<n>]/<ISO-8601 duration>[/<end date>]
 ```
 

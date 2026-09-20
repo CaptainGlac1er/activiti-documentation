@@ -50,7 +50,7 @@ public interface Connector extends Function<IntegrationContext, IntegrationConte
 
 **BPMN Task:** `checkCreditScoreTask` in `orderManagementProcess`
 
-**Purpose:** Validates customer creditworthiness based on order amount and customer history.
+**Purpose:** Validates customer creditworthiness based on order amount and customer history; throws a BPMN error when the credit bureau call fails.
 
 ```java
 package com.example.ordermanagement.services;
@@ -58,6 +58,7 @@ package com.example.ordermanagement.services;
 import com.example.ordermanagement.config.ServiceProperties;
 import org.activiti.api.process.model.IntegrationContext;
 import org.activiti.api.process.runtime.connector.Connector;
+import org.activiti.engine.delegate.BpmnError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,7 +88,13 @@ public class CreditScoreService implements Connector {
             : new BigDecimal(orderAmountObj.toString());
         
         // Simulate credit score check
-        int creditScore = calculateCreditScore(customerId, orderAmount);
+        int creditScore;
+        try {
+            creditScore = calculateCreditScore(customerId, orderAmount);
+        } catch (CreditBureauException e) {
+            // Business fault -> the error boundary event takes over
+            throw new BpmnError("CREDIT001", "Credit bureau call failed: " + e.getMessage());
+        }
         int minScore = serviceProperties.getCreditBureau().getMinCreditScore();
         boolean approved = creditScore >= minScore;
         
@@ -103,6 +110,7 @@ public class CreditScoreService implements Connector {
     
     private int calculateCreditScore(String customerId, BigDecimal orderAmount) {
         // In production, this would call: serviceProperties.getCreditBureau().getApiUrl()
+        // and throw CreditBureauException on a timeout or error response from the bureau.
         // For demonstration, we use a deterministic calculation
         int baseScore = 700;
         
@@ -775,7 +783,7 @@ public class ServiceProperties {
 
 1. **Configuration Injection** - All external service configs via `@ConfigurationProperties`
 2. **Logging** - Comprehensive logging for debugging and monitoring
-3. **Error Handling** - Graceful degradation with fallback logic
+3. **Business Faults as BPMN Errors** - `BpmnError` (thrown directly, never wrapped) with a stable error code that matches the `<error>` definition; error boundary events take over
 4. **Type Safety** - Proper type casting for process variables
 5. **Separation of Concerns** - Each service handles single responsibility
 6. **Testability** - Services can be unit tested independently

@@ -40,7 +40,7 @@ The **RepositoryService** manages all artifacts stored in the engine's repositor
 
 ### Core Concepts
 
-```
+```text
 Deployment A (deployment #1)        Deployment B (deployment #2)
     ├── Process Definition (v1)       ├── Process Definition (v2)
     ├── BPMN XML                      ├── BPMN XML

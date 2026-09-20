@@ -112,7 +112,7 @@ processInstance = runtimeService.createProcessInstanceQuery()
 
 ### Request-Reply Pattern
 
-```
+```text
 Process → External System → Response → Process
 ```
 
@@ -120,7 +120,7 @@ Process → External System → Response → Process
 
 ### Fire-and-Forget Pattern
 
-```
+```text
 Process → External System (no response needed)
 ```
 
@@ -128,7 +128,7 @@ Process → External System (no response needed)
 
 ### Event-Driven Pattern
 
-```
+```text
 External System → Message → Process
 ```
 
@@ -136,7 +136,7 @@ External System → Message → Process
 
 ### Polling Pattern
 
-```
+```text
 Process → Timer → Check External System → Process Results
 ```
 
@@ -144,7 +144,7 @@ Process → Timer → Check External System → Process Results
 
 ### Callback Pattern
 
-```
+```text
 Process → External System → ... → Callback → Process
 ```
 

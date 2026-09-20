@@ -17,7 +17,7 @@ This module does **not** handle runtime objects (`ProcessInstance`, `Task`, etc.
 
 ## Package Structure
 
-```
+```text
 org.activiti.editor.constants
   |-- EditorJsonConstants        # JSON structure key constants
   |-- ModelDataJsonConstants     # Model metadata JSON key constants
@@ -420,7 +420,7 @@ When converting BpmnModel to JSON, `GraphicInfo` positions and flow routes are w
 
 Extension elements added during conversion use the namespace:
 
-```
+```text
 http://activiti.com/modeler   (prefix: modeler)
 ```
 

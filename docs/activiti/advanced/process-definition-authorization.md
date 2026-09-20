@@ -5,7 +5,7 @@ title: "Process Definition Candidate Starters and Authorization"
 description: "Controlling who can start a process definition using candidate starter users and groups."
 ---
 
-# Process Definition Candidate Starters
+# Process Definition Candidate Starters and Authorization
 
 Candidate starters authorize specific users or groups to start a process definition. This is distinct from task-level identity links and provides a security layer at process-start time.
 

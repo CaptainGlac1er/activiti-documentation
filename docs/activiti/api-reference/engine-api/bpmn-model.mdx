@@ -80,26 +80,29 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 
 **Responsibilities:**
 - Holding all processes in the diagram
-- Managing global elements (tasks, signals, errors)
+- Managing global elements (signals, messages, errors, item definitions)
 - Providing element lookup by ID
 - Storing namespace and metadata
 - Tracking all flow elements
-- Managing extensions and properties
+- Holding definitions-level extension attributes (`definitionsAttributes`)
 
 **Key Properties:**
-- `namespace` - BPMN namespace URI
 - `processes` - List of Process objects
-- `globalTasks` - Global task definitions
 - `signals` - Global signal definitions
-- `errors` - Global error definitions
-- `elementsById` - Map for fast element lookup
+- `errorMap` - Global error definitions (keyed by error ref)
+- `messageMap` / `messageFlowMap` - Global messages and message flows
+- `itemDefinitionMap` - Item definitions
+- `dataStoreMap` - Data stores
+- `pools` - Pools (collaborations)
+- `namespaceMap` - Mapping of namespace prefixes to URIs
+- `locationMap` / `labelLocationMap` / `flowLocationMap` - BPMN DI graphical information
 
 **Key Methods:**
 - `addProcess(Process)` - Add a process to model
 - `getProcessById(String)` - Get process by ID
-- `getElementById(String)` - Get any element by ID
+- `getFlowElement(String)` - Look up a flow element by ID (searches all processes and nested sub-processes)
 - `getProcesses()` - Get all processes
-- `getGlobalTasks()` - Get global task definitions
+- `getMainProcess()` - Get the main process
 
 **When to Use:** This is your entry point to the BPMN model. All parsing and manipulation starts here.
 
@@ -115,27 +118,29 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 
 **Responsibilities:**
 - Containing all flow elements of a process
-- Managing process metadata (ID, name, type)
+- Managing process metadata (ID, name, documentation)
 - Tracking data inputs and outputs
-- Managing lane sets and pools
-- Storing process properties
+- Managing lanes
+- Storing process data objects
 - Handling sub-processes
 
 **Key Properties:**
-- `id` - Process identifier
+- `id` - Process identifier (inherited from `BaseElement`)
 - `name` - Process name
-- `processType` - Process type (public, private, collaborative)
-- `isExecutable` - Whether process can be executed
-- `flowElements` - All elements in the process
-- `dataInputs` - Process-level data inputs
-- `dataOutputs` - Process-level data outputs
+- `executable` - Whether process can be executed (default `true`)
+- `documentation` - Process documentation
+- `ioSpecification` - Input/output specification
+- `lanes` - Lanes of the process
+- `flowElementList` - All flow elements in the process
+- `candidateStarterUsers` / `candidateStarterGroups` - Candidate starter lists
+- `dataObjects` - Process data objects
 
 **Key Methods:**
-- `addFlowElement(FlowElement)` - Add element to process
+- `addFlowElement(FlowElement)` - Add element to process (sets its parent container and registers it in the flow element map)
 - `getFlowElements()` - Get all flow elements
-- `isExecutable()` - Check if executable
-- `getLaneSets()` - Get lane sets
-- `getProperty(String)` - Get process property
+- `isExecutable()` / `setExecutable(boolean)` - Check/set if executable
+- `getLanes()` - Get lanes
+- `getDocumentation()` / `setDocumentation(String)` - Process documentation
 
 **When to Use:** When working with a specific process within a BPMN diagram.
 
@@ -150,32 +155,30 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 **Purpose:** Abstract base class for all BPMN elements. Provides common functionality.
 
 **Responsibilities:**
-- Storing element ID and name
-- Managing element properties
-- Handling extension elements
-- Providing common metadata
+- Storing the element ID
+- Tracking the element's position in the source XML (`xmlRowNumber` / `xmlColumnNumber`)
+- Holding custom extension elements
+- Holding extension attributes (custom attributes, including `activiti:` ones)
 - Supporting element identification
-- Managing element documentation
 
 **Key Properties:**
 - `id` - Unique element identifier
-- `name` - Human-readable name
-- `extensions` - Custom extension elements
-- `properties` - Key-value properties
-- `documentation` - Element documentation
+- `xmlRowNumber` / `xmlColumnNumber` - Element position in the source XML file
+- `extensionElements` - Custom extension elements, keyed by name (`Map<String, List<ExtensionElement>>`)
+- `attributes` - Extension attributes, keyed by name (`Map<String, List<ExtensionAttribute>>`)
 
 **Key Methods:**
 - `getId()` / `setId()` - Element identification
-- `getName()` / `setName()` - Element naming
-- `addExtension(Extension)` - Add custom extension
-- `setProperty(String, String)` - Set property
-- `getProperty(String)` - Get property
+- `getXmlRowNumber()` / `getXmlColumnNumber()` - Source XML position
+- `getExtensionElements()` / `addExtensionElement(ExtensionElement)` - Read/add custom extension elements
+- `getAttributes()` / `addAttribute(ExtensionAttribute)` - Read/add extension attributes
+- `getAttributeValue(String, String)` - Look up an attribute value by namespace and name
 
 **When to Use:** As base class for all BPMN elements. Provides common functionality.
 
 **Design Pattern:** Base Class pattern - common functionality for all elements
 
-**Inheritance:** All BPMN elements extend this class
+**Inheritance:** All BPMN elements extend this class, directly or via `FlowElement` — except the root `BpmnModel` container and the auxiliary types `GraphicInfo` and `Error`
 
 ---
 
@@ -184,28 +187,26 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 **Purpose:** Abstract base for elements that participate in process flow.
 
 **Responsibilities:**
-- Managing incoming sequence flows
-- Managing outgoing sequence flows
-- Tracking flow position
-- Handling flow connectivity
-- Managing flow properties
-- Supporting flow traversal
+- Extending `BaseElement` with name and documentation
+- Carrying execution listeners
+- Referencing the parent container
 
 **Key Properties:**
-- `incoming` - List of incoming SequenceFlow
-- `outgoing` - List of outgoing SequenceFlow
-- `id` - Element identifier
+- `id` - Element identifier (inherited from `BaseElement`)
 - `name` - Element name
+- `documentation` - Element documentation
+- `executionListeners` - Execution listeners
 
 **Key Methods:**
-- `addIncoming(SequenceFlow)` - Add incoming flow
-- `addOutgoing(SequenceFlow)` - Add outgoing flow
-- `getIncoming()` - Get incoming flows
-- `getOutgoing()` - Get outgoing flows
+- `getDocumentation()` / `setDocumentation(String)` - Element documentation
+- `getExecutionListeners()` - Get execution listeners
+- `getSubProcess()` - The enclosing sub-process, if any
+
+> **Note:** The incoming/outgoing sequence flow lists (`incomingFlows` / `outgoingFlows`) are not on `FlowElement` — they are on `FlowNode`, which extends it.
 
 **When to Use:** As base class for activities, gateways, and events.
 
-**Design Pattern:** Base Class with aggregation of flows
+**Design Pattern:** Base Class for the flow element hierarchy
 
 **Subclasses:** Activity, Gateway, Event, SequenceFlow
 
@@ -220,26 +221,30 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 - Managing activity properties
 - Handling loop characteristics
 - Managing I/O specifications
-- Supporting event definitions
-- Tracking activity state
+- Handling boundary event attachments
 
 **Key Properties:**
-- `loopCardinality` - Loop iteration count
-- `loopDataInputRef` - Loop input data
-- `loopDataOutputRef` - Loop output data
-- `isForCompletion` - Multi-instance completion
-- `ioSpecifications` - Input/output specs
-- `eventDefinitions` - Attached events
+- `defaultFlow` - ID of the default outgoing sequence flow
+- `forCompensation` - Whether the activity is a compensation activity
+- `loopCharacteristics` - Multi-instance loop characteristics (if any)
+- `ioSpecification` - Input/output specification
+- `dataInputAssociations` / `dataOutputAssociations` - Data associations
+- `boundaryEvents` - Boundary events attached to the activity
+- `failedJobRetryTimeCycleValue` - Retry time cycle for failed jobs
+- `mapExceptions` - Mapped exception entries
 
 **Key Methods:**
-- `isLoop()` - Check if looping activity
-- `getLoopCardinality()` - Get loop count
-- `addEventDefinition(EventDefinition)` - Add event
-- `getSubProcesses()` - Get nested sub-processes
+- `getLoopCharacteristics()` - Get the multi-instance loop characteristics
+- `hasMultiInstanceLoopCharacteristics()` - Check if the activity is multi-instance
+- `isForCompensation()` - Check if it is a compensation activity
+- `getIoSpecification()` - Get the I/O specification
+- `getBoundaryEvents()` - Get attached boundary events
+
+> **Note:** Loop properties (`loopCardinality`, `completionCondition`, `elementVariable`, …) are not on `Activity` — they live on `MultiInstanceLoopCharacteristics`, reached via `getLoopCharacteristics()`.
 
 **When to Use:** As base class for all task types and sub-processes.
 
-**Design Pattern:** Template Method - defines activity structure
+**Design Pattern:** Base Class for the activity hierarchy
 
 **Subclasses:** Task, CallActivity, SubProcess, Transaction
 
@@ -251,22 +256,15 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 
 **Responsibilities:**
 - Representing single unit of work
-- Managing task implementation
-- Handling task subject
-- Supporting task properties
-- Tracking task metadata
-- Enabling task customization
+- Serving as the base for concrete task types
 
 **Key Properties:**
-- `implementation` - Task implementation type
-- `subject` - Task subject description
-- `id` - Task identifier
-- `name` - Task name
+- (none of its own - `id` from `BaseElement`, `name` from `FlowElement` via the `Activity` → `FlowNode` → `FlowElement` chain)
 
 **Key Methods:**
-- `getImplementation()` - Get implementation type
-- `setImplementation(String)` - Set implementation
-- `getSubject()` - Get subject
+- `clone()` / `setValues(Task)` - Copy support (the only members besides the inherited ones)
+
+> **Note:** `Task` is an empty base class. Implementation details (e.g. `implementation` on `ServiceTask`) live on the concrete task types.
 
 **When to Use:** As base for specific task types.
 
@@ -286,18 +284,19 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 - Handling form configuration
 - Supporting candidate users/groups
 - Managing task properties
-- Enabling form field definition
+- Enabling form property definition
 
 **Key Properties:**
-- `assignedTo` - Task assignee expression
-- `potentialStarter` - Users who can start
+- `assignee` - Task assignee expression
+- `candidateUsers` - Candidate users (`List<String>`)
+- `candidateGroups` - Candidate groups (`List<String>`)
 - `formKey` - Form identifier
-- `formFields` - Form field definitions
+- `formProperties` - Form property definitions (`List<FormProperty>`)
 
 **Key Methods:**
-- `addFormField(FormField)` - Add form field
-- `getFormFields()` - Get all form fields
-- `getAssignedTo()` - Get assignee expression
+- `getAssignee()` / `setAssignee(String)` - Assignee expression
+- `getCandidateUsers()` / `getCandidateGroups()` - Candidate users/groups
+- `getFormProperties()` - Get all form properties
 - `setFormKey(String)` - Set form key
 
 **When to Use:** For any task that requires human interaction.
@@ -315,24 +314,25 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 **Responsibilities:**
 - Defining service operations
 - Managing implementation details
-- Handling async execution
-- Supporting configuration
 - Managing operation references
 - Enabling service integration
 
 **Key Properties:**
-- `operationRef` - Operation to invoke
 - `implementation` - Implementation type (class, delegate, webService)
-- `config` - Service configuration
-- `isAsync` - Async execution flag
-- `asyncExpiryTime` - Async expiry
-- `asyncPriority` - Async priority
+- `implementationType` - Implementation type
+- `operationRef` - Operation to invoke
+- `resultVariableName` - Variable to store the service result
+- `type` - Service task type
+- `customProperties` - Custom properties (`List<CustomProperty>`)
+- `skipExpression` - Expression to skip the task
 
 **Key Methods:**
-- `isAsync()` - Check async mode
-- `setAsync(boolean)` - Enable/disable async
-- `getOperationRef()` - Get operation
-- `getImplementation()` - Get implementation type
+- `getImplementation()` / `setImplementation(String)` - Implementation type
+- `getOperationRef()` / `setOperationRef(String)` - Operation to invoke
+- `getResultVariableName()` / `setResultVariableName(String)` - Result variable
+- `hasBoundaryErrorEvents()` - Check for boundary error events
+
+> **Note:** Asynchronous execution is not a `ServiceTask` property — the `asynchronous` flag is defined on `FlowNode` (see the note below the `ServiceTask` code block).
 
 **When to Use:** For automated tasks that call external services or execute code.
 
@@ -355,21 +355,17 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 - Tracking gateway state
 
 **Key Properties:**
-- `gatewayDirection` - Split/merge direction
-- `defaultFlow` - Default outgoing flow
-- `id` - Gateway identifier
-- `name` - Gateway name
+- `defaultFlow` - ID of the default outgoing sequence flow (only member of its own; `id` / `name` are inherited)
 
 **Key Methods:**
 - `getDefaultFlow()` - Get default flow
 - `setDefaultFlow(String)` - Set default flow
-- `getGatewayDirection()` - Get direction
 
 **When to Use:** As base class for all gateway types.
 
 **Design Pattern:** Base Class for gateway hierarchy
 
-**Subclasses:** ExclusiveGateway, ParallelGateway, InclusiveGateway, EventBasedGateway, ComplexGateway
+**Subclasses:** ExclusiveGateway, ParallelGateway, InclusiveGateway, EventGateway, ComplexGateway
 
 ---
 
@@ -386,12 +382,11 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 - Enabling exclusive routing
 
 **Key Properties:**
-- `defaultFlow` - Flow when no condition matches
-- `gatewayDirection` - Split or merge
+- `defaultFlow` - Flow when no condition matches (inherited from `Gateway`; declares no members of its own)
 
 **Key Methods:**
-- `getDefaultFlow()` - Get default flow ID
-- `setDefaultFlow(String)` - Set default flow
+- `getDefaultFlow()` - Get default flow ID (inherited from `Gateway`)
+- `setDefaultFlow(String)` - Set default flow (inherited from `Gateway`)
 
 **When to Use:** For decision points where only one path should be taken.
 
@@ -414,10 +409,10 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 - Enabling parallel processing
 
 **Key Properties:**
-- `gatewayDirection` - Split (fork) or merge (join)
+- (none of its own - inherits `defaultFlow` from `Gateway`)
 
 **Key Methods:**
-- `getGatewayDirection()` - Get direction
+- (none of its own - inherits `getDefaultFlow()` / `setDefaultFlow(String)` from `Gateway`)
 
 **When to Use:** For parallel execution or synchronization points.
 
@@ -441,20 +436,20 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 
 **Key Properties:**
 - `eventDefinitions` - List of event definitions
-- `parallelMultiple` - Parallel multiple event
-- `id` - Event identifier
-- `name` - Event name
+- `id` - Event identifier (inherited)
+- `name` - Event name (inherited)
 
 **Key Methods:**
 - `addEventDefinition(EventDefinition)` - Add definition
 - `getEventDefinitions()` - Get all definitions
-- `isParallelMultiple()` - Check parallel mode
+- `isLinkEvent()` - Check if the single event definition is a link event
+- `getErrorEventDefinition()` - Get the error definition, if any
 
 **When to Use:** As base class for all event types.
 
 **Design Pattern:** Base Class for event hierarchy
 
-**Subclasses:** StartEvent, EndEvent, IntermediateEvent, BoundaryEvent
+**Subclasses:** StartEvent, EndEvent, IntermediateCatchEvent, ThrowEvent, BoundaryEvent
 
 ---
 
@@ -471,16 +466,21 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 - Enabling process initiation
 
 **Key Properties:**
-- `eventDefinitions` - Trigger conditions
-- `isInterrupting` - Whether it interrupts
-- `id` - Event identifier
-- `name` - Event name
+- `eventDefinitions` - Trigger conditions (inherited from `Event`)
+- `initiator` - Initiator expression
+- `formKey` - Form identifier
+- `formProperties` - Form property definitions (`List<FormProperty>`)
+- `isInterrupting` - Whether it interrupts (default `false`)
+- `id` - Event identifier (inherited)
+- `name` - Event name (inherited)
 
 **Key Methods:**
-- `addEventDefinition(EventDefinition)` - Add trigger
+- `addEventDefinition(EventDefinition)` - Add trigger (inherited from `Event`)
 - `isInterrupting()` - Check interrupt mode
 - `setInterrupting(boolean)` - Set interrupt mode
-- `hasEventDefinition(Class)` - Check for trigger type
+- `getInitiator()` / `setInitiator(String)` - Initiator expression
+- `getFormKey()` / `setFormKey(String)` - Form key
+- `getFormProperties()` / `setFormProperties(List<FormProperty>)` - Form properties
 
 **When to Use:** As the starting point of every process.
 
@@ -503,13 +503,14 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 - Enabling process conclusion
 
 **Key Properties:**
-- `eventDefinitions` - End behaviors
+- `eventDefinitions` - End behaviors (inherited from `Event`)
 - `id` - Event identifier
 - `name` - Event name
 
 **Key Methods:**
-- `addEventDefinition(EventDefinition)` - Add behavior
-- `isTerminate()` - Check if terminates process
+- `addEventDefinition(EventDefinition)` - Add behavior (inherited from `Event`)
+
+> **Note:** `EndEvent` itself is an empty class (only `clone()` / `setValues()`). A terminate end event is an `EndEvent` whose `eventDefinitions` list contains a `TerminateEventDefinition`.
 
 **When to Use:** To mark process or sub-process completion.
 
@@ -535,15 +536,17 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 - `sourceRef` - Source element ID
 - `targetRef` - Target element ID
 - `conditionExpression` - Flow condition
-- `isDefault` - Whether it's default flow
-- `id` - Flow identifier
-- `name` - Flow name
+- `skipExpression` - Expression to skip the flow
+- `id` - Flow identifier (inherited)
+- `name` - Flow name (inherited)
 
 **Key Methods:**
 - `getSourceRef()` - Get source element
 - `getTargetRef()` - Get target element
 - `getConditionExpression()` - Get condition
-- `isDefault()` - Check if default
+- `getSkipExpression()` - Get skip expression
+
+> **Note:** `SequenceFlow` has no `isDefault` flag — the default outgoing flow is declared on the source node via `Activity.defaultFlow` / `Gateway.defaultFlow`.
 
 **When to Use:** To connect any two flow elements.
 
@@ -555,7 +558,7 @@ The **activiti-bpmn-model** module provides a Java object model for BPMN 2.0 dia
 
 ## Class Hierarchy Overview
 
-```
+```text
 BaseElement
 ├── FlowElement
 │   ├── FlowNode
@@ -575,11 +578,12 @@ BaseElement
 │   │   │   ├── ExclusiveGateway
 │   │   │   ├── ParallelGateway
 │   │   │   ├── InclusiveGateway
-│   │   │   └── EventBasedGateway
+│   │   │   └── EventGateway
 │   │   └── Event
 │   │       ├── StartEvent
 │   │       ├── EndEvent
-│   │       ├── IntermediateEvent
+│   │       ├── IntermediateCatchEvent
+│   │       ├── ThrowEvent
 │   │       └── BoundaryEvent
 │   └── SequenceFlow
 └── DataObject
@@ -638,7 +642,7 @@ BaseElement
 
 ### Class Hierarchy
 
-```
+```text
 BaseElement
 ├── FlowElement
 │   ├── FlowNode
@@ -660,14 +664,13 @@ BaseElement
 │   │   │   ├── ExclusiveGateway
 │   │   │   ├── ParallelGateway
 │   │   │   ├── InclusiveGateway
-│   │   │   ├── EventBasedGateway
+│   │   │   ├── EventGateway
 │   │   │   └── ComplexGateway
 │   │   └── Event
 │   │       ├── StartEvent
 │   │       ├── EndEvent
-│   │       ├── IntermediateEvent
-│   │       │   ├── IntermediateCatchEvent
-│   │       │   └── IntermediateThrowEvent
+│   │       ├── IntermediateCatchEvent
+│   │       ├── ThrowEvent
 │   │       └── BoundaryEvent
 │   └── SequenceFlow
 ├── DataObject
@@ -675,48 +678,48 @@ BaseElement
 ├── DataStoreReference
 ├── ItemDefinition
 ├── DataAssociation
-├── InputSet
-├── OutputSet
-├── InputOutputSpecification
 ├── IOParameter
-├── Property
-├── DataInput
-├── DataOutput
 ├── Association
-├── TextAnnotation
-└── Group
+└── TextAnnotation
 ```
 
-> **Note:** `DataObject` extends `FlowElement` directly (not `FlowNode`). It has no subclasses — `DataInput`, `DataOutput`, `DataStoreReference`, etc. are separate types that also extend from `BaseElement` or `FlowElement` independently. `Event` (not `Event`) is the abstract base for all event types.
+> **Note:** `DataObject` extends `FlowElement` directly (not `FlowNode`). Its subclasses are `ValuedDataObject` and its concrete types (`StringDataObject`, `BooleanDataObject`, …). `DataStoreReference` (extends `FlowElement`) and `ItemDefinition` / `DataAssociation` (extend `BaseElement`) are separate types. `Event` is the abstract base for all event types.
 
 ### BpmnModel Class
 
 ```java
 public class BpmnModel {
     
-    private String namespace;
-    private List<Process> processes = new ArrayList<>();
-    private List<GlobalTask> globalTasks = new ArrayList<>();
-    private List<GlobalBusinessRuleTask> globalBusinessRuleTasks = new ArrayList<>();
-    private List<Signal> signals = new ArrayList<>();
-    private List<Error> errors = new ArrayList<>();
-    private List<Escalation> escalations = new ArrayList<>();
-    private Map<String, BaseElement> elementsById = new HashMap<>();
+    protected Map<String, List<ExtensionAttribute>> definitionsAttributes = new LinkedHashMap<>();
+    protected List<Process> processes = new ArrayList<>();
+    protected Map<String, GraphicInfo> locationMap = new LinkedHashMap<>();
+    protected Map<String, GraphicInfo> labelLocationMap = new LinkedHashMap<>();
+    protected Map<String, List<GraphicInfo>> flowLocationMap = new LinkedHashMap<>();
+    protected List<Signal> signals = new ArrayList<>();
+    protected Map<String, MessageFlow> messageFlowMap = new LinkedHashMap<>();
+    protected Map<String, Message> messageMap = new LinkedHashMap<>();
+    protected Map<String, Error> errorMap = new LinkedHashMap<>();
+    protected Map<String, ItemDefinition> itemDefinitionMap = new LinkedHashMap<>();
+    protected Map<String, DataStore> dataStoreMap = new LinkedHashMap<>();
+    protected List<Pool> pools = new ArrayList<>();
+    protected Map<String, String> namespaceMap = new LinkedHashMap<>();
+    protected String targetNamespace;
+    protected String sourceSystemId;
     
     public void addProcess(Process process) {
         processes.add(process);
-        indexElements(process);
     }
     
-    public BaseElement getElementById(String id) {
-        return elementsById.get(id);
-    }
-    
-    private void indexElements(BaseElement element) {
-        if (element != null && element.getId() != null) {
-            elementsById.put(element.getId(), element);
+    // ID lookup across all processes (including nested sub-processes)
+    public FlowElement getFlowElement(String id) {
+        for (Process process : processes) {
+            FlowElement foundFlowElement = process.getFlowElement(id);
+            if (foundFlowElement != null) {
+                return foundFlowElement;
+            }
         }
-        // Recursively index children
+        // ... nested sub-processes are searched as well
+        return null;
     }
 }
 ```
@@ -728,12 +731,13 @@ public class BpmnModel {
 ### BaseElement
 
 ```java
-public abstract class BaseElement {
+public abstract class BaseElement implements HasExtensionAttributes {
     
     protected String id;
-    protected String name;
-    protected List<Extension> extensions = new ArrayList<>();
-    protected Map<String, String> properties = new HashMap<>();
+    protected int xmlRowNumber;
+    protected int xmlColumnNumber;
+    protected Map<String, List<ExtensionElement>> extensionElements = new LinkedHashMap<>();
+    protected Map<String, List<ExtensionAttribute>> attributes = new LinkedHashMap<>();
     
     public String getId() {
         return id;
@@ -743,24 +747,12 @@ public abstract class BaseElement {
         this.id = id;
     }
     
-    public String getName() {
-        return name;
+    public void addExtensionElement(ExtensionElement extensionElement) {
+        // Appends to extensionElements, keyed by the element's name
     }
     
-    public void setName(String name) {
-        this.name = name;
-    }
-    
-    public void addExtension(Extension extension) {
-        extensions.add(extension);
-    }
-    
-    public void setProperty(String key, String value) {
-        properties.put(key, value);
-    }
-    
-    public String getProperty(String key) {
-        return properties.get(key);
+    public void addAttribute(ExtensionAttribute attribute) {
+        // Appends to attributes, keyed by the attribute's name
     }
 }
 ```
@@ -770,26 +762,41 @@ public abstract class BaseElement {
 ```java
 public class Process extends BaseElement {
     
-    private List<FlowElement> flowElements = new ArrayList<>();
-    private List<DataInput> dataInputs = new ArrayList<>();
-    private List<DataOutput> dataOutputs = new ArrayList<>();
-    private String processType;
-    private boolean isExecutable = true;
+    protected String name;
+    protected boolean executable = true;
+    protected String documentation;
+    protected IOSpecification ioSpecification;
+    protected List<ActivitiListener> executionListeners = new ArrayList<>();
+    protected List<Lane> lanes = new ArrayList<>();
+    protected List<FlowElement> flowElementList = new ArrayList<>();
+    protected List<ValuedDataObject> dataObjects = new ArrayList<>();
+    protected List<Artifact> artifactList = new ArrayList<>();
+    protected List<String> candidateStarterUsers = new ArrayList<>();
+    protected List<String> candidateStarterGroups = new ArrayList<>();
+    protected List<EventListener> eventListeners = new ArrayList<>();
+    protected Map<String, FlowElement> flowElementMap = new LinkedHashMap<>();
     
     public void addFlowElement(FlowElement element) {
-        flowElements.add(element);
+        flowElementList.add(element);
+        element.setParentContainer(this);
+        if (StringUtils.isNotEmpty(element.getId())) {
+            flowElementMap.put(element.getId(), element);
+        }
+        if (element instanceof FlowElementsContainer) {
+            flowElementMap.putAll(((FlowElementsContainer) element).getFlowElementMap());
+        }
     }
     
-    public List<FlowElement> getFlowElements() {
-        return flowElements;
+    public Collection<FlowElement> getFlowElements() {
+        return flowElementList;
     }
     
     public boolean isExecutable() {
-        return isExecutable;
+        return executable;
     }
     
     public void setExecutable(boolean executable) {
-        isExecutable = executable;
+        this.executable = executable;
     }
 }
 ```
@@ -803,41 +810,37 @@ public class Process extends BaseElement {
 ```java
 public abstract class Activity extends FlowNode {
     
-    protected List<SequenceFlow> incoming = new ArrayList<>();
-    protected List<SequenceFlow> outgoing = new ArrayList<>();
-    protected List<Property> properties = new ArrayList<>();
-    protected List<IOSpecification> ioSpecifications = new ArrayList<>();
-    protected List<EventDefinition> eventDefinitions = new ArrayList<>();
-    protected boolean isForCompletion = false;
-    protected String loopCardinality;
-    protected String loopDataInputRef;
-    protected String loopDataOutputRef;
+    protected String defaultFlow;
+    protected boolean forCompensation;
+    protected MultiInstanceLoopCharacteristics loopCharacteristics;
+    protected IOSpecification ioSpecification;
+    protected List<DataAssociation> dataInputAssociations = new ArrayList<>();
+    protected List<DataAssociation> dataOutputAssociations = new ArrayList<>();
+    protected List<BoundaryEvent> boundaryEvents = new ArrayList<>();
+    protected String failedJobRetryTimeCycleValue;
+    protected List<MapExceptionEntry> mapExceptions = new ArrayList<>();
     
-    public void addIncoming(SequenceFlow flow) {
-        incoming.add(flow);
+    public MultiInstanceLoopCharacteristics getLoopCharacteristics() {
+        return loopCharacteristics;
     }
     
-    public void addOutgoing(SequenceFlow flow) {
-        outgoing.add(flow);
+    public boolean hasMultiInstanceLoopCharacteristics() {
+        return getLoopCharacteristics() != null;
     }
     
-    public boolean isLoop() {
-        return loopCardinality != null || 
-               loopDataInputRef != null || 
-               loopDataOutputRef != null;
+    public boolean isForCompensation() {
+        return forCompensation;
     }
 }
 ```
+
+> **Note:** Incoming/outgoing sequence flows are not fields of `Activity` — they are `incomingFlows` / `outgoingFlows` on the inherited `FlowNode` (accessed via `getIncomingFlows()` / `getOutgoingFlows()`).
 
 ### Task
 
 ```java
 public class Task extends Activity {
-    
-    protected String implementation;
-    protected String subject;
-    
-    // Task-specific properties
+    // Empty base class - only clone()/setValues()
 }
 ```
 
@@ -933,89 +936,78 @@ public class ServiceTask extends TaskWithFieldExtensions {
 ```java
 public class StartEvent extends Event {
     
-    protected List<EventDefinition> eventDefinitions = new ArrayList<>();
-    protected boolean isInterrupting = true;
-    
-    public void addEventDefinition(EventDefinition definition) {
-        eventDefinitions.add(definition);
-    }
+    protected String initiator;
+    protected String formKey;
+    protected boolean isInterrupting;
+    protected List<FormProperty> formProperties = new ArrayList<>();
     
     public boolean isInterrupting() {
         return isInterrupting;
     }
     
-    public void setInterrupting(boolean interrupting) {
-        isInterrupting = interrupting;
-    }
-    
-    public boolean hasEventDefinition(Class<? extends EventDefinition> type) {
-        return eventDefinitions.stream()
-            .anyMatch(d -> d.getClass().equals(type));
+    public void setInterrupting(boolean isInterrupting) {
+        this.isInterrupting = isInterrupting;
     }
 }
 ```
+
+> **Note:** The `eventDefinitions` list and `addEventDefinition(EventDefinition)` are inherited from `Event`. `isInterrupting` defaults to `false`.
 
 ### EndEvent
 
 ```java
 public class EndEvent extends Event {
     
-    protected List<EventDefinition> eventDefinitions = new ArrayList<>();
-    
-    public void addEventDefinition(EventDefinition definition) {
-        eventDefinitions.add(definition);
-    }
-    
-    public boolean isTerminate() {
-        return eventDefinitions.stream()
-            .anyMatch(d -> d instanceof TerminateEventDefinition);
-    }
+    // No additional fields - only clone()/setValues()
+    //
+    // A terminate end event has a TerminateEventDefinition in the
+    // inherited eventDefinitions list:
+    //   endEvent.addEventDefinition(new TerminateEventDefinition());
 }
 ```
 
-### IntermediateEvent
+### Intermediate Events
 
 ```java
-public abstract class IntermediateEvent extends Event {
-    
-    protected List<EventDefinition> eventDefinitions = new ArrayList<>();
-    
-    public void addEventDefinition(EventDefinition definition) {
-        eventDefinitions.add(definition);
-    }
+public class IntermediateCatchEvent extends Event {
+    // Catches events (waits for) - no fields of its own
 }
 
-public class IntermediateCatchEvent extends IntermediateEvent {
-    // Catches events (waits for)
-}
-
-public class IntermediateThrowEvent extends IntermediateEvent {
-    // Throws events (triggers)
+public class ThrowEvent extends Event {
+    // Throws events (triggers) - no fields of its own
 }
 ```
+
+> **Note:** There is no `IntermediateEvent` base class — both `IntermediateCatchEvent` and `ThrowEvent` extend `Event` directly (the `eventDefinitions` list is inherited from `Event`).
 
 ### BoundaryEvent
 
 ```java
 public class BoundaryEvent extends Event {
     
-    protected Activity attachedToActivity;
-    protected boolean isInterrupting = true;
-    protected List<EventDefinition> eventDefinitions = new ArrayList<>();
+    protected Activity attachedToRef;
+    protected String attachedToRefId;
+    protected boolean cancelActivity = true;
     
-    public void setAttachedToActivity(Activity activity) {
-        this.attachedToActivity = activity;
+    public Activity getAttachedToRef() {
+        return attachedToRef;
     }
     
-    public Activity getAttachedToActivity() {
-        return attachedToActivity;
+    public void setAttachedToRef(Activity attachedToRef) {
+        this.attachedToRef = attachedToRef;
     }
     
-    public boolean isInterrupting() {
-        return isInterrupting;
+    public String getAttachedToRefId() {
+        return attachedToRefId;
+    }
+    
+    public void setAttachedToRefId(String attachedToRefId) {
+        this.attachedToRefId = attachedToRefId;
     }
 }
 ```
+
+> **Note:** The `eventDefinitions` list is inherited from `Event`. `attachedToRef` holds the attached activity, `attachedToRefId` its ID, and `cancelActivity` (default `true`) is an Activiti extension flag.
 
 ### Event Definitions
 
@@ -1041,11 +1033,9 @@ public class SignalEventDefinition extends EventDefinition {
 public class ErrorEventDefinition extends EventDefinition {
     protected String errorRef;
 }
-
-public class ConditionalEventDefinition extends EventDefinition {
-    protected String condition;
-}
 ```
+
+The model also provides `CancelEventDefinition`, `CompensateEventDefinition`, `LinkEventDefinition`, and `TerminateEventDefinition`.
 
 ---
 
@@ -1055,16 +1045,7 @@ public class ConditionalEventDefinition extends EventDefinition {
 
 ```java
 public class ExclusiveGateway extends Gateway {
-    
-    protected String defaultFlow;
-    
-    public String getDefaultFlow() {
-        return defaultFlow;
-    }
-    
-    public void setDefaultFlow(String defaultFlow) {
-        this.defaultFlow = defaultFlow;
-    }
+    // No additional properties - inherits defaultFlow from Gateway
 }
 ```
 
@@ -1080,22 +1061,16 @@ public class ParallelGateway extends Gateway {
 
 ```java
 public class InclusiveGateway extends Gateway {
-    
-    protected String defaultFlow;
-    
+    // No additional properties - inherits defaultFlow from Gateway
     // OR logic - multiple paths can be taken
 }
 ```
 
-### EventBasedGateway
+### EventGateway
 
 ```java
-public class EventBasedGateway extends Gateway {
-    
-    protected boolean isInstantiating = false;
-    protected boolean isInterrupting = true;
-    
-    // Waits for events to determine path
+public class EventGateway extends Gateway {
+    // No additional properties - only clone()/setValues()
 }
 ```
 
@@ -1108,48 +1083,46 @@ public class EventBasedGateway extends Gateway {
 ```java
 public class DataObject extends FlowElement {
     
-    protected String structureRef;
-    protected ItemDefinition itemSubject;
-    protected String dataState;
+    protected ItemDefinition itemSubjectRef;
     
-    public ItemDefinition getItemSubject() {
-        return itemSubject;
+    public ItemDefinition getItemSubjectRef() {
+        return itemSubjectRef;
     }
     
-    public void setItemSubject(ItemDefinition itemSubject) {
-        this.itemSubject = itemSubject;
+    public void setItemSubjectRef(ItemDefinition itemSubjectRef) {
+        this.itemSubjectRef = itemSubjectRef;
     }
 }
 ```
 
-### DataInput/DataOutput
+### Data Input/Output
 
-```java
-public class DataInput extends DataElement {
-    protected String inputSetRef;
-}
-
-public class DataOutput extends DataElement {
-    protected String outputSetRef;
-}
-```
+The model does not define `DataInput` or `DataOutput` classes. Input/output wiring is modeled with `IOSpecification` (with `IOParameter` entries, reached via `Activity.getIoSpecification()`), `DataAssociation`, and `ItemDefinition`.
 
 ### Data Associations
 
 ```java
-public abstract class DataAssociation {
+public class DataAssociation extends BaseElement {
     
-    protected List<String> sourceRef = new ArrayList<>();
-    protected List<String> targetRef = new ArrayList<>();
-    protected String assignment;
+    protected String sourceRef;
+    protected String targetRef;
     protected String transformation;
+    protected List<Assignment> assignments = new ArrayList<>();
     
-    public void addSourceRef(String ref) {
-        sourceRef.add(ref);
+    public String getSourceRef() {
+        return sourceRef;
     }
     
-    public void addTargetRef(String ref) {
-        targetRef.add(ref);
+    public void setSourceRef(String sourceRef) {
+        this.sourceRef = sourceRef;
+    }
+    
+    public String getTargetRef() {
+        return targetRef;
+    }
+    
+    public void setTargetRef(String targetRef) {
+        this.targetRef = targetRef;
     }
 }
 ```
@@ -1184,7 +1157,7 @@ for (Process process : model.getProcesses()) {
 }
 ```
 
-For lookups by ID, use `BpmnModel.getElementById(String id)` which returns the matching `BaseElement` across all processes.
+For lookups by ID, use `BpmnModel.getFlowElement(String id)` which returns the matching `FlowElement` across all processes (including nested sub-processes).
 
 ---
 
@@ -1203,7 +1176,7 @@ validator.validate(bpmnModel, errors);
 
 if (!errors.isEmpty()) {
     for (ValidationError error : errors) {
-        System.err.println(error.getDescription());
+        System.err.println(error.getDefaultDescription());
     }
 }
 ```
@@ -1220,13 +1193,14 @@ Custom validators can be registered by extending `ProcessLevelValidator` or `Act
 The BPMN model is serialized to and from XML by `BpmnXMLConverter` in the `activiti-bpmn-converter` module:
 
 ```java
-// Convert BpmnModel to XML string
+// Convert BpmnModel to XML (byte[])
 BpmnXMLConverter converter = new BpmnXMLConverter();
-String xmlString = converter.convertToXML(bpmnModel);
+byte[] xmlBytes = converter.convertToXML(bpmnModel);
+String xmlString = new String(xmlBytes, StandardCharsets.UTF_8);
 
-// Parse BPMN XML into BpmnModel
+// Parse BPMN XML into BpmnModel (the stream is wrapped in an InputStreamProvider)
 InputStream inputStream = ...;
-BpmnModel model = converter.convertToBpmnModel(inputStream, false, false);
+BpmnModel model = converter.convertToBpmnModel(() -> inputStream, false, false);
 ```
 
 ### JSON Serialization
@@ -1282,14 +1256,14 @@ public class ModelBuilderExample {
         // Create sequence flows
         SequenceFlow flow1 = new SequenceFlow();
         flow1.setId("flow1");
-        flow1.setSourceRef(startEvent);
-        flow1.setTargetRef(userTask);
+        flow1.setSourceRef("start");
+        flow1.setTargetRef("task1");
         process.addFlowElement(flow1);
         
         SequenceFlow flow2 = new SequenceFlow();
         flow2.setId("flow2");
-        flow2.setSourceRef(userTask);
-        flow2.setTargetRef(endEvent);
+        flow2.setSourceRef("task1");
+        flow2.setTargetRef("end");
         process.addFlowElement(flow2);
         
         return model;
@@ -1357,9 +1331,9 @@ if (!errors.isEmpty()) {
 }
 ```
 
-### 3. Use getElementById for Lookups
+### 3. Use getFlowElement for Lookups
 
-`BpmnModel.getElementById(String id)` provides fast lookups across all processes and nested sub-processes.
+`BpmnModel.getFlowElement(String id)` provides lookups across all processes and nested sub-processes.
 
 ### 4. Model Classes Are Not Thread-Safe
 
@@ -1380,11 +1354,8 @@ Reading the model is safe, but modifications should not be done concurrently.
 - `Gateway` - Decision points
 - `Event` - Event base class
 - `SequenceFlow` - Flow connections
-
-### Key Interfaces
-
-- `BpmnModelValidator` - Validates model against BPMN and Activiti constraints (in `activiti-process-validation`)
-- `BpmnXMLConverter` - Converts between `BpmnModel` and BPMN 2.0 XML
+- `BpmnModelValidator` - Validates model against BPMN and Activiti constraints (concrete class in `activiti-process-validation`)
+- `BpmnXMLConverter` - Converts between `BpmnModel` and BPMN 2.0 XML (in `activiti-bpmn-converter`)
 
 ---
 

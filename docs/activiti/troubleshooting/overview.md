@@ -184,7 +184,7 @@ public class ActivitiHealthIndicator implements HealthIndicator {
 ### Issue 1: Process Definition Not Found
 
 **Symptoms:**
-```
+```text
 NotFoundException: Process definition with key 'orderProcess' not found
 ```
 
@@ -262,7 +262,7 @@ public class DeploymentListener {
 ### Issue 2: Task Not Visible to User
 
 **Symptoms:**
-```
+```text
 User cannot see tasks that should be assigned to them
 ```
 
@@ -337,7 +337,7 @@ public class SecurityConfig {
 ### Issue 3: Variables Not Persisting
 
 **Symptoms:**
-```
+```text
 Variables set during task completion are lost
 ```
 
@@ -408,7 +408,7 @@ List<VariableInstance> vars = processRuntime.variables(...); // Correct
 ### Issue 4: Process Stuck/Not Advancing
 
 **Symptoms:**
-```
+```text
 Process instance is running but not progressing
 ```
 
@@ -499,7 +499,7 @@ public class GatewayDebugger implements ProcessEventListener<ProcessUpdatedEvent
 ### Problem 1: Slow Query Performance
 
 **Symptoms:**
-```
+```text
 Task/process queries take > 5 seconds
 ```
 
@@ -550,7 +550,7 @@ public ProcessDefinition getProcessDefinition(String processDefinitionKey) {
 ### Problem 2: High Memory Usage
 
 **Symptoms:**
-```
+```text
 Application uses > 2GB heap, frequent GC
 ```
 
@@ -604,7 +604,7 @@ public class ArchiveService {
 ### Issue: Database Connection Problems
 
 **Symptoms:**
-```
+```text
 Cannot acquire connection from pool
 Connection timeout
 ```
@@ -647,7 +647,7 @@ spring:
 ### Error: Transaction Timeout
 
 **Symptoms:**
-```
+```text
 Transaction timed out after 30 seconds
 ```
 
@@ -662,7 +662,7 @@ public void longRunningProcess() {
 ### Error: Deadlock Detected
 
 **Symptoms:**
-```
+```text
 Deadlock found when trying to get lock
 ```
 
@@ -686,7 +686,7 @@ public void updateProcesses(List<String> processIds) {
 ### Error: Async Job Failing / Exhausted Retries
 
 **Symptoms:**
-```
+```text
 Job '12345' failed, retries exhausted - moved to dead-letter queue
 ```
 
@@ -725,7 +725,7 @@ or `managementService.executeJob(jobId)` to run a specific job immediately.
 ### Error: ActivitiOptimisticLockingException
 
 **Symptoms:**
-```
+```text
 ActivitiOptimisticLockingException: object with same revision cannot be inserted
 ```
 
@@ -748,7 +748,7 @@ The engine uses a revision column for pessimistic-safe concurrent updates. When 
 ### Error: Starting an Outdated Process Definition
 
 **Symptoms:**
-```
+```text
 Starting the latest process definition returns a previous version
 ```
 
@@ -820,8 +820,8 @@ definitions.forEach(d ->
 
 ### Information to Provide
 
-```
-- Activiti Version: 8.7.1
+```text
+- Activiti Version: 9.0.0
 - Java Version: 17.0.1
 - Database: PostgreSQL 14
 - Spring Boot Version: 3.1.0

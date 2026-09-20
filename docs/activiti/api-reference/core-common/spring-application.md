@@ -49,7 +49,7 @@ public List<ApplicationContent> loadApplications() {
 
 ## Architecture
 
-```
+```text
 ApplicationDeployer
     ├── ApplicationService (loadApplications)
     └── List<ApplicationEntryDeployer> (deployEntries)

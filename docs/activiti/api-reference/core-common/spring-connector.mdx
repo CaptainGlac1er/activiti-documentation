@@ -75,7 +75,7 @@ flowchart TD
     subgraph CM["Connector Management"]
         CDS["ConnectorDefinitionService<br/>Responsibilities:<br/>- Load connector JSON files<br/>- Parse ConnectorDefinition objects<br/>- Validate connector definitions<br/>- Ensure unique names"]
         RPR["Resource Pattern Resolver"]
-        JO["Jackson ObjectMapper"]
+        JO["Jackson JsonMapper"]
         VL["Validation Logic"]
         CD["ConnectorDefinition<br/>(From activiti-connector-model)<br/>- id, name, description<br/>- actions (map of ActionDefinition)"]
         CDS --> RPR
@@ -92,7 +92,7 @@ flowchart TD
     CAC["ConnectorAutoConfiguration<br/>Creates service bean"]
     CDS["ConnectorDefinitionService<br/>get() method"]
     RPR["ResourcePatternResolver<br/>Find *.json files<br/>in connector root"]
-    EACH["For each JSON file:<br/>- Read InputStream<br/>- Parse with ObjectMapper<br/>- Create ConnectorDef"]
+    EACH["For each JSON file:<br/>- Read InputStream<br/>- Parse with JsonMapper<br/>- Create ConnectorDef"]
     VAL["Validate connectors<br/>- Check names not null<br/>- No dots in names<br/>- Unique names"]
     RET["Return list of<br/>ConnectorDefinitions"]
     AS --> CAC --> CDS --> RPR --> EACH --> VAL --> RET
@@ -124,7 +124,7 @@ flowchart TD
 **Design Pattern:** Service pattern
 
 **Dependencies:**
-- `ObjectMapper` - JSON parsing
+- `JsonMapper` (Jackson 3, `tools.jackson.databind.json.JsonMapper`) - JSON parsing
 - `ResourcePatternResolver` - File discovery
 - `connectorRoot` - Base path for connectors
 
@@ -153,7 +153,7 @@ public List<ConnectorDefinition> loadConnectors() throws IOException {
 **Key Features:**
 - Uses `@AutoConfiguration` (not `@Configuration`)
 - Beans are conditional on absence of user-provided alternatives (`@ConditionalOnMissingBean`)
-- ObjectMapper bean is provided only when `Jackson2ObjectMapperBuilder` is missing (`@ConditionalOnMissingClass`)
+- `JsonMapper` (Jackson 3) is injected from the Spring context (no `ObjectMapper` bean is created)
 - Connector root path configured via `@Value("${activiti.connectors.dir:classpath:/connectors/}")`
 
 **When to Use:** Automatically applied when module is on classpath.
@@ -167,20 +167,13 @@ public class ConnectorAutoConfiguration {
     
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnMissingClass(value = "org.springframework.http.converter.json.Jackson2ObjectMapperBuilder")
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
-    }
-    
-    @Bean
-    @ConditionalOnMissingBean
     public ConnectorDefinitionService connectorDefinitionService(
             @Value("${activiti.connectors.dir:classpath:/connectors/}") String connectorRoot,
-            ObjectMapper objectMapper,
+            JsonMapper jsonMapper,
             ResourcePatternResolver resourceLoader) {
         return new ConnectorDefinitionService(
             connectorRoot,
-            objectMapper,
+            jsonMapper,
             resourceLoader
         );
     }
@@ -205,7 +198,7 @@ public class ConnectorAutoConfiguration {
 public class ConnectorDefinitionService {
     
     private String connectorRoot;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private ResourcePatternResolver resourceLoader;
     
     public List<ConnectorDefinition> get() throws IOException {
@@ -236,7 +229,7 @@ public class ConnectorDefinitionService {
     }
     
     private ConnectorDefinition read(InputStream inputStream) throws IOException {
-        return objectMapper.readValue(inputStream, ConnectorDefinition.class);
+        return jsonMapper.readValue(inputStream, ConnectorDefinition.class);
     }
 }
 ```
@@ -298,13 +291,13 @@ public class CustomConnectorConfig {
     
     @Bean
     public ConnectorDefinitionService connectorDefinitionService(
-            ObjectMapper objectMapper) {
+            JsonMapper jsonMapper) {
         ResourcePatternResolver resourceLoader = 
             new PathMatchingResourcePatternResolver();
         
         return new ConnectorDefinitionService(
             connectorRoot,
-            objectMapper,
+            jsonMapper,
             resourceLoader
         );
     }
@@ -429,26 +422,26 @@ public class MultiLocationConnectorConfig {
     
     @Bean
     public ConnectorDefinitionService classpathConnectors(
-            ObjectMapper objectMapper) {
+            JsonMapper jsonMapper) {
         ResourcePatternResolver resourceLoader = 
             new PathMatchingResourcePatternResolver();
         
         return new ConnectorDefinitionService(
             "classpath:/connectors",
-            objectMapper,
+            jsonMapper,
             resourceLoader
         );
     }
     
     @Bean
     public ConnectorDefinitionService fileSystemConnectors(
-            ObjectMapper objectMapper) {
+            JsonMapper jsonMapper) {
         ResourcePatternResolver resourceLoader = 
             new PathMatchingResourcePatternResolver();
         
         return new ConnectorDefinitionService(
             "file:/opt/activiti/connectors",
-            objectMapper,
+            jsonMapper,
             resourceLoader
         );
     }
@@ -564,7 +557,7 @@ public ConnectorDefinition getConnector(String name) {
 ```java
 public ConnectorDefinitionService(
     String connectorRoot,
-    ObjectMapper objectMapper,
+    JsonMapper jsonMapper,
     ResourcePatternResolver resourceLoader
 )
 ```
@@ -645,7 +638,7 @@ try {
 
 ### JSON Parse Error
 
-**Problem:** ObjectMapper fails to parse JSON
+**Problem:** JsonMapper fails to parse JSON
 
 **Solution:**
 1. Validate JSON syntax

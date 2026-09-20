@@ -184,7 +184,7 @@ curl -s "$GATEWAY/rb/v1/process-instances/$PROCESS_INSTANCE_ID/tasks" \
           "status": "ASSIGNED",
           "assignee": "testuser",
           "processInstanceId": "c99034e3-9d7c-4b78-9a1d-0a291f0e5f21",
-          "processDefinitionKey": "SingleTaskProcess",
+          "processDefinitionId": "SingleTaskProcess:1:3f1c1a2e-8d4b-4f6a-9c2d-1b2e3f4a5b6c",
           "taskDefinitionKey": "Task_03l0zc2",
           "createdDate": "2026-08-15T12:00:01.000+00:00"
         }

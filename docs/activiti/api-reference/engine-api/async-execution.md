@@ -190,7 +190,7 @@ public class AsyncExecutionConfig {
 
 ### 2. Job Acquisition
 
-```
+```text
 Async Executor Acquisition Loop:
 
  1. Acquire database lock (prevents multiple executors)
@@ -321,7 +321,7 @@ Common job operations are available through `ManagementService`. See [Management
   <!-- Cycle timer - fires repeatedly -->
   <intermediateCatchEvent id="cycleTimer">
     <timerEventDefinition>
-      <timeCycle>R/10/PT5M</timeCycle>  <!-- 10 times, every 5 minutes -->
+      <timeCycle>R10/PT5M</timeCycle>  <!-- 10 times, every 5 minutes -->
     </timerEventDefinition>
   </intermediateCatchEvent>
 </process>
@@ -581,10 +581,10 @@ public class GracefulJobHandler implements JavaDelegate {
             execution.setVariable("error", e.getMessage());
             execution.setVariable("canRetry", false);
             
-            // Or throw BPMN error for specific handling
-            throw new ActivitiException(
-                new BpmnError("PERMANENT_ERROR", e.getMessage())
-            );
+            // Or throw a BPMN error for specific handling — BpmnError extends
+            // ActivitiException, and the engine propagates it to a modeled
+            // error boundary event
+            throw new BpmnError("PERMANENT_ERROR", e.getMessage());
         }
     }
 }

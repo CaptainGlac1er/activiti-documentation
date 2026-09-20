@@ -91,7 +91,7 @@ The **activiti-spring-boot-starter** module provides seamless integration of Act
 
 The auto-configuration uses Spring Boot 3.x `@AutoConfiguration` annotation and registers the following in `org.springframework.boot.autoconfigure.AutoConfiguration.imports`:
 
-```
+```text
 org.activiti.spring.boot.ActivitiMethodSecurityAutoConfiguration
 org.activiti.spring.boot.EndpointAutoConfiguration
 org.activiti.spring.boot.ProcessEngineAutoConfiguration
@@ -163,7 +163,7 @@ flowchart TD
         end
 
         subgraph SecurityCfg["ActivitiMethodSecurityAutoConfiguration"]
-            S1["@ConditionalOnClass<br>(GlobalMethodSecurityConfiguration)"]
+            S1["@ConditionalOnClass<br>(EnableMethodSecurity)"]
         end
     end
 
@@ -213,8 +213,8 @@ Define a bean of this type to apply custom configuration.
 
 `ActivitiMethodSecurityAutoConfiguration` (`org.activiti.spring.boot.ActivitiMethodSecurityAutoConfiguration`) enables method-level security when:
 
-- `GlobalMethodSecurityConfiguration` is on the classpath
-- No existing `@EnableGlobalMethodSecurity` bean is defined
+- `EnableMethodSecurity` is on the classpath
+- No existing bean annotated with `@EnableMethodSecurity` is defined
 
 It configures `prePostEnabled`, `securedEnabled`, and `jsr250Enabled`.
 
@@ -289,6 +289,11 @@ spring:
 
     # Deployment mode. Default: "default"
     deployment-mode: "default"
+
+    # Disables start event subscriptions of previous deployments when a new
+    # version is deployed (prevents accidental triggering of superseded versions).
+    # Default: false. Added in 8.8.0.
+    disable-existing-start-event-subscriptions: false
 
     # Whether to serialize POJOs in variables to JSON. Default: true
     serialize-pojos-in-variables-to-json: true
@@ -581,6 +586,8 @@ public class CustomAsyncExecutorConfig {
 }
 ```
 
+> **Note:** `CustomRejectedJobsHandler` implements `SpringRejectedJobsHandler`, which is `@Deprecated @Internal` in source — an internal, deprecated API that may change or be removed. See [Spring Integration — SpringRejectedJobsHandler](./spring-integration.mdx#springrejectedjobshandler).
+
 ### Custom Process Definition Cache
 
 Configure a Spring-based cache for process definitions:
@@ -761,7 +768,7 @@ security when set to `false`.
 
 - Check that `spring.activiti.security.enabled` has not been set to `false` in your configuration
   (remove the property or set it back to `true` to restore the default behavior).
-- Ensure `GlobalMethodSecurityConfiguration` is on the classpath — the auto-configuration is
+- Ensure `EnableMethodSecurity` is on the classpath — the auto-configuration is
   also conditional on this class being present (`@ConditionalOnClass`).
 
 ### Debug Mode
@@ -842,7 +849,7 @@ spring:
 | `AbstractProcessEngineAutoConfiguration` | `org.activiti.spring.boot` | Provides shared beans: `SpringAsyncExecutor`, `ProcessEngineFactoryBean`, service beans, `TaskExecutor`, integration context. |
 | `AbstractProcessEngineConfiguration` | `org.activiti.spring.boot` | Base class with service bean factory methods: `runtimeServiceBean`, `repositoryServiceBean`, `taskServiceBean`, etc. |
 | `EndpointAutoConfiguration` | `org.activiti.spring.boot` | Registers `ProcessEngineEndpoint` for Spring Boot Actuator. |
-| `ActivitiMethodSecurityAutoConfiguration` | `org.activiti.spring.boot` | Enables method-level security when `GlobalMethodSecurityConfiguration` is on classpath. |
+| `ActivitiMethodSecurityAutoConfiguration` | `org.activiti.spring.boot` | Enables method-level security when `EnableMethodSecurity` is on classpath. |
 
 ### Properties Classes
 

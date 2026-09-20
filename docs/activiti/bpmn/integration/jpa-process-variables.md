@@ -371,7 +371,7 @@ taskService.complete(task.getId(), Map.of("approvedByManager", true));
 
 If a JPA entity variable is retrieved but the entity no longer exists in the database, Activiti throws an `ActivitiException` with the message:
 
-```
+```text
 Entity does not exist: <fully.qualified.ClassName> - <primaryKeyValue>
 ```
 
@@ -384,7 +384,7 @@ This can happen if the entity was deleted outside the process.
 The class must be annotated with `@Entity`. Subclasses of `@Entity` classes are also recognized.
 
 Activiti throws:
-```
+```text
 ActivitiIllegalArgumentException: Object is not a JPA Entity: class='<fully.qualified.ClassName>', <value>
 ```
 
@@ -395,7 +395,7 @@ ActivitiIllegalArgumentException: Object is not a JPA Entity: class='<fully.qual
 Activiti does not support entities with `@EmbeddedId` or `@IdClass`.
 
 The scanner throws:
-```
+```text
 ActivitiException: Cannot find field or method with annotation @Id on class '<ClassName>', only single-valued primary keys are supported on JPA-entities
 ```
 

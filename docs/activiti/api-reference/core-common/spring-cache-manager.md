@@ -62,7 +62,7 @@ public void cacheProcessData(String key, Object data) {
 
 ## Architecture
 
-```
+```text
 activiti.spring.cache-manager
     ├── Caffeine provider (high-performance, default)
     │   ├── defaultSpec: CaffeineSpec string applied to all caches

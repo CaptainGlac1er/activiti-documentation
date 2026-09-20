@@ -57,7 +57,7 @@ flowchart TD
 
 ## File Structure
 
-```
+```text
 order-management-workflow/
 ├── bpmn/
 │   ├── orderManagementProcess.bpmn    # Main process

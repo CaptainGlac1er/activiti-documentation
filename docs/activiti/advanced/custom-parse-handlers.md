@@ -262,7 +262,7 @@ Parse handlers are one way to customize behavior. Another approach is to impleme
 
 ### The Class Hierarchy
 
-```
+```text
 ActivityBehavior (interface)
 ├── void execute(DelegateExecution execution)
 │

@@ -21,7 +21,7 @@ The embedded engine auto-deploys whatever it finds under the configured location
 | `spring.activiti.process-definition-location-prefix` | `classpath*:**/processes/` | Where packaged BPMN models are looked up. |
 | `spring.activiti.process-definition-location-suffixes` | `**.bpmn20.xml`, `**.bpmn` | File suffixes accepted as process definitions. |
 | `spring.activiti.deployment-name` | `SpringAutoDeployment` | Name of the deployment created for the packaged processes. |
-| `spring.activiti.deployment-mode` | `default` | Auto-deployment strategy. The bundle starter overrides this to `never-fail`, so a packaged model that fails validation is logged but does not prevent the service from starting. |
+| `spring.activiti.deployment-mode` | `never-fail` (starter default; bare-engine default `default`) | Auto-deployment strategy. With `never-fail`, a packaged model that fails validation is logged but does not prevent the service from starting. |
 
 ### The deployment-to-read-model pipeline
 

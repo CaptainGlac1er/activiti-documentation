@@ -362,7 +362,7 @@ ReadOnlyMapELResolver resolver = new ReadOnlyMapELResolver(vars);
 
 **Behavior:**
 - `getValue()` unwraps value nodes: booleans → `Boolean`, numbers → `Long`/`Double`, text → `String`
-- `getValue()` converts JSON arrays to `List` via `ObjectMapper.convertValue()`
+- `getValue()` converts JSON arrays to `List` via `JsonMapper.convertValue()` (Jackson 3, `tools.jackson.databind.json.JsonMapper`)
 - `setValue()` supports `BigDecimal`, `Boolean`, `Long`, `Double`, and `String` (on `ObjectNode`)
 - `isReadOnly()` returns `readOnly` flag
 
@@ -597,7 +597,7 @@ public class VariableManager {
 <sequenceFlow id="rejectFlow" 
               sourceRef="approveGateway" 
               targetRef="rejectTask">
-  <conditionExpression>${order.totalAmount <= 1000}</conditionExpression>
+  <conditionExpression>${order.totalAmount &lt;= 1000}</conditionExpression>
 </sequenceFlow>
 
 <!-- Message Event with Field Expressions -->
@@ -734,7 +734,8 @@ try {
     ValueExpression expr = factory.createValueExpression(context, expression, Object.class);
     return expr.getValue(context);
 } catch (ELException e) {
-    throw new InvalidExpressionException("Invalid expression: " + expression, e);
+    // No custom exception type needed — rethrow as jakarta.el.ELException with context
+    throw new ELException("Invalid expression: " + expression, e);
 }
 
 // BAD

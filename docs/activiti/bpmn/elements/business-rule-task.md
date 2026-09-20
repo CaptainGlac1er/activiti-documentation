@@ -555,6 +555,8 @@ The following example uses a connector (`implementation="droolsDmnConnector"`) r
              xmlns:activiti="http://activiti.org/bpmn"
              targetNamespace="Examples">
 
+  <error id="DmnEvaluationError" name="Dmn Evaluation Error" errorCode="DMN001"/>
+
   <process id="loanApplicationProcess" name="Loan Application">
 
     <startEvent id="start"/>

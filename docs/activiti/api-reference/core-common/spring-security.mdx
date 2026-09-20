@@ -557,6 +557,9 @@ public class ProcessController {
     @Autowired
     private LocalSpringSecurityManager securityManager;
     
+    @Autowired
+    private ProcessEngine processEngine;
+    
     @GetMapping("/current-user")
     public Map<String, Object> getCurrentUser() {
         return Map.of(
@@ -574,7 +577,7 @@ public class ProcessController {
         log.info("User {} starting process", userId);
         
         // Start process with user context
-        return processEngine.startProcess("myProcess");
+        return processEngine.getRuntimeService().startProcessInstanceByKey("myProcess");
     }
 }
 ```
@@ -606,7 +609,7 @@ public class SecureProcessService {
         auditLog.log(userId, "EXECUTE_OPERATION", processKey);
         
         // Execute operation
-        processEngine.startProcess(processKey);
+        processEngine.getRuntimeService().startProcessInstanceByKey(processKey);
     }
 }
 ```

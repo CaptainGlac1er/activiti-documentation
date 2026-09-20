@@ -77,7 +77,7 @@ Include the local runtime module, which transitively brings in assertions and au
 <dependency>
     <groupId>org.activiti</groupId>
     <artifactId>activiti-core-test-local-runtime</artifactId>
-    <version>8.7.1</version>
+    <version>9.0.0</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -90,7 +90,7 @@ Use the assertions module directly and wire up your own `EventSource` and `TaskS
 <dependency>
     <groupId>org.activiti</groupId>
     <artifactId>activiti-core-test-assertions</artifactId>
-    <version>8.7.1</version>
+    <version>9.0.0</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -126,7 +126,7 @@ private TaskOperations taskOperations;
 @Test
 void shouldProcessOrder() {
     ProcessInstance pi = processOperations.start(
-            StartProcessPayloadBuilder.start()
+            ProcessPayloadBuilder.start()
                 .withProcessDefinitionKey("orderProcess")
                 .withVariable("orderId", "ORD-123")
                 .build())
@@ -137,7 +137,7 @@ void shouldProcessOrder() {
 
     // Get the task ID from the task runtime or assertion scope
     taskOperations.complete(
-            CompleteTaskPayloadBuilder.complete()
+            TaskPayloadBuilder.complete()
                 .withTaskId(taskId)
                 .build())
         .expectEvents(endEvent("reviewDone").hasBeenCompleted());
@@ -150,7 +150,7 @@ Each assertion chain terminates with `andReturn()`, which gives you the underlyi
 
 ```java
 ProcessInstance pi = processOperations.start(
-        StartProcessPayloadBuilder.start()
+        ProcessPayloadBuilder.start()
             .withProcessDefinitionKey("myProcess")
             .build())
     .expectEvents(endEvent("end").hasBeenCompleted())
@@ -336,7 +336,7 @@ class AsyncProcessTest {
     @Test
     void asyncServiceTaskCompletes() {
         processOperations.start(
-                StartProcessPayloadBuilder.start()
+                ProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("asyncProcess")
                     .build())
             // These assertions will poll until the async job completes
@@ -420,7 +420,7 @@ class OrderProcessTest {
     @Test
     void simpleProcess() {
         processOperations.start(
-                StartProcessPayloadBuilder.start()
+                ProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderProcess")
                     .withVariable("amount", 150)
                     .build())
@@ -746,7 +746,7 @@ public void testStartToEnd() {
 
 `ConsoleLogger.log()` prints formatted output to stdout:
 
-```
+```text
 #############################################
 Checkout Process
 #############################################
@@ -825,7 +825,7 @@ processOperations.start(payload)
 
 ```java
 ProcessInstance pi = processOperations.start(
-        StartProcessPayloadBuilder.start()
+        ProcessPayloadBuilder.start()
             .withProcessDefinitionKey("signalProcess")
             .build())
     .andReturn();
@@ -842,7 +842,7 @@ processOperations.signal(
 
 ```java
 processOperations.start(
-        StartProcessPayloadBuilder.start()
+        ProcessPayloadBuilder.start()
             .withProcessDefinitionKey("miProcess")
             .withVariable("items", Arrays.asList("A", "B", "C"))
             .build())
@@ -902,7 +902,7 @@ class OrderProcessIntegrationTest {
         String orderId = UUID.randomUUID().toString();
 
         ProcessInstance pi = processOperations.start(
-                StartProcessPayloadBuilder.start()
+                ProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderProcess")
                     .withVariable("orderId", orderId)
                     .withVariable("amount", 15000)
@@ -917,7 +917,7 @@ class OrderProcessIntegrationTest {
 
         // Complete the approval task — taskId must be the actual task UUID
         taskOperations.complete(
-                CompleteTaskPayloadBuilder.complete()
+                TaskPayloadBuilder.complete()
                     .withTaskId(taskId)
                     .withVariable("approved", true)
                     .build())
@@ -986,7 +986,7 @@ class OrderApprovalTest {
     @Test
     void shouldAutoApproveLowValueOrder() {
         processOperations.start(
-                StartProcessPayloadBuilder.start()
+                ProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderApproval")
                     .withVariable("orderId", "ORD-001")
                     .withVariable("amount", 500)
@@ -1007,7 +1007,7 @@ class OrderApprovalTest {
         eventSource.clearEvents();
 
         ProcessInstance pi = processOperations.start(
-                StartProcessPayloadBuilder.start()
+                ProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderApproval")
                     .withVariable("orderId", "ORD-002")
                     .withVariable("amount", 15000)
@@ -1023,11 +1023,11 @@ class OrderApprovalTest {
             .andReturn();
 
         // Get the task UUID from the task runtime query
-        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).get(0).getId();
+        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).getContent().get(0).getId();
 
         // Manager approves
         taskOperations.complete(
-                CompleteTaskPayloadBuilder.complete()
+                TaskPayloadBuilder.complete()
                     .withTaskId(taskId)
                     .withVariable("approved", true)
                     .build())
@@ -1045,7 +1045,7 @@ class OrderApprovalTest {
         eventSource.clearEvents();
 
         ProcessInstance pi = processOperations.start(
-                StartProcessPayloadBuilder.start()
+                ProcessPayloadBuilder.start()
                     .withProcessDefinitionKey("orderApproval")
                     .withVariable("orderId", "ORD-003")
                     .withVariable("amount", 50000)
@@ -1056,10 +1056,10 @@ class OrderApprovalTest {
             .andReturn();
 
         // Get the task UUID from the task runtime query
-        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).get(0).getId();
+        String taskId = taskRuntime.tasks(Pageable.of(0, 10), TaskPayloadBuilder.tasks().withProcessInstanceId(pi.getId()).build()).getContent().get(0).getId();
 
         taskOperations.complete(
-                CompleteTaskPayloadBuilder.complete()
+                TaskPayloadBuilder.complete()
                     .withTaskId(taskId)
                     .withVariable("approved", false)
                     .build())

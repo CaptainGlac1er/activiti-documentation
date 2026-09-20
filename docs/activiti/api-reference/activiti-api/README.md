@@ -35,7 +35,7 @@ The Activiti API provides a modern, type-safe interface for process automation, 
 
 The Activiti API follows a layered architecture:
 
-```
+```text
 Application Code
     ↓
 Activiti API (ProcessRuntime, TaskRuntime)

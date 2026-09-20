@@ -788,7 +788,8 @@ Dead letter jobs are not acquired by any executor, making them safe for admin ma
 1. **Monitor dead letter queue regularly** — A growing `ACT_RU_DEADLETTER_JOB` table indicates systemic issues
 2. **Use `failedJobRetryTimeCycle` in BPMN** — Configure retry schedules at the service task level rather than relying on engine defaults. It is an extension **element**, not an attribute:
    ```xml
-   <serviceTask ...>
+   <serviceTask id="externalApiCall" name="External API Call"
+                activiti:class="com.example.ApiCaller">
      <extensionElements>
        <activiti:failedJobRetryTimeCycle>R5/PT10S</activiti:failedJobRetryTimeCycle>
      </extensionElements>

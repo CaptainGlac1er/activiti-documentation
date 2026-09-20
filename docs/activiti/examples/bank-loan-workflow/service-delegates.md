@@ -523,7 +523,6 @@ The following service delegates follow the same pattern. Complete implementation
 | `TreasuryNotificationService` | `treasuryNotificationService` | `notifyTreasuryTask` | Notify treasury of the movement |
 | `CreditBureauUpdateService` | `creditBureauUpdateService` | `updateCreditBureauTask` | Report the funded loan to the bureau |
 | `CoreSystemRegistrationService` | `coreSystemRegistrationService` | `loanRegisteredTask` | Register the funded loan record |
-| `AccountExtractService` | `accountExtractService` | `fetchAccountsDueTask` | Extract accounts with interest due (async) |
 | `BatchReportService` | `batchReportService` | `generateBatchReportTask` | Generate the batch report |
 | `BatchReportEmailService` | `batchReportEmailService` | `emailBatchReportTask` | Email the report to the finance team |
 | `DisbursementPreparationService` | `disbursementPreparationService` | `prepareDisbursementTask` | Prepare funds and wire instruction (async) |

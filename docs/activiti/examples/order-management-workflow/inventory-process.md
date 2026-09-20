@@ -608,7 +608,7 @@ taskRuntime.complete(
 
 ### 2. Stock Reservation Pattern
 
-```
+```text
 Check Availability → Reserve → Update Systems
 ```
 
@@ -620,7 +620,7 @@ Check Availability → Reserve → Update Systems
 
 ### 3. Backorder Approval Workflow
 
-```
+```text
 Out of Stock → Human Decision → Approve/Reject
 ```
 

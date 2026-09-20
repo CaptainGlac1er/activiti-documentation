@@ -4,11 +4,11 @@
 
 Docusaurus 3 documentation site for Activiti workflow/BPM engine. Docs live in `docs/` as `.md` files with YAML frontmatter.
 
-**Runtime availability.** Node.js 22 (via nvm) and the project's dependencies are available on this machine — `npm start`, `npm run build`, `npm run typecheck`, and `npm test` all work. There is no Java runtime, so Java examples in the docs must be verified by reading source, not compiling.
+**Runtime availability.** Node.js 24 (`/usr/bin/node`) on Alpine Linux (musl); `npm start`, `npm run build`, `npm run typecheck`, and `npm test` all work. If vitest fails to load rolldown (`Cannot find native binding` / missing `ld-linux-x86-64.so.2`), npm picked the glibc binding — install the musl one with `npm i --no-save @rolldown/binding-linux-x64-musl` (matching the installed rolldown version). There is no Java runtime, so Java examples in the docs must be verified by reading source, not compiling.
 
-**Tests.** `npm test` runs vitest over `src/theme/CodeBlock/bpmnLayout.test.ts` (jsdom environment; covers `extractActivitiProperties`, the detection logic behind the BPMN diagram property indicators) and `src/theme/CodeBlock/activitiInspector.test.ts` (the bpmn-js plugin module that renders the badges; also runs the real viewer in jsdom with SVG geometry stubs). `npm run typecheck` currently reports three pre-existing errors (`DirectoryTree/FileIcon.tsx` x2, `theme/Mermaid/index.tsx`) plus a tsconfig `baseUrl` deprecation — treat those as the baseline, not regressions.
+**Tests.** `npm test` runs vitest over `src/theme/CodeBlock/bpmnLayout.test.ts` (jsdom environment; covers `extractActivitiProperties`, the detection logic behind the BPMN diagram property indicators) and `src/theme/CodeBlock/activitiInspector.test.ts` (the bpmn-js plugin module that renders the badges; also runs the real viewer in jsdom with SVG geometry stubs). `npm run typecheck` currently reports a single pre-existing error — the tsconfig `baseUrl` deprecation (TS5101) — treat it as the baseline, not a regression.
 
-**Build baseline.** `npm run build` succeeds (`onBrokenLinks: 'warn'`) but carries a known pre-existing set of broken links/anchors under `docs/cloud` (11 changelog links to `/changelog/*` and one broken anchor on `/docs/cloud/connectors/api-reference`). Treat those as baseline; only *new* broken links/anchors in touched pages are regressions.
+**Build baseline.** `npm run build` succeeds (`onBrokenLinks: 'warn'`) with zero broken links/anchors — the former set (11 changelog links to `/changelog/*` under `docs/cloud` and one broken anchor on `/docs/cloud/connectors/api-reference`) was fixed in the 2026-09 polish round. Any *new* broken link/anchor in a touched page is a regression.
 
 ## Docs Structure
 
@@ -30,7 +30,8 @@ The site is organized into **modules** — each module is a top-level folder und
 
 ## Doc Conventions
 
-- BPMN XML examples must include `xmlns:activiti="http://activiti.org/bpmn"` when using `activiti:` extensions
+- Full `<definitions>` documents must declare `xmlns:activiti="http://activiti.org/bpmn"` when using `activiti:` extensions
+- Fragments do NOT carry per-block namespace comments (maintainer decision, 2026-09 round); a few pages use a leading `<!-- xmlns:activiti="http://activiti.org/bpmn" required -->` comment from before that — leave those as-is, do not add or remove them for consistency
 - No Camunda- or Flowable-specific content — this is Activiti-only
 - Java code blocks must compile — verify types against the Activiti engine source. Before doing so, check whether the user has it cloned locally (public repo: `Activiti/Activiti`); if it isn't available, ask, or flag Java examples as unverified rather than guessing
 - Keep `activiti:` legacy attributes clearly distinguished from standard BPMN

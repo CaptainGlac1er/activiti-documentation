@@ -13,7 +13,7 @@ Process extensions in Activiti provide a declarative way to define process varia
 
 Each BPMN file has a companion `**-extensions.json` sidecar in the same directory. The sidecar is matched by suffix and the **process definition key is a map key inside the file** (not the filename).
 
-```
+```text
 processes/
 ├── loanApprovalProcess.bpmn
 ├── loanApprovalProcess-extensions.json

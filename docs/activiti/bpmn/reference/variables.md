@@ -690,11 +690,13 @@ Object var = execution.getVariable("specificVar", false); // Don't fetch all
 Set<String> varNames = execution.getVariableNames();
 
 // Get variable instances with metadata
+// Note: the map values are the engine's @Internal variable entity
+// (org.activiti.engine.impl.persistence.entity.VariableInstance), which exposes getTypeName().
 Map<String, VariableInstance> instances = execution.getVariableInstances();
 
 for (VariableInstance vi : instances.values()) {
     System.out.println("Name: " + vi.getName());
-    System.out.println("Type: " + vi.getType());
+    System.out.println("Type: " + vi.getTypeName());
     System.out.println("Execution: " + vi.getExecutionId());
     System.out.println("Task: " + vi.getTaskId());
 }
@@ -713,7 +715,7 @@ List<HistoricVariableInstance> history = historyService
 // Get variable updates
 List<HistoricDetail> updates = historyService
     .createHistoricDetailQuery()
-    .variableUpdatesOnly()
+    .variableUpdates()
     .processInstanceId(processId)
     .list();
 ```

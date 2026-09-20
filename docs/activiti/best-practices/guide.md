@@ -1023,7 +1023,7 @@ public class LoggingService {
 
 **DO:** Follow consistent structure
 
-```
+```text
 src/
 ├── main/
 │   ├── java/

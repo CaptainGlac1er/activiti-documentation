@@ -81,7 +81,7 @@ Creates a `ProcessValidatorImpl` pre-configured with the `activiti-executable-pr
 
 ## Validator Hierarchy
 
-```
+```text
 Validator (interface)
   |
   +-- validate(BpmnModel bpmnModel, List<ValidationError> errors)
@@ -248,7 +248,7 @@ public class ValidationError {
 
 `toString()` produces output like:
 
-```
+```text
 [Validation set: 'activiti-executable-process' | Problem: 'activiti-servicetask-missing-implementation'] : One of the attributes 'implementation', 'class', ... - [Extra info : processDefinitionId = myProcess | id = myServiceTask | activityName = My Task]
 ```
 
@@ -617,7 +617,7 @@ for (ValidationError error : errors) {
 
 ## Validation Flow
 
-```
+```text
 ProcessValidatorFactory.createDefaultProcessValidator()
   |
   +-- ProcessValidatorImpl

@@ -402,7 +402,7 @@ The engine uses Spring Boot's datasource auto-configuration, but the starter doe
 |----------|---------|---------|
 | `spring.datasource.url` | none — configure a JDBC datasource | JDBC URL of the engine database. |
 | `spring.datasource.username` / `spring.datasource.password` | — (no default) | Credentials for the JDBC datasource. |
-| `spring.activiti.database-schema-update` | `true` | Create/update the engine schema at startup (`true`, `false`, `drop-create`). |
+| `spring.activiti.database-schema-update` | `true` | Create/update the engine schema at startup (`true`, `false`, `create`, `create-drop`, `drop-create`). |
 | `spring.activiti.database-schema` | *(empty)* | Schema name for the engine tables. |
 
 ### Messaging broker

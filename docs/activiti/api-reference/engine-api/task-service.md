@@ -41,7 +41,7 @@ The **TaskService** manages user tasks in the Activiti engine. It provides opera
 
 ### Core Concepts
 
-```
+```text
 Task
     ├── Assignee (current owner)
     ├── Candidate Users (can claim)
@@ -609,7 +609,7 @@ Subtasks are standalone tasks linked to a parent. Completing a subtask does not 
 // Task Creation
 Task newTask();
 Task newTask(String taskId);
-void saveTask(Task task);
+Task saveTask(Task task);
 void deleteTask(String taskId);
 void deleteTask(String taskId, boolean cascade);
 void deleteTask(String taskId, String deleteReason);

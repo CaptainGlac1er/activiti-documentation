@@ -684,10 +684,35 @@ public class DeliveryConfirmationService implements Connector {
 ### 1. Method-Based Routing
 
 ```xml
-<exclusiveGateway id="shippingMethodGateway"/>
-  <sequenceFlow condition="${shippingMethod == 'EXPRESS'}"/>
-  <sequenceFlow condition="${shippingMethod == 'STANDARD'}"/>
-  <sequenceFlow condition="${shippingMethod == 'STORE_PICKUP'}"/>
+<bpmn:exclusiveGateway id="shippingMethodGateway" name="Shipping Method?">
+  <bpmn:outgoing>flowToPriorityPickup</bpmn:outgoing>
+  <bpmn:outgoing>flowToRegularPickup</bpmn:outgoing>
+  <bpmn:outgoing>flowToStorePickup</bpmn:outgoing>
+</bpmn:exclusiveGateway>
+
+<!-- Express shipping path -->
+<bpmn:sequenceFlow id="flowToPriorityPickup" 
+                   name="Express" 
+                   sourceRef="shippingMethodGateway" 
+                   targetRef="schedulePriorityPickupTask">
+  <bpmn:conditionExpression>${shippingMethod == 'EXPRESS'}</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+
+<!-- Standard shipping path -->
+<bpmn:sequenceFlow id="flowToRegularPickup" 
+                   name="Standard" 
+                   sourceRef="shippingMethodGateway" 
+                   targetRef="scheduleRegularPickupTask">
+  <bpmn:conditionExpression>${shippingMethod == 'STANDARD'}</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+
+<!-- Store pickup path -->
+<bpmn:sequenceFlow id="flowToStorePickup" 
+                   name="Store Pickup" 
+                   sourceRef="shippingMethodGateway" 
+                   targetRef="notifyStorePickupTask">
+  <bpmn:conditionExpression>${shippingMethod == 'STORE_PICKUP'}</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
 ```
 
 **When to use:**
@@ -702,7 +727,7 @@ public class DeliveryConfirmationService implements Connector {
 
 ### 2. Converging Parallel Paths
 
-```
+```text
 Express → \
            → [Update Tracking]
 Standard → /

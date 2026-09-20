@@ -441,7 +441,7 @@ services:
                    name="More Retries" 
                    sourceRef="retryCountGateway" 
                    targetRef="processPaymentTask">
-  <bpmn:conditionExpression>${retryCount < 3}</bpmn:conditionExpression>
+  <bpmn:conditionExpression>${retryCount &lt; 3}</bpmn:conditionExpression>
 </bpmn:sequenceFlow>
 
 <!-- No more retries -->

@@ -209,7 +209,7 @@ Accept: application/json
           "appName": "hr-app",
           "appVersion": "1",
           "serviceName": "runtime-bundle",
-          "serviceFullName": "org.activiti.cloud:hr-app",
+          "serviceFullName": "runtime-bundle",
           "serviceVersion": "1.0.0"
         }
       }

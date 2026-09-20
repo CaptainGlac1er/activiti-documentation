@@ -49,7 +49,7 @@ The **RuntimeService** is the core engine for executing process instances. It ma
 
 ### Core Concepts
 
-```
+```text
 Process Instance
     ├── Executions (tokens)
     ├── Variables
@@ -363,9 +363,9 @@ List<Execution> executions = runtimeService.createExecutionQuery()
     .processInstanceId(processInstanceId)
     .list();
 
-// Get active executions
+// Get all executions currently in the engine
+// (ExecutionQuery has no active() filter — use ProcessInstanceQuery.active() to filter by state)
 List<Execution> activeExecutions = runtimeService.createExecutionQuery()
-    .active()
     .list();
 
 // Get executions at specific activity
@@ -401,10 +401,14 @@ public class ExecutionInfo {
 
         System.out.println("Execution ID: " + execution.getId());
         System.out.println("Process Instance ID: " + execution.getProcessInstanceId());
-        System.out.println("Process Definition ID: " + execution.getProcessDefinitionId());
+        // Execution does not expose the process definition — resolve it via the process instance
+        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+            .processInstanceId(execution.getProcessInstanceId())
+            .singleResult();
+        System.out.println("Process Definition ID: " + processInstance.getProcessDefinitionId());
         System.out.println("Activity ID: " + execution.getActivityId());
         System.out.println("Parent ID: " + execution.getParentId());
-        System.out.println("Root ID: " + execution.getRootId());
+        System.out.println("Root ID: " + execution.getRootProcessInstanceId());
         System.out.println("Tenant ID: " + execution.getTenantId());
     }
 }
@@ -583,7 +587,6 @@ ProcessInstance instance = runtimeService.createProcessInstanceQuery()
 
 Execution execution = runtimeService.createExecutionQuery()
     .processInstanceId(instance.getId())
-    .active()
     .singleResult();
 ```
 
@@ -991,7 +994,6 @@ public class OrderRuntimeService {
         // Find the active execution
         Execution execution = runtimeService.createExecutionQuery()
             .processInstanceId(instance.getId())
-            .active()
             .singleResult();
 
         // Correlate message to update order
@@ -1044,7 +1046,6 @@ public class ApprovalRuntimeService {
         // Find the active execution
         Execution execution = runtimeService.createExecutionQuery()
             .processInstanceId(instance.getId())
-            .active()
             .singleResult();
 
         // Correlate message to approve request
@@ -1062,7 +1063,6 @@ public class ApprovalRuntimeService {
         // Find the active execution
         Execution execution = runtimeService.createExecutionQuery()
             .processInstanceId(instance.getId())
-            .active()
             .singleResult();
 
         // Correlate message to reject request
@@ -1158,7 +1158,6 @@ ProcessInstance instance = runtimeService.startProcessInstanceByMessage(
 // GOOD - Correlate to running process
 Execution execution = runtimeService.createExecutionQuery()
     .processInstanceId(instance.getId())
-    .active()
     .singleResult();
 runtimeService.messageEventReceived("orderShipped", execution.getId());
 

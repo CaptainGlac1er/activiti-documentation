@@ -44,7 +44,7 @@ The Activiti Engine is highly configurable through the `ProcessEngineConfigurati
 
 ### Configuration Lifecycle
 
-```
+```text
 1. Create Configuration
    │
    ▼
@@ -121,8 +121,9 @@ public abstract class ProcessEngineConfiguration {
     // or in ProcessEngineConfiguration subclasses
 
     // Serialization
-    // serializePOJOsInVariablesToJson is an ActivitiProperties
-    // (Spring Boot) setting, not a ProcessEngineConfiguration field
+    // serializePOJOsInVariablesToJson is an engine setting on
+    // ProcessEngineConfigurationImpl; in Spring Boot it is exposed as the
+    // spring.activiti.serialize-pojos-in-variables-to-json property
 }
 ```
 
@@ -325,8 +326,8 @@ spring:
   activiti:
     async-executor-activate: true
     async-executor:
-      core-pool-size: 10      # spring.activiti.async-executor.core-pool-size
-      max-pool-size: 20       # spring.activiti.async-executor.max-pool-size
+      core-pool-size: 10      # spring.activiti.async-executor.core-pool-size (default: 2)
+      max-pool-size: 20       # spring.activiti.async-executor.max-pool-size (default: 10)
       number-of-retries: 3    # spring.activiti.async-executor.number-of-retries
 ```
 
@@ -1116,7 +1117,8 @@ public class ProdProcessEngineConfiguration {
         // Configured history level
         config.setHistoryLevel(HistoryLevel.valueOf(historyLevel));
         
-        // Async executor with tuned thread pool
+        // Async executor with tuned thread pool (documented defaults are
+        // core-pool-size: 2 and max-pool-size: 10)
         config.setAsyncExecutorActivate(asyncExecutorActivate);
         config.setAsyncExecutorCorePoolSize(10);
         config.setAsyncExecutorMaxPoolSize(20);

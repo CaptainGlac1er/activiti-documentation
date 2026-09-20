@@ -55,7 +55,7 @@ public void checkUpgrade() throws IOException {
 
 ## Architecture
 
-```
+```text
 ApplicationUpgradeContextService
     ├── Project Manifest Loading
     ├── Version Enforcement
@@ -72,7 +72,7 @@ public class ApplicationUpgradeContextService {
     private String projectManifestFilePath;
     private Integer enforcedAppVersion;
     private boolean isRollbackDeployment;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private ResourcePatternResolver resourceLoader;
 
     public ProjectManifest loadProjectManifest() throws IOException {
@@ -93,7 +93,7 @@ public class ApplicationUpgradeContextService {
     }
 
     private ProjectManifest read(InputStream inputStream) throws IOException {
-        return objectMapper.readValue(inputStream,
+        return jsonMapper.readValue(inputStream,
             ProjectManifest.class);
     }
 }
@@ -193,7 +193,7 @@ activiti:
 public ApplicationUpgradeContextService(String path,
                                         Integer enforcedAppVersion,
                                         Boolean isRollbackDeployment,
-                                        ObjectMapper objectMapper,
+                                        JsonMapper jsonMapper,
                                         ResourcePatternResolver resourceLoader)
 ```
 

@@ -104,12 +104,11 @@ Two things to notice:
 
 ### Process extensions (connector variable mapping)
 
-A sidecar JSON file, named after the process definition key and placed next to the BPMN file, declares the start-form variables and maps the process variables into the connector's inputs and outputs. This example follows the format used by the runtime bundle examples:
+A sidecar JSON file, named `<process-key>-extensions.json` (the engine picks up any file whose name ends in `-extensions.json`) and placed next to the BPMN file, declares the start-form variables and maps the process variables into the connector's inputs and outputs. For the `leaveRequestProcess` model that is `leaveRequestProcess-extensions.json`. This example follows the format used by the runtime bundle examples:
 
 ```json
 {
   "id": "leaveRequestProcess",
-  "type": "PROCESS",
   "extensions": {
     "leaveRequestProcess": {
       "properties": {

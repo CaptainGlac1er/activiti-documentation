@@ -11,7 +11,7 @@ description: "Overview of the activiti-spring-conformance-tests multi-module tes
 
 ## Module Layout
 
-```
+```text
 activiti-spring-conformance-tests/          (parent POM, aggregator)
 ├── activiti-spring-conformance-util/       (shared test infrastructure)
 ├── activiti-spring-conformance-set0/       (basic process & task runtime)
@@ -89,7 +89,7 @@ public void logInAs(String username)
 
 The util module registers `RuntimeTestConfiguration` via:
 
-```
+```text
 META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
 → org.activiti.spring.conformance.util.RuntimeTestConfiguration
 ```

@@ -727,17 +727,26 @@ protected ExtensionElement parseExtensionElement(XMLStreamReader xtr) throws Exc
 ```java
 // In org.activiti.bpmn.model.ExtensionElement
 public class ExtensionElement extends BaseElement {
-  protected String namespace;
+  protected String name;
   protected String namespacePrefix;
+  protected String namespace;
   protected String elementText;
-  protected List<ExtensionAttribute> attributes = new ArrayList<>();
-  protected List<ExtensionElement> childElements = new ArrayList<>();
+  protected Map<String, List<ExtensionElement>> childElements = new LinkedHashMap<>();
 
   public void addChildElement(ExtensionElement childElement) {
-    childElements.add(childElement);
+    if (childElement != null && StringUtils.isNotEmpty(childElement.getName())) {
+      List<ExtensionElement> elementList = childElements.get(childElement.getName());
+      if (elementList == null) {
+        elementList = new ArrayList<>();
+        childElements.put(childElement.getName(), elementList);
+      }
+      elementList.add(childElement);
+    }
   }
 }
 ```
+
+> **Note:** Child elements are grouped by element name: `childElements` is a `Map<String, List<ExtensionElement>>` keyed by the child's `name`, so several children with the same name are collected under one key.
 
 ### Writing Extensions
 
@@ -796,7 +805,7 @@ BpmnXMLConverter converter = new BpmnXMLConverter();
 BpmnModel model = converter.convertToBpmnModel(inputStreamProvider, false, false);
 
 // Semantic validation is a separate step via ProcessValidator
-ProcessValidator validator = ProcessValidatorFactory.createProcessValidator();
+ProcessValidator validator = ProcessValidatorFactory.createDefaultProcessValidator();
 List<ValidationError> errors = validator.validate(model);
 
 if (!errors.isEmpty()) {
@@ -925,7 +934,7 @@ List<ValidatorSet> getValidatorSets()
 | `ParallelGatewayXMLConverter` | `parallelGateway` | `ParallelGateway` |
 | `InclusiveGatewayXMLConverter` | `inclusiveGateway` | `InclusiveGateway` |
 | `ComplexGatewayXMLConverter` | `complexGateway` | `ExclusiveGateway` |
-| `EventGatewayXMLConverter` | `eventBasedGateway` | `EventBasedGateway` |
+| `EventGatewayXMLConverter` | `eventBasedGateway` | `EventGateway` |
 | `SequenceFlowXMLConverter` | `sequenceFlow` | `SequenceFlow` |
 | `TextAnnotationXMLConverter` | `textAnnotation` | `TextAnnotation` |
 | `AssociationXMLConverter` | `association` | `Association` |

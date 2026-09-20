@@ -295,7 +295,7 @@ Note: `SpringBeanFactoryProxyMap` resides in `org.activiti.engine.impl.cfg` (the
 
 **Purpose:** Strategy interface for handling jobs rejected by the async executor (e.g., when queue is full).
 
-**Note:** Deprecated. Activiti recommends against using the legacy Job Executor.
+**Note:** Internal, deprecated API. This interface is marked `@Deprecated @Internal` in source — it may change or be removed without notice, and Activiti recommends against using the legacy Job Executor.
 
 **Key Methods:**
 - `jobRejected(AsyncExecutor, Job)` - Called when a job is rejected
@@ -542,7 +542,7 @@ public class ActivitiConfig {
         cfg.setTransactionManager(transactionManager);
         cfg.setDatabaseSchemaUpdate(
             ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
-        cfg.setHistoryLevel(ProcessEngineConfiguration.HISTORY_FULL);
+        cfg.setHistoryLevel(HistoryLevel.FULL);
         cfg.setAsyncExecutorActivate(true);
 
         return cfg.buildProcessEngine();
@@ -819,7 +819,7 @@ Similar to `NeverFailAutoDeploymentStrategy`, but throws an `ActivitiException` 
 
 ### SpringAsyncExecutor
 
-> **Note:** The rejected-jobs handling below references `SpringRejectedJobsHandler`, which is `@Deprecated` — see the note in the [SpringRejectedJobsHandler](#springrejectedjobshandler) section above.
+> **Note:** The rejected-jobs handling below references `SpringRejectedJobsHandler`, which is `@Deprecated @Internal` (an internal, deprecated API) — see the note in the [SpringRejectedJobsHandler](#springrejectedjobshandler) section above.
 
 The `SpringAsyncExecutor` delegates job execution to a Spring `TaskExecutor`, allowing integration with managed thread pools in application servers.
 
@@ -915,7 +915,7 @@ public class ActivitiSpringConfig {
         cfg.setTransactionManager(transactionManager());
         cfg.setDatabaseSchemaUpdate(
             ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
-        cfg.setHistoryLevel(ProcessEngineConfiguration.HISTORY_FULL);
+        cfg.setHistoryLevel(HistoryLevel.FULL);
 
         return cfg;
     }
@@ -1079,7 +1079,7 @@ Abstract test case for JUnit-based tests with Spring integration.
 public class MySpringTest extends SpringActivitiTestCase {
 
     @Override
-    protected void setUpProcessEngine() throws Throwable {
+    protected void initializeProcessEngine() {
         // ProcessEngine is loaded from Spring context
     }
 
@@ -1119,8 +1119,11 @@ public class WorkflowServiceTest {
 
     @Test
     public void testStartProcess() {
-        when(runtimeService.startProcessInstanceByKey("key"))
-            .thenReturn(new ProcessInstanceImpl("1"));
+        // RuntimeService (legacy API) returns the legacy engine ProcessInstance —
+        // mock that interface rather than constructing the modern-API model class
+        ProcessInstance pi = mock(org.activiti.engine.runtime.ProcessInstance.class);
+        when(pi.getId()).thenReturn("1");
+        when(runtimeService.startProcessInstanceByKey("key")).thenReturn(pi);
 
         ProcessInstance instance = workflowService.startProcess("key");
 

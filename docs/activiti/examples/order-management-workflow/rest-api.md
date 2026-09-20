@@ -810,7 +810,7 @@ class StartOrderRequest {
 ### Request Examples
 
 **Start Order:**
-```
+```http
 POST {{baseUrl}}/api/orders
 Body (JSON):
 {
@@ -835,12 +835,12 @@ Body (JSON):
 ```
 
 **Get Order Status:**
-```
+```http
 GET {{baseUrl}}/api/orders/ORD-TEST-001
 ```
 
 **Complete Task:**
-```
+```http
 POST {{baseUrl}}/api/tasks/{{taskId}}/complete
 Body (JSON):
 {

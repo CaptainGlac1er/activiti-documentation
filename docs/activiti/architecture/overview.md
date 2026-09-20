@@ -166,7 +166,7 @@ createTransactionInterceptor() // overridden per environment (Standalone, JTA, S
 - Handle retries and error propagation
 
 **Command Interceptor Chain:**
-```
+```text
 1. LogInterceptor — debug logging of command start/finish
 2. TransactionInterceptor — begins/commits/rollbacks transaction (environment-specific)
 3. CommandContextInterceptor — creates and manages CommandContext

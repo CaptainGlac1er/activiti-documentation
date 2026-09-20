@@ -63,7 +63,7 @@ flowchart TD
 
 ## File Structure
 
-```
+```text
 bank-loan-workflow/
 ├── src/main/
 │   ├── java/com/example/bankloan/

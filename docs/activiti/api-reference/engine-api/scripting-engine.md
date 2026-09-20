@@ -361,6 +361,8 @@ processOrder(execution)
 
 Since `scriptTask` has no script-resource support, the script content is loaded at runtime. A common approach is a `JavaDelegate` on a service task:
 
+> **Note:** `ScriptRepository` and `Script` in the example below are **user-defined custom classes** (a database-backed script store in your application), not part of the Activiti API — the engine's scripting support lives in `org.activiti.engine.impl.scripting` (`ScriptingEngines`, `ScriptEngineFactory`).
+
 ```java
 public class ScriptFromDatabaseDelegate implements JavaDelegate {
     
