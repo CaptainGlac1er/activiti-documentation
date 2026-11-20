@@ -35,7 +35,7 @@
     "@docusaurus/module-type-aliases": "^3.10.0",
     "@docusaurus/tsconfig": "^3.10.0",
     "@docusaurus/types": "^3.10.0",
-    "jsdom": "^30.0.1",
+    "jsdom": "^31.0.0",
     "typescript": "~6.0.3",
     "vitest": "^4.1.11"
   },
